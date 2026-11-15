@@ -1,7 +1,7 @@
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { classicTemplate } from './classic/classic.template';
-import { modernTemplate } from './modern/modern.template';
+import { prismTemplate } from './prism/prism.template';
 import { monochromeTemplate } from './monochrome/monochrome.template';
 import {
     OfferPdfTemplate,
@@ -11,7 +11,7 @@ import {
 /** Реестр встроенных шаблонов: новый стиль — новый элемент массива. */
 export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     classicTemplate,
-    modernTemplate,
+    prismTemplate,
     monochromeTemplate,
 ];
 

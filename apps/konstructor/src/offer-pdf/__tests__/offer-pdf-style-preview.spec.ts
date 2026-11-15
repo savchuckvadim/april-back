@@ -39,10 +39,10 @@ describe('превью PDF-стиля', () => {
     });
 
     it('первая страница образца «Гарант-Офис» в выбранном стиле', async () => {
-        const pdf = await service.preview(OfferPdfTemplateCode.MODERN);
+        const pdf = await service.preview(OfferPdfTemplateCode.PRISM);
         expect((await PDFDocument.load(pdf)).getPageCount()).toBe(1);
         const [model] = render.mock.calls[0];
-        expect(model.templateCode).toBe(OfferPdfTemplateCode.MODERN);
+        expect(model.templateCode).toBe(OfferPdfTemplateCode.PRISM);
         expect(model.data.GeneralProductName).toBe('Гарант-Офис');
         expect(model.settings.withCover).toBe(true);
     });

@@ -26,8 +26,8 @@ const footerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
     }),
 );
 
-/** Подвал «Современного»: менеджер одной строкой и номер страницы. */
-export const ModernFooter: FC<OfferPdfChromeProps> = ({ model, theme }) => {
+/** Подвал «Призмы»: менеджер одной строкой и номер страницы. */
+export const PrismFooter: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = footerStyles(theme);
     const manager = managerOf(model);
     const contacts = manager

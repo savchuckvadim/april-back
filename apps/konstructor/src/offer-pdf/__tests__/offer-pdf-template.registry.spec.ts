@@ -52,12 +52,12 @@ describe('реестр PDF-шаблонов КП', () => {
         }
     });
 
-    it('титульник есть у «Современного», у классики нет', () => {
+    it('титульник есть у «Призмы», у классики нет', () => {
         const covers = Object.fromEntries(
             listOfferPdfTemplates().map(item => [item.code, item.hasCover]),
         );
         expect(covers[OfferPdfTemplateCode.CLASSIC]).toBe(false);
-        expect(covers[OfferPdfTemplateCode.MODERN]).toBe(true);
+        expect(covers[OfferPdfTemplateCode.PRISM]).toBe(true);
         expect(covers[OfferPdfTemplateCode.MONOCHROME]).toBe(true);
     });
 });

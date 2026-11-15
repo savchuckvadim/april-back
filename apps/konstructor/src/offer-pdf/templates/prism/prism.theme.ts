@@ -2,12 +2,12 @@ import { OFFER_PDF_FONT_FAMILY } from '../../fonts/offer-pdf-fonts';
 import type { OfferPdfTheme } from '../kit/theme/offer-pdf-theme';
 
 /**
- * «Современный»: белый лист, графитовый текст, малиновый акцент и полосы
+ * «Призма»: белый лист, графитовый текст, малиновый акцент и полосы
  * «рифлёного стекла» (референс — избранное Canva владельца, 15.11).
  * Шрифт пока PT Sans: акцидентный гротеск с кириллицей выбирает владелец.
  */
-export const MODERN_THEME: OfferPdfTheme = {
-    code: 'modern',
+export const PRISM_THEME: OfferPdfTheme = {
+    code: 'prism',
     colors: {
         text: '#16161D',
         muted: '#6B6F7B',
@@ -36,4 +36,4 @@ export const MODERN_THEME: OfferPdfTheme = {
 };
 
 /** Холодный серый, из которого полосы уходят в акцент */
-export const MODERN_STRIPE_BASE = '#B9BCC8';
+export const PRISM_STRIPE_BASE = '#B9BCC8';
