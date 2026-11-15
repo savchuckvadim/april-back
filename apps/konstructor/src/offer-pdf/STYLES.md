@@ -14,7 +14,7 @@ templates/
     decor/             векторная декорация (GlassStripes — «рифлёное стекло»)
     lib/               текст, менеджер, содержимое титульника
   classic/             «Классический»: тема + шапка/подвал
-  modern/              «Современный»: тема + титульник, шапка/подвал, подложка
+  prism/               «Призма»: тема + титульник, шапка/подвал, подложка
   monochrome/          «Монохром»: серый лист, Manrope, вкладка у края, титульник по вордовским
   offer-pdf-template.registry.ts   список стилей
 ```
@@ -38,7 +38,7 @@ templates/
 1. Папка `templates/<code>/`: `<code>.theme.ts`, `components/` (шапка, подвал, по желанию титульник
    и подложка — по компоненту на файл, стили через `themedStyles`), `<code>.template.tsx`.
 2. Код в `OfferPdfTemplateCode`, шаблон в `OFFER_PDF_TEMPLATES`.
-3. Тест в `__tests__/` по образцу `modern.template.spec.ts`.
+3. Тест в `__tests__/` по образцу `prism.template.spec.ts`.
 4. `npm run offer-pdf:audit -- --out tmp/offer-pdf-audit` — все сценарии во всех стилях,
    «Проблем нет»; глазами посмотреть PDF из `--out`.
 
@@ -77,7 +77,7 @@ templates/
 
 | № | Ссылка | Что на титульнике | Техника |
 |---|---|---|---|
-| 1 | [DAHa-6uPe44](https://www.canva.com/design/DAHa-6uPe44/6prVo1uGfjSCkZB4Ak5kkg/edit) | Белый лист, жирное ANNUAL REPORT, малиновая черта, полосы «рифлёного стекла» справа (серый → малиновый), внизу «Presented by» и контакты с точками | вектор — **сделан как «Современный»** |
+| 1 | [DAHa-6uPe44](https://www.canva.com/design/DAHa-6uPe44/6prVo1uGfjSCkZB4Ak5kkg/edit) | Белый лист, жирное ANNUAL REPORT, малиновая черта, полосы «рифлёного стекла» справа (серый → малиновый), внизу «Presented by» и контакты с точками | вектор — **сделан как «Призма»** |
 | 2 | [DAHa-xAiVCc](https://www.canva.com/design/DAHa-xAiVCc/h6R4IGcTbYYyiCscScflAQ/edit) | «Insight Lab»: синяя/лавандовая лента стеклянных полос поперёк листа, звёздочки-блики, крупные полупрозрачные цифры года, «Reporting period» | вектор |
 | 3 | [DAHa-08HzHQ](https://www.canva.com/design/DAHa-08HzHQ/L2TfrsfEaxtD26d2HZUFng/edit), [DAHa-4geMbk](https://www.canva.com/design/DAHa-4geMbk/PNE-eNREVm7nQBqawNRkJw/edit) | «Startup Business Plan», монохром: светло-серый лист, огромные цифры года, тонкий гротеск, чёрная вертикальная вкладка у края с повёрнутым названием, «таблетка» с датой, стрелка в круге. В 4geMbk — 10 страниц единой системой (оглавление «таблетками», графики в серых, команда) | вектор целиком, хороший образец внутренних страниц — **сделан как «Монохром»** (без года, титульник по вордовским) |
 | 4 | [DAHa-2Y-EME](https://www.canva.com/design/DAHa-2Y-EME/u99wTNb1IlAezmfFE9StFQ/edit) | Сиренево-розовый мягкий градиент, ANNUAL жирно + REPORT тонко, повёрнутая подпись слева внизу, контурная «таблетка» справа | вектор (линейный градиент) |

@@ -15,7 +15,7 @@ import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { glassStripes } from '../templates/kit/decor/glass-stripes.util';
 import { offerSectionOrder } from '../templates/kit/document/document.util';
 import { offerCoverContent } from '../templates/kit/lib/cover.util';
-import { modernTemplate } from '../templates/modern/modern.template';
+import { prismTemplate } from '../templates/prism/prism.template';
 import { createOfferPdfModelFixture } from './fixtures/offer-pdf-model.fixture';
 import { collectTexts } from './helpers/react-pdf.mock';
 
@@ -24,15 +24,15 @@ const modelWith = (
     overrides: Partial<OfferPdfDocumentModel> = {},
 ): OfferPdfDocumentModel =>
     createOfferPdfModelFixture({
-        templateCode: OfferPdfTemplateCode.MODERN,
+        templateCode: OfferPdfTemplateCode.PRISM,
         settings: { ...OFFER_PDF_DEFAULT_SETTINGS, ...settings },
         ...overrides,
     });
 
 const renderTexts = (settings: Partial<OfferPdfSettings> = {}): string =>
-    collectTexts(modernTemplate.render(modelWith(settings))).join('\n');
+    collectTexts(prismTemplate.render(modelWith(settings))).join('\n');
 
-describe('«Современный» PDF-шаблон КП', () => {
+describe('«Призма» PDF-шаблон КП', () => {
     it('титульник: заголовок, комплект, для кого и кто подготовил — до письма', () => {
         const text = renderTexts();
         expect(text).toContain('КОММЕРЧЕСКОЕ\nПРЕДЛОЖЕНИЕ');

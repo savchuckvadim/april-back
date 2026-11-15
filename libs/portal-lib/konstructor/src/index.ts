@@ -7,3 +7,4 @@ export * from './contract';
 export * from './portal-measure';
 export * from './portal-contract';
 export * from './document-counter';
+export * from './offer-letter';

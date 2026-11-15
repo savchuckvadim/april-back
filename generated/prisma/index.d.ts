@@ -619,6 +619,12 @@ export type ShareLink = $Result.DefaultSelection<Prisma.$ShareLinkPayload>
  */
 export type KonstructorPublicLink = $Result.DefaultSelection<Prisma.$KonstructorPublicLinkPayload>
 /**
+ * Model OfferLetter
+ * Тексты сопроводительного письма КП: письмо портала (bxUserId = null) и личные письма менеджеров.
+ * Миграция: online/database/migrations/2026_11_15_120000_create_offer_letters_table.php
+ */
+export type OfferLetter = $Result.DefaultSelection<Prisma.$OfferLetterPayload>
+/**
  * Model ContractTemplate
  * Шаблон договора (миграция 2026_09_15_100100).
  * У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
@@ -1959,6 +1965,16 @@ export class PrismaClient<
   get konstructorPublicLink(): Prisma.KonstructorPublicLinkDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.offerLetter`: Exposes CRUD operations for the **OfferLetter** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more OfferLetters
+    * const offerLetters = await prisma.offerLetter.findMany()
+    * ```
+    */
+  get offerLetter(): Prisma.OfferLetterDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.contractTemplate`: Exposes CRUD operations for the **ContractTemplate** model.
     * Example usage:
     * ```ts
@@ -2532,6 +2548,7 @@ export namespace Prisma {
     AppCache: 'AppCache',
     ShareLink: 'ShareLink',
     KonstructorPublicLink: 'KonstructorPublicLink',
+    OfferLetter: 'OfferLetter',
     ContractTemplate: 'ContractTemplate',
     SupplyReportTemplate: 'SupplyReportTemplate',
     RenewalOfferLink: 'RenewalOfferLink'
@@ -2553,7 +2570,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "offerLetter" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -9487,6 +9504,72 @@ export namespace Prisma {
           }
         }
       }
+      OfferLetter: {
+        payload: Prisma.$OfferLetterPayload<ExtArgs>
+        fields: Prisma.OfferLetterFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.OfferLetterFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.OfferLetterFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          findFirst: {
+            args: Prisma.OfferLetterFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.OfferLetterFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          findMany: {
+            args: Prisma.OfferLetterFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>[]
+          }
+          create: {
+            args: Prisma.OfferLetterCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          createMany: {
+            args: Prisma.OfferLetterCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.OfferLetterDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          update: {
+            args: Prisma.OfferLetterUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          deleteMany: {
+            args: Prisma.OfferLetterDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.OfferLetterUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.OfferLetterUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OfferLetterPayload>
+          }
+          aggregate: {
+            args: Prisma.OfferLetterAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateOfferLetter>
+          }
+          groupBy: {
+            args: Prisma.OfferLetterGroupByArgs<ExtArgs>
+            result: $Utils.Optional<OfferLetterGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.OfferLetterCountArgs<ExtArgs>
+            result: $Utils.Optional<OfferLetterCountAggregateOutputType> | number
+          }
+        }
+      }
       ContractTemplate: {
         payload: Prisma.$ContractTemplatePayload<ExtArgs>
         fields: Prisma.ContractTemplateFieldRefs
@@ -9886,6 +9969,7 @@ export namespace Prisma {
     appCache?: AppCacheOmit
     shareLink?: ShareLinkOmit
     konstructorPublicLink?: KonstructorPublicLinkOmit
+    offerLetter?: OfferLetterOmit
     contractTemplate?: ContractTemplateOmit
     supplyReportTemplate?: SupplyReportTemplateOmit
     renewalOfferLink?: RenewalOfferLinkOmit
@@ -10506,6 +10590,7 @@ export namespace Prisma {
     appCaches: number
     shareLinks: number
     konstructorPublicLinks: number
+    offerLetters: number
     appSettings: number
     skapImportFiles: number
     skapImportItems: number
@@ -10550,6 +10635,7 @@ export namespace Prisma {
     appCaches?: boolean | PortalCountOutputTypeCountAppCachesArgs
     shareLinks?: boolean | PortalCountOutputTypeCountShareLinksArgs
     konstructorPublicLinks?: boolean | PortalCountOutputTypeCountKonstructorPublicLinksArgs
+    offerLetters?: boolean | PortalCountOutputTypeCountOfferLettersArgs
     appSettings?: boolean | PortalCountOutputTypeCountAppSettingsArgs
     skapImportFiles?: boolean | PortalCountOutputTypeCountSkapImportFilesArgs
     skapImportItems?: boolean | PortalCountOutputTypeCountSkapImportItemsArgs
@@ -10782,6 +10868,13 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountKonstructorPublicLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: KonstructorPublicLinkWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountOfferLettersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OfferLetterWhereInput
   }
 
   /**
@@ -46524,6 +46617,7 @@ export namespace Prisma {
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     konstructorPublicLinks?: boolean | Portal$konstructorPublicLinksArgs<ExtArgs>
+    offerLetters?: boolean | Portal$offerLettersArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
     skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
@@ -46603,6 +46697,7 @@ export namespace Prisma {
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     konstructorPublicLinks?: boolean | Portal$konstructorPublicLinksArgs<ExtArgs>
+    offerLetters?: boolean | Portal$offerLettersArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
     skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
@@ -46652,6 +46747,7 @@ export namespace Prisma {
       appCaches: Prisma.$AppCachePayload<ExtArgs>[]
       shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
       konstructorPublicLinks: Prisma.$KonstructorPublicLinkPayload<ExtArgs>[]
+      offerLetters: Prisma.$OfferLetterPayload<ExtArgs>[]
       aiSettings: Prisma.$PortalAiSettingsPayload<ExtArgs> | null
       appSettings: Prisma.$PortalAppSettingsPayload<ExtArgs>[]
       skapImportFiles: Prisma.$SkapImportFilePayload<ExtArgs>[]
@@ -47063,6 +47159,7 @@ export namespace Prisma {
     appCaches<T extends Portal$appCachesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appCachesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shareLinks<T extends Portal$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     konstructorPublicLinks<T extends Portal$konstructorPublicLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$konstructorPublicLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    offerLetters<T extends Portal$offerLettersArgs<ExtArgs> = {}>(args?: Subset<T, Portal$offerLettersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     aiSettings<T extends Portal$aiSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$aiSettingsArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     appSettings<T extends Portal$appSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     skapImportFiles<T extends Portal$skapImportFilesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportFilesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -48209,6 +48306,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: KonstructorPublicLinkScalarFieldEnum | KonstructorPublicLinkScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.offerLetters
+   */
+  export type Portal$offerLettersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    where?: OfferLetterWhereInput
+    orderBy?: OfferLetterOrderByWithRelationInput | OfferLetterOrderByWithRelationInput[]
+    cursor?: OfferLetterWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: OfferLetterScalarFieldEnum | OfferLetterScalarFieldEnum[]
   }
 
   /**
@@ -125530,6 +125651,1050 @@ export namespace Prisma {
 
 
   /**
+   * Model OfferLetter
+   */
+
+  export type AggregateOfferLetter = {
+    _count: OfferLetterCountAggregateOutputType | null
+    _avg: OfferLetterAvgAggregateOutputType | null
+    _sum: OfferLetterSumAggregateOutputType | null
+    _min: OfferLetterMinAggregateOutputType | null
+    _max: OfferLetterMaxAggregateOutputType | null
+  }
+
+  export type OfferLetterAvgAggregateOutputType = {
+    portalId: number | null
+    bxUserId: number | null
+    sort: number | null
+    legacyFieldId: number | null
+  }
+
+  export type OfferLetterSumAggregateOutputType = {
+    portalId: bigint | null
+    bxUserId: number | null
+    sort: number | null
+    legacyFieldId: number | null
+  }
+
+  export type OfferLetterMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    portalId: bigint | null
+    bxUserId: number | null
+    name: string | null
+    text: string | null
+    isDefault: boolean | null
+    isActive: boolean | null
+    sort: number | null
+    legacyFieldId: number | null
+  }
+
+  export type OfferLetterMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    portalId: bigint | null
+    bxUserId: number | null
+    name: string | null
+    text: string | null
+    isDefault: boolean | null
+    isActive: boolean | null
+    sort: number | null
+    legacyFieldId: number | null
+  }
+
+  export type OfferLetterCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    portalId: number
+    bxUserId: number
+    name: number
+    text: number
+    isDefault: number
+    isActive: number
+    sort: number
+    legacyFieldId: number
+    _all: number
+  }
+
+
+  export type OfferLetterAvgAggregateInputType = {
+    portalId?: true
+    bxUserId?: true
+    sort?: true
+    legacyFieldId?: true
+  }
+
+  export type OfferLetterSumAggregateInputType = {
+    portalId?: true
+    bxUserId?: true
+    sort?: true
+    legacyFieldId?: true
+  }
+
+  export type OfferLetterMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    portalId?: true
+    bxUserId?: true
+    name?: true
+    text?: true
+    isDefault?: true
+    isActive?: true
+    sort?: true
+    legacyFieldId?: true
+  }
+
+  export type OfferLetterMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    portalId?: true
+    bxUserId?: true
+    name?: true
+    text?: true
+    isDefault?: true
+    isActive?: true
+    sort?: true
+    legacyFieldId?: true
+  }
+
+  export type OfferLetterCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    portalId?: true
+    bxUserId?: true
+    name?: true
+    text?: true
+    isDefault?: true
+    isActive?: true
+    sort?: true
+    legacyFieldId?: true
+    _all?: true
+  }
+
+  export type OfferLetterAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OfferLetter to aggregate.
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OfferLetters to fetch.
+     */
+    orderBy?: OfferLetterOrderByWithRelationInput | OfferLetterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: OfferLetterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OfferLetters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OfferLetters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned OfferLetters
+    **/
+    _count?: true | OfferLetterCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: OfferLetterAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: OfferLetterSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: OfferLetterMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: OfferLetterMaxAggregateInputType
+  }
+
+  export type GetOfferLetterAggregateType<T extends OfferLetterAggregateArgs> = {
+        [P in keyof T & keyof AggregateOfferLetter]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateOfferLetter[P]>
+      : GetScalarType<T[P], AggregateOfferLetter[P]>
+  }
+
+
+
+
+  export type OfferLetterGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OfferLetterWhereInput
+    orderBy?: OfferLetterOrderByWithAggregationInput | OfferLetterOrderByWithAggregationInput[]
+    by: OfferLetterScalarFieldEnum[] | OfferLetterScalarFieldEnum
+    having?: OfferLetterScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: OfferLetterCountAggregateInputType | true
+    _avg?: OfferLetterAvgAggregateInputType
+    _sum?: OfferLetterSumAggregateInputType
+    _min?: OfferLetterMinAggregateInputType
+    _max?: OfferLetterMaxAggregateInputType
+  }
+
+  export type OfferLetterGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    portalId: bigint
+    bxUserId: number | null
+    name: string
+    text: string
+    isDefault: boolean
+    isActive: boolean
+    sort: number
+    legacyFieldId: number | null
+    _count: OfferLetterCountAggregateOutputType | null
+    _avg: OfferLetterAvgAggregateOutputType | null
+    _sum: OfferLetterSumAggregateOutputType | null
+    _min: OfferLetterMinAggregateOutputType | null
+    _max: OfferLetterMaxAggregateOutputType | null
+  }
+
+  type GetOfferLetterGroupByPayload<T extends OfferLetterGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<OfferLetterGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof OfferLetterGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], OfferLetterGroupByOutputType[P]>
+            : GetScalarType<T[P], OfferLetterGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type OfferLetterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portalId?: boolean
+    bxUserId?: boolean
+    name?: boolean
+    text?: boolean
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: boolean
+    legacyFieldId?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["offerLetter"]>
+
+
+
+  export type OfferLetterSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portalId?: boolean
+    bxUserId?: boolean
+    name?: boolean
+    text?: boolean
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: boolean
+    legacyFieldId?: boolean
+  }
+
+  export type OfferLetterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "portalId" | "bxUserId" | "name" | "text" | "isDefault" | "isActive" | "sort" | "legacyFieldId", ExtArgs["result"]["offerLetter"]>
+  export type OfferLetterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $OfferLetterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "OfferLetter"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      portalId: bigint
+      bxUserId: number | null
+      name: string
+      text: string
+      isDefault: boolean
+      isActive: boolean
+      sort: number
+      /**
+       * Поле `fields`, из которого перенесено письмо портала: повторный перенос не плодит копий
+       */
+      legacyFieldId: number | null
+    }, ExtArgs["result"]["offerLetter"]>
+    composites: {}
+  }
+
+  type OfferLetterGetPayload<S extends boolean | null | undefined | OfferLetterDefaultArgs> = $Result.GetResult<Prisma.$OfferLetterPayload, S>
+
+  type OfferLetterCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<OfferLetterFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: OfferLetterCountAggregateInputType | true
+    }
+
+  export interface OfferLetterDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['OfferLetter'], meta: { name: 'OfferLetter' } }
+    /**
+     * Find zero or one OfferLetter that matches the filter.
+     * @param {OfferLetterFindUniqueArgs} args - Arguments to find a OfferLetter
+     * @example
+     * // Get one OfferLetter
+     * const offerLetter = await prisma.offerLetter.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends OfferLetterFindUniqueArgs>(args: SelectSubset<T, OfferLetterFindUniqueArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one OfferLetter that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {OfferLetterFindUniqueOrThrowArgs} args - Arguments to find a OfferLetter
+     * @example
+     * // Get one OfferLetter
+     * const offerLetter = await prisma.offerLetter.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends OfferLetterFindUniqueOrThrowArgs>(args: SelectSubset<T, OfferLetterFindUniqueOrThrowArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OfferLetter that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterFindFirstArgs} args - Arguments to find a OfferLetter
+     * @example
+     * // Get one OfferLetter
+     * const offerLetter = await prisma.offerLetter.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends OfferLetterFindFirstArgs>(args?: SelectSubset<T, OfferLetterFindFirstArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OfferLetter that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterFindFirstOrThrowArgs} args - Arguments to find a OfferLetter
+     * @example
+     * // Get one OfferLetter
+     * const offerLetter = await prisma.offerLetter.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends OfferLetterFindFirstOrThrowArgs>(args?: SelectSubset<T, OfferLetterFindFirstOrThrowArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more OfferLetters that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all OfferLetters
+     * const offerLetters = await prisma.offerLetter.findMany()
+     * 
+     * // Get first 10 OfferLetters
+     * const offerLetters = await prisma.offerLetter.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const offerLetterWithIdOnly = await prisma.offerLetter.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends OfferLetterFindManyArgs>(args?: SelectSubset<T, OfferLetterFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a OfferLetter.
+     * @param {OfferLetterCreateArgs} args - Arguments to create a OfferLetter.
+     * @example
+     * // Create one OfferLetter
+     * const OfferLetter = await prisma.offerLetter.create({
+     *   data: {
+     *     // ... data to create a OfferLetter
+     *   }
+     * })
+     * 
+     */
+    create<T extends OfferLetterCreateArgs>(args: SelectSubset<T, OfferLetterCreateArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many OfferLetters.
+     * @param {OfferLetterCreateManyArgs} args - Arguments to create many OfferLetters.
+     * @example
+     * // Create many OfferLetters
+     * const offerLetter = await prisma.offerLetter.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends OfferLetterCreateManyArgs>(args?: SelectSubset<T, OfferLetterCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a OfferLetter.
+     * @param {OfferLetterDeleteArgs} args - Arguments to delete one OfferLetter.
+     * @example
+     * // Delete one OfferLetter
+     * const OfferLetter = await prisma.offerLetter.delete({
+     *   where: {
+     *     // ... filter to delete one OfferLetter
+     *   }
+     * })
+     * 
+     */
+    delete<T extends OfferLetterDeleteArgs>(args: SelectSubset<T, OfferLetterDeleteArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one OfferLetter.
+     * @param {OfferLetterUpdateArgs} args - Arguments to update one OfferLetter.
+     * @example
+     * // Update one OfferLetter
+     * const offerLetter = await prisma.offerLetter.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends OfferLetterUpdateArgs>(args: SelectSubset<T, OfferLetterUpdateArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more OfferLetters.
+     * @param {OfferLetterDeleteManyArgs} args - Arguments to filter OfferLetters to delete.
+     * @example
+     * // Delete a few OfferLetters
+     * const { count } = await prisma.offerLetter.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends OfferLetterDeleteManyArgs>(args?: SelectSubset<T, OfferLetterDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more OfferLetters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many OfferLetters
+     * const offerLetter = await prisma.offerLetter.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends OfferLetterUpdateManyArgs>(args: SelectSubset<T, OfferLetterUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one OfferLetter.
+     * @param {OfferLetterUpsertArgs} args - Arguments to update or create a OfferLetter.
+     * @example
+     * // Update or create a OfferLetter
+     * const offerLetter = await prisma.offerLetter.upsert({
+     *   create: {
+     *     // ... data to create a OfferLetter
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the OfferLetter we want to update
+     *   }
+     * })
+     */
+    upsert<T extends OfferLetterUpsertArgs>(args: SelectSubset<T, OfferLetterUpsertArgs<ExtArgs>>): Prisma__OfferLetterClient<$Result.GetResult<Prisma.$OfferLetterPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of OfferLetters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterCountArgs} args - Arguments to filter OfferLetters to count.
+     * @example
+     * // Count the number of OfferLetters
+     * const count = await prisma.offerLetter.count({
+     *   where: {
+     *     // ... the filter for the OfferLetters we want to count
+     *   }
+     * })
+    **/
+    count<T extends OfferLetterCountArgs>(
+      args?: Subset<T, OfferLetterCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], OfferLetterCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a OfferLetter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends OfferLetterAggregateArgs>(args: Subset<T, OfferLetterAggregateArgs>): Prisma.PrismaPromise<GetOfferLetterAggregateType<T>>
+
+    /**
+     * Group by OfferLetter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OfferLetterGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends OfferLetterGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: OfferLetterGroupByArgs['orderBy'] }
+        : { orderBy?: OfferLetterGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, OfferLetterGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetOfferLetterGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the OfferLetter model
+   */
+  readonly fields: OfferLetterFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for OfferLetter.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__OfferLetterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the OfferLetter model
+   */
+  interface OfferLetterFieldRefs {
+    readonly id: FieldRef<"OfferLetter", 'String'>
+    readonly createdAt: FieldRef<"OfferLetter", 'DateTime'>
+    readonly updatedAt: FieldRef<"OfferLetter", 'DateTime'>
+    readonly portalId: FieldRef<"OfferLetter", 'BigInt'>
+    readonly bxUserId: FieldRef<"OfferLetter", 'Int'>
+    readonly name: FieldRef<"OfferLetter", 'String'>
+    readonly text: FieldRef<"OfferLetter", 'String'>
+    readonly isDefault: FieldRef<"OfferLetter", 'Boolean'>
+    readonly isActive: FieldRef<"OfferLetter", 'Boolean'>
+    readonly sort: FieldRef<"OfferLetter", 'Int'>
+    readonly legacyFieldId: FieldRef<"OfferLetter", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * OfferLetter findUnique
+   */
+  export type OfferLetterFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter, which OfferLetter to fetch.
+     */
+    where: OfferLetterWhereUniqueInput
+  }
+
+  /**
+   * OfferLetter findUniqueOrThrow
+   */
+  export type OfferLetterFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter, which OfferLetter to fetch.
+     */
+    where: OfferLetterWhereUniqueInput
+  }
+
+  /**
+   * OfferLetter findFirst
+   */
+  export type OfferLetterFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter, which OfferLetter to fetch.
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OfferLetters to fetch.
+     */
+    orderBy?: OfferLetterOrderByWithRelationInput | OfferLetterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OfferLetters.
+     */
+    cursor?: OfferLetterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OfferLetters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OfferLetters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OfferLetters.
+     */
+    distinct?: OfferLetterScalarFieldEnum | OfferLetterScalarFieldEnum[]
+  }
+
+  /**
+   * OfferLetter findFirstOrThrow
+   */
+  export type OfferLetterFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter, which OfferLetter to fetch.
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OfferLetters to fetch.
+     */
+    orderBy?: OfferLetterOrderByWithRelationInput | OfferLetterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OfferLetters.
+     */
+    cursor?: OfferLetterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OfferLetters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OfferLetters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OfferLetters.
+     */
+    distinct?: OfferLetterScalarFieldEnum | OfferLetterScalarFieldEnum[]
+  }
+
+  /**
+   * OfferLetter findMany
+   */
+  export type OfferLetterFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter, which OfferLetters to fetch.
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OfferLetters to fetch.
+     */
+    orderBy?: OfferLetterOrderByWithRelationInput | OfferLetterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing OfferLetters.
+     */
+    cursor?: OfferLetterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OfferLetters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OfferLetters.
+     */
+    skip?: number
+    distinct?: OfferLetterScalarFieldEnum | OfferLetterScalarFieldEnum[]
+  }
+
+  /**
+   * OfferLetter create
+   */
+  export type OfferLetterCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * The data needed to create a OfferLetter.
+     */
+    data: XOR<OfferLetterCreateInput, OfferLetterUncheckedCreateInput>
+  }
+
+  /**
+   * OfferLetter createMany
+   */
+  export type OfferLetterCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many OfferLetters.
+     */
+    data: OfferLetterCreateManyInput | OfferLetterCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OfferLetter update
+   */
+  export type OfferLetterUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * The data needed to update a OfferLetter.
+     */
+    data: XOR<OfferLetterUpdateInput, OfferLetterUncheckedUpdateInput>
+    /**
+     * Choose, which OfferLetter to update.
+     */
+    where: OfferLetterWhereUniqueInput
+  }
+
+  /**
+   * OfferLetter updateMany
+   */
+  export type OfferLetterUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update OfferLetters.
+     */
+    data: XOR<OfferLetterUpdateManyMutationInput, OfferLetterUncheckedUpdateManyInput>
+    /**
+     * Filter which OfferLetters to update
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * Limit how many OfferLetters to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * OfferLetter upsert
+   */
+  export type OfferLetterUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * The filter to search for the OfferLetter to update in case it exists.
+     */
+    where: OfferLetterWhereUniqueInput
+    /**
+     * In case the OfferLetter found by the `where` argument doesn't exist, create a new OfferLetter with this data.
+     */
+    create: XOR<OfferLetterCreateInput, OfferLetterUncheckedCreateInput>
+    /**
+     * In case the OfferLetter was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<OfferLetterUpdateInput, OfferLetterUncheckedUpdateInput>
+  }
+
+  /**
+   * OfferLetter delete
+   */
+  export type OfferLetterDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+    /**
+     * Filter which OfferLetter to delete.
+     */
+    where: OfferLetterWhereUniqueInput
+  }
+
+  /**
+   * OfferLetter deleteMany
+   */
+  export type OfferLetterDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OfferLetters to delete
+     */
+    where?: OfferLetterWhereInput
+    /**
+     * Limit how many OfferLetters to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * OfferLetter without action
+   */
+  export type OfferLetterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OfferLetter
+     */
+    select?: OfferLetterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OfferLetter
+     */
+    omit?: OfferLetterOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OfferLetterInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model ContractTemplate
    */
 
@@ -131013,6 +132178,23 @@ export namespace Prisma {
   export type KonstructorPublicLinkScalarFieldEnum = (typeof KonstructorPublicLinkScalarFieldEnum)[keyof typeof KonstructorPublicLinkScalarFieldEnum]
 
 
+  export const OfferLetterScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    portalId: 'portalId',
+    bxUserId: 'bxUserId',
+    name: 'name',
+    text: 'text',
+    isDefault: 'isDefault',
+    isActive: 'isActive',
+    sort: 'sort',
+    legacyFieldId: 'legacyFieldId'
+  };
+
+  export type OfferLetterScalarFieldEnum = (typeof OfferLetterScalarFieldEnum)[keyof typeof OfferLetterScalarFieldEnum]
+
+
   export const ContractTemplateScalarFieldEnum: {
     id: 'id',
     created_at: 'created_at',
@@ -132471,6 +133653,15 @@ export namespace Prisma {
   };
 
   export type KonstructorPublicLinkOrderByRelevanceFieldEnum = (typeof KonstructorPublicLinkOrderByRelevanceFieldEnum)[keyof typeof KonstructorPublicLinkOrderByRelevanceFieldEnum]
+
+
+  export const OfferLetterOrderByRelevanceFieldEnum: {
+    id: 'id',
+    name: 'name',
+    text: 'text'
+  };
+
+  export type OfferLetterOrderByRelevanceFieldEnum = (typeof OfferLetterOrderByRelevanceFieldEnum)[keyof typeof OfferLetterOrderByRelevanceFieldEnum]
 
 
   export const ContractTemplateOrderByRelevanceFieldEnum: {
@@ -135655,6 +136846,7 @@ export namespace Prisma {
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
     konstructorPublicLinks?: KonstructorPublicLinkListRelationFilter
+    offerLetters?: OfferLetterListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
     appSettings?: PortalAppSettingsListRelationFilter
     skapImportFiles?: SkapImportFileListRelationFilter
@@ -135727,6 +136919,7 @@ export namespace Prisma {
     appCaches?: AppCacheOrderByRelationAggregateInput
     shareLinks?: ShareLinkOrderByRelationAggregateInput
     konstructorPublicLinks?: KonstructorPublicLinkOrderByRelationAggregateInput
+    offerLetters?: OfferLetterOrderByRelationAggregateInput
     aiSettings?: PortalAiSettingsOrderByWithRelationInput
     appSettings?: PortalAppSettingsOrderByRelationAggregateInput
     skapImportFiles?: SkapImportFileOrderByRelationAggregateInput
@@ -135803,6 +136996,7 @@ export namespace Prisma {
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
     konstructorPublicLinks?: KonstructorPublicLinkListRelationFilter
+    offerLetters?: OfferLetterListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
     appSettings?: PortalAppSettingsListRelationFilter
     skapImportFiles?: SkapImportFileListRelationFilter
@@ -143478,6 +144672,94 @@ export namespace Prisma {
     lastViewedAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
   }
 
+  export type OfferLetterWhereInput = {
+    AND?: OfferLetterWhereInput | OfferLetterWhereInput[]
+    OR?: OfferLetterWhereInput[]
+    NOT?: OfferLetterWhereInput | OfferLetterWhereInput[]
+    id?: StringFilter<"OfferLetter"> | string
+    createdAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    portalId?: BigIntFilter<"OfferLetter"> | bigint | number
+    bxUserId?: IntNullableFilter<"OfferLetter"> | number | null
+    name?: StringFilter<"OfferLetter"> | string
+    text?: StringFilter<"OfferLetter"> | string
+    isDefault?: BoolFilter<"OfferLetter"> | boolean
+    isActive?: BoolFilter<"OfferLetter"> | boolean
+    sort?: IntFilter<"OfferLetter"> | number
+    legacyFieldId?: IntNullableFilter<"OfferLetter"> | number | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type OfferLetterOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portalId?: SortOrder
+    bxUserId?: SortOrderInput | SortOrder
+    name?: SortOrder
+    text?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: OfferLetterOrderByRelevanceInput
+  }
+
+  export type OfferLetterWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    legacyFieldId?: number
+    AND?: OfferLetterWhereInput | OfferLetterWhereInput[]
+    OR?: OfferLetterWhereInput[]
+    NOT?: OfferLetterWhereInput | OfferLetterWhereInput[]
+    createdAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    portalId?: BigIntFilter<"OfferLetter"> | bigint | number
+    bxUserId?: IntNullableFilter<"OfferLetter"> | number | null
+    name?: StringFilter<"OfferLetter"> | string
+    text?: StringFilter<"OfferLetter"> | string
+    isDefault?: BoolFilter<"OfferLetter"> | boolean
+    isActive?: BoolFilter<"OfferLetter"> | boolean
+    sort?: IntFilter<"OfferLetter"> | number
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "legacyFieldId">
+
+  export type OfferLetterOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portalId?: SortOrder
+    bxUserId?: SortOrderInput | SortOrder
+    name?: SortOrder
+    text?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrderInput | SortOrder
+    _count?: OfferLetterCountOrderByAggregateInput
+    _avg?: OfferLetterAvgOrderByAggregateInput
+    _max?: OfferLetterMaxOrderByAggregateInput
+    _min?: OfferLetterMinOrderByAggregateInput
+    _sum?: OfferLetterSumOrderByAggregateInput
+  }
+
+  export type OfferLetterScalarWhereWithAggregatesInput = {
+    AND?: OfferLetterScalarWhereWithAggregatesInput | OfferLetterScalarWhereWithAggregatesInput[]
+    OR?: OfferLetterScalarWhereWithAggregatesInput[]
+    NOT?: OfferLetterScalarWhereWithAggregatesInput | OfferLetterScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"OfferLetter"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"OfferLetter"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"OfferLetter"> | Date | string | null
+    portalId?: BigIntWithAggregatesFilter<"OfferLetter"> | bigint | number
+    bxUserId?: IntNullableWithAggregatesFilter<"OfferLetter"> | number | null
+    name?: StringWithAggregatesFilter<"OfferLetter"> | string
+    text?: StringWithAggregatesFilter<"OfferLetter"> | string
+    isDefault?: BoolWithAggregatesFilter<"OfferLetter"> | boolean
+    isActive?: BoolWithAggregatesFilter<"OfferLetter"> | boolean
+    sort?: IntWithAggregatesFilter<"OfferLetter"> | number
+    legacyFieldId?: IntNullableWithAggregatesFilter<"OfferLetter"> | number | null
+  }
+
   export type ContractTemplateWhereInput = {
     AND?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
     OR?: ContractTemplateWhereInput[]
@@ -147286,6 +148568,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -147357,6 +148640,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -147428,6 +148712,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -147499,6 +148784,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -156346,6 +157632,103 @@ export namespace Prisma {
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type OfferLetterCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+    portal: PortalCreateNestedOneWithoutOfferLettersInput
+  }
+
+  export type OfferLetterUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portalId: bigint | number
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+  }
+
+  export type OfferLetterUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+    portal?: PortalUpdateOneRequiredWithoutOfferLettersNestedInput
+  }
+
+  export type OfferLetterUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OfferLetterCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portalId: bigint | number
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+  }
+
+  export type OfferLetterUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OfferLetterUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
   export type ContractTemplateCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -159514,6 +160897,12 @@ export namespace Prisma {
     none?: KonstructorPublicLinkWhereInput
   }
 
+  export type OfferLetterListRelationFilter = {
+    every?: OfferLetterWhereInput
+    some?: OfferLetterWhereInput
+    none?: OfferLetterWhereInput
+  }
+
   export type PortalAiSettingsNullableScalarRelationFilter = {
     is?: PortalAiSettingsWhereInput | null
     isNot?: PortalAiSettingsWhereInput | null
@@ -159686,6 +161075,10 @@ export namespace Prisma {
   }
 
   export type KonstructorPublicLinkOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type OfferLetterOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -165418,6 +166811,68 @@ export namespace Prisma {
     viewCount?: SortOrder
   }
 
+  export type OfferLetterOrderByRelevanceInput = {
+    fields: OfferLetterOrderByRelevanceFieldEnum | OfferLetterOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type OfferLetterCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+    name?: SortOrder
+    text?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrder
+  }
+
+  export type OfferLetterAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrder
+  }
+
+  export type OfferLetterMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+    name?: SortOrder
+    text?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrder
+  }
+
+  export type OfferLetterMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+    name?: SortOrder
+    text?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrder
+  }
+
+  export type OfferLetterSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+    sort?: SortOrder
+    legacyFieldId?: SortOrder
+  }
+
   export type ContractTemplateOrderByRelevanceInput = {
     fields: ContractTemplateOrderByRelevanceFieldEnum | ContractTemplateOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -167445,6 +168900,13 @@ export namespace Prisma {
     connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
   }
 
+  export type OfferLetterCreateNestedManyWithoutPortalInput = {
+    create?: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput> | OfferLetterCreateWithoutPortalInput[] | OfferLetterUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: OfferLetterCreateOrConnectWithoutPortalInput | OfferLetterCreateOrConnectWithoutPortalInput[]
+    createMany?: OfferLetterCreateManyPortalInputEnvelope
+    connect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+  }
+
   export type PortalAiSettingsCreateNestedOneWithoutPortalInput = {
     create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
     connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
@@ -167736,6 +169198,13 @@ export namespace Prisma {
     connectOrCreate?: KonstructorPublicLinkCreateOrConnectWithoutPortalInput | KonstructorPublicLinkCreateOrConnectWithoutPortalInput[]
     createMany?: KonstructorPublicLinkCreateManyPortalInputEnvelope
     connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+  }
+
+  export type OfferLetterUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput> | OfferLetterCreateWithoutPortalInput[] | OfferLetterUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: OfferLetterCreateOrConnectWithoutPortalInput | OfferLetterCreateOrConnectWithoutPortalInput[]
+    createMany?: OfferLetterCreateManyPortalInputEnvelope
+    connect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
   }
 
   export type PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput = {
@@ -168249,6 +169718,20 @@ export namespace Prisma {
     update?: KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput | KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
+  }
+
+  export type OfferLetterUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput> | OfferLetterCreateWithoutPortalInput[] | OfferLetterUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: OfferLetterCreateOrConnectWithoutPortalInput | OfferLetterCreateOrConnectWithoutPortalInput[]
+    upsert?: OfferLetterUpsertWithWhereUniqueWithoutPortalInput | OfferLetterUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: OfferLetterCreateManyPortalInputEnvelope
+    set?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    disconnect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    delete?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    connect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    update?: OfferLetterUpdateWithWhereUniqueWithoutPortalInput | OfferLetterUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: OfferLetterUpdateManyWithWhereWithoutPortalInput | OfferLetterUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: OfferLetterScalarWhereInput | OfferLetterScalarWhereInput[]
   }
 
   export type PortalAiSettingsUpdateOneWithoutPortalNestedInput = {
@@ -168833,6 +170316,20 @@ export namespace Prisma {
     update?: KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput | KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
+  }
+
+  export type OfferLetterUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput> | OfferLetterCreateWithoutPortalInput[] | OfferLetterUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: OfferLetterCreateOrConnectWithoutPortalInput | OfferLetterCreateOrConnectWithoutPortalInput[]
+    upsert?: OfferLetterUpsertWithWhereUniqueWithoutPortalInput | OfferLetterUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: OfferLetterCreateManyPortalInputEnvelope
+    set?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    disconnect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    delete?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    connect?: OfferLetterWhereUniqueInput | OfferLetterWhereUniqueInput[]
+    update?: OfferLetterUpdateWithWhereUniqueWithoutPortalInput | OfferLetterUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: OfferLetterUpdateManyWithWhereWithoutPortalInput | OfferLetterUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: OfferLetterScalarWhereInput | OfferLetterScalarWhereInput[]
   }
 
   export type PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput = {
@@ -171391,6 +172888,20 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutKonstructorPublicLinksInput, PortalUpdateWithoutKonstructorPublicLinksInput>, PortalUncheckedUpdateWithoutKonstructorPublicLinksInput>
   }
 
+  export type PortalCreateNestedOneWithoutOfferLettersInput = {
+    create?: XOR<PortalCreateWithoutOfferLettersInput, PortalUncheckedCreateWithoutOfferLettersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutOfferLettersInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutOfferLettersNestedInput = {
+    create?: XOR<PortalCreateWithoutOfferLettersInput, PortalUncheckedCreateWithoutOfferLettersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutOfferLettersInput
+    upsert?: PortalUpsertWithoutOfferLettersInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutOfferLettersInput, PortalUpdateWithoutOfferLettersInput>, PortalUncheckedUpdateWithoutOfferLettersInput>
+  }
+
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -171970,6 +173481,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -172040,6 +173552,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -172275,6 +173788,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -172345,6 +173859,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -172768,6 +174283,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -172838,6 +174354,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -172924,6 +174441,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -172994,6 +174512,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -173130,6 +174649,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -173200,6 +174720,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -173286,6 +174807,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -173356,6 +174878,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -173426,6 +174949,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -173496,6 +175020,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -173582,6 +175107,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -173652,6 +175178,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -173722,6 +175249,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -173792,6 +175320,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -173878,6 +175407,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -173948,6 +175478,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -174018,6 +175549,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -174088,6 +175620,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -174174,6 +175707,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -174244,6 +175778,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -174398,6 +175933,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -174468,6 +176004,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -174554,6 +176091,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -174624,6 +176162,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -174694,6 +176233,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -174764,6 +176304,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -175256,6 +176797,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -175326,6 +176868,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -175412,6 +176955,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -175482,6 +177026,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -177637,6 +179182,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -177707,6 +179253,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -177914,6 +179461,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -177984,6 +179532,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -178154,6 +179703,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -178224,6 +179774,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -178359,6 +179910,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -178429,6 +179981,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -179649,6 +181202,42 @@ export namespace Prisma {
 
   export type KonstructorPublicLinkCreateManyPortalInputEnvelope = {
     data: KonstructorPublicLinkCreateManyPortalInput | KonstructorPublicLinkCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type OfferLetterCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+  }
+
+  export type OfferLetterUncheckedCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+  }
+
+  export type OfferLetterCreateOrConnectWithoutPortalInput = {
+    where: OfferLetterWhereUniqueInput
+    create: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput>
+  }
+
+  export type OfferLetterCreateManyPortalInputEnvelope = {
+    data: OfferLetterCreateManyPortalInput | OfferLetterCreateManyPortalInput[]
     skipDuplicates?: boolean
   }
 
@@ -181192,6 +182781,39 @@ export namespace Prisma {
     lastViewedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
   }
 
+  export type OfferLetterUpsertWithWhereUniqueWithoutPortalInput = {
+    where: OfferLetterWhereUniqueInput
+    update: XOR<OfferLetterUpdateWithoutPortalInput, OfferLetterUncheckedUpdateWithoutPortalInput>
+    create: XOR<OfferLetterCreateWithoutPortalInput, OfferLetterUncheckedCreateWithoutPortalInput>
+  }
+
+  export type OfferLetterUpdateWithWhereUniqueWithoutPortalInput = {
+    where: OfferLetterWhereUniqueInput
+    data: XOR<OfferLetterUpdateWithoutPortalInput, OfferLetterUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type OfferLetterUpdateManyWithWhereWithoutPortalInput = {
+    where: OfferLetterScalarWhereInput
+    data: XOR<OfferLetterUpdateManyMutationInput, OfferLetterUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type OfferLetterScalarWhereInput = {
+    AND?: OfferLetterScalarWhereInput | OfferLetterScalarWhereInput[]
+    OR?: OfferLetterScalarWhereInput[]
+    NOT?: OfferLetterScalarWhereInput | OfferLetterScalarWhereInput[]
+    id?: StringFilter<"OfferLetter"> | string
+    createdAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"OfferLetter"> | Date | string | null
+    portalId?: BigIntFilter<"OfferLetter"> | bigint | number
+    bxUserId?: IntNullableFilter<"OfferLetter"> | number | null
+    name?: StringFilter<"OfferLetter"> | string
+    text?: StringFilter<"OfferLetter"> | string
+    isDefault?: BoolFilter<"OfferLetter"> | boolean
+    isActive?: BoolFilter<"OfferLetter"> | boolean
+    sort?: IntFilter<"OfferLetter"> | number
+    legacyFieldId?: IntNullableFilter<"OfferLetter"> | number | null
+  }
+
   export type PortalAiSettingsUpsertWithoutPortalInput = {
     update: XOR<PortalAiSettingsUpdateWithoutPortalInput, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
     create: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
@@ -181722,6 +183344,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -181792,6 +183415,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -181921,6 +183545,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -181991,6 +183616,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -182110,6 +183736,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -182180,6 +183807,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -182309,6 +183937,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -182379,6 +184008,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -182498,6 +184128,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -182568,6 +184199,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -182654,6 +184286,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -182724,6 +184357,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -182794,6 +184428,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -182864,6 +184499,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -182950,6 +184586,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -183020,6 +184657,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -183090,6 +184728,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -183160,6 +184799,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -183246,6 +184886,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -183316,6 +184957,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -183386,6 +185028,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -183456,6 +185099,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -183622,6 +185266,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -183692,6 +185337,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -183829,6 +185475,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -183899,6 +185546,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -184078,6 +185726,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -184148,6 +185797,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -184407,6 +186057,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -184477,6 +186128,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -184621,6 +186273,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -184691,6 +186344,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -184777,6 +186431,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -184847,6 +186502,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185078,6 +186734,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185148,6 +186805,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -185297,6 +186955,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -185367,6 +187026,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185506,6 +187166,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185576,6 +187237,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -185705,6 +187367,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -185775,6 +187438,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185914,6 +187578,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185984,6 +187649,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -186113,6 +187779,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -186183,6 +187850,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -186269,6 +187937,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -186339,6 +188008,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -186760,6 +188430,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -186830,6 +188501,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -186916,6 +188588,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -186986,6 +188659,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -187490,6 +189164,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -187560,6 +189235,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -187678,6 +189354,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -187748,6 +189425,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -187818,6 +189496,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -187888,6 +189567,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -187974,6 +189654,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -188044,6 +189725,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -188382,6 +190064,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -188452,6 +190135,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -188669,6 +190353,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -188739,6 +190424,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -188926,6 +190612,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -188996,6 +190683,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -189082,6 +190770,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -189152,6 +190841,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -189222,6 +190912,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -189292,6 +190983,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -189378,6 +191070,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -189448,6 +191141,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -191263,6 +192957,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -191333,6 +193028,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -191504,6 +193200,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -191574,6 +193271,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -191900,6 +193598,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -191970,6 +193669,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -192056,6 +193756,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -192126,6 +193827,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -192337,6 +194039,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -192407,6 +194110,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -192578,6 +194282,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -192648,6 +194353,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -192718,6 +194424,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -192788,6 +194495,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -192940,6 +194648,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -193010,6 +194719,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -193406,6 +195116,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -193476,6 +195187,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -193650,6 +195362,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -193720,6 +195433,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -194532,6 +196246,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -194602,6 +196317,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -194688,6 +196404,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -194758,6 +196475,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -194859,6 +196577,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -194929,6 +196648,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -195052,6 +196772,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -195122,6 +196843,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -195263,6 +196985,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -195333,6 +197056,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -195472,6 +197196,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -195542,6 +197267,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -195612,6 +197338,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -195682,6 +197409,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -195768,6 +197496,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -195838,6 +197567,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -195965,6 +197695,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -196035,6 +197766,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -196184,6 +197916,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -196254,6 +197987,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -196353,6 +198087,7 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -196423,6 +198158,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -196544,6 +198280,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -196614,6 +198351,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -196684,6 +198422,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -196754,6 +198493,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -196840,6 +198580,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -196910,6 +198651,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -196980,6 +198722,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -197050,6 +198793,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -197136,6 +198880,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -197206,6 +198951,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -197276,6 +199022,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -197346,6 +199093,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    offerLetters?: OfferLetterUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -197432,6 +199180,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -197502,6 +199251,307 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutOfferLettersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutOfferLettersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutOfferLettersInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutOfferLettersInput, PortalUncheckedCreateWithoutOfferLettersInput>
+  }
+
+  export type PortalUpsertWithoutOfferLettersInput = {
+    update: XOR<PortalUpdateWithoutOfferLettersInput, PortalUncheckedUpdateWithoutOfferLettersInput>
+    create: XOR<PortalCreateWithoutOfferLettersInput, PortalUncheckedCreateWithoutOfferLettersInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutOfferLettersInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutOfferLettersInput, PortalUncheckedUpdateWithoutOfferLettersInput>
+  }
+
+  export type PortalUpdateWithoutOfferLettersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutOfferLettersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -197872,6 +199922,7 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -197942,6 +199993,7 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    offerLetters?: OfferLetterUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -199984,6 +202036,19 @@ export namespace Prisma {
     lastViewedAt?: Date | string | null
   }
 
+  export type OfferLetterCreateManyPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    bxUserId?: number | null
+    name: string
+    text: string
+    isDefault?: boolean
+    isActive?: boolean
+    sort?: number
+    legacyFieldId?: number | null
+  }
+
   export type PortalAppSettingsCreateManyPortalInput = {
     id: string
     domain: string
@@ -201484,6 +203549,45 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     viewCount?: IntFieldUpdateOperationsInput | number
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type OfferLetterUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OfferLetterUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OfferLetterUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bxUserId?: NullableIntFieldUpdateOperationsInput | number | null
+    name?: StringFieldUpdateOperationsInput | string
+    text?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type PortalAppSettingsUpdateWithoutPortalInput = {

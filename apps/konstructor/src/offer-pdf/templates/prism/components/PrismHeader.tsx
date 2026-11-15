@@ -38,8 +38,8 @@ const headerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
     }),
 );
 
-/** Шапка страниц «Современного»: бренд слева, «КП · дата» справа, тонкая линия. */
-export const ModernHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
+/** Шапка страниц «Призмы»: бренд слева, «КП · дата» справа, тонкая линия. */
+export const PrismHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = headerStyles(theme);
     const company = model.data.MyCompanyName || model.data.MyCompanyFullName;
 

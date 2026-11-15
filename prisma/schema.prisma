@@ -694,6 +694,7 @@ model Portal {
   appCaches                      AppCache[]
   shareLinks                     ShareLink[]
   konstructorPublicLinks         KonstructorPublicLink[]
+  offerLetters                   OfferLetter[]
   aiSettings                     PortalAiSettings?
   appSettings                    PortalAppSettings[]
   skapImportFiles                SkapImportFile[]
@@ -2586,6 +2587,27 @@ model KonstructorPublicLink {
 
   @@index([portalId], map: "konstructor_public_link_portal_id_foreign")
   @@map("konstructor_public_link")
+}
+
+/// Тексты сопроводительного письма КП: письмо портала (bxUserId = null) и личные письма менеджеров.
+/// Миграция: online/database/migrations/2026_11_15_120000_create_offer_letters_table.php
+model OfferLetter {
+  id            String    @id @db.Char(36)
+  createdAt     DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime? @map("updated_at") @db.Timestamp(0)
+  portalId      BigInt    @map("portal_id") @db.UnsignedBigInt
+  bxUserId      Int?      @map("bx_user_id") @db.UnsignedInt
+  name          String    @db.VarChar(255)
+  text          String    @db.LongText
+  isDefault     Boolean   @default(false) @map("is_default")
+  isActive      Boolean   @default(true) @map("is_active")
+  sort          Int       @default(0)
+  /// Поле `fields`, из которого перенесено письмо портала: повторный перенос не плодит копий
+  legacyFieldId Int?      @unique(map: "offer_letters_legacy_field_id_unique") @map("legacy_field_id") @db.UnsignedInt
+  portal        Portal    @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_letters_portal_id_foreign")
+
+  @@index([portalId, bxUserId], map: "offer_letters_portal_id_bx_user_id_index")
+  @@map("offer_letters")
 }
 
 /// Шаблон договора (миграция 2026_09_15_100100).

@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { OfferLetterModule } from '@lib/portal-lib/konstructor';
+import { OfferLettersImportController } from './controllers/offer-letters-import.controller';
 import { TimestampsBackfillController } from './controllers/timestamps-backfill.controller';
+import { OfferLettersImportService } from './services/offer-letters-import.service';
 import { TimestampsBackfillService } from './services/timestamps-backfill.service';
 
 /**
@@ -7,8 +10,9 @@ import { TimestampsBackfillService } from './services/timestamps-backfill.servic
  * миграцией (миграции живут в проекте Laravel) и не хочется делать руками.
  */
 @Module({
-    controllers: [TimestampsBackfillController],
-    providers: [TimestampsBackfillService],
+    imports: [OfferLetterModule],
+    controllers: [TimestampsBackfillController, OfferLettersImportController],
+    providers: [TimestampsBackfillService, OfferLettersImportService],
     exports: [TimestampsBackfillService],
 })
 export class MaintenanceModule {}

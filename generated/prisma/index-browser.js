@@ -1856,6 +1856,20 @@ exports.Prisma.KonstructorPublicLinkScalarFieldEnum = {
   lastViewedAt: 'lastViewedAt'
 };
 
+exports.Prisma.OfferLetterScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  portalId: 'portalId',
+  bxUserId: 'bxUserId',
+  name: 'name',
+  text: 'text',
+  isDefault: 'isDefault',
+  isActive: 'isActive',
+  sort: 'sort',
+  legacyFieldId: 'legacyFieldId'
+};
+
 exports.Prisma.ContractTemplateScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
@@ -2998,6 +3012,12 @@ exports.Prisma.KonstructorPublicLinkOrderByRelevanceFieldEnum = {
   title: 'title'
 };
 
+exports.Prisma.OfferLetterOrderByRelevanceFieldEnum = {
+  id: 'id',
+  name: 'name',
+  text: 'text'
+};
+
 exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
   contract_type: 'contract_type',
   client_types: 'client_types',
@@ -3203,6 +3223,7 @@ exports.Prisma.ModelName = {
   AppCache: 'AppCache',
   ShareLink: 'ShareLink',
   KonstructorPublicLink: 'KonstructorPublicLink',
+  OfferLetter: 'OfferLetter',
   ContractTemplate: 'ContractTemplate',
   SupplyReportTemplate: 'SupplyReportTemplate',
   RenewalOfferLink: 'RenewalOfferLink'

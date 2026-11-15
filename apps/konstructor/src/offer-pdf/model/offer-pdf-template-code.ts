@@ -5,7 +5,7 @@
  */
 export enum OfferPdfTemplateCode {
     CLASSIC = 'classic',
-    MODERN = 'modern',
+    PRISM = 'prism',
     MONOCHROME = 'monochrome',
 }
 

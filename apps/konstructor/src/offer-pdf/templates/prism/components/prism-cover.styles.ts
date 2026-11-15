@@ -7,7 +7,7 @@ export const COVER_MARGIN = 52;
 export const COVER_STRIPES_WIDTH = Math.round(A4.width * 0.36);
 const TEXT_WIDTH = A4.width - COVER_MARGIN - COVER_STRIPES_WIDTH;
 
-export const modernCoverStyles = themedStyles(({ colors, sizes, fonts }) =>
+export const prismCoverStyles = themedStyles(({ colors, sizes, fonts }) =>
     StyleSheet.create({
         stripes: { position: 'absolute', top: 0, right: 0 },
         top: {
