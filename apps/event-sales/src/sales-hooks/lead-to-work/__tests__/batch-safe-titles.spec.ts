@@ -29,6 +29,8 @@ const makeDeps = () => {
                     fields: Record<string, unknown>,
                 ) => commands.push({ cmd, fields }),
             },
+            // «Лид» сделки — отдельной командой crm.item.update.
+            item: { update: () => undefined },
             task: {
                 add: (cmd: string, fields: Record<string, unknown>) =>
                     commands.push({ cmd, fields }),

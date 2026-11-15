@@ -30,6 +30,7 @@ import {
     DUPLICATE_CACHE_APP,
     SignalFieldMapService,
 } from './signal-field-map.service';
+import { closedLeadOf, dropClosedLeads } from '../lib/closed-leads.filter';
 
 /** Битрикс режет батч по 50 команд — из этого считается цена поиска в HTTP. */
 const BATCH_CHUNK = 50;
@@ -81,6 +82,7 @@ export class DuplicateSearchService {
         const targetTypes = input.targetTypes?.length
             ? input.targetTypes
             : ALL_TYPES;
+        const excludeClosedLeads = input.excludeClosedLeads === true;
 
         const empty = this.isEmpty(signals);
         if (empty) {
@@ -89,7 +91,7 @@ export class DuplicateSearchService {
             ]);
         }
 
-        const cacheKey = `search:${level}:${signalsCacheKey(signals)}`;
+        const cacheKey = `search:${level}:${excludeClosedLeads ? 'open-leads:' : ''}${signalsCacheKey(signals)}`;
         if (!input.force) {
             const cached = await this.cache.get<DuplicateSearchResult>({
                 app: DUPLICATE_CACHE_APP,
@@ -135,7 +137,9 @@ export class DuplicateSearchService {
             this.applyEnrichment(enrichCommands, enrichResponses, hits);
         }
 
-        const candidates = this.scorer.score(hits, signals.excluded ?? []);
+        // Закрытые лиды (успех и брак) — не дубли живой работы.
+        const kept = dropClosedLeads(hits, excludeClosedLeads);
+        const candidates = this.scorer.score(kept, signals.excluded ?? []);
         const result = this.result(
             domain,
             signals,
@@ -361,6 +365,7 @@ export class DuplicateSearchService {
                 value,
                 title: this.titleOf(entityType, row),
                 assignedById: this.numberOrUndefined(row.ASSIGNED_BY_ID),
+                closedLead: closedLeadOf(entityType, row),
             });
         }
         return hits;
@@ -403,7 +408,12 @@ export class DuplicateSearchService {
             [DuplicateEntityType.DEAL]: 'crm.deal.list',
         };
         const selects: Record<DuplicateEntityType, string[]> = {
-            [DuplicateEntityType.LEAD]: ['ID', 'TITLE', 'ASSIGNED_BY_ID'],
+            [DuplicateEntityType.LEAD]: [
+                'ID',
+                'TITLE',
+                'ASSIGNED_BY_ID',
+                'STATUS_SEMANTIC_ID',
+            ],
             [DuplicateEntityType.CONTACT]: [
                 'ID',
                 'NAME',
@@ -439,7 +449,10 @@ export class DuplicateSearchService {
         responses: Map<string, unknown>,
         hits: DuplicateRawHit[],
     ): void {
-        const titles = new Map<string, { title?: string; assigned?: number }>();
+        const titles = new Map<
+            string,
+            { title?: string; assigned?: number; closed?: boolean }
+        >();
 
         for (const command of commands) {
             const entityType = command.meta.entityType;
@@ -450,6 +463,7 @@ export class DuplicateSearchService {
                 titles.set(`${entityType}_${id}`, {
                     title: this.titleOf(entityType, row),
                     assigned: this.numberOrUndefined(row.ASSIGNED_BY_ID),
+                    closed: closedLeadOf(entityType, row),
                 });
             }
         }
@@ -459,6 +473,7 @@ export class DuplicateSearchService {
             if (!found) continue;
             hit.title = hit.title ?? found.title;
             hit.assignedById = hit.assignedById ?? found.assigned;
+            hit.closedLead = hit.closedLead ?? found.closed;
         }
     }
 

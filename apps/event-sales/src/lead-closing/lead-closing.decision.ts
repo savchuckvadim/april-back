@@ -16,7 +16,8 @@ import { PbxLeadStageCode } from '@lib/portal-lib/pbx-domain/portal-lead/stages/
  *   настоящий, работа была (отказ — итог сделки, а не брак лида);
  * - «Не ЦА» → брак «Некачественный лид» (на garant — «100% Бесперспективный»);
  * - «Не состоялась»: есть живая «ОП Основная» клиента → «Сконвертирован» со
- *   связью на неё; работа идёт только в другой воронке → лид не трогаем;
+ *   связью на неё; работа идёт в другом отделе (чужая воронка с открытой
+ *   задачей) → «Сконвертирован» со связью на компанию клиента (15.11.2026);
  *   иначе → «Не состоялась» (на garant — «Клиент не идёт на контакт»);
  * - «Дубль» → «Сконвертирован», связь — на живую сделку клиента, если есть;
  * - сделка удалена → только при живой сделке клиента, иначе ручной разбор;
@@ -124,7 +125,7 @@ export function decideLeadClosing(
                 return decide('lead_converted', live, 'apology_live_deal');
             }
             return input.hasOpenWorkElsewhere
-                ? decide(null, null, 'apology_work_elsewhere')
+                ? decide('lead_converted', null, 'apology_work_elsewhere')
                 : decide('lead_apology', id, 'apology_no_work');
         case S.duplicate:
             return live

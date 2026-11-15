@@ -238,6 +238,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'отказникам.',
         links: [LINK.dealFields],
     },
+    lead_closing: {
+        title: 'Закрытие лидов по итогу работы',
+        description:
+            'Лид, ставший работой, закрывается отчётом «Звонков»: ' +
+            '«Сконвертирован», «Некачественный лид» или «Не состоялась» по ' +
+            'итогу сделки; закрытые лиды скрываются в поиске дублей.',
+        links: [LINK.leadFields, LINK.dealFields],
+    },
     report_takeover: {
         title: 'Перехват клиента отчётом',
         description:
@@ -361,6 +369,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             codes: ['reject_revive_resend_after_minutes'],
             prefixes: ['xo_rescue_'],
         },
+        { group: 'lead_closing', prefixes: ['lead_closing_'] },
         // Боты обзвона — тоже про перехват; код ключа остался прежним.
         {
             group: 'report_takeover',

@@ -36,6 +36,11 @@ export interface LeadClosingJournalEntry {
     linkEntityTypeId: number | null;
     linkEntityId: number | null;
     linkLeadBefore: number;
+    /**
+     * Компания, поставленная лиду (у лида её не было, а связь ушла в
+     * компанию клиента); null — компанию лида не трогали. Откат — 0.
+     */
+    leadCompanySet?: number | null;
     leadCmd: string | null;
     linkCmd: string | null;
 }
@@ -100,6 +105,14 @@ export class LeadClosingWriter {
             const statusAfter = statuses.get(target) as string;
             const linkAction = this.linkAction(item, claimed);
             const linkTo = this.linkTarget(item, linkAction);
+            // «Сконвертирован» в клиента: лиду без компании — компания
+            // клиента (как ручные конвертации владельца 15.11.2026).
+            const leadCompanySet =
+                target === 'lead_converted' &&
+                lead.companyId === 0 &&
+                item.linkCompany
+                    ? item.linkCompany.id
+                    : null;
             const entry: LeadClosingJournalEntry = {
                 leadId: lead.id,
                 reason: decision.reason,
@@ -112,8 +125,11 @@ export class LeadClosingWriter {
                 linkEntityTypeId: linkTo?.entityTypeId ?? null,
                 linkEntityId: linkTo?.id ?? null,
                 linkLeadBefore: item.linkDealLeadId,
+                leadCompanySet,
                 leadCmd:
-                    lead.statusId === statusAfter ? null : `lc_lead_${lead.id}`,
+                    lead.statusId === statusAfter && leadCompanySet === null
+                        ? null
+                        : `lc_lead_${lead.id}`,
                 linkCmd: linkTo ? `lc_link_${lead.id}` : null,
             };
             this.queueEntry(entry, false);
@@ -132,14 +148,17 @@ export class LeadClosingWriter {
         claimed: { deals: Set<number>; companies: Set<number> },
     ): LeadClosingLinkAction {
         const dealId = item.decision.linkDealId;
-        if (dealId === null) return 'none';
-        if (item.linkDealLeadId === item.lead.id) return 'already';
-        if (item.linkDealLeadId === 0 && !claimed.deals.has(dealId)) {
-            claimed.deals.add(dealId);
-            return 'set';
+        if (dealId !== null) {
+            if (item.linkDealLeadId === item.lead.id) return 'already';
+            if (item.linkDealLeadId === 0 && !claimed.deals.has(dealId)) {
+                claimed.deals.add(dealId);
+                return 'set';
+            }
         }
+        // Сделки связи нет («работа в другом отделе») или её «Лид» занят —
+        // связь уходит в компанию клиента.
         const company = item.linkCompany;
-        if (!company) return 'taken';
+        if (!company) return dealId === null ? 'none' : 'taken';
         if (company.leadId === item.lead.id) return 'already';
         if (company.leadId > 0 || claimed.companies.has(company.id)) {
             return 'taken';
@@ -174,12 +193,13 @@ export class LeadClosingWriter {
         const suffix = rollback ? '_rb' : '';
         if (entry.leadCmd) {
             const statusId = rollback ? entry.statusBefore : entry.statusAfter;
+            const company = entry.leadCompanySet
+                ? { COMPANY_ID: String(rollback ? 0 : entry.leadCompanySet) }
+                : {};
             this.bitrix.batch.lead.update(
                 `${entry.leadCmd}${suffix}`,
                 entry.leadId,
-                {
-                    STATUS_ID: statusId,
-                },
+                { STATUS_ID: statusId, ...company },
             );
         }
         if (entry.linkCmd && entry.linkEntityTypeId && entry.linkEntityId) {

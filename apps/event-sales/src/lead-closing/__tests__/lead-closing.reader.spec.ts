@@ -189,14 +189,19 @@ describe('LeadClosingReader', () => {
             COMPANY_ID: '5',
         });
 
-        it('чужая воронка с открытой задачей — работа идёт, лид не трогаем', async () => {
+        it('чужая воронка с открытой задачей — «Сконвертирован» в компанию клиента', async () => {
             const { bitrix } = bitrixWith([apology, foreign], [50]);
             const [result] = await new LeadClosingReader(bitrix, portal).read([
-                lead({ companyId: 5 }),
+                lead({ companyId: 0 }),
             ]);
 
-            expect(result.decision.reason).toBe('apology_work_elsewhere');
-            expect(result.decision.target).toBeNull();
+            expect(result.decision).toEqual({
+                target: 'lead_converted',
+                linkDealId: null,
+                reason: 'apology_work_elsewhere',
+            });
+            // Компания лида пуста — берётся компания работающей сделки.
+            expect(result.linkCompany).toEqual({ id: 5, leadId: 42 });
         });
 
         it('чужая воронка без открытых задач — висяк, лид закрывается', async () => {

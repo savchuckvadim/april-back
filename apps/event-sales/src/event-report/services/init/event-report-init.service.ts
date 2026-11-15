@@ -27,12 +27,21 @@ import {
     protectedStageIds,
     TakeoverDecisionOptions,
 } from '../takeover/takeover.settings';
-import { dealLinkKey } from '../../../cold-hook-v2/lib/deal-link-fields';
+import {
+    dealLeadLinkKey,
+    dealLinkKey,
+} from '../../../cold-hook-v2/lib/deal-link-fields';
 import {
     EEventReportEntityType,
     EventReportEntityType,
     IEventReportInitContext,
 } from './event-report-init.types';
+
+/** Ключи batch-команд сделок, найденных по ссылкам сделки на лид. */
+const LEAD_LINKED_DEALS_CMD = {
+    joined: 'list_deals_by_joined_lead',
+    fromLead: 'list_deals_from_lead',
+} as const;
 
 /** SELECT сделок init-батча (общий для list_deals и list_deals_by_lead). */
 const DEAL_LIST_SELECT = [
@@ -241,6 +250,7 @@ export class EventReportInitService {
         } else {
             bitrix.batch.lead.get('get_lead_entity', entityId);
             this.queueActiveDealsLoad(bitrix, entityId, entityType, dealSelect);
+            this.queueLeadLinkedDealsLoad(bitrix, portal, entityId, dealSelect);
         }
 
         if (dtoLeadId && entityType !== EEventReportEntityType.LEAD) {
@@ -294,6 +304,9 @@ export class EventReportInitService {
         const dealsRaw = this.dedupeDealsById([
             ...(this.pick<IBXDeal[]>(flat, 'list_deals') ?? []),
             ...(this.pick<IBXDeal[]>(flat, 'list_deals_by_lead') ?? []),
+            ...(this.pick<IBXDeal[]>(flat, LEAD_LINKED_DEALS_CMD.joined) ?? []),
+            ...(this.pick<IBXDeal[]>(flat, LEAD_LINKED_DEALS_CMD.fromLead) ??
+                []),
             ...dealsLinkedToBase(
                 this.pick<IBXDeal[]>(flat, 'list_deals_by_base') ?? [],
                 baseLinkKey,
@@ -618,6 +631,37 @@ export class EventReportInitService {
     /** См. {@link buildDealListSelect} — вынесен в чистую функцию для тестов. */
     private dealListSelect(portal: PortalModel): string[] {
         return buildDealListSelect(portal);
+    }
+
+    /**
+     * «Звонки» из карточки ЛИДА: сделка работы — не только по штатному
+     * LEAD_ID (его перевод лида 16.09 так и не записал), но и по нашим
+     * ссылкам сделки на лид — «из лида» и «присоединённые» (garant
+     * 13–14.11.2026: отчёт из лида не видел сделку, задача уходила на лид и
+     * контакт, ХО-сделка оставалась висеть).
+     */
+    private queueLeadLinkedDealsLoad(
+        bitrix: BitrixService,
+        portal: PortalModel,
+        leadId: number,
+        select: string[],
+    ): void {
+        const joinedKey = dealLeadLinkKey(portal, 'deal_joined_leads');
+        const fromLeadKey = dealLeadLinkKey(portal, 'deal_from_lead_id');
+        if (joinedKey) {
+            bitrix.batch.deal.getList(
+                LEAD_LINKED_DEALS_CMD.joined,
+                { [joinedKey]: `L_${leadId}` } as never,
+                select,
+            );
+        }
+        if (fromLeadKey) {
+            bitrix.batch.deal.getList(
+                LEAD_LINKED_DEALS_CMD.fromLead,
+                { [fromLeadKey]: `L_${leadId}` } as never,
+                select,
+            );
+        }
     }
 
     private queueActiveDealsLoad(

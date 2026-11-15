@@ -20,6 +20,12 @@ import { EventReportKpiFlowService } from '../services/kpi-list/event-report-kpi
 import { EventReportPostFailService } from '../services/post-fail/event-report-post-fail.service';
 import { EventReportSettingsResolver } from '../services/settings/event-report-settings.resolver';
 import { EventReportLeadRelationService } from '../services/lead/event-report-lead-relation.service';
+import {
+    EventReportLeadClosingService,
+    resolveReportBaseDealId,
+} from '../services/lead/event-report-lead-closing.service';
+import { SET_BASE_DEAL_CMD } from '../services/deal/sales-base-deal.service';
+import { findBatchResult } from '../../shared/bitrix/prepare-batch-results.util';
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
 import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-report-return-to-tmc.service';
 import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
@@ -85,6 +91,9 @@ export class EventReportUseCase {
         const { bitrix, PortalModel: portal } = await this.pbx.init(dto.domain);
 
         const takeoverSettings = await this.settings.takeoverSettings(
+            dto.domain,
+        );
+        const leadClosingOn = await this.settings.leadClosingEnabled(
             dto.domain,
         );
         const init = await this.initService.loadContext(
@@ -169,7 +178,9 @@ export class EventReportUseCase {
          * «Презентации» (presentation-flow), он и заменит список.
          */
         postFail.queue(ctx);
-        leadRelation.queue(ctx);
+        // Закрытие лидов по итогу работы заменяет старый gsirk-статус лида:
+        // две логики статуса на одном портале спорили бы друг с другом.
+        if (!leadClosingOn) leadRelation.queue(ctx);
         /*
          * Запись в таймлайн — строго ПОСЛЕ deal-flow: она уходит и в саму
          * основную сделку, а её id при создании приезжает подстановкой
@@ -222,6 +233,19 @@ export class EventReportUseCase {
             await this.leadLinkDefinitions(ctx.domain, bitrix, portal),
         );
         await leadRequestSync.run(ctx);
+
+        // Закрытие лидов рабочей сделки (lead_closing_enabled) — ПОСЛЕ
+        // основного батча: стадия сделки уже сдвинута отчётом, по ней и
+        // решаем. Ошибка отчёт не роняет (гасится внутри).
+        if (leadClosingOn) {
+            await new EventReportLeadClosingService(bitrix, portal).run(
+                ctx,
+                resolveReportBaseDealId(
+                    deals.baseDealId,
+                    findBatchResult(batchResults, SET_BASE_DEAL_CMD),
+                ),
+            );
+        }
 
         // Возврат презентации в ТМЦ — ПОСЛЕ основного батча, как в легаси:
         // задача ТМЦ-менеджера ищется прямым запросом, компания отдаётся ему.
