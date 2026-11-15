@@ -8,10 +8,10 @@ import {
     UnprocessableEntityException,
 } from '@nestjs/common';
 import Docxtemplater from 'docxtemplater';
-import { PDFDocument } from 'pdf-lib';
 import PizZip from 'pizzip';
 import { StorageService, StorageType } from '@lib/core/storage';
 import { getErrorString } from '@lib/shared';
+import { pdfFirstPage } from '@app/konstructor/document-generate/lib/pdf-first-page.util';
 import { createOfferRenderDataFixture } from '@app/konstructor/offer-word/lib/sample-offer-render-data';
 import { LibreOfficeService } from '@app/konstructor/modules/libre-office/libre-office.service';
 import { WordTemplateService } from './word-template.service';
@@ -152,7 +152,7 @@ export class WordTemplatePreviewService {
                 docxPath,
                 workDir,
             );
-            const firstPage = await this.firstPage(await fs.readFile(pdfPath));
+            const firstPage = await pdfFirstPage(await fs.readFile(pdfPath));
             await this.storage.saveFile(
                 firstPage,
                 `${id}-${key}.pdf`,
@@ -183,14 +183,6 @@ export class WordTemplatePreviewService {
                 `Шаблон #${id} не собирается: ${getErrorString(error)}`,
             );
         }
-    }
-
-    private async firstPage(pdf: Buffer): Promise<Buffer> {
-        const source = await PDFDocument.load(pdf);
-        const target = await PDFDocument.create();
-        const [page] = await target.copyPages(source, [0]);
-        target.addPage(page);
-        return Buffer.from(await target.save());
     }
 
     private cachePath(id: bigint, key: string): string {

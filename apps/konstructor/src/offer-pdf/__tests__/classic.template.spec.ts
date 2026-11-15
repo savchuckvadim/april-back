@@ -19,8 +19,8 @@ import { classicTemplate } from '../templates/classic/classic.template';
 import {
     isLongDescription,
     pickInfoblockDescription,
-} from '../templates/classic/components/infoblocks/infoblock-description.util';
-import { estimateLines } from '../templates/classic/classic.util';
+} from '../templates/kit/infoblocks/infoblock-description.util';
+import { estimateLines } from '../templates/kit/lib/text.util';
 import {
     createOfferPdfModelFixture,
     createOfferRenderDataFixture,

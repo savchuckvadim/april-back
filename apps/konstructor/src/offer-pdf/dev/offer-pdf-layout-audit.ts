@@ -17,6 +17,7 @@ import { resolveOfferPdfSettings } from '../model/offer-pdf-settings';
 import { OfferPdfRenderService } from '../services/offer-pdf-render.service';
 import { auditLayout, dumpTree, formatAudit } from './layout-audit';
 import { AUDIT_SCENARIOS } from './layout-audit.scenarios';
+import { OFFER_PDF_TEMPLATES } from '../templates/offer-pdf-template.registry';
 
 const readOutDir = (): string => {
     const index = process.argv.indexOf('--out');
@@ -31,7 +32,9 @@ const readOutDir = (): string => {
  */
 const UNBREAKABLE_WARNING = "can't wrap between pages";
 
-const countUnbreakable = async <T>(render: () => Promise<T>): Promise<{ result: T; count: number }> => {
+const countUnbreakable = async <T>(
+    render: () => Promise<T>,
+): Promise<{ result: T; count: number }> => {
     const original = console.warn;
     let count = 0;
     console.warn = (...args: unknown[]) => {
@@ -54,29 +57,41 @@ const main = async (): Promise<void> => {
     const service = new OfferPdfRenderService();
     let problems = 0;
 
-    for (const scenario of AUDIT_SCENARIOS) {
-        const model = createOfferPdfModelFixture({
-            settings: resolveOfferPdfSettings(scenario.settings),
-            ...scenario.model,
-        });
-        const { result, count: unbreakable } = await countUnbreakable(() => service.render(model));
-        if (unbreakable) {
-            problems += unbreakable;
-            console.log(
-                `!! ${scenario.name}: неразрывных блоков выше страницы — ${unbreakable} (текст под подвалом, хвост теряется)`,
+    // каждый сценарий — в каждом стиле: раскладку ломают и данные, и оформление
+    for (const template of OFFER_PDF_TEMPLATES) {
+        for (const scenario of AUDIT_SCENARIOS) {
+            const name = `${template.code}-${scenario.name}`;
+            const model = createOfferPdfModelFixture({
+                templateCode: template.code,
+                settings: resolveOfferPdfSettings(scenario.settings),
+                ...scenario.model,
+            });
+            const { result, count: unbreakable } = await countUnbreakable(() =>
+                service.render(model),
             );
+            if (unbreakable) {
+                problems += unbreakable;
+                console.log(
+                    `!! ${name}: неразрывных блоков выше страницы — ${unbreakable} (текст под подвалом, хвост теряется)`,
+                );
+            }
+            writeFileSync(join(outDir, `${name}.pdf`), result.buffer);
+            if (process.argv.includes('--dump')) {
+                console.log(
+                    JSON.stringify(dumpTree(result.layout), null, 1).slice(
+                        0,
+                        6000,
+                    ),
+                );
+                return;
+            }
+            const report = auditLayout(result.layout);
+            problems += report.issues.length;
+            const frame = result.frame
+                ? ` (поля подобраны: ${result.frame.paddingTop}/${result.frame.paddingBottom})`
+                : '';
+            console.log(formatAudit(`${name}${frame}`, report));
         }
-        writeFileSync(join(outDir, `${scenario.name}.pdf`), result.buffer);
-        if (process.argv.includes('--dump')) {
-            console.log(JSON.stringify(dumpTree(result.layout), null, 1).slice(0, 6000));
-            return;
-        }
-        const report = auditLayout(result.layout);
-        problems += report.issues.length;
-        const frame = result.frame
-            ? ` (поля подобраны: ${result.frame.paddingTop}/${result.frame.paddingBottom})`
-            : '';
-        console.log(formatAudit(`${scenario.name}${frame}`, report));
     }
     console.log(problems ? `\nПроблем: ${problems}` : '\nПроблем нет');
     process.exitCode = problems ? 1 : 0;

@@ -77,6 +77,17 @@ export class OfferPdfSettingsDto implements OfferPdfSettingsInput {
     @IsString()
     @MaxLength(500)
     salePhrase?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Титульный лист перед письмом. Действует у стилей, где титульник есть; у остальных игнорируется.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    withCover?: boolean;
 }
 
 /** Сопроводительное письмо; пустые поля шаблон заполняет сам. */

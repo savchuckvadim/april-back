@@ -1,8 +1,12 @@
+import { OFFER_PDF_FONT_FAMILY } from '../../fonts/offer-pdf-fonts';
+import type { OfferPdfTheme } from '../kit/theme/offer-pdf-theme';
+
 /**
  * Палитра и размеры «классического» КП — по старому Blade-шаблону
  * (синий акцент rgb(48,115,230), красный rgb(220,26,33), приглушённый текст).
  */
-export const CLASSIC_THEME = {
+export const CLASSIC_THEME: OfferPdfTheme = {
+    code: 'classic',
     colors: {
         text: '#111111',
         muted: '#55637C',
@@ -29,7 +33,8 @@ export const CLASSIC_THEME = {
         paddingTop: 96,
         paddingBottom: 95,
         paddingHorizontal: 44,
-        /** Отступ шапки/подвала от края листа */
         edge: 26,
     },
-} as const;
+    fonts: { body: OFFER_PDF_FONT_FAMILY, heading: OFFER_PDF_FONT_FAMILY },
+    lineHeight: 1.35,
+};

@@ -14,6 +14,8 @@ export interface OfferPdfSettings {
     withManager: boolean;
     isPriceFirst: boolean;
     salePhrase: string | null;
+    /** Титульный лист — у стилей, где он есть; у остальных ни на что не влияет */
+    withCover: boolean;
 }
 
 /** Вход с фронта: любое поле можно не передавать — подставится умолчание. */
@@ -28,6 +30,7 @@ export const OFFER_PDF_DEFAULT_SETTINGS: Readonly<OfferPdfSettings> = {
     withManager: true,
     isPriceFirst: false,
     salePhrase: null,
+    withCover: true,
 };
 
 export const resolveOfferPdfSettings = (
@@ -45,5 +48,6 @@ export const resolveOfferPdfSettings = (
         isPriceFirst:
             input?.isPriceFirst ?? OFFER_PDF_DEFAULT_SETTINGS.isPriceFirst,
         salePhrase: salePhrase.length > 0 ? salePhrase : null,
+        withCover: input?.withCover ?? OFFER_PDF_DEFAULT_SETTINGS.withCover,
     };
 };

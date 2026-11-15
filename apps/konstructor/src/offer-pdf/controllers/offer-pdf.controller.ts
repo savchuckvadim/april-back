@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    HttpCode,
+    Param,
+    ParseEnumPipe,
+    Post,
+    Res,
+} from '@nestjs/common';
 import {
     ApiOkResponse,
     ApiOperation,
@@ -12,7 +21,9 @@ import {
     OfferPdfGenerateResponseDto,
     OfferPdfTemplateItemDto,
 } from '../dto/offer-pdf-response.dto';
+import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfGenerateService } from '../services/offer-pdf-generate.service';
+import { OfferPdfStylePreviewService } from '../services/offer-pdf-style-preview.service';
 import { listOfferPdfTemplates } from '../templates/offer-pdf-template.registry';
 
 /**
@@ -22,17 +33,48 @@ import { listOfferPdfTemplates } from '../templates/offer-pdf-template.registry'
 @ApiTags('Konstructor')
 @Controller('offer-pdf')
 export class OfferPdfController {
-    constructor(private readonly generateService: OfferPdfGenerateService) {}
+    constructor(
+        private readonly generateService: OfferPdfGenerateService,
+        private readonly stylePreviewService: OfferPdfStylePreviewService,
+    ) {}
 
     @ApiOperation({
         summary: 'Список PDF-шаблонов КП',
         description:
-            'Встроенные шаблоны (код, название, описание) для выбора в конструкторе.',
+            'Встроенные стили: код, название, описание, есть ли титульник и какие настройки стиль задаёт сам.',
     })
     @ApiOkResponse({ type: [OfferPdfTemplateItemDto] })
     @Get('templates')
     listTemplates(): OfferPdfTemplateItemDto[] {
         return listOfferPdfTemplates();
+    }
+
+    @ApiOperation({
+        summary: 'Превью PDF-стиля КП',
+        description:
+            'Первая страница стиля (титульник или первый лист) на образце «Гарант-Офис» — миниатюра для выбора стиля. Данные вымышленные.',
+    })
+    @ApiProduces('application/pdf')
+    @ApiResponse({
+        status: 200,
+        description: 'PDF из одной страницы',
+        schema: { type: 'string', format: 'binary' },
+    })
+    @Get('templates/:code/preview')
+    async stylePreview(
+        @Param('code', new ParseEnumPipe(OfferPdfTemplateCode))
+        code: OfferPdfTemplateCode,
+        @Res() res: Response,
+    ): Promise<void> {
+        const pdf = await this.stylePreviewService.preview(code);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `inline; filename="offer-style-${code}.pdf"`,
+        );
+        res.setHeader('Content-Length', pdf.length.toString());
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.end(pdf);
     }
 
     @ApiOperation({

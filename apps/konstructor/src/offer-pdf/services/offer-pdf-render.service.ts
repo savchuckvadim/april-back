@@ -8,7 +8,10 @@ import {
 } from '../lib/pdf-layout';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
-import { findOfferPdfTemplate } from '../templates/offer-pdf-template.registry';
+import {
+    findOfferPdfTemplate,
+    withLockedSettings,
+} from '../templates/offer-pdf-template.registry';
 
 export interface OfferPdfRenderResult {
     buffer: Buffer;
@@ -32,13 +35,15 @@ export interface OfferPdfRenderResult {
 export class OfferPdfRenderService {
     private readonly logger = new Logger(OfferPdfRenderService.name);
 
-    async render(model: OfferPdfDocumentModel): Promise<OfferPdfRenderResult> {
-        const template = findOfferPdfTemplate(model.templateCode);
+    async render(input: OfferPdfDocumentModel): Promise<OfferPdfRenderResult> {
+        const template = findOfferPdfTemplate(input.templateCode);
         if (!template) {
             throw new NotFoundException(
-                `PDF-шаблон КП «${model.templateCode}» не найден`,
+                `PDF-шаблон КП «${input.templateCode}» не найден`,
             );
         }
+        // настройки, которые стиль задаёт сам, — поверх выбора менеджера
+        const model = withLockedSettings(input, template);
         registerOfferPdfFonts();
 
         const started = performance.now();
@@ -50,7 +55,9 @@ export class OfferPdfRenderService {
         const durationMs = Math.round(performance.now() - started);
         this.logger.log(
             `КП «${template.code}»: ${rendered.buffer.length} байт за ${durationMs} мс` +
-                (frame ? `, поля ${frame.paddingTop}/${frame.paddingBottom}` : ''),
+                (frame
+                    ? `, поля ${frame.paddingTop}/${frame.paddingBottom}`
+                    : ''),
         );
 
         return {
