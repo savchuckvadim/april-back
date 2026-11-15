@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PbxDuplicateModule } from '@lib/portal-lib/pbx-duplicate';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { DuplicatesController } from './controllers/duplicates.controller';
 import { DuplicatesUseCase } from './use-cases/duplicates.use-case';
 
@@ -11,7 +12,7 @@ import { DuplicatesUseCase } from './use-cases/duplicates.use-case';
  * эндпоинтами, не дублируя код.
  */
 @Module({
-    imports: [PbxDuplicateModule],
+    imports: [PbxDuplicateModule, PortalAppSettingsModule],
     controllers: [DuplicatesController],
     providers: [DuplicatesUseCase],
 })

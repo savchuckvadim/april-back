@@ -202,6 +202,8 @@ export interface DuplicateRawHit {
     /** Название/ФИО, если пришло вместе с попаданием (list отдаёт, findbycomm — нет). */
     title?: string;
     assignedById?: number;
+    /** Лид закрыт — успех или брак (STATUS_SEMANTIC_ID S/F). */
+    closedLead?: boolean;
 }
 
 /** Найденный кандидат-дубль. */
@@ -258,6 +260,11 @@ export interface DuplicateSearchInput {
     targetTypes?: DuplicateEntityType[];
     /** Игнорировать кэш результата (кнопка «искать заново»). */
     force?: boolean;
+    /**
+     * Не показывать закрытые лиды (успех и брак) — настройка портала
+     * «Закрывать лиды по итогу работы» (lead_closing_enabled, 15.11.2026).
+     */
+    excludeClosedLeads?: boolean;
 }
 
 /** Результат поиска + диагностика по нагрузке на API. */

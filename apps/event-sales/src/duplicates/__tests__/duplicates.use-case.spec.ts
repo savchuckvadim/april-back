@@ -3,6 +3,7 @@ import {
     RelatedEntitiesService,
     SignalFieldMapService,
 } from '@lib/portal-lib/pbx-duplicate';
+import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
 import { DuplicatesUseCase } from '../use-cases/duplicates.use-case';
 import {
     DuplicateDetailsRequestDto,
@@ -26,6 +27,9 @@ const makeUseCase = () => {
         { search } as unknown as DuplicateSearchService,
         { getRelated } as unknown as RelatedEntitiesService,
         {} as SignalFieldMapService,
+        {
+            resolve: () => Promise.resolve({ leadClosingEnabled: true }),
+        } as unknown as PortalAppSettingsService,
     );
     return { useCase, getRelated, search };
 };

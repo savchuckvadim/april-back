@@ -198,7 +198,13 @@ export class LeadClosingReader {
                 decision,
                 linkDealLeadId: num(linkDeal?.LEAD_ID),
                 linkDealAssignedId: num(linkDeal?.ASSIGNED_BY_ID),
-                companyId: lead.companyId || num(linkDeal?.COMPANY_ID),
+                // Компания клиента для связи «Лид»: лида, сделки связи, своей
+                // сделки, а у «работы в другом отделе» — той работающей сделки.
+                companyId:
+                    lead.companyId ||
+                    num(linkDeal?.COMPANY_ID) ||
+                    num(deal?.COMPANY_ID) ||
+                    num(others.find(d => working.has(num(d.ID)))?.COMPANY_ID),
                 ...(suspicious.length ? { suspiciousDealIds: suspicious } : {}),
             };
         });

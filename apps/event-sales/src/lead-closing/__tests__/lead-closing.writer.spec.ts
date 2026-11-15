@@ -230,4 +230,74 @@ describe('LeadClosingWriter', () => {
             { leadId: 0 },
         );
     });
+    it('работа в другом отделе: сделки связи нет — «Лид» компании и компания лиду', () => {
+        const { writer, leadUpdate, itemUpdate } = setup();
+        const [entry] = writer.queue([
+            item({
+                leadId: 7,
+                linkDealId: null,
+                linkCompany: { id: 66637, leadId: 0 },
+                decision: {
+                    target: 'lead_converted',
+                    linkDealId: null,
+                    reason: 'apology_work_elsewhere',
+                },
+                lead: {
+                    id: 7,
+                    statusId: 'PBX_TAKEN_IN_WORK',
+                    companyId: 0,
+                    contactId: 0,
+                    dealId: 10,
+                },
+            }),
+        ]);
+
+        expect(entry).toMatchObject({
+            linkAction: 'company',
+            leadCompanySet: 66637,
+        });
+        expect(leadUpdate).toHaveBeenCalledWith('lc_lead_7', 7, {
+            STATUS_ID: 'CONVERTED',
+            COMPANY_ID: '66637',
+        });
+        expect(itemUpdate).toHaveBeenCalledWith(
+            'lc_link_7',
+            66637,
+            BitrixOwnerTypeId.COMPANY,
+            { leadId: 7 },
+        );
+
+        leadUpdate.mockClear();
+        writer.queueRollback([entry]);
+        expect(leadUpdate).toHaveBeenCalledWith('lc_lead_7_rb', 7, {
+            STATUS_ID: 'PBX_TAKEN_IN_WORK',
+            COMPANY_ID: '0',
+        });
+    });
+
+    it('брак лиду компанию не проставляет', () => {
+        const { writer, leadUpdate } = setup();
+        writer.queue([
+            item({
+                leadId: 8,
+                linkCompany: { id: 500, leadId: 0 },
+                decision: {
+                    target: 'lead_junk',
+                    linkDealId: 10,
+                    reason: 'deal_not_ca',
+                },
+                lead: {
+                    id: 8,
+                    statusId: 'PBX_TAKEN_IN_WORK',
+                    companyId: 0,
+                    contactId: 0,
+                    dealId: 10,
+                },
+            }),
+        ]);
+
+        expect(leadUpdate).toHaveBeenCalledWith('lc_lead_8', 8, {
+            STATUS_ID: '2',
+        });
+    });
 });

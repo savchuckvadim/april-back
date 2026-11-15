@@ -1,3 +1,4 @@
+import { BitrixOwnerTypeId } from '@lib/bitrix';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
@@ -104,6 +105,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
                     fields as never,
                 ),
             );
+            this.queueLeadLink(buffer, fields, dealId, cmd);
             // Контакты лида — привязками в той же группе, набор сделки не
             // перезаписываем: CONTACT_IDS get/list не отдают (deal-contact-links).
             queueDealContactLinks(this.bitrix, buffer, {
@@ -147,6 +149,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
         Object.assign(fields, this.moneyFields(ctx, null));
 
         buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
+        this.queueLeadLink(buffer, fields, `$result[${cmd}]`, cmd);
         return { ref: `$result[${cmd}]`, cmd };
     }
 
@@ -233,6 +236,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
                     fields as never,
                 ),
             );
+            this.queueLeadLink(buffer, fields, xoId, cmd);
             return { ref: xoId, cmd };
         }
 
@@ -255,6 +259,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
             fields.CONTACT_IDS = ctx.contactIds;
         }
         buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
+        this.queueLeadLink(buffer, fields, `$result[${cmd}]`, cmd);
         return { ref: `$result[${cmd}]`, cmd };
     }
 
@@ -379,6 +384,33 @@ export class DealFlowService extends LeadToWorkFlowBase {
      * присоединённых, штатный лид сделки другой) — иначе SLA и карточка
      * заявки не узнали бы повтор (ожидание ×3, «повторное обращение»).
      */
+    /**
+     * Штатный «Лид» сделки (LEAD_ID — вкладка «Связи» лида). В crm.deal.add/
+     * update поле только для чтения и молча отбрасывается (garant 13.11.2026:
+     * из 12 836 сделок перевода оно стояло у одной), поэтому вынимаем его из
+     * полей сделки и пишем crm.item.update (`leadId`) той же группой — после
+     * команды сделки (новая — по `$result[cmd]`). Вызывать сразу после
+     * постановки команды сделки: та отправится без LEAD_ID.
+     */
+    private queueLeadLink(
+        buffer: IBatchGroupBuffer,
+        fields: BxRow,
+        dealRef: string,
+        cmd: string,
+    ): void {
+        const leadId = Number(this.text(fields.LEAD_ID) ?? 0);
+        delete fields.LEAD_ID;
+        if (!leadId) return;
+        buffer.queue(() =>
+            this.bitrix.batch.item.update(
+                `${cmd}_lead`,
+                dealRef,
+                BitrixOwnerTypeId.DEAL,
+                { leadId },
+            ),
+        );
+    }
+
     private dealLinkFields(
         leadId: number,
         existingRow: BxRow | null,

@@ -6,6 +6,10 @@ import {
 } from '@lib/portal-lib/pbx-duplicate';
 import { TimedCache } from '@lib/shared';
 import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import {
     DuplicateDetailsRequestDto,
     DuplicateDetailsResponseDto,
     DuplicateFieldMapResponseDto,
@@ -50,12 +54,15 @@ export class DuplicatesUseCase {
         private readonly search: DuplicateSearchService,
         private readonly related: RelatedEntitiesService,
         private readonly fieldMap: SignalFieldMapService,
+        private readonly appSettings: PortalAppSettingsService,
     ) {}
 
     async searchDuplicates(
         dto: SearchDuplicatesRequestDto,
     ): Promise<SearchDuplicatesResponseDto> {
+        const excludeClosedLeads = await this.excludeClosedLeads(dto.domain);
         const key = JSON.stringify([
+            excludeClosedLeads,
             dto.domain,
             dto.entityType,
             dto.entityId,
@@ -72,11 +79,29 @@ export class DuplicatesUseCase {
                 level: dto.level ?? 1,
                 targetTypes: dto.targetTypes,
                 force: dto.force,
+                excludeClosedLeads,
             });
             return found as SearchDuplicatesResponseDto;
         });
         // load всегда отдаёт значение — undefined здесь невозможен.
         return result as SearchDuplicatesResponseDto;
+    }
+
+    /**
+     * Закрытые лиды не дубли живой работы — когда на портале включено
+     * закрытие лидов по итогу работы (lead_closing_enabled, 15.11.2026).
+     * Настройки недоступны — показываем как раньше.
+     */
+    private async excludeClosedLeads(domain: string): Promise<boolean> {
+        try {
+            const settings = (await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            )) as Record<string, unknown>;
+            return settings.leadClosingEnabled === true;
+        } catch {
+            return false;
+        }
     }
 
     async getDetails(

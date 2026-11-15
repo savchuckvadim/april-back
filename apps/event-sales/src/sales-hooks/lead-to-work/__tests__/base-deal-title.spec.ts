@@ -69,6 +69,8 @@ describe('лид → работа: новая основная сделка', ()
                         fields: Record<string, unknown>,
                     ) => commands.push({ cmd, fields }),
                 },
+                // «Лид» сделки — отдельной командой crm.item.update.
+                item: { update: () => undefined },
             },
         };
         const portal = {

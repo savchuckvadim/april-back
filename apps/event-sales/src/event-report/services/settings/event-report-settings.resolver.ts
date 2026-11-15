@@ -114,6 +114,15 @@ export class EventReportSettingsResolver {
     }
 
     /**
+     * Закрытие лидов по итогу работы (`lead_closing_enabled`, решения
+     * владельца 11–15.11.2026). Настройки недоступны — лиды не закрываются.
+     */
+    async leadClosingEnabled(domain: string): Promise<boolean> {
+        const settings = await this.read(domain, 'лиды не закрываются');
+        return settings?.leadClosingEnabled === true;
+    }
+
+    /**
      * Чтение настроек приложения «Звонки»; недоступны — null и warning с
      * тем, на что это повлияло. Отчёт важнее настроек: падать здесь нельзя.
      */

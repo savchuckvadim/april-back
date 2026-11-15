@@ -36,6 +36,7 @@ const makeBitrix = () => {
                     contactAdd: record('deal.contactAdd'),
                 },
                 lead: { update: record('lead.update') },
+                item: { update: record('item.update') },
                 contact: { update: record('contact.update') },
                 task: {
                     add: record('task.add'),
@@ -674,6 +675,35 @@ describe('LeadToWorkFlowService', () => {
         const taskAdd = calls.find(c => c.method === 'task.add');
         expect((taskAdd?.args[0] as Record<string, unknown>).TITLE).toBe(
             'Холодный обзвон. Лид. ООО Ромашка',
+        );
+    });
+
+    it('«Лид» новой сделки — отдельной командой crm.item.update (в deal.add он отбрасывается)', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const dealSet = calls.find(c => c.method === 'deal.set');
+        expect(dealSet?.args[0]).not.toHaveProperty('LEAD_ID');
+        const link = calls.find(
+            c => c.method === 'item.update' && c.cmd === `${dealSet?.cmd}_lead`,
+        );
+        expect(link?.args).toEqual([
+            `$result[${dealSet?.cmd}]`,
+            2,
+            { leadId: 42 },
+        ]);
+        expect(calls.indexOf(link as never)).toBeGreaterThan(
+            calls.indexOf(dealSet as never),
         );
     });
 

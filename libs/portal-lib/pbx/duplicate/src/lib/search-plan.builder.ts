@@ -49,7 +49,13 @@ const COMM_PRECISE_LIMIT = 5;
 
 /** Поля, которых хватает, чтобы показать карточку кандидата без доп. запроса. */
 const LIST_SELECT: Record<DuplicateEntityType, string[]> = {
-    [DuplicateEntityType.LEAD]: ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'STATUS_ID'],
+    [DuplicateEntityType.LEAD]: [
+        'ID',
+        'TITLE',
+        'ASSIGNED_BY_ID',
+        'STATUS_ID',
+        'STATUS_SEMANTIC_ID',
+    ],
     [DuplicateEntityType.CONTACT]: [
         'ID',
         'NAME',

@@ -72,13 +72,13 @@ describe('decideLeadClosing — правило закрытия лида по и
             });
         });
 
-        it('работа только в другой воронке → лид не трогаем', () => {
+        it('работа идёт в другом отделе → «Сконвертирован», связь на компанию (15.11)', () => {
             expect(
                 decideLeadClosing(
                     input({ deal: apology, hasOpenWorkElsewhere: true }),
                 ),
             ).toEqual({
-                target: null,
+                target: 'lead_converted',
                 linkDealId: null,
                 reason: 'apology_work_elsewhere',
             });
