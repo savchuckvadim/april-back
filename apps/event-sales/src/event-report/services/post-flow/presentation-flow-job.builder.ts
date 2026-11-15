@@ -41,6 +41,12 @@ export function buildPresentationFlowJobs(
     input: SideFlowJobBuildInput,
 ): PresentationFlowJobData[] {
     const { ctx, questionnaire } = input;
+    /*
+     * Недозвон смарт не трогает (решение владельца 15.11.2026): задача
+     * остаётся открытой, а report-джоб с исходом noresult закрывал элемент
+     * в «Не состоялась».
+     */
+    if (ctx.isNoCall) return [];
 
     // Отчёт «по презентации»: либо презентацию провели (в т.ч. спонтанно),
     // либо отчитались по презентационной задаче (перенос/срыв/отказ).

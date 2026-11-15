@@ -55,11 +55,21 @@ export const NO_TAKEOVER_OPTIONS: TakeoverDecisionOptions = {
 export const takeoverOptionsFor = (
     settings: ReportTakeoverSettings,
     confirmed: boolean | undefined,
-): TakeoverDecisionOptions => ({
-    botOwnerIds: settings.botOwnerIds,
-    force: settings.force && (!settings.confirm || confirmed === true),
-    protectFromStage: settings.protectFromStage,
-});
+    /**
+     * Недозвон перехватов не делает ни у ботов, ни в режиме force: он не
+     * трогает стадии и не создаёт сделок (решение владельца 15.11.2026), а
+     * перехват закрывает дубли и переносит задачи.
+     */
+    isNoCall = false,
+): TakeoverDecisionOptions =>
+    isNoCall
+        ? NO_TAKEOVER_OPTIONS
+        : {
+              botOwnerIds: settings.botOwnerIds,
+              force:
+                  settings.force && (!settings.confirm || confirmed === true),
+              protectFromStage: settings.protectFromStage,
+          };
 
 /** Код стадии из настройки; мусор и пусто — null (защиты нет). */
 export const parseProtectFromStage = (

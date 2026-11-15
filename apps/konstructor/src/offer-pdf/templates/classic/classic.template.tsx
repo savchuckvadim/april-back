@@ -7,7 +7,7 @@ import { OfferPdfTemplate } from '../offer-pdf-template.interface';
 import { classicStyles } from './classic.styles';
 import { ClassicFooter } from './components/ClassicFooter';
 import { ClassicHeader } from './components/ClassicHeader';
-import { ClassicInfoblocks } from './components/ClassicInfoblocks';
+import { ClassicInfoblocks } from './components/infoblocks';
 import { ClassicLetter } from './components/ClassicLetter';
 import { ClassicPrice } from './components/ClassicPrice';
 import { ClassicStamps } from './components/ClassicStamps';

@@ -24,6 +24,30 @@ const readOutDir = (): string => {
     return resolve(value ?? 'tmp/offer-pdf-audit');
 };
 
+/**
+ * Неразрывный блок выше страницы react-pdf кладёт как есть и только пишет
+ * предупреждение: текст лезет под подвал, хвост теряется, а в дереве
+ * раскладки бокс уже обрезан — по координатам такое не поймать.
+ */
+const UNBREAKABLE_WARNING = "can't wrap between pages";
+
+const countUnbreakable = async <T>(render: () => Promise<T>): Promise<{ result: T; count: number }> => {
+    const original = console.warn;
+    let count = 0;
+    console.warn = (...args: unknown[]) => {
+        if (args.some(arg => String(arg).includes(UNBREAKABLE_WARNING))) {
+            count += 1;
+            return;
+        }
+        original(...args);
+    };
+    try {
+        return { result: await render(), count };
+    } finally {
+        console.warn = original;
+    }
+};
+
 const main = async (): Promise<void> => {
     const outDir = readOutDir();
     mkdirSync(outDir, { recursive: true });
@@ -35,7 +59,13 @@ const main = async (): Promise<void> => {
             settings: resolveOfferPdfSettings(scenario.settings),
             ...scenario.model,
         });
-        const result = await service.render(model);
+        const { result, count: unbreakable } = await countUnbreakable(() => service.render(model));
+        if (unbreakable) {
+            problems += unbreakable;
+            console.log(
+                `!! ${scenario.name}: неразрывных блоков выше страницы — ${unbreakable} (текст под подвалом, хвост теряется)`,
+            );
+        }
         writeFileSync(join(outDir, `${scenario.name}.pdf`), result.buffer);
         if (process.argv.includes('--dump')) {
             console.log(JSON.stringify(dumpTree(result.layout), null, 1).slice(0, 6000));

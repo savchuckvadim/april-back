@@ -1,6 +1,7 @@
 import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     NO_REPORT_TAKEOVER,
+    NO_TAKEOVER_OPTIONS as NO_REPORT_TAKEOVER_OPTIONS,
     parseProtectFromStage,
     protectedStageIds,
     ReportTakeoverSettings,
@@ -37,6 +38,16 @@ describe('takeoverOptionsFor — когда перехват всей работ
         expect(takeoverOptionsFor(settings({ force: false }), true).force).toBe(
             false,
         );
+    });
+
+    it('недозвон — перехвата нет ни у ботов, ни в режиме force', () => {
+        const options = takeoverOptionsFor(
+            settings({ force: true, confirm: false, botOwnerIds: [643] }),
+            true,
+            true,
+        );
+
+        expect(options).toEqual(NO_REPORT_TAKEOVER_OPTIONS);
     });
 
     it('боты и защита передаются как есть', () => {

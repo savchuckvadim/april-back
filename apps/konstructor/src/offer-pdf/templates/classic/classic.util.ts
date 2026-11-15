@@ -30,3 +30,19 @@ export const chunk = <T>(items: readonly T[], size: number): T[][] => {
     }
     return rows;
 };
+
+/**
+ * Оценка числа строк текста в колонке шириной `charsPerLine` символов:
+ * каждый абзац — по ширине, пустой — одна строка. Нужна только чтобы
+ * решить, держать ли блок целиком или резать по странице: раскладку
+ * считает движок, ошибка оценки в пару строк ни на что не влияет.
+ */
+export const estimateLines = (text: string, charsPerLine: number): number =>
+    text
+        .split('\n')
+        .reduce(
+            (sum, paragraph) =>
+                sum +
+                Math.max(1, Math.ceil(paragraph.trim().length / charsPerLine)),
+            0,
+        );

@@ -16,7 +16,11 @@ import {
     OfferPdfSettings,
 } from '../model/offer-pdf-settings';
 import { classicTemplate } from '../templates/classic/classic.template';
-import { pickInfoblockDescription } from '../templates/classic/components/ClassicInfoblocks';
+import {
+    isLongDescription,
+    pickInfoblockDescription,
+} from '../templates/classic/components/infoblocks/infoblock-description.util';
+import { estimateLines } from '../templates/classic/classic.util';
 import {
     createOfferPdfModelFixture,
     createOfferRenderDataFixture,
@@ -169,5 +173,26 @@ describe('классический PDF-шаблон КП', () => {
                 DocumentFieldDescriptionMode.NO,
             ),
         ).toBeNull();
+    });
+});
+
+describe('длинные описания режутся по странице', () => {
+    it('строки считаются по абзацам и ширине колонки', () => {
+        expect(estimateLines('', 80)).toBe(1);
+        expect(estimateLines('а'.repeat(81), 80)).toBe(2);
+        expect(estimateLines('раз\nдва\n\nтри', 80)).toBe(4);
+    });
+
+    it('список журналов и сплошной абзац — длинные; пара строк — короткая', () => {
+        const journals = Array.from(
+            { length: 20 },
+            (_, index) => `Журнал № ${index + 1}`,
+        ).join('\n');
+        expect(isLongDescription(journals, 80)).toBe(true);
+        expect(isLongDescription('слово '.repeat(200), 80)).toBe(true);
+        expect(isLongDescription('Региональное законодательство', 80)).toBe(
+            false,
+        );
+        expect(isLongDescription(null, 80)).toBe(false);
     });
 });

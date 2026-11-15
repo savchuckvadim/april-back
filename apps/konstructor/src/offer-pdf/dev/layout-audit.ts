@@ -13,7 +13,8 @@ export type LayoutIssueKind =
     | 'out-of-page'
     | 'fixed-out-of-page'
     | 'orphan-heading'
-    | 'orphan-totals';
+    | 'orphan-totals'
+    | 'text-overlap';
 
 export interface LayoutIssue {
     page: number;
@@ -85,6 +86,13 @@ const isHeading = (node: LayoutNode): boolean =>
 const clip = (text: string): string => text.slice(0, 60);
 
 const EPSILON = 0.5;
+
+/** Два блока перекрываются и по вертикали, и по горизонтали */
+const intersects = (a: LayoutBox, b: LayoutBox): boolean =>
+    a.left < b.left + b.width - EPSILON &&
+    b.left < a.left + a.width - EPSILON &&
+    a.top < bottomOf(b) - EPSILON &&
+    b.top < bottomOf(a) - EPSILON;
 
 export const auditLayout = (root: LayoutNode): LayoutAudit => {
     const pages: PageAudit[] = [];
@@ -168,6 +176,20 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 });
             }
         }
+        // текст поверх текста: неразрывный блок выше страницы вылез за свою
+        // строку, и следующая строка нарисована на нём (КП 15.11)
+        const texts = content.filter(item => item.node.type === 'TEXT' && item.box.height > 0);
+        texts.forEach((item, at) => {
+            const hit = texts.slice(at + 1).find(other => intersects(item.box, other.box));
+            if (hit) {
+                issues.push({
+                    page: number,
+                    kind: 'text-overlap',
+                    text: clip(textOf(item.node)),
+                    detail: `накрыт текстом «${clip(textOf(hit.node))}»`,
+                });
+            }
+        });
         // «Итого» без своей таблицы: страница начинается с итога
         if (content[0] && textOf(content[0].node).startsWith('Итого')) {
             issues.push({

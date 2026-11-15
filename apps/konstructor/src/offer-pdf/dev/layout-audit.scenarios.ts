@@ -62,6 +62,40 @@ const letterText = (paragraphs: number): string =>
         (_, index) => `Абзац ${index + 1}. ${LONG}${LONG}`,
     ).join('\n');
 
+/**
+ * Описание длиннее страницы — как «Большая библиотека юриста» (список
+ * журналов) и «...бухгалтера» сплошным абзацем: неразрывная строка таблицы
+ * вылезала под подвал, следующая рисовалась поверх неё (КП 15.11).
+ */
+const journals = Array.from(
+    { length: 70 },
+    (_, index) => `Журнал «Правовое обозрение № ${index + 1}: практика и комментарии»`,
+).join('\n');
+
+const hugeBlocks = (): IInfblockGroupsRenderData[] => [
+    {
+        groupsName: 'Консультационные материалы',
+        infoblocks: [
+            {
+                name: 'Большая библиотека юриста',
+                infoblock: 'Большая библиотека юриста',
+                smallDescription: 'Консультации для юристов.',
+                mediumDescription: 'Консультации для юристов.',
+                bigDescription: `Информационный блок содержит тысячи консультаций.\n${journals}`,
+            },
+            {
+                name: 'Большая библиотека бухгалтера и кадрового работника',
+                infoblock: 'Большая библиотека бухгалтера',
+                smallDescription: 'Библиотека для бухгалтера.',
+                mediumDescription: 'Библиотека для бухгалтера.',
+                bigDescription: LONG.repeat(28),
+            },
+            regionBlock(1),
+        ],
+    },
+    ...base.infoblocksByGroups.slice(1),
+];
+
 export interface AuditScenario {
     name: string;
     settings: OfferPdfSettingsInput;
@@ -154,5 +188,26 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
                 ProductRows: manyRows.slice(0, 5),
             }),
         },
+    },
+    {
+        name: '11-huge-descriptions-table',
+        settings: {
+            viewMode: DocumentFieldViewMode.TABLE,
+            descriptionMode: DocumentFieldDescriptionMode.BIG,
+        },
+        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
+    },
+    {
+        name: '12-huge-descriptions-table-groups',
+        settings: {
+            viewMode: DocumentFieldViewMode.TABLE_WITH_GROUP,
+            descriptionMode: DocumentFieldDescriptionMode.BIG,
+        },
+        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
+    },
+    {
+        name: '13-huge-descriptions-list',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.BIG },
+        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
     },
 ];

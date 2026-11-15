@@ -91,7 +91,11 @@ export class EventReportUseCase {
             dto,
             bitrix,
             portal,
-            takeoverOptionsFor(takeoverSettings, dto.takeoverConfirmed),
+            takeoverOptionsFor(
+                takeoverSettings,
+                dto.takeoverConfirmed,
+                Boolean(dto.report?.isNoCall),
+            ),
         );
         const ctx = new EventReportContext(dto, portal, init);
         // Классы поведения полей карточки — одним чтением настроек на отчёт:
