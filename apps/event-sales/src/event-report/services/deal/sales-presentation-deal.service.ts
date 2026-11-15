@@ -103,8 +103,19 @@ export class SalesPresentationDealService {
             }
         }
 
-        // 2) Создание новой pres-сделки под план
-        if (ctx.planEventType === 'presentation') {
+        /*
+         * 2) Создание новой pres-сделки под план — только под ВКЛЮЧЁННЫЙ план
+         * и не при переносе (как у смарта/списка «Презентации» и
+         * post-flow-джоба). Перенос двигает ТУ ЖЕ задачу (task-flow), и новая
+         * сделка оставалась без задачи висеть в «План»; выключенный план
+         * с оставшимся типом «презентация» (отказ, недозвон) заводил её тоже
+         * (garant 279073: пять висяков на одну презентацию, 07–30.10.2026).
+         */
+        if (
+            ctx.planEventType === 'presentation' &&
+            ctx.isPlanned &&
+            !ctx.isExpired
+        ) {
             const stage = getPresentationTargetStageCode({
                 category,
                 eventAction: EVENT_REPORT_ACTION.plan,

@@ -13,6 +13,7 @@ import {
 } from './lead-closing.decision';
 import { LeadJoinedDealsReader } from './lead-closing-joined.reader';
 import { LeadCompanyLinkReader } from './lead-closing-company.reader';
+import { LeadForeignWorkReader } from './lead-closing-foreign.reader';
 
 /** Лид, который нужно закрыть по итогу работы. */
 export interface LeadClosingLead {
@@ -37,6 +38,11 @@ export interface LeadClosingCase {
      * и кто сейчас стоит в её «Лид» (0 — никто).
      */
     linkCompany: { id: number; leadId: number } | null;
+    /**
+     * Открытые ХО/презентации клиента без живой «ОП Основная» — висяки, в
+     * разбор (правило владельца 15.11.2026); лид они не держат.
+     */
+    suspiciousDealIds?: number[];
 }
 
 type DecidedCase = Omit<LeadClosingCase, 'linkCompany'> & {
@@ -89,6 +95,7 @@ export class LeadClosingReader {
     private readonly stageCodes = new Map<string, PbxDealSalesBaseStageCode>();
     private readonly joined: LeadJoinedDealsReader;
     private readonly companies: LeadCompanyLinkReader;
+    private readonly foreign: LeadForeignWorkReader;
 
     constructor(
         private readonly bitrix: BitrixService,
@@ -103,6 +110,7 @@ export class LeadClosingReader {
         this.baseCategoryId = String(category.bitrixId);
         this.joined = new LeadJoinedDealsReader(bitrix, portal);
         this.companies = new LeadCompanyLinkReader(bitrix);
+        this.foreign = new LeadForeignWorkReader(bitrix, portal);
         const known = new Set<string>(
             PBX_DEAL_SALES_BASE_STAGES.map(stage => stage.code),
         );
@@ -145,7 +153,7 @@ export class LeadClosingReader {
             DEAL_SELECT,
         );
 
-        return leads.map(lead => {
+        const contexts = leads.map(lead => {
             const deal = byId.get(lead.dealId) ?? null;
             const byClient = this.othersOf(lead, deal, clientDeals);
             const others = [
@@ -156,18 +164,28 @@ export class LeadClosingReader {
                         !byClient.some(c => num(c.ID) === num(d.ID)),
                 ),
             ];
+            return { lead, deal, others };
+        });
+        const working = await this.foreign.working(
+            contexts.flatMap(context => context.others),
+        );
+
+        return contexts.map(({ lead, deal, others }) => {
             const live = this.freshest(others.filter(d => this.isLiveBase(d)));
             const input: LeadClosingInput = {
                 deal: deal
                     ? { id: num(deal.ID), stage: this.stageOf(deal) }
                     : null,
                 liveBaseDealId: live ? num(live.ID) : null,
-                hasOpenWorkElsewhere: others.some(
-                    d =>
-                        String(d.CATEGORY_ID) !== this.baseCategoryId &&
-                        d.CLOSED === 'N',
-                ),
+                hasOpenWorkElsewhere: others.some(d => working.has(num(d.ID))),
             };
+            const suspicious = live
+                ? []
+                : others
+                      .filter(
+                          d => d.CLOSED === 'N' && this.foreign.isOpFunnel(d),
+                      )
+                      .map(d => num(d.ID));
             const decision = decideLeadClosing(input);
             const linkDeal =
                 decision.linkDealId === null
@@ -181,6 +199,7 @@ export class LeadClosingReader {
                 linkDealLeadId: num(linkDeal?.LEAD_ID),
                 linkDealAssignedId: num(linkDeal?.ASSIGNED_BY_ID),
                 companyId: lead.companyId || num(linkDeal?.COMPANY_ID),
+                ...(suspicious.length ? { suspiciousDealIds: suspicious } : {}),
             };
         });
     }

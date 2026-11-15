@@ -2,20 +2,29 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { LeadClosingLead, LeadClosingReader } from '../lead-closing.reader';
 
-/** Портал: «ОП Основная» = 31, garant-подобные стадии (свой «Дубль» не сопоставлен). */
+/**
+ * Портал: «ОП Основная» = 31 (garant-подобные стадии, свой «Дубль» не
+ * сопоставлен), «ОП Холодные» = 33, «ОП Презентации» = 35; прочие — чужие.
+ */
+const BASE = {
+    bitrixId: 31,
+    code: 'sales_base',
+    stages: [
+        { code: 'sales_warm', bitrixId: 'WARM' },
+        { code: 'sales_success', bitrixId: 'WON' },
+        { code: 'sales_fail', bitrixId: 'LOSE' },
+        { code: 'sales_double', bitrixId: 'APOLOGY' },
+        { code: 'sales_not_ca', bitrixId: 'NOT_CA' },
+        { code: 'sales_duplicate', bitrixId: 'DUPLICATE' },
+    ],
+};
 const portal = {
-    getDealCategoryByCode: () => ({
-        bitrixId: 31,
-        code: 'sales_base',
-        stages: [
-            { code: 'sales_warm', bitrixId: 'WARM' },
-            { code: 'sales_success', bitrixId: 'WON' },
-            { code: 'sales_fail', bitrixId: 'LOSE' },
-            { code: 'sales_double', bitrixId: 'APOLOGY' },
-            { code: 'sales_not_ca', bitrixId: 'NOT_CA' },
-            { code: 'sales_duplicate', bitrixId: 'DUPLICATE' },
-        ],
-    }),
+    getDealCategoryByCode: (code: string) =>
+        ({
+            sales_base: BASE,
+            sales_xo: { bitrixId: 33, code, stages: [] },
+            sales_presentation: { bitrixId: 35, code, stages: [] },
+        })[code],
     /** Установлено только поле «присоединённые лиды» сделки. */
     getEntityFieldByCode: (_entity: string, code: string) =>
         code === 'deal_joined_leads'
@@ -47,7 +56,14 @@ const deal = (over: Partial<IBXDeal>): IBXDeal => ({
  * Битрикс: deal.all отдаёт сделки по фильтру `@ID` / `@COMPANY_ID` / `@CONTACT_ID`,
  * batch-поиск — по значению в «присоединённых лидах».
  */
-const bitrixWith = (deals: IBXDeal[]) => {
+const bitrixWith = (deals: IBXDeal[], dealsWithOpenTasks: number[] = []) => {
+    const taskAll = jest.fn((filter: Record<string, string[]>) =>
+        Promise.resolve({
+            tasks: (filter.UF_CRM_TASK ?? [])
+                .filter(b => dealsWithOpenTasks.includes(Number(b.slice(2))))
+                .map((b, i) => ({ id: String(i + 1), ufCrmTask: [b] })),
+        }),
+    );
     const queued: Array<[string, Record<string, string>]> = [];
     const getList = jest.fn((cmd: string, filter: Record<string, string>) => {
         queued.push([cmd, filter]);
@@ -74,6 +90,7 @@ const bitrixWith = (deals: IBXDeal[]) => {
     return {
         bitrix: {
             deal: { all },
+            task: { getAll: taskAll },
             company: {
                 all: jest.fn((filter: Record<string, number[]>) =>
                     Promise.resolve(
@@ -153,22 +170,56 @@ describe('LeadClosingReader', () => {
         expect(result.linkDealLeadId).toBe(99);
     });
 
-    it('«Не состоялась»: открытая сделка только в другой воронке — лид не трогаем', async () => {
-        const { bitrix } = bitrixWith([
-            deal({ ID: 10, STAGE_ID: 'C31:APOLOGY', COMPANY_ID: '5' }),
-            deal({
-                ID: 50,
-                CATEGORY_ID: '33',
-                STAGE_ID: 'C33:NEW',
-                COMPANY_ID: '5',
-            }),
-        ]);
-        const [result] = await new LeadClosingReader(bitrix, portal).read([
-            lead({ companyId: 5 }),
-        ]);
+    describe('«Не состоялась» и открытые сделки в других воронках (правило 15.11)', () => {
+        const apology = deal({
+            ID: 10,
+            STAGE_ID: 'C31:APOLOGY',
+            COMPANY_ID: '5',
+        });
+        const foreign = deal({
+            ID: 50,
+            CATEGORY_ID: '3',
+            STAGE_ID: 'C3:NEW',
+            COMPANY_ID: '5',
+        });
+        const xo = deal({
+            ID: 60,
+            CATEGORY_ID: '33',
+            STAGE_ID: 'C33:PLAN',
+            COMPANY_ID: '5',
+        });
 
-        expect(result.decision.reason).toBe('apology_work_elsewhere');
-        expect(result.decision.target).toBeNull();
+        it('чужая воронка с открытой задачей — работа идёт, лид не трогаем', async () => {
+            const { bitrix } = bitrixWith([apology, foreign], [50]);
+            const [result] = await new LeadClosingReader(bitrix, portal).read([
+                lead({ companyId: 5 }),
+            ]);
+
+            expect(result.decision.reason).toBe('apology_work_elsewhere');
+            expect(result.decision.target).toBeNull();
+        });
+
+        it('чужая воронка без открытых задач — висяк, лид закрывается', async () => {
+            const { bitrix } = bitrixWith([apology, foreign]);
+            const [result] = await new LeadClosingReader(bitrix, portal).read([
+                lead({ companyId: 5 }),
+            ]);
+
+            expect(result.decision).toMatchObject({
+                target: 'lead_apology',
+                reason: 'apology_no_work',
+            });
+        });
+
+        it('открытая ХО без живой «ОП Основная» — не работа, а подозрительный висяк', async () => {
+            const { bitrix } = bitrixWith([apology, xo], [60]);
+            const [result] = await new LeadClosingReader(bitrix, portal).read([
+                lead({ companyId: 5 }),
+            ]);
+
+            expect(result.decision.reason).toBe('apology_no_work');
+            expect(result.suspiciousDealIds).toEqual([60]);
+        });
     });
 
     it('сделка удалена — клиент ищется по компании лида', async () => {
