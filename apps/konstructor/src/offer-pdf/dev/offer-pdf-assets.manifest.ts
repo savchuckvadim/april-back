@@ -64,6 +64,21 @@ export const OFFER_PDF_ASSET_JOBS: readonly OfferPdfAssetJob[] = [
         width: 1414,
         format: 'jpg',
     },
+    // та же полоса без белого низа: подложка растягивает её на весь лист
+    {
+        target: 'pearl/glow.jpg',
+        source: { file: '1/Дизайн без названия (31).png' },
+        width: 1414,
+        crop: { top: 0, bottom: 0.368 },
+        format: 'jpg',
+    },
+    // лист со стеклом у левого края — спокойная подложка под карточки
+    {
+        target: 'pearl/soft.jpg',
+        source: { file: '1/Дизайн без названия (30).png' },
+        width: 1414,
+        format: 'jpg',
+    },
     // «Ореол» — набор 10: обложка; на листах только коралловая черта — вектором
     {
         target: 'halo/cover.jpg',

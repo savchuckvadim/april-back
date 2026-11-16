@@ -4,7 +4,12 @@ import type { OfferPdfTheme } from '../kit/theme/offer-pdf-theme';
 /** Картинки «Перламутра» в storage/app/konstructor/offer-pdf */
 export const PEARL_ASSETS = {
     cover: 'pearl/cover.jpg',
+    /** Лист с перламутровой шапкой на треть страницы — страница о системе */
     sheet: 'pearl/sheet.jpg',
+    /** Перламутр во весь лист */
+    glow: 'pearl/glow.jpg',
+    /** Стекло у левого края листа */
+    soft: 'pearl/soft.jpg',
 } as const;
 
 /**

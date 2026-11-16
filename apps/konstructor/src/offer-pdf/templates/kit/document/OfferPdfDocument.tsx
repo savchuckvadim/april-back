@@ -51,7 +51,11 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                 <ChromePage
                     model={model}
                     theme={theme}
-                    chrome={chrome}
+                    chrome={
+                        chrome.PromoUnderlay
+                            ? { ...chrome, Underlay: chrome.PromoUnderlay }
+                            : chrome
+                    }
                     frame={frame}
                 >
                     <Promo model={model} theme={theme} />
