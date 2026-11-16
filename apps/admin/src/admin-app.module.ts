@@ -11,6 +11,7 @@ import { BtxRpaModule } from './portal/btx-rpas/btx-rpa.module';
 import { BitrixFieldModule } from './portal/bitrixfields/bitrixfield.module';
 import { SmartModule } from './portal/smarts/smart.module';
 import { SkapImportAdminModule } from './skap/skap-import-admin.module';
+import { DealAuditAdminModule } from './deal-audit/deal-audit-admin.module';
 import { BxRqModule } from './portal/bx-rqs/bx-rq.module';
 import { TimezoneModule } from './portal/timezones/timezone.module';
 import { ContractModule } from './garant/contracts/contract.module';
@@ -81,6 +82,7 @@ import { SiteMediaAdminModule } from '@lib/site-content';
         BitrixFieldModule,
         SmartModule,
         SkapImportAdminModule,
+        DealAuditAdminModule,
         BxRqModule,
         TimezoneModule,
         PortalCategoryModule,

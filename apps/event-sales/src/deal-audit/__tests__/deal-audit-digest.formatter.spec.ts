@@ -77,6 +77,19 @@ describe('deal-audit: вёрстка сводки', () => {
         expect(DEAL_AUDIT_DIGEST_SCOPE_NOTE).toContain('до 50 на отдел');
     });
 
+    it('пояснение охвата можно убрать — для сообщений серии', () => {
+        const message = buildDealAuditDigest({
+            domain: 'example.bitrix24.ru',
+            heading: 'Сотрудник: Иванов Иван',
+            verdicts: [verdict({ dealId: 1 })],
+            limit: 20,
+            withScopeNote: false,
+        });
+
+        expect(message).not.toContain(DEAL_AUDIT_DIGEST_SCOPE_NOTE);
+        expect(message).toContain('#1 ');
+    });
+
     it('имя ответственного подставляется, когда его передали', () => {
         const message = buildDealAuditDigest({
             domain: 'example.bitrix24.ru',

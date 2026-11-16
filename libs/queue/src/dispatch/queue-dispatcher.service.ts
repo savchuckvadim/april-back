@@ -56,6 +56,9 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT_SALES_HOOK_OPS)
         private readonly eventSalesHookOpsQueue: Queue,
 
+        @InjectQueue(QueueNames.EVENT_SALES_DEAL_AUDIT_RUN)
+        private readonly eventSalesDealAuditRunQueue: Queue,
+
         //очепедь для ожидания данных в тишине
         @InjectQueue(QueueNames.EVENT_SILENT)
         private readonly eventSilentQueue: Queue,
@@ -154,6 +157,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SALES_HOOK_OPS:
                 return this.eventSalesHookOpsQueue;
+
+            case QueueNames.EVENT_SALES_DEAL_AUDIT_RUN:
+                return this.eventSalesDealAuditRunQueue;
 
             case QueueNames.EVENT_SILENT:
                 return this.eventSilentQueue;
