@@ -1,21 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { BitrixService } from '@/modules/bitrix';
 import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 import { BxDepartmentService } from '@lib/bx-department';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
-import { ETimeZone } from '@lib/shared/lib/date';
 import { buildDealAuditDigest } from '../lib/deal-audit-digest.formatter';
+import { buildDealAuditMessages } from '../lib/deal-audit-digest-messages';
 import { buildHeadsByUser } from '../lib/deal-audit-heads';
 import { departmentScopeOf } from '../lib/deal-audit-department-scope';
 import { DealAuditDigestChannels } from '../lib/deal-audit-digest-channels';
 import { DealAuditVerdict } from '../types/deal-audit.types';
 import { isForgotten } from '../lib/deal-audit-rules';
 import { hasDigestRecipients } from '../lib/deal-audit-run-mode';
-import { DealAuditDigestTask } from './deal-audit-digest-task';
-
-/** Тег уведомления: новая сводка ЗАМЕЩАЕТ вчерашнюю, а не копится. */
-const DIGEST_TAG = 'event-sales-deal-audit';
+import {
+    DealAuditDigest,
+    DealAuditDigestDelivery,
+    describeDigestChannels,
+} from './deal-audit-digest-delivery';
 
 /** Кому и сколько рассылать — уже разобранные настройки портала. */
 export interface DealAuditDigestOptions {
@@ -32,13 +32,7 @@ export interface DealAuditDigestOptions {
     readonly channels: DealAuditDigestChannels;
 }
 
-/** Собранная сводка одного получателя. */
-interface Digest {
-    readonly heading: string;
-    /** Сколько забытых сделок в сводке (до обрезки по лимиту). */
-    readonly count: number;
-    readonly text: string;
-}
+type Digest = DealAuditDigest;
 
 /**
  * Рассылка сводок по забытым сделкам.
@@ -49,7 +43,9 @@ interface Digest {
  *
  * Канал доставки — настройка (владелец, 09.11.2026): уведомление портала
  * теряется в колокольчике, поэтому сводку можно ставить задачей и/или
- * слать личным сообщением, как это делал легаси deals-order.
+ * слать личным сообщением, как это делал легаси deals-order. С 16.11.2026
+ * личное сообщение — канал по умолчанию, а сводка руководителю идёт серией:
+ * итог по сотрудникам и по сообщению на каждого.
  *
  * `@Injectable`, но инстанс Битрикса в поля НЕ кладём: берём по домену
  * через PBXService (CLAUDE.md — иначе гонка между порталами).
@@ -197,14 +193,14 @@ export class DealAuditDigestService {
                 heading: input.heading,
                 count: input.verdicts.length,
                 text,
+                messages: buildDealAuditMessages(input),
             });
         }
     }
 
     /**
-     * Доставка по включённым каналам. Получатель считается охваченным,
-     * если дошёл хотя бы один канал; сбой канала — предупреждение, другие
-     * каналы и получатели не страдают.
+     * Доставка по включённым каналам ({@link DealAuditDigestDelivery}).
+     * Получатель считается охваченным, если дошёл хотя бы один канал.
      */
     private async deliver(
         domain: string,
@@ -214,74 +210,20 @@ export class DealAuditDigestService {
     ): Promise<number> {
         if (!digests.size) return 0;
         const { bitrix, PortalModel } = await this.pbx.init(domain);
-        const tasks = channels.task
-            ? new DealAuditDigestTask(bitrix, PortalModel.getTimezone())
-            : null;
+        const delivery = new DealAuditDigestDelivery(
+            bitrix,
+            channels,
+            PortalModel.getTimezone(),
+        );
         let reached = 0;
         for (const [userId, digest] of digests) {
-            const outcomes = await Promise.all([
-                channels.notify
-                    ? this.notify(bitrix, userId, digest, warnings)
-                    : false,
-                channels.message
-                    ? this.message(bitrix, userId, digest, warnings)
-                    : false,
-                tasks
-                    ? (await tasks.replace(userId, digest, warnings)) !== null
-                    : false,
-            ]);
-            if (outcomes.some(Boolean)) reached += 1;
+            if (await delivery.deliver(userId, digest, warnings)) reached += 1;
         }
         this.logger.log(
             `[deal-audit] ${domain}: сводок доставлено ${reached} из ${digests.size} ` +
-                `(каналы: ${describeChannels(channels)})`,
+                `(каналы: ${describeDigestChannels(channels)})`,
         );
         return reached;
-    }
-
-    private async notify(
-        bitrix: BitrixService,
-        userId: number,
-        digest: Digest,
-        warnings: string[],
-    ): Promise<boolean> {
-        try {
-            await bitrix.imNotify.systemAdd({
-                USER_ID: userId,
-                MESSAGE: digest.text,
-                TAG: DIGEST_TAG,
-            });
-            return true;
-        } catch (error) {
-            warnings.push(
-                `уведомление сотруднику ${userId} не отправлено: ${(error as Error).message}`,
-            );
-            return false;
-        }
-    }
-
-    /** Личное сообщение от имени интеграции — как слал легаси deals-order. */
-    private async message(
-        bitrix: BitrixService,
-        userId: number,
-        digest: Digest,
-        warnings: string[],
-    ): Promise<boolean> {
-        try {
-            await bitrix.message.add({
-                DIALOG_ID: String(userId),
-                MESSAGE: digest.text,
-                SYSTEM: 'N',
-                // Двадцать ссылок на карточки — двадцать превью; текста хватает.
-                URL_PREVIEW: 'N',
-            });
-            return true;
-        } catch (error) {
-            warnings.push(
-                `сообщение сотруднику ${userId} не отправлено: ${(error as Error).message}`,
-            );
-            return false;
-        }
     }
 
     /** Отделы продаж со всеми подотделами и родителями; ошибка → пусто. */
@@ -308,15 +250,6 @@ export class DealAuditDigestService {
         }
     }
 }
-
-const describeChannels = (channels: DealAuditDigestChannels): string =>
-    [
-        channels.notify ? 'уведомление' : null,
-        channels.message ? 'сообщение' : null,
-        channels.task ? 'задача' : null,
-    ]
-        .filter(Boolean)
-        .join(', ') || 'нет';
 
 const groupByManager = (
     verdicts: readonly DealAuditVerdict[],
@@ -348,7 +281,3 @@ const collectUserNames = (
     }
     return names;
 };
-
-// ETimeZone нужен только типу DealAuditDigestTask; импорт оставлен явным,
-// чтобы замена часового пояса портала не прошла мимо этого файла.
-export type DealAuditDigestTimezone = ETimeZone;

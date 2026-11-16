@@ -1,15 +1,12 @@
-/** Каналы доставки сводки «Забытые сделки» (значение настройки `deal_audit_digest_channels`). */
-export const DEAL_AUDIT_DIGEST_CHANNEL = {
-    /** Уведомление портала (колокольчик) — так сводка уходила изначально. */
-    notify: 'notify',
-    /** Личное сообщение в чат от имени интеграции — как слал легаси deals-order. */
-    message: 'message',
-    /** Задача получателю со сводкой в описании; прошлая задача-сводка закрывается. */
-    task: 'task',
-} as const;
+import {
+    DEAL_AUDIT_DIGEST_CHANNEL,
+    DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL,
+} from '@lib/portal-lib/store/app-settings';
 
-export type DealAuditDigestChannel =
-    (typeof DEAL_AUDIT_DIGEST_CHANNEL)[keyof typeof DEAL_AUDIT_DIGEST_CHANNEL];
+export {
+    DEAL_AUDIT_DIGEST_CHANNEL,
+    type DealAuditDigestChannel,
+} from '@lib/portal-lib/store/app-settings';
 
 export interface DealAuditDigestChannels {
     readonly notify: boolean;
@@ -17,20 +14,25 @@ export interface DealAuditDigestChannels {
     readonly task: boolean;
 }
 
-/** Поведение до появления настройки: только уведомление портала. */
+/**
+ * Ничего не выбрано — личное сообщение (владелец, 16.11.2026: уведомление
+ * в колокольчике теряется; до этого по умолчанию было notify).
+ */
 export const DEFAULT_DIGEST_CHANNELS: DealAuditDigestChannels = {
-    notify: true,
-    message: false,
-    task: false,
+    notify:
+        DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL === DEAL_AUDIT_DIGEST_CHANNEL.notify,
+    message:
+        DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL === DEAL_AUDIT_DIGEST_CHANNEL.message,
+    task: DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL === DEAL_AUDIT_DIGEST_CHANNEL.task,
 };
 
 const KNOWN = new Set<string>(Object.values(DEAL_AUDIT_DIGEST_CHANNEL));
 
 /**
- * «task, message» → { task, message }. Регистр и разделители (запятая,
- * пробел, точка с запятой) не важны; незнакомые слова пропускаются. Ни
- * одного знакомого — поведение по умолчанию: владелец, ошибившись в
- * настройке, не должен остаться без сводок вовсе.
+ * «task,message» → { task, message }. Админка пишет коды галочек через
+ * запятую; регистр и разделители (запятая, пробел, точка с запятой) не
+ * важны, незнакомые слова пропускаются. Ни одного знакомого — поведение по
+ * умолчанию: владелец, сняв все галочки, не должен остаться без сводок.
  */
 export const parseDigestChannels = (raw: unknown): DealAuditDigestChannels => {
     const tokens =

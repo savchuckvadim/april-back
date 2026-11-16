@@ -289,6 +289,28 @@ describe('DealAuditScheduler', () => {
         expect(redis.del).not.toHaveBeenCalled();
     });
 
+    it('прогон с ожиданием (кнопка админки): возвращается, когда прогон закончен и лок снят', async () => {
+        const { scheduler, runForDomain, redis } = setup([]);
+
+        const started = await scheduler.runNowAndWait('a.bitrix24.ru');
+
+        // Без setImmediate: к возврату прогон уже прошёл целиком.
+        expect(started).toBe(true);
+        expect(runForDomain).toHaveBeenCalledTimes(1);
+        expect(redis.del).toHaveBeenCalled();
+    });
+
+    it('прогон с ожиданием, пока идёт другой, не начинается', async () => {
+        const { scheduler, runForDomain, redis } = setup([]);
+        redis.set.mockResolvedValueOnce(null);
+
+        const started = await scheduler.runNowAndWait('a.bitrix24.ru');
+
+        expect(started).toBe(false);
+        expect(runForDomain).not.toHaveBeenCalled();
+        expect(redis.del).not.toHaveBeenCalled();
+    });
+
     it('при старте шлёт в Telegram, где аудит включён и в каком режиме', async () => {
         const { scheduler, resolveOptions } = setup([
             { domain: 'a.bitrix24.ru', settings: ENABLED },

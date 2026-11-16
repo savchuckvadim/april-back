@@ -47,6 +47,9 @@ const VERDICTS = [
     forgotten(1500, 500),
 ];
 
+/** Тесты адресатов читают уведомления: в них один текст на получателя. */
+const NOTIFY_ONLY = { notify: true, message: false, task: false };
+
 const NO_RECIPIENTS = {
     toManager: false,
     toHead: false,
@@ -54,7 +57,7 @@ const NO_RECIPIENTS = {
     departmentUserIds: [],
     excludeUserIds: [],
     limit: 20,
-    channels: DEFAULT_DIGEST_CHANNELS,
+    channels: NOTIFY_ONLY,
 };
 
 const makeService = (
@@ -218,7 +221,13 @@ describe('DealAuditDigestService — каналы доставки', () => {
         channels,
     });
 
-    it('по умолчанию — только уведомление портала, как было', async () => {
+    /** Тексты личных сообщений по порядку отправки. */
+    const messagesOf = (messageAdd: jest.Mock): string[] =>
+        (messageAdd.mock.calls as [{ MESSAGE: string }][]).map(
+            ([payload]) => payload.MESSAGE,
+        );
+
+    it('по умолчанию — личные сообщения: итог по сотрудникам и по сообщению на каждого', async () => {
         const { service, systemAdd, messageAdd, taskAdd } = makeService();
 
         const sent = await service.send(
@@ -229,9 +238,62 @@ describe('DealAuditDigestService — каналы доставки', () => {
         );
 
         expect(sent).toBe(1);
-        expect(systemAdd).toHaveBeenCalledTimes(1);
-        expect(messageAdd).not.toHaveBeenCalled();
+        expect(systemAdd).not.toHaveBeenCalled();
         expect(taskAdd).not.toHaveBeenCalled();
+        const texts = messagesOf(messageAdd);
+        // Итог + три сотрудника (69, 323, 500) — каждому своё сообщение.
+        expect(texts).toHaveLength(4);
+        expect(texts[0]).toContain('Забытые сделки: сводка по всем отделам');
+        expect(texts[0]).toContain('Забытых сделок: 3, сотрудников: 3');
+        expect(texts.slice(1).join('\n')).toContain(
+            'Сотрудник: Фамилия69 Имя69',
+        );
+        expect(
+            (messageAdd.mock.calls as [{ DIALOG_ID: string }][]).every(
+                ([payload]) => payload.DIALOG_ID === '1',
+            ),
+        ).toBe(true);
+    });
+
+    it('сводка менеджеру своих сделок — одно сообщение', async () => {
+        const { service, messageAdd } = makeService();
+
+        await service.send(
+            DOMAIN,
+            [forgotten(1069, 69), forgotten(1070, 69)],
+            {
+                ...NO_RECIPIENTS,
+                toManager: true,
+                channels: DEFAULT_DIGEST_CHANNELS,
+            },
+            [],
+        );
+
+        const texts = messagesOf(messageAdd);
+        expect(texts).toHaveLength(1);
+        expect(texts[0]).toContain('Ваши забытые сделки');
+        expect(texts[0]).toContain('#1070');
+    });
+
+    it('сообщение не ушло посреди серии — серия обрывается, в предупреждении сколько ушло', async () => {
+        const { service, messageAdd } = makeService();
+        messageAdd
+            .mockResolvedValueOnce({ result: 1 })
+            .mockRejectedValueOnce(new Error('QUERY_LIMIT_EXCEEDED'));
+        const warnings: string[] = [];
+
+        const sent = await service.send(
+            DOMAIN,
+            VERDICTS,
+            options(DEFAULT_DIGEST_CHANNELS),
+            warnings,
+        );
+
+        expect(sent).toBe(1);
+        expect(messageAdd).toHaveBeenCalledTimes(2);
+        expect(warnings.join(' ')).toContain(
+            'сообщение сотруднику 1 не отправлено (ушло 1 из 4)',
+        );
     });
 
     it('задача + сообщение: уведомления нет, задача со сводкой и числом, прошлая открытая закрыта', async () => {
@@ -300,7 +362,8 @@ describe('DealAuditDigestService — каналы доставки', () => {
         );
 
         expect(sent).toBe(1);
-        expect(messageAdd).toHaveBeenCalledTimes(1);
+        // Итог + три сотрудника: серия сообщений дошла целиком.
+        expect(messageAdd).toHaveBeenCalledTimes(4);
         expect(warnings.join(' ')).toContain(
             'задача-сводка сотруднику 1 не создана',
         );

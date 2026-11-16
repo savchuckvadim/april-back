@@ -119,4 +119,7 @@ export enum JobNames {
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',
+
+    /** Аудит сделок: прогон портала «как у крона» по кнопке админки */
+    EVENT_SALES_DEAL_AUDIT_RUN_NOW = 'event-sales-deal-audit-run-now',
 }

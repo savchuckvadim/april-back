@@ -46,6 +46,13 @@ export enum QueueNames {
      * event-silent) и кнопка фрейма. Джобы различаются JobNames.SALES_HOOK_*.
      */
     EVENT_SALES_HOOK_OPS = 'event-sales-hook-ops',
+    /**
+     * Ручной прогон аудита сделок из админки («Сформировать и отправить»):
+     * админка ставит джоб, воркер — ТОЛЬКО в event-sales (там крон, лок и
+     * отчёт в Telegram). Своя очередь: чужой воркер на общей очереди
+     * уронил бы джоб с «Missing process handler».
+     */
+    EVENT_SALES_DEAL_AUDIT_RUN = 'event-sales-deal-audit-run',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',

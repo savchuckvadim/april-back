@@ -126,22 +126,39 @@ export class DealAuditScheduler implements OnApplicationBootstrap {
      * @returns false — идёт другой прогон (крон или ручной), этот не начат.
      */
     async runNow(domain: string): Promise<boolean> {
-        const redis = this.redisService.getClient();
-        const locked = await redis.set(
-            DEAL_AUDIT_LOCK_KEY,
-            String(process.pid),
-            'EX',
-            DEAL_AUDIT_LOCK_TTL_SEC,
-            'NX',
-        );
-        if (!locked) return false;
-
-        void this.runInBackground(domain);
+        if (!(await this.acquireManualLock())) return false;
+        void this.runLocked(domain);
         return true;
     }
 
-    /** Фон ручного прогона: итог в Telegram, лок снимается всегда. */
-    private async runInBackground(domain: string): Promise<void> {
+    /**
+     * Ручной прогон ДО КОНЦА — для очереди кнопки админки: джоб остаётся
+     * активным, пока идёт прогон, и повторное нажатие видит «уже идёт», а
+     * не ставит вторую рассылку следом.
+     *
+     * @returns false — идёт другой прогон, этот не начат.
+     */
+    async runNowAndWait(domain: string): Promise<boolean> {
+        if (!(await this.acquireManualLock())) return false;
+        await this.runLocked(domain);
+        return true;
+    }
+
+    private async acquireManualLock(): Promise<boolean> {
+        const locked = await this.redisService
+            .getClient()
+            .set(
+                DEAL_AUDIT_LOCK_KEY,
+                String(process.pid),
+                'EX',
+                DEAL_AUDIT_LOCK_TTL_SEC,
+                'NX',
+            );
+        return !!locked;
+    }
+
+    /** Ручной прогон под локом: итог в Telegram, лок снимается всегда. */
+    private async runLocked(domain: string): Promise<void> {
         try {
             this.report([await this.runDomain(domain, { force: true })]);
         } finally {

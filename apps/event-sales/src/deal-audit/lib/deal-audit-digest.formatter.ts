@@ -24,14 +24,25 @@ const STATUS_COLOR: Record<DealAuditStatusCode, string> = {
     [DEAL_AUDIT_STATUS.ok]: '#2e7d32',
 };
 
+/** Короткие подписи статусов — для строки сотрудника в сводке руководителя. */
+export const DEAL_AUDIT_STATUS_SHORT: Record<DealAuditStatusCode, string> = {
+    [DEAL_AUDIT_STATUS.forgotClose]: 'забыли закрыть',
+    [DEAL_AUDIT_STATUS.noTask]: 'без задач',
+    [DEAL_AUDIT_STATUS.taskOverdue]: 'просроченные задачи',
+    [DEAL_AUDIT_STATUS.idle]: 'давно нет работы',
+    [DEAL_AUDIT_STATUS.stageStuck]: 'застряли в стадии',
+    [DEAL_AUDIT_STATUS.ok]: 'норма',
+};
+
 /** Порядок групп в письме = порядок важности статусов. */
-const STATUS_ORDER: readonly DealAuditStatusCode[] = [
+export const DEAL_AUDIT_STATUS_ORDER: readonly DealAuditStatusCode[] = [
     DEAL_AUDIT_STATUS.forgotClose,
     DEAL_AUDIT_STATUS.noTask,
     DEAL_AUDIT_STATUS.taskOverdue,
     DEAL_AUDIT_STATUS.idle,
     DEAL_AUDIT_STATUS.stageStuck,
 ];
+const STATUS_ORDER = DEAL_AUDIT_STATUS_ORDER;
 
 export interface DealAuditDigestInput {
     readonly domain: string;
@@ -42,6 +53,11 @@ export interface DealAuditDigestInput {
     readonly limit: number;
     /** Подписи ответственных (id → имя) — нужны только сводке руководителя. */
     readonly userNames?: ReadonlyMap<number, string>;
+    /**
+     * Пояснение охвата внизу (по умолчанию да). В серии сообщений оно
+     * стоит один раз — в первом, а не под каждым сотрудником.
+     */
+    readonly withScopeNote?: boolean;
 }
 
 const dealUrl = (domain: string, dealId: number): string =>
@@ -92,7 +108,9 @@ export const buildDealAuditDigest = (input: DealAuditDigestInput): string => {
     }
     // Аудит смотрит не всю воронку: число выше — не «всего забытых на
     // портале», и сотрудник должен это понимать.
-    lines.push('', `[i]${DEAL_AUDIT_DIGEST_SCOPE_NOTE}[/i]`);
+    if (input.withScopeNote !== false) {
+        lines.push('', `[i]${DEAL_AUDIT_DIGEST_SCOPE_NOTE}[/i]`);
+    }
     return lines.join('\n').trim();
 };
 

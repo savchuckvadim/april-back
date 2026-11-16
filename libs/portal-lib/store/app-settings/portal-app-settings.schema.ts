@@ -2,6 +2,10 @@ import { EVENT_TYPE_REGISTRY } from '@lib/portal-lib/pbx/event-type-registry';
 import { PBX_DEAL_SALES_BASE_STAGES } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { DEAL_SALES_BASE_STAGE_TITLES } from '@lib/portal-lib/hooks/catalog/lib/stage-titles';
 import { APP_PARTS, APP_WIDGETS } from './lib/app-widgets.registry';
+import {
+    DEAL_AUDIT_DIGEST_CHANNEL_OPTIONS,
+    DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL,
+} from './lib/deal-audit-digest-channels.const';
 
 /**
  * Перехват клиента: с какой стадии «ОП Основная» сделку коллеги НЕ забирать
@@ -1936,14 +1940,17 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             code: 'deal_audit_digest_channels',
             name: 'Аудит: как доставлять сводку',
             description:
-                'Через запятую: notify — уведомление портала (колокольчик, ' +
-                'как было); message — личное сообщение в чат от имени ' +
-                'интеграции; task — задача получателю со сводкой в описании ' +
-                'и сроком через сутки, прошлая открытая задача-сводка ' +
-                'закрывается. Например «task, message». Пусто или ' +
-                'непонятное значение — notify.',
+                'Можно отметить несколько. Личное сообщение: менеджеру — ' +
+                'одно, руководителю — итог по сотрудникам и по сообщению на ' +
+                'каждого; пока портал работает через вебхук, сообщения идут ' +
+                'от владельца вебхука. Задача: сводка в описании, срок через ' +
+                'сутки, прошлая открытая задача-сводка закрывается. ' +
+                'Уведомление: колокольчик, его легко пропустить. Ничего не ' +
+                'отмечено — личное сообщение.',
             type: 'string',
-            default: 'notify',
+            default: DEAL_AUDIT_DIGEST_DEFAULT_CHANNEL,
+            isList: true,
+            options: DEAL_AUDIT_DIGEST_CHANNEL_OPTIONS,
         }),
         // === Отчёт по дублям сделок (duplicate-report) =====================
         // Раз в неделю: клиенты с несколькими открытыми сделками воронки ОП —
