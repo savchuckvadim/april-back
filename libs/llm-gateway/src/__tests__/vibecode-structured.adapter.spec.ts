@@ -435,11 +435,11 @@ describe('VibecodeStructuredAdapter в шлюзе — ожидание слот�
         expect(breaker.recordSuccess).toHaveBeenCalledTimes(2);
         expect(log).toHaveBeenCalledWith(
             expect.stringContaining('ответ за 42000 мс, вход'),
-            expect.objectContaining({ llm: expect.any(Object) }),
+            expect.objectContaining({ llm: expect.any(Object) as unknown }),
         );
         expect(log).toHaveBeenCalledWith(
             expect.stringContaining('ответ за 0 мс, ждал слота 42000 мс'),
-            expect.objectContaining({ llm: expect.any(Object) }),
+            expect.objectContaining({ llm: expect.any(Object) as unknown }),
         );
     });
 });
