@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { CallReportWeeklyModule } from '../weekly-report/call-report-weekly.module';
 import { KnowledgeMaterialsModule } from '../knowledge-materials.module';
+import { KnowledgeBudgetAdminModule } from '../knowledge-budget/knowledge-budget.admin.module';
 import { CallReportSmartModule } from '../call-report-smart.module';
 import { CallReportAnalyticsCoreModule } from '../../call-report-analytics/call-report-analytics-core.module';
 import { CallReportAnalyticsModule } from '../../call-report-analytics/call-report-analytics.module';
@@ -109,6 +110,10 @@ describe('DI-граф модулей call-report', () => {
 
     it('KnowledgeMaterialsModule: все зависимости провайдеров доступны', () => {
         expect(missingDependencies(KnowledgeMaterialsModule)).toEqual([]);
+    });
+
+    it('KnowledgeBudgetAdminModule: сводке бюджетов доступны база знаний, реестр типов, методики и настройки портала', () => {
+        expect(missingDependencies(KnowledgeBudgetAdminModule)).toEqual([]);
     });
 
     it('CallReportSmartModule: все зависимости провайдеров доступны', () => {

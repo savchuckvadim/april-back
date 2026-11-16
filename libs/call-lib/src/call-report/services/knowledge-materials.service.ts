@@ -74,19 +74,12 @@ export class KnowledgeMaterialsService {
             truncated: false,
         };
         try {
-            const documents = await this.knowledgeContent.readAll(
-                domain,
+            const { text: joined } = joinKnowledgeTexts(
+                await this.knowledgeContent.readAll(domain, request.kind),
                 request.kind,
             );
-            const texts = documents
-                // Хранилище подмешивает general к любому виду — берём
-                // строго запрошенный вид, иначе бюджеты видов «поплывут».
-                .filter(doc => doc.kind === request.kind)
-                .map(doc => doc.text.trim())
-                .filter(Boolean);
-            if (!texts.length) return empty;
+            if (!joined) return empty;
 
-            const joined = texts.join('\n\n---\n\n');
             if (joined.length <= request.budgetChars) {
                 return {
                     kind: request.kind,
@@ -119,6 +112,24 @@ export class KnowledgeMaterialsService {
             requests.find(request => request.kind === kind)?.budgetChars ?? 0
         );
     }
+}
+
+/**
+ * Тексты документов одного вида одной строкой — ровно так, как они уходят в
+ * промпт до усечения. Общая функция сбора и сводки бюджетов в админке: числа
+ * в сводке совпадают с тем, что режет разбор.
+ */
+export function joinKnowledgeTexts(
+    documents: readonly { kind: string; text: string }[],
+    kind: string,
+): { text: string; documents: number } {
+    const texts = documents
+        // Хранилище подмешивает general к любому виду — берём строго
+        // запрошенный вид, иначе бюджеты видов «поплывут».
+        .filter(doc => doc.kind === kind)
+        .map(doc => doc.text.trim())
+        .filter(Boolean);
+    return { text: texts.join('\n\n---\n\n'), documents: texts.length };
 }
 
 /** Блок с заголовком для промпта; пустой блок ничего не добавляет. */

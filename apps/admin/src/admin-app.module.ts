@@ -41,6 +41,7 @@ import { RenewalOfferLinkAdminModule } from '@lib/renewal-offer';
 import {
     AiAdminModule,
     CallPageLinkAdminModule,
+    KnowledgeBudgetAdminModule,
     TranscriptionAdminModule,
 } from '@lib/call-lib';
 import { MethodologyAdminModule } from '@lib/call-lib/call-report/methodology';
@@ -113,6 +114,9 @@ import { SiteMediaAdminModule } from '@lib/site-content';
         // Методики продаж: список доступных порталу для выбора бейджем в
         // настройках AI (встроенные + таблица ai_methodologies), 01.11.2026.
         MethodologyAdminModule,
+        // База знаний в разборе: сколько знаков каждого вида помещается в
+        // промпт и что обрезается (одна таблица бюджетов с разбором).
+        KnowledgeBudgetAdminModule,
         // Помощник брифа методики: документ → черновик конфига через шлюз
         // моделей (нужны llm-gateway и ai-rag, которых у call-lib нет).
         MethodologyAssistAdminModule,

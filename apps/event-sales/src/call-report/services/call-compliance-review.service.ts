@@ -8,7 +8,9 @@ import {
     KnowledgeMaterialsService,
     renderMaterialBlock,
     TranscriptionPipelineView,
+    budgetRequests,
     callReportCallTypeTitle,
+    complianceBudgetLines,
 } from '@lib/call-lib';
 import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
@@ -185,17 +187,11 @@ export class CallComplianceReviewService {
         domain: string,
         isPresentation: boolean,
     ): Promise<string> {
-        const blocks = await this.materials.collect(domain, [
-            { kind: KNOWLEDGE_KINDS.salesScript, budgetChars: 6000 },
-            { kind: KNOWLEDGE_KINDS.callAnalysisBase, budgetChars: 3000 },
-            { kind: KNOWLEDGE_KINDS.salesRegulation, budgetChars: 5000 },
-            { kind: KNOWLEDGE_KINDS.productFacts, budgetChars: 6000 },
-            { kind: KNOWLEDGE_KINDS.objectionPlaybook, budgetChars: 3000 },
-            {
-                kind: KNOWLEDGE_KINDS.presentationPlaybook,
-                budgetChars: isPresentation ? 6000 : 0,
-            },
-        ]);
+        // Бюджеты видов — общая таблица с разбором и сводкой в админке.
+        const blocks = await this.materials.collect(
+            domain,
+            budgetRequests(complianceBudgetLines(isPresentation)),
+        );
         const byKind = new Map(blocks.map(block => [block.kind, block]));
         return [
             renderMaterialBlock(

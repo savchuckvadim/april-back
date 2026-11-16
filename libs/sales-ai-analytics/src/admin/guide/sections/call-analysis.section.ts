@@ -229,6 +229,7 @@ ${activeRiskFlagsList()}
     ],
     endpoints: [
         AI_GUIDE_ENDPOINT.installSmart,
+        AI_GUIDE_ENDPOINT.knowledgeBudget,
         AI_GUIDE_ENDPOINT.reanalyze,
         AI_GUIDE_ENDPOINT.reanalyzeStatus,
         AI_GUIDE_ENDPOINT.cost,

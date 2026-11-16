@@ -409,8 +409,37 @@ describe('CallFocusAnalysisService', () => {
         }
     });
 
-    it('обычный звонок: методология презентации запрашивается по остаточному бюджету', async () => {
+    it('обычный звонок: методология презентации не читается — в промпт она не идёт', async () => {
         const { service, materials } = makeDeps();
+
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const kinds = requestedKinds(materials);
+        expect(kinds).not.toContain('presentation-playbook');
+        // Без методики портала факты о продукте основной разбор не читает.
+        expect(kinds).not.toContain('product-facts');
+    });
+
+    it('методика объявила свои материалы: факты о продукте, возражения и регламент идут в проход методики', async () => {
+        const { service, llm, materials } = makeDeps({
+            methodology: {
+                methodology: POLYANSKY_METHODOLOGY,
+                scope: 'common',
+                source: 'builtin',
+                versionTag: 'polyansky@1.0.0',
+            },
+        });
+        materials.collect.mockImplementation(
+            (_domain: string, requests: { kind: string }[]) =>
+                Promise.resolve(
+                    requests.map(request => ({
+                        kind: request.kind,
+                        text: `ТЕКСТ[${request.kind}]`,
+                        chars: 12,
+                        truncated: false,
+                    })),
+                ),
+        );
 
         await service.run('test.bitrix24.ru', 'текст', 'cold');
 
@@ -418,12 +447,48 @@ describe('CallFocusAnalysisService', () => {
             kind: string;
             budgetChars: number;
         }[];
-        const playbook = requests.find(
-            request => request.kind === 'presentation-playbook',
+        // Один запрос на вид, даже если вид нужен двум проходам.
+        expect(new Set(requests.map(item => item.kind)).size).toBe(
+            requests.length,
         );
-        expect(playbook?.budgetChars).toBe(1500);
+        expect(
+            requests.find(item => item.kind === 'product-facts')?.budgetChars,
+        ).toBe(6000);
+        // Холодный звонок вне презентационного контура.
+        expect(requestedKinds(materials)).not.toContain(
+            'presentation-playbook',
+        );
+
+        const promptOf = (schemaName: string): string =>
+            String(
+                (
+                    llm.structuredCompletionWithUsage.mock.calls.find(
+                        call => (call as unknown[])[2] === schemaName,
+                    ) as unknown[]
+                )[0],
+            );
+        const methodology = promptOf('call_focus_methodology');
+        expect(methodology).toContain('ТЕКСТ[sales-script]');
+        expect(methodology).toContain('ТЕКСТ[product-facts]');
+        expect(methodology).toContain('ТЕКСТ[objection-playbook]');
+        expect(methodology).toContain('ТЕКСТ[sales-regulation]');
+        // Остальные проходы факты о продукте не получают.
+        expect(promptOf('call_focus_form')).not.toContain(
+            'ТЕКСТ[product-facts]',
+        );
+        expect(promptOf('call_focus_synthesis')).not.toContain(
+            'ТЕКСТ[product-facts]',
+        );
     });
 });
+
+/** Виды, которые разбор запросил у базы знаний. */
+function requestedKinds(materials: { collect: jest.Mock }): string[] {
+    const requests = (materials.collect.mock.calls[0] as unknown[])[1] as {
+        kind: string;
+    }[];
+    return requests.map(request => request.kind);
+}
 
 /**
  * Проход «методика» (этап 1 плана методики Полянского): на портале с
