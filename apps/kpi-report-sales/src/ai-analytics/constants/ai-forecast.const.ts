@@ -35,7 +35,9 @@ export type AiForecastShownSource = (typeof AI_FORECAST_SHOWN_SOURCES)[number];
 
 /**
  * Почему показан именно этот расчёт (см. `forecast-shown.util.ts`): число
- * карточка показывает всегда, когда есть журнал дня, — с пометкой.
+ * карточка показывает всегда — с пометкой. `no-model` — журнала дня ещё
+ * нет (ночной расчёт прогноза не прошёл или модель портала не построена):
+ * простой расчёт по месячным продажам (`forecast-fallback.util.ts`).
  */
 export const AI_FORECAST_SHOWN_NOTES = [
     'confirmed',
@@ -44,6 +46,7 @@ export const AI_FORECAST_SHOWN_NOTES = [
     'simple-better',
     'history-short',
     'readiness-below',
+    'no-model',
 ] as const;
 export type AiForecastShownNote = (typeof AI_FORECAST_SHOWN_NOTES)[number];
 

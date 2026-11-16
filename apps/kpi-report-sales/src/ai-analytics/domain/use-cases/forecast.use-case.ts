@@ -15,6 +15,12 @@ import {
 } from '../assembler/forecast-snapshots.reader';
 import { AiAnalyticsParamsLoader } from '../loaders/params.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
+import {
+    departmentMonthSales,
+    fallbackForecast,
+    fallbackMonthKeys,
+    type ForecastFallback,
+} from '../presenter/forecast-fallback.util';
 import { presentForecast } from '../presenter/forecast.presenter';
 import {
     AI_READINESS_MODE_SOURCE,
@@ -58,10 +64,8 @@ export class ForecastUseCase {
             this.settings.load(domain),
             this.params.load(domain),
         ]);
-        const monthKey = toPortalDate(now, calendar.timeZone).slice(
-            0,
-            MONTH_KEY_LENGTH,
-        );
+        const today = toPortalDate(now, calendar.timeZone);
+        const monthKey = today.slice(0, MONTH_KEY_LENGTH);
         const [logs, backtest] = await Promise.all([
             this.snapshots.findByKeys(
                 domain,
@@ -81,11 +85,14 @@ export class ForecastUseCase {
             ),
         ]);
         const log = logs[logs.length - 1] ?? null;
+        const day = log ? lastForecastLogDay(log.payload) : null;
         const readinessMode = await this.readinessModeOf(domain);
 
         return presentForecast({
             monthKey,
-            day: log ? lastForecastLogDay(log.payload) : null,
+            day,
+            fallback:
+                day === null ? await this.fallbackOf(domain, today) : null,
             backtest: backtest
                 ? readForecastBacktest(backtest.periodKey, backtest.payload)
                 : null,
@@ -94,6 +101,30 @@ export class ForecastUseCase {
             shadowMinMonths: readinessStageGatesOf(ctx).forecastShadowMonths,
             readinessMode,
         });
+    }
+
+    /**
+     * Простой расчёт по месячным снимкам менеджеров — когда журнала дня
+     * нет. Снимки не прочитались — null: карточка покажет, что цифры
+     * появятся после ночного расчёта.
+     */
+    private async fallbackOf(
+        domain: string,
+        today: string,
+    ): Promise<ForecastFallback | null> {
+        try {
+            const months = await this.snapshots.findByKeys(
+                domain,
+                AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
+                { periodKeys: fallbackMonthKeys(today), latestOnly: true },
+            );
+            return fallbackForecast(today, departmentMonthSales(months));
+        } catch (error) {
+            this.logger.warn(
+                `Простой расчёт прогноза не собран (${domain}): ${String(error)}`,
+            );
+            return null;
+        }
     }
 
     /**

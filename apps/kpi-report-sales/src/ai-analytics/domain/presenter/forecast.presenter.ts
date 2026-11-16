@@ -34,6 +34,7 @@ import type {
     ForecastBacktestView,
     ForecastLogDayView,
 } from '../assembler/forecast-snapshots.reader';
+import type { ForecastFallback } from './forecast-fallback.util';
 import { chooseShownForecast } from './forecast-shown.util';
 
 /** Входы презентера: месяц, журнал, проверка и решения портала. */
@@ -58,6 +59,11 @@ export interface ForecastSources {
      * баннера; null — прочитать не удалось, базовая ступень не проверяется.
      */
     readonly readinessMode: AiAnalyticsReadinessMode | null;
+    /**
+     * Простой расчёт по месячным продажам — на случай, когда журнала дня
+     * нет; null или не задан — посчитать не из чего.
+     */
+    readonly fallback?: ForecastFallback | null;
 }
 
 const canPublishAt = (mode: AiAnalyticsReadinessMode | null): boolean =>
@@ -155,6 +161,8 @@ export function presentForecast(sources: ForecastSources): AiForecastDto {
     const reasons = forecastReasons(sources, minMonths);
     const mode: AiForecastMode = reasons.length === 0 ? 'published' : 'shadow';
     const day = sources.day;
+    // Журнала дня нет — карточка всё равно показывает число: простой расчёт.
+    const fallback = day === null ? (sources.fallback ?? null) : null;
     const published = mode === 'published' && day !== null;
     const bands = published
         ? shownBands(day, sources.backtest)
@@ -163,15 +171,18 @@ export function presentForecast(sources: ForecastSources): AiForecastDto {
     return {
         mode,
         monthKey: sources.monthKey,
-        asOf: day?.day ?? null,
+        asOf: day?.day ?? fallback?.asOf ?? null,
         level: day?.level ?? null,
         band: bands.band,
         money: bands.money,
         checkSource: day?.checkSource ?? null,
-        done: day?.done ?? null,
-        naive: day?.naive ?? null,
-        mean3: day?.mean3 ?? null,
-        shown: chooseShownForecast(day, sources.backtest, reasons),
+        done: day?.done ?? fallback?.done ?? null,
+        naive: day?.naive ?? fallback?.naive ?? null,
+        mean3: day?.mean3 ?? fallback?.mean3 ?? null,
+        shown:
+            chooseShownForecast(day, sources.backtest, reasons) ??
+            fallback?.shown ??
+            null,
         shadow: {
             monthsLogged: sources.backtest?.shadowMonths ?? 0,
             minMonths,
