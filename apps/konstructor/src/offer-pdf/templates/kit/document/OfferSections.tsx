@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { OfferInfoblocks } from '../infoblocks';
 import { OfferPrice } from '../price/OfferPrice';
 import { OfferStamps } from '../stamps/OfferStamps';
-import { offerSectionOrder } from './document.util';
+import type { OfferSectionKey } from './document.util';
 import type { OfferPdfChromeProps } from './offer-pdf-chrome';
 
 const SECTIONS = {
@@ -12,18 +12,18 @@ const SECTIONS = {
 } as const;
 
 export interface OfferSectionsProps extends OfferPdfChromeProps {
-    /** Подпись уже стоит под письмом на промо-странице — здесь её нет */
-    withoutStamps?: boolean;
+    /** Разделы одного потока листов — в порядке печати */
+    keys: readonly OfferSectionKey[];
 }
 
-/** Разделы КП после письма — в порядке из настроек */
+/** Разделы КП одного потока листов */
 export const OfferSections: FC<OfferSectionsProps> = ({
     model,
     theme,
-    withoutStamps = false,
+    keys,
 }) => (
     <>
-        {offerSectionOrder(model.settings, withoutStamps).map(key => {
+        {keys.map(key => {
             const Section = SECTIONS[key];
             return <Section key={key} model={model} theme={theme} />;
         })}
