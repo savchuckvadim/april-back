@@ -807,9 +807,11 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
             expect.stringContaining(
                 'LLM vibecode call_focus_form (test.bitrix24.ru): ответ за 4200 мс',
             ),
+            expect.objectContaining({ llm: expect.any(Object) }),
         );
         expect(log).toHaveBeenCalledWith(
             expect.stringContaining('токены промпта 10, ответа 5'),
+            expect.objectContaining({ llm: expect.any(Object) }),
         );
     });
 
@@ -831,6 +833,7 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
             expect.stringContaining(
                 'Провайдер LLM vibecode не ответил на call_focus_form (test.bitrix24.ru) через 180000 мс',
             ),
+            expect.objectContaining({ llm: expect.any(Object) }),
         );
         expect(breaker.recordFailure).toHaveBeenCalledWith(
             'vibecode',
@@ -842,6 +845,7 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
             expect.stringContaining(
                 'LLM openai-compatible call_focus_form (test.bitrix24.ru): ответ за 2500 мс',
             ),
+            expect.objectContaining({ llm: expect.any(Object) }),
         );
     });
 
@@ -870,6 +874,7 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
             expect.stringContaining(
                 'не ответил на call_focus_form (test.bitrix24.ru) через 180000 мс (ждал слота 30000 мс)',
             ),
+            expect.objectContaining({ llm: expect.any(Object) }),
         );
     });
 });

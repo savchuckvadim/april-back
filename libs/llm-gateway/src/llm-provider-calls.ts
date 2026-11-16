@@ -3,6 +3,7 @@ import type { Logger } from '@nestjs/common';
 import {
     describeLlmCallFailure,
     describeLlmCallSuccess,
+    llmCallMeta,
 } from './llm-call-log.util';
 import type { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
 import { describeLlmError, isTransientLlmError } from './llm-error.util';
@@ -151,6 +152,13 @@ export class LlmProviderCalls {
                     response,
                     elapsedMs,
                 ),
+                llmCallMeta(
+                    request,
+                    adapter.code,
+                    elapsedMs,
+                    response.queueMs,
+                    response,
+                ),
             );
             return response;
         } catch (error) {
@@ -190,6 +198,13 @@ export class LlmProviderCalls {
                     text,
                     failedAt - startedAt,
                     queueMs,
+                ),
+                llmCallMeta(
+                    request,
+                    adapter.code,
+                    failedAt - startedAt,
+                    queueMs,
+                    null,
                 ),
             );
             return null;

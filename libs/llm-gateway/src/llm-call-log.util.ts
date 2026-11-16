@@ -75,3 +75,61 @@ export function describeLlmCallFailure(
         `(${request.domain}) через ${wholeMs(elapsedMs - queue)} мс${waited}: ${errorText}`
     );
 }
+
+/**
+ * Замер одного вызова модели в поле `meta` журнала (16.11.2026). Строка
+ * журнала читается глазами, а `meta.llm` — запросом: «сколько в среднем
+ * отвечает проход call_focus_movement и сколько токенов пишет» решает,
+ * делить ли проход, без разбора текста регулярками. В ClickHouse:
+ * `JSONExtractInt(meta, 'llm', 'ms')`, `JSONExtractString(meta, 'llm', 'schema')`.
+ */
+export interface LlmCallMeta {
+    provider: LlmProviderCode;
+    /** Имя схемы — оно же проход разбора (`call_focus_movement`). */
+    schema: string;
+    domain: string;
+    /** Ответил ли поставщик. */
+    ok: boolean;
+    /** Время ответа (сбой — молчания) поставщика без ожидания слота, мс. */
+    ms: number;
+    /** Ожидание свободного слота перед отправкой, мс. */
+    queueMs: number;
+    /** Размер входа: системный промпт + контент, знаков. */
+    inputChars: number;
+    promptTokens: number | null;
+    completionTokens: number | null;
+    /** Фактическая модель; сбой или провайдер не сообщил — null. */
+    model: string | null;
+}
+
+/** Что из ответа нужно замеру; сбой — ответа нет. */
+type MeasuredAnswer = Pick<StructuredLlmResponse, 'usage' | 'model'>;
+
+/**
+ * Поля `meta` для строки журнала вызова. `elapsedMs` — замер шлюза от начала
+ * вызова, `queueMs` — ожидание слота внутри него (как в строках выше).
+ */
+export function llmCallMeta(
+    request: LoggedLlmRequest,
+    provider: LlmProviderCode,
+    elapsedMs: number,
+    queueMs: number | undefined,
+    answer: MeasuredAnswer | null,
+): { llm: LlmCallMeta } {
+    const queue = wholeMs(queueMs);
+    return {
+        llm: {
+            provider,
+            schema: request.schemaName,
+            domain: request.domain,
+            ok: answer !== null,
+            ms: wholeMs(elapsedMs - queue),
+            queueMs: queue,
+            inputChars:
+                request.systemPrompt.length + request.userContent.length,
+            promptTokens: answer?.usage.promptTokens ?? null,
+            completionTokens: answer?.usage.completionTokens ?? null,
+            model: answer?.model ?? null,
+        },
+    };
+}

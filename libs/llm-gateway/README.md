@@ -112,6 +112,31 @@ const { result, usage, model, provider } =
 адаптер отдаёт в `queueMs` ответа, журнал шлюза пишет это отдельно:
 «ответ за N мс, ждал слота M мс».
 
+## Замер каждого вызова
+
+Каждый вызов модели оставляет строку журнала под именем `StructuredLlmGateway`
+и те же числа в поле `meta.llm` (16.11.2026): `provider`, `schema` (имя схемы —
+оно же проход разбора), `domain`, `ok`, `ms` (время ответа без ожидания слота),
+`queueMs`, `inputChars`, `promptTokens`, `completionTokens`, `model`.
+
+Сколько в среднем отвечает проход и сколько токенов пишет — запросом к журналу
+в ClickHouse (таблица `logs.app_logs`), без разбора текста:
+
+```sql
+SELECT JSONExtractString(meta, 'llm', 'schema') AS pass,
+       count() AS calls,
+       countIf(NOT JSONExtractBool(meta, 'llm', 'ok')) AS failed,
+       round(avgIf(JSONExtractInt(meta, 'llm', 'ms'), JSONExtractBool(meta, 'llm', 'ok'))) AS avg_ms,
+       round(quantileIf(0.9)(JSONExtractInt(meta, 'llm', 'ms'), JSONExtractBool(meta, 'llm', 'ok'))) AS p90_ms,
+       round(avg(JSONExtractInt(meta, 'llm', 'completionTokens'))) AS avg_out_tokens
+FROM logs.app_logs
+WHERE JSONHas(meta, 'llm') AND timestamp >= now() - INTERVAL 7 DAY
+GROUP BY pass
+ORDER BY avg_ms DESC
+```
+
+По этим числам решается, делить ли проход «движение сделки» на два вызова.
+
 ## Прокси за рубеж
 
 Адаптер `openai-compatible` ходит через `EgressProxyService` (@lib/egress-proxy):
