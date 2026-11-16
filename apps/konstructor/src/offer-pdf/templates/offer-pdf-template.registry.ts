@@ -4,6 +4,7 @@ import { paletteInfo } from './kit/theme/offer-pdf-palette';
 import { classicTemplate } from './classic/classic.template';
 import { prismTemplate } from './prism/prism.template';
 import { facetTemplate } from './facet/facet.template';
+import { lavenderTemplate } from './lavender/lavender.template';
 import { monochromeTemplate } from './monochrome/monochrome.template';
 import {
     OfferPdfTemplate,
@@ -16,6 +17,7 @@ export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     prismTemplate,
     monochromeTemplate,
     facetTemplate,
+    lavenderTemplate,
 ];
 
 export const findOfferPdfTemplate = (

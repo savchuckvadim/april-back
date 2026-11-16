@@ -23,6 +23,8 @@ export interface OfferPdfTheme {
         /** Тёмный титульник: цвет листа и текста на нём */
         readonly coverPaper?: string;
         readonly coverText?: string;
+        /** Мягкий градиент стиля: от → до */
+        readonly gradient?: readonly [string, string];
     };
     readonly sizes: {
         readonly xs: number;
