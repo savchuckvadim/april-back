@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { formatRu } from '@lib/shared/lib/date/format-ru';
+import { OfferLetterRepository } from '@lib/portal-lib/konstructor';
 import {
     ProviderService,
     RqEntity,
@@ -30,10 +31,13 @@ const cleanRqValue = (value?: string | null): string =>
  */
 @Injectable()
 export class OfferPdfDocumentModelService {
+    private readonly logger = new Logger(OfferPdfDocumentModelService.name);
+
     constructor(
         private readonly renderDataService: OfferRenderDataService,
         private readonly providerService: ProviderService,
         private readonly supplyEnricher: SupplyPayloadEnricherService,
+        private readonly letters: OfferLetterRepository,
     ) {}
 
     async build(dto: OfferPdfGenerateDto): Promise<OfferPdfDocumentModel> {
@@ -44,9 +48,11 @@ export class OfferPdfDocumentModelService {
             rows: await this.supplyEnricher.enrichRows(dto.rows),
             total: await this.supplyEnricher.enrichRow(dto.total),
         };
-        const [data, provider] = await Promise.all([
+        const letterText = cleanText(dto.letter?.text);
+        const [data, provider, portalLetter] = await Promise.all([
             this.renderDataService.getOfferRenderData(enriched),
             this.providerService.findById(Number(dto.providerId)),
+            letterText ? Promise.resolve(null) : this.portalLetter(dto.domain),
         ]);
 
         return {
@@ -54,9 +60,10 @@ export class OfferPdfDocumentModelService {
             palette: cleanText(dto.palette),
             settings: resolveOfferPdfSettings(dto.settings),
             data,
+            // письмо: из запроса → письмо портала → текст шаблона по умолчанию
             letter: {
                 appeal: cleanText(dto.letter?.appeal),
-                text: cleanText(dto.letter?.text),
+                text: letterText ?? portalLetter,
             },
             signer: this.getSigner(provider),
             // Логотип/печать/подпись: rqs хранит только id в таблице files
@@ -67,6 +74,22 @@ export class OfferPdfDocumentModelService {
                 documentNumber: cleanText(dto.documentNumber),
             },
         };
+    }
+
+    /**
+     * Письмо портала по умолчанию из offer_letters. Сбой чтения не роняет
+     * КП: письмо возьмётся из текста шаблона по умолчанию.
+     */
+    private async portalLetter(domain: string): Promise<string | null> {
+        try {
+            const letter = await this.letters.findPortalDefault(domain);
+            return cleanText(letter?.text);
+        } catch (error: unknown) {
+            this.logger.warn(
+                `Письмо портала ${domain} не прочитано: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return null;
+        }
     }
 
     private getSigner(rq: RqEntity | null): OfferPdfSigner | null {

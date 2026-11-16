@@ -16,6 +16,11 @@ export abstract class OfferLetterRepository {
     /** Все письма портала: портальные и личные менеджеров */
     abstract findByPortal(portalId: number): Promise<OfferLetterEntity[]>;
 
+    /** Активное письмо портала по умолчанию (не личное) по домену портала */
+    abstract findPortalDefault(
+        domain: string,
+    ): Promise<OfferLetterEntity | null>;
+
     /** Какие из легаси-полей уже перенесены */
     abstract findImportedLegacyFieldIds(fieldIds: number[]): Promise<number[]>;
 

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
 import { StorageModule } from '@lib/core/storage/storage.module';
+import { OfferLetterModule } from '@lib/portal-lib/konstructor';
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
@@ -20,6 +21,7 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         OfferWordModule,
         DocumentGenerateModule,
         ProviderModule,
+        OfferLetterModule,
         StorageModule,
         FileLinkModule,
     ],
