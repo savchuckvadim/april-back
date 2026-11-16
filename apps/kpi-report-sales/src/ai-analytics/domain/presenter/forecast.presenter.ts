@@ -11,6 +11,9 @@
  * «цифры появятся после ночного расчёта», а не «ждать проверку». Иначе
  * режим shadow с кодами причин; сводка теневого режима и проверки
  * отдаётся всегда — по ней чек-лист показывает, сколько ещё ждать.
+ * Число для карточки (`shown`) отдаётся в любом режиме, когда есть журнал
+ * дня: аналитику не прячем — показываем число с пометкой, чей это расчёт
+ * (`forecast-shown.util.ts`, решение владельца 16.11.2026).
  *
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()`.
  */
@@ -31,6 +34,7 @@ import type {
     ForecastBacktestView,
     ForecastLogDayView,
 } from '../assembler/forecast-snapshots.reader';
+import { chooseShownForecast } from './forecast-shown.util';
 
 /** Входы презентера: месяц, журнал, проверка и решения портала. */
 export interface ForecastSources {
@@ -167,6 +171,7 @@ export function presentForecast(sources: ForecastSources): AiForecastDto {
         done: day?.done ?? null,
         naive: day?.naive ?? null,
         mean3: day?.mean3 ?? null,
+        shown: chooseShownForecast(day, sources.backtest, reasons),
         shadow: {
             monthsLogged: sources.backtest?.shadowMonths ?? 0,
             minMonths,

@@ -29,6 +29,24 @@ export const AI_FORECAST_ROUTE = 'forecast' as const;
 export const AI_FORECAST_MODES = ['shadow', 'published'] as const;
 export type AiForecastMode = (typeof AI_FORECAST_MODES)[number];
 
+/** Чей расчёт показан в карточке: модель, «по темпу» или среднее за три месяца. */
+export const AI_FORECAST_SHOWN_SOURCES = ['model', 'naive', 'mean3'] as const;
+export type AiForecastShownSource = (typeof AI_FORECAST_SHOWN_SOURCES)[number];
+
+/**
+ * Почему показан именно этот расчёт (см. `forecast-shown.util.ts`): число
+ * карточка показывает всегда, когда есть журнал дня, — с пометкой.
+ */
+export const AI_FORECAST_SHOWN_NOTES = [
+    'confirmed',
+    'stage-disabled',
+    'model-unconfirmed',
+    'simple-better',
+    'history-short',
+    'readiness-below',
+] as const;
+export type AiForecastShownNote = (typeof AI_FORECAST_SHOWN_NOTES)[number];
+
 /**
  * Источники чека вилки в деньгах — те же, что `AI_LOGNORMAL_CHECK_SOURCES`
  * библиотеки (равенство закреплено спекой презентера). Свой список, а не
