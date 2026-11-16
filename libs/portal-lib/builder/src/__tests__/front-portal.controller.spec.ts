@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { FrontPortalController } from '../controllers/front-portal.controller';
 import { FrontPortalBuilderService } from '../services/front-portal-builder.service';
+import { FrontPortalPartsService } from '../services/front-portal-parts.service';
 import { FrontPortalDto } from '../dto/front-portal.dto';
 
 describe('FrontPortalController', () => {
@@ -9,9 +10,13 @@ describe('FrontPortalController', () => {
     const createController = (
         buildByDomain: jest.Mock,
     ): FrontPortalController =>
-        new FrontPortalController({
-            buildByDomain,
-        } as unknown as FrontPortalBuilderService);
+        new FrontPortalController(
+            {
+                buildByDomain,
+            } as unknown as FrontPortalBuilderService,
+            // узкая ручка частей проверяется в front-portal-parts.spec.ts
+            {} as FrontPortalPartsService,
+        );
 
     it('возвращает { portal } — глобальный интерцептор обернёт в {resultCode, data}', async () => {
         const buildByDomain = jest.fn().mockResolvedValue(portalStub);
