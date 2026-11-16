@@ -6,6 +6,9 @@ import { themedStyles } from '../theme/themed-styles';
 /** Поля титульника */
 export const COVER_MARGIN = 54;
 
+/** Высота логотипа Гаранта на титульнике */
+export const COVER_LOGO_HEIGHT = 28;
+
 /** Расстановка титульника: стиль на каждый блок BrandCover */
 export type BrandCoverStyles = {
     /** Логотип и наша компания */

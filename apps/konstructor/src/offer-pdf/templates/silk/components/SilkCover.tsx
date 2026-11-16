@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { BrandCover } from '../../kit/cover/BrandCover';
+import { SheetBackground } from '../../kit/decor/SheetBackground';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { SILK_ASSETS } from '../silk.theme';
 import { silkCoverStyles } from './silk-cover.styles';
@@ -9,8 +10,9 @@ export const SilkCover: FC<OfferPdfChromeProps> = ({ model, theme }) => (
     <BrandCover
         model={model}
         theme={theme}
-        background={model.assets?.images[SILK_ASSETS.cover]}
         styles={silkCoverStyles(theme)}
-        logoColor={theme.colors.accentStrong ?? theme.colors.accent}
+        background={
+            <SheetBackground image={model.assets?.images[SILK_ASSETS.cover]} />
+        }
     />
 );

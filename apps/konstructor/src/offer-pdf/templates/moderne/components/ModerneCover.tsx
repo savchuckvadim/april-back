@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { BrandCover } from '../../kit/cover/BrandCover';
 import { GradientLine } from '../../kit/decor/GradientLine';
+import { SheetBackground } from '../../kit/decor/SheetBackground';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { MODERNE_ASSETS } from '../moderne.theme';
 import { moderneCoverStyles } from './moderne-cover.styles';
@@ -10,10 +11,13 @@ export const ModerneCover: FC<OfferPdfChromeProps> = ({ model, theme }) => (
     <BrandCover
         model={model}
         theme={theme}
-        background={model.assets?.images[MODERNE_ASSETS.cover]}
         styles={moderneCoverStyles(theme)}
-        logoColor={theme.colors.accentStrong ?? theme.colors.accent}
-        divider={
+        background={
+            <SheetBackground
+                image={model.assets?.images[MODERNE_ASSETS.cover]}
+            />
+        }
+        afterSupply={
             <GradientLine
                 id="moderne-cover"
                 width={120}

@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { BrandCover } from '../../kit/cover/BrandCover';
+import { SheetBackground } from '../../kit/decor/SheetBackground';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { HALO_ASSETS } from '../halo.theme';
 import { haloCoverStyles } from './halo-cover.styles';
@@ -9,8 +10,9 @@ export const HaloCover: FC<OfferPdfChromeProps> = ({ model, theme }) => (
     <BrandCover
         model={model}
         theme={theme}
-        background={model.assets?.images[HALO_ASSETS.cover]}
         styles={haloCoverStyles(theme)}
-        logoColor={theme.colors.accentStrong ?? theme.colors.accent}
+        background={
+            <SheetBackground image={model.assets?.images[HALO_ASSETS.cover]} />
+        }
     />
 );
