@@ -190,6 +190,18 @@ export interface PortalAiSettingsRecord {
      * NULL или 0 — ночной догон выключен; полный переразбор — только кнопкой.
      */
     factsCatchupNightlyBudgetRub: number | null;
+    /**
+     * Лимит ночного догона признаков в ЗВОНКАХ за ночь (16.11.2026): модели
+     * VibeCode бесплатные, рублёвый лимит при нулевой цене не срабатывает.
+     * Действует вместе с рублёвым или сам по себе; NULL или 0 — не задан.
+     */
+    factsCatchupNightlyMaxCalls: number | null;
+    /**
+     * Месячный лимит расхода на распознавание Яндексом, рублей (16.11.2026).
+     * Только оповещение: при достижении приходит сообщение в телеграм,
+     * маршрут распознавания не меняется. NULL или 0 — лимита нет.
+     */
+    yandexMonthlyBudgetRub: number | null;
 }
 
 /**
@@ -284,6 +296,8 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     vibecodeTranscriptionModel: null,
     transcriptionRoute: null,
     factsCatchupNightlyBudgetRub: null,
+    factsCatchupNightlyMaxCalls: null,
+    yandexMonthlyBudgetRub: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

@@ -364,3 +364,56 @@ describe('CallReportFactsCatchupUseCase: лимит в рублях и ночн�
         );
     });
 });
+
+/** 16.11.2026: лимит ночного догона в звонках — рублёвый при бесплатных моделях не срабатывает. */
+describe('CallReportFactsCatchupUseCase: лимит в звонках', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    const threeCalls = () =>
+        makeUseCase({
+            rows: [liteRow('t-1'), liteRow('t-2'), liteRow('t-3')],
+            records: [
+                oldRecord('1', 't-1', { weightedScore: 70 }),
+                oldRecord('2', 't-2', { weightedScore: 60 }),
+                oldRecord('3', 't-3', { weightedScore: 50 }),
+            ],
+        });
+
+    it('берётся не больше лимита звонков, продолжение не ставится, в итоге ночи лимит назван', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const { useCase, facts, queueDispatcher, ofType } = threeCalls();
+
+        const result = await useCase.execute(
+            { ...PERIOD, maxCalls: 2, requestedBy: 'nightly' },
+            NOW,
+        );
+
+        expect(facts.run).toHaveBeenCalledTimes(2);
+        expect(result).toMatchObject({ done: 2, continuedWith: null });
+        expect(
+            ofType('call-report-facts-catchup-run')[0].user_result,
+        ).toMatchObject({ maxCalls: 2, budgetHit: true, finished: true });
+        expect(queueDispatcher.dispatch).not.toHaveBeenCalled();
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('(лимит 2 звонков за ночь)'),
+            { telegram: true },
+        );
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('лимит исчерпан'),
+            { telegram: true },
+        );
+    });
+
+    it('лимит больше числа кандидатов — догоняются все, лимит не исчерпан', async () => {
+        const { useCase, facts, ofType } = threeCalls();
+
+        await useCase.execute({ ...PERIOD, maxCalls: 10 }, NOW);
+
+        expect(facts.run).toHaveBeenCalledTimes(3);
+        expect(
+            ofType('call-report-facts-catchup-run')[0].user_result,
+        ).toMatchObject({ maxCalls: 10, budgetHit: false, finished: true });
+    });
+});

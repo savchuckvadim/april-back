@@ -11,6 +11,8 @@ import {
 } from './portal-ai-settings.types';
 import {
     parseAiSettingsJson,
+    positiveInteger,
+    positiveNumber,
     toOrgNames,
     toProviderOrder,
     toUserIds,
@@ -161,7 +163,9 @@ export class PortalAiSettingsPrismaRepository
             update.whisperApiKey !== undefined ||
             update.vibecodeTranscriptionModel !== undefined ||
             update.transcriptionRoute !== undefined ||
-            update.factsCatchupNightlyBudgetRub !== undefined
+            update.factsCatchupNightlyBudgetRub !== undefined ||
+            update.factsCatchupNightlyMaxCalls !== undefined ||
+            update.yandexMonthlyBudgetRub !== undefined
         ) {
             const json = parseAiSettingsJson(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -239,12 +243,20 @@ export class PortalAiSettingsPrismaRepository
                     undefined;
             }
             if (update.factsCatchupNightlyBudgetRub !== undefined) {
-                // null или 0 — ночной догон выключен: ключ убираем.
-                const budget = update.factsCatchupNightlyBudgetRub;
-                json.factsCatchupNightlyBudgetRub =
-                    typeof budget === 'number' && budget > 0
-                        ? budget
-                        : undefined;
+                // null или 0 — лимит не задан: ключ убираем.
+                json.factsCatchupNightlyBudgetRub = positiveNumber(
+                    update.factsCatchupNightlyBudgetRub,
+                );
+            }
+            if (update.factsCatchupNightlyMaxCalls !== undefined) {
+                json.factsCatchupNightlyMaxCalls = positiveInteger(
+                    update.factsCatchupNightlyMaxCalls,
+                );
+            }
+            if (update.yandexMonthlyBudgetRub !== undefined) {
+                json.yandexMonthlyBudgetRub = positiveNumber(
+                    update.yandexMonthlyBudgetRub,
+                );
             }
             if (update.whisperApiKey !== undefined) {
                 // Пустая строка или null — убрать ключ; значение — зашифровать.
@@ -335,6 +347,12 @@ export class PortalAiSettingsPrismaRepository
             factsCatchupNightlyBudgetRub:
                 parseAiSettingsJson(row.settings)
                     .factsCatchupNightlyBudgetRub ?? null,
+            factsCatchupNightlyMaxCalls:
+                parseAiSettingsJson(row.settings).factsCatchupNightlyMaxCalls ??
+                null,
+            yandexMonthlyBudgetRub:
+                parseAiSettingsJson(row.settings).yandexMonthlyBudgetRub ??
+                null,
             transcriptionRoute:
                 parseAiSettingsJson(row.settings).transcriptionRoute ?? null,
         };

@@ -76,6 +76,9 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
             source.vibecodeTranscriptionModel ?? null;
         this.factsCatchupNightlyBudgetRub =
             source.factsCatchupNightlyBudgetRub ?? null;
+        this.factsCatchupNightlyMaxCalls =
+            source.factsCatchupNightlyMaxCalls ?? null;
+        this.yandexMonthlyBudgetRub = source.yandexMonthlyBudgetRub ?? null;
         this.transcriptionRoute = source.transcriptionRoute ?? null;
     }
 
@@ -452,13 +455,35 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
     @ApiProperty({
         description:
             'Лимит в рублях на одну ночь для ночного догона признаков в старых ' +
-            'разборах (текущий и прошлый месяц); null или 0 — ночной догон ' +
-            'выключен.',
+            'разборах (текущий и прошлый месяц); null или 0 — рублёвого лимита ' +
+            'нет. Ночной догон идёт, если задан этот лимит или лимит в звонках.',
         example: 100,
         type: Number,
         nullable: true,
     })
     factsCatchupNightlyBudgetRub: number | null;
+
+    @ApiProperty({
+        description:
+            'Лимит ночного догона признаков в звонках за одну ночь. Нужен, пока ' +
+            'модели бесплатные и рублёвый лимит не срабатывает; null или 0 — ' +
+            'лимита в звонках нет.',
+        example: 200,
+        type: Number,
+        nullable: true,
+    })
+    factsCatchupNightlyMaxCalls: number | null;
+
+    @ApiProperty({
+        description:
+            'Месячный лимит расхода на распознавание Яндексом, рублей. При ' +
+            'достижении приходит сообщение в телеграм, маршрут распознавания не ' +
+            'меняется; null или 0 — лимита нет.',
+        example: 1500,
+        type: Number,
+        nullable: true,
+    })
+    yandexMonthlyBudgetRub: number | null;
 
     @ApiProperty({
         description:
@@ -905,6 +930,41 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @Min(0)
     @Max(100000)
     factsCatchupNightlyBudgetRub?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Лимит ночного догона признаков в звонках за одну ночь: догон ' +
+            'останавливается, когда за ночь обработано столько звонков. Действует ' +
+            'вместе с рублёвым лимитом или сам по себе. Пусто, null или 0 — ' +
+            'лимита в звонках нет.',
+        example: 200,
+        type: Number,
+        minimum: 0,
+        maximum: 5000,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(5000)
+    factsCatchupNightlyMaxCalls?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Месячный лимит расхода на распознавание Яндексом, рублей. Когда ' +
+            'портал дошёл до лимита, приходит одно сообщение в телеграм; маршрут ' +
+            'распознавания не меняется. Пусто, null или 0 — лимита нет.',
+        example: 1500,
+        type: Number,
+        minimum: 0,
+        maximum: 1000000,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(1000000)
+    yandexMonthlyBudgetRub?: number | null;
 
     @ApiPropertyOptional({
         description:
