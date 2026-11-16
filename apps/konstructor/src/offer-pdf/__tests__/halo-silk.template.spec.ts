@@ -6,7 +6,6 @@ jest.mock('@react-pdf/renderer', () =>
         .createReactPdfMock(),
 );
 
-import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { HALO_ASSETS } from '../templates/halo/halo.theme';
 import { haloTemplate } from '../templates/halo/halo.template';
 import { GARANT_PROMO } from '../templates/kit/promo/garant-promo';
@@ -23,7 +22,7 @@ describe.each([
         const text = collectTexts(
             template.render(
                 createOfferPdfModelFixture({
-                    templateCode: template.code as OfferPdfTemplateCode,
+                    templateCode: template.code,
                 }),
             ),
         ).join('\n');
