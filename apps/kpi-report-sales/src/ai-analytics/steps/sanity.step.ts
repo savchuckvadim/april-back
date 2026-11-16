@@ -95,7 +95,10 @@ export class SanityStep implements AiAnalyticsPipelineStep {
         const minN =
             resolveNumberParam('n_min_none', ctx.registry) ??
             AI_SANITY_LIMITS.minObservations;
-        const rows = callFacts(bus.get(AI_PIPELINE_BUS_KEYS.callsRows));
+        const rows = callFacts(
+            bus.get(AI_PIPELINE_BUS_KEYS.callsRows),
+            ctx.timeZone,
+        );
         const months = await this.monthFacts(ctx);
         const leak = leakFactOf(bus.get(AI_PIPELINE_BUS_KEYS.timestampLeak));
         const rules = [

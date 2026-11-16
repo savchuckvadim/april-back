@@ -68,13 +68,19 @@ const levelFacts = (count: number, sales: number): SanityLevelFact[] =>
 function calls(
     count: number,
     durationSec: number,
-    options: { callType?: string; managerId?: string; alert?: boolean } = {},
+    options: {
+        callType?: string;
+        managerId?: string;
+        alert?: boolean;
+        weekKey?: string | null;
+    } = {},
 ): SanityCallFact[] {
     return Array.from({ length: count }, () => ({
         managerId: options.managerId ?? '10',
         callType: options.callType ?? 'presentation',
         durationSec,
         alert: options.alert ?? false,
+        weekKey: options.weekKey ?? null,
     }));
 }
 
@@ -243,6 +249,71 @@ describe('Правило «шум алертов»', () => {
             'У одного из менеджеров 4 тревожных сигнала за неделю при допустимых 3',
         );
         expect(result.warnings[0]).not.toContain('10');
+        // Менеджер назван не в тексте, а в разбивке правила.
+        expect(result.details).toEqual([
+            { managerId: '10', weekKey: null, alerts: 4 },
+        ]);
+    });
+
+    it('месячный прогон: сигналы считаются по неделе звонка, а не за весь месяц', () => {
+        const rows = [
+            ...calls(3, 300, {
+                alert: true,
+                managerId: '10',
+                weekKey: '2026-W45',
+            }),
+            ...calls(3, 300, {
+                alert: true,
+                managerId: '10',
+                weekKey: '2026-W46',
+            }),
+            ...calls(6, 300, { managerId: '20', weekKey: '2026-W46' }),
+        ];
+
+        const result = alertsRule(rows, MIN_N);
+
+        // Шесть сигналов за месяц, но не больше трёх в неделю — не шум.
+        expect(result.status).toBe('ok');
+        expect(result.details).toEqual([
+            { managerId: '10', weekKey: '2026-W45', alerts: 3 },
+            { managerId: '10', weekKey: '2026-W46', alerts: 3 },
+        ]);
+    });
+
+    it('шумная неделя названа в предупреждении, остальные недели — только в разбивке', () => {
+        const rows = [
+            ...calls(5, 300, {
+                alert: true,
+                managerId: '20',
+                weekKey: '2026-W46',
+            }),
+            ...calls(1, 300, {
+                alert: true,
+                managerId: '10',
+                weekKey: '2026-W45',
+            }),
+            ...calls(6, 300, { managerId: '30', weekKey: '2026-W46' }),
+        ];
+
+        const result = alertsRule(rows, MIN_N);
+
+        expect(result.status).toBe('warning');
+        expect(result.warnings).toEqual([
+            expect.stringContaining(
+                '5 тревожных сигналов за неделю с 9 ноября при допустимых 3',
+            ) as string,
+        ]);
+        expect(result.details).toEqual([
+            { managerId: '20', weekKey: '2026-W46', alerts: 5 },
+            { managerId: '10', weekKey: '2026-W45', alerts: 1 },
+        ]);
+    });
+
+    it('сигналов нет — разбивки нет', () => {
+        const result = alertsRule(calls(MIN_N, 300), MIN_N);
+
+        expect(result.status).toBe('ok');
+        expect(result.details).toBeUndefined();
     });
 
     it('три алерта на менеджера — ещё не шум', () => {
@@ -430,6 +501,8 @@ describe('Разбор шины, стора и настроек', () => {
                 riskFlags: ['conflict'],
                 riskEvidence: [{ flag: 'conflict', quote: 'Слушайте сюда' }],
                 coachingPriority: null,
+                // 22:30 UTC воскресенья — в Москве уже понедельник, неделя 47.
+                callStartedAt: new Date('2026-11-15T22:30:00.000Z'),
             },
             // Отменённый флаг и флаг без цитаты — не сигнал.
             {
@@ -449,12 +522,14 @@ describe('Разбор шины, стора и настроек', () => {
                 callType: 'cold',
                 durationSec: 120,
                 alert: true,
+                weekKey: '2026-W47',
             },
             {
                 managerId: '11',
                 callType: 'cold',
                 durationSec: 120,
                 alert: false,
+                weekKey: null,
             },
         ]);
     });
