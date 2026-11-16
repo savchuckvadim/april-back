@@ -47,10 +47,23 @@ export class InitServicesService {
         private readonly infogroupService: InfogroupService,
     ) {}
 
-    async get(): Promise<IKServices> {
-        const complects = (await this.complectService.findAll()) || [];
-        const packages = (await this.packageService.findAll()) || [];
-        const groups = (await this.infogroupService.findMany()) || [];
+    /**
+     * `preloaded` — комплекты, уже прочитанные вызывающим (см.
+     * InitComplectService.get). Пакеты и группы друг от друга не зависят —
+     * читаются одновременно.
+     */
+    async get(preloaded?: ComplectEntity[] | null): Promise<IKServices> {
+        const [loadedComplects, loadedPackages, loadedGroups] =
+            await Promise.all([
+                preloaded === undefined
+                    ? this.complectService.findAll()
+                    : preloaded,
+                this.packageService.findAll(),
+                this.infogroupService.findMany(),
+            ]);
+        const complects = loadedComplects || [];
+        const packages = loadedPackages || [];
+        const groups = loadedGroups || [];
 
         return {
             lt: this.ltServices(groups),

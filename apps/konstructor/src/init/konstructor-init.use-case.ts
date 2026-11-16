@@ -13,6 +13,7 @@ import {
     type IInitRegion,
 } from './services/init.region.service';
 import {
+    ComplectService,
     PriceEntity,
     PriceService,
     RegionEntity,
@@ -66,22 +67,43 @@ export class KonstructorInitUseCase {
         private readonly servicesService: InitServicesService,
         private readonly measureService: MeasureService,
         private readonly portalMeasureService: PortalMeasureService,
+        private readonly complectService: ComplectService,
     ) {}
 
+    /**
+     * Каталог конструктора. Разделы друг от друга не зависят и читаются
+     * одновременно: раньше девять запросов шли подряд, и вход в конструктор
+     * ждал их сумму. Комплекты нужны двум разделам (сами комплекты и блок
+     * сервисов) — читаются один раз: это самый тяжёлый запрос init.
+     */
     async init(domain: string): Promise<KonstructorInitDataDto> {
         const portal = await this.portalStoreService.getPortalByDomain(domain);
         if (!portal) {
             throw new Error('Portal not found');
         }
-        const complects = await this.complect.get();
-        const infoblocks = await this.infoblock.get();
         const portalId = Number(portal.id);
-        const regions = await this.region.get(portalId);
-        const contracts = await this.contract.findByPortalId(portalId);
-        const supplies = await this.supplyService.findMany();
-        const prices = await this.priceService.findMany();
-        const services = await this.servicesService.get();
-        const measures = await this.getMeasures(portalId);
+        const complectEntities = this.complectService.findAll();
+        const [
+            complects,
+            infoblocks,
+            regions,
+            contracts,
+            supplies,
+            prices,
+            services,
+            measures,
+        ] = await Promise.all([
+            complectEntities.then(entities => this.complect.get(entities)),
+            this.infoblock.get(),
+            this.region.get(portalId),
+            this.contract.findByPortalId(portalId),
+            this.supplyService.findMany(),
+            this.priceService.findMany(),
+            complectEntities.then(entities =>
+                this.servicesService.get(entities),
+            ),
+            this.getMeasures(portalId),
+        ]);
 
         return {
             complects: this.getComplectsDto(
