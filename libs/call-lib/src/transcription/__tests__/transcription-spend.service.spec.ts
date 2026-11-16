@@ -8,6 +8,7 @@ import type {
     TranscriptionSpendRepository,
 } from '../repository/transcription-spend.repository';
 import { TranscriptionSpendService } from '../services/transcription-spend.service';
+import { YandexSttPriceService } from '../services/yandex-stt-price.service';
 
 const NOW = new Date('2026-11-13T12:00:00Z');
 
@@ -33,6 +34,8 @@ function setup(options: {
     calls?: SpendCallRow[];
     price?: string | null | Error;
     portalIds?: Map<string, number>;
+    /** Месячные лимиты Яндекса порталов: домен → рубли. */
+    budgets?: Record<string, number>;
 }) {
     const aggregate = jest.fn(
         (
@@ -59,12 +62,28 @@ function setup(options: {
                 : Promise.resolve(price),
         getMany: () => Promise.resolve({}),
     };
+    const budgets = options.budgets ?? {};
+    const portalAiSettings = {
+        findEnabled: jest.fn().mockResolvedValue(
+            Object.entries(budgets).map(([domain, yandexMonthlyBudgetRub]) => ({
+                domain,
+                yandexMonthlyBudgetRub,
+            })),
+        ),
+        getByDomain: jest.fn((domain: string) =>
+            Promise.resolve(
+                domain in budgets
+                    ? { yandexMonthlyBudgetRub: budgets[domain] }
+                    : null,
+            ),
+        ),
+    };
     const service = new TranscriptionSpendService(
         repository,
-        { get: () => undefined } as never,
-        settings,
+        new YandexSttPriceService({ get: () => undefined } as never, settings),
+        portalAiSettings as never,
     );
-    return { service, aggregate, repository };
+    return { service, aggregate, repository, portalAiSettings };
 }
 
 describe('TranscriptionSpendService — расход на распознавание', () => {
@@ -182,5 +201,70 @@ describe('TranscriptionSpendService — расход на распознаван
         ]);
         // Звонок короче 15 секунд — как 15 секунд.
         expect(portal.topCalls[0].rub).toBe(0.15);
+    });
+
+    /** 16.11.2026: месячный лимит Яндекса портала — на странице расхода и для оповещения. */
+    it('лимит Яндекса: в сводке у портала с лимитом, у остальных — null; в подробностях портала', async () => {
+        const { service } = setup({
+            byGroup: {
+                domain: [
+                    row('rich.bitrix24.ru', 'yandex', 10, 6000),
+                    row('free.bitrix24.ru', 'bitrix-vibecode', 5, 300),
+                ],
+            },
+            budgets: { 'rich.bitrix24.ru': 1500 },
+        });
+
+        const summary = await service.summary('2026-11', NOW);
+        expect(summary.portals.map(p => [p.domain, p.yandexBudgetRub])).toEqual(
+            [
+                ['rich.bitrix24.ru', 1500],
+                ['free.bitrix24.ru', null],
+            ],
+        );
+        const portal = await service.portal('rich.bitrix24.ru', '2026-11', NOW);
+        expect(portal.yandexBudgetRub).toBe(1500);
+    });
+
+    it('лимиты не прочитались — страница расхода всё равно собирается', async () => {
+        const { service, portalAiSettings } = setup({
+            byGroup: { domain: [row('a.bitrix24.ru', 'yandex', 1, 600)] },
+        });
+        portalAiSettings.findEnabled.mockRejectedValue(new Error('нет базы'));
+        portalAiSettings.getByDomain.mockRejectedValue(new Error('нет базы'));
+
+        const summary = await service.summary('2026-11', NOW);
+        expect(summary.portals[0]).toMatchObject({
+            yandexBudgetRub: null,
+            totals: { rub: 6 },
+        });
+        expect(
+            (await service.portal('a.bitrix24.ru', '2026-11', NOW))
+                .yandexBudgetRub,
+        ).toBeNull();
+    });
+
+    it('расход портала за текущий месяц — для оповещения о лимите', async () => {
+        const { service, aggregate } = setup({
+            byGroup: {
+                domain: [
+                    row('a.bitrix24.ru', 'yandex', 3, 9000),
+                    row('a.bitrix24.ru', 'bitrix-vibecode', 7, 700),
+                ],
+            },
+        });
+
+        const spend = await service.yandexMonth('a.bitrix24.ru', NOW);
+
+        expect(spend.month).toBe('2026-11');
+        expect(spend.totals).toMatchObject({
+            rub: 90,
+            yandexCalls: 3,
+            yandexMinutes: 150,
+        });
+        expect(aggregate).toHaveBeenCalledWith(
+            expect.objectContaining({ domain: 'a.bitrix24.ru' }),
+            'domain',
+        );
     });
 });

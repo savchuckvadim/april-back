@@ -259,3 +259,56 @@ export function spendGroups<T extends SpendAggregate>(
     }
     return result;
 }
+
+const SPEND_MONTH_NAMES = [
+    'январь',
+    'февраль',
+    'март',
+    'апрель',
+    'май',
+    'июнь',
+    'июль',
+    'август',
+    'сентябрь',
+    'октябрь',
+    'ноябрь',
+    'декабрь',
+] as const;
+
+/** «ноябрь 2026» из YYYY-MM; кривой месяц — как есть. */
+export function spendMonthLabel(month: string): string {
+    const match = MONTH_RE.exec(month);
+    return match
+        ? `${SPEND_MONTH_NAMES[Number(match[2]) - 1]} ${match[1]}`
+        : month;
+}
+
+/** Достигнут ли месячный лимит Яндекса; лимит не задан — нет. */
+export function yandexBudgetReached(
+    spentRub: number,
+    budgetRub: number | null | undefined,
+): boolean {
+    return (
+        typeof budgetRub === 'number' && budgetRub > 0 && spentRub >= budgetRub
+    );
+}
+
+/**
+ * Оповещение о достигнутом месячном лимите Яндекса (16.11.2026). Только
+ * сообщает: маршрут распознавания не меняется — отключать Яндекс и на что
+ * его заменить, решает человек в настройках AI портала.
+ */
+export function yandexBudgetAlertText(input: {
+    domain: string;
+    month: string;
+    budgetRub: number;
+    totals: Pick<SpendTotals, 'rub' | 'yandexMinutes' | 'yandexCalls'>;
+}): string {
+    return (
+        `Яндекс: портал ${input.domain} за ${spendMonthLabel(input.month)} потратил на распознавание ` +
+        `${input.totals.rub.toFixed(2)} ₽ — месячный лимит ${input.budgetRub} ₽ достигнут ` +
+        `(${input.totals.yandexCalls} звонков, ${input.totals.yandexMinutes} мин). ` +
+        'Маршрут распознавания не менялся: Яндекс продолжает распознавать. ' +
+        'Тратить меньше — в настройках AI портала, карточка «Кто распознаёт звонки».'
+    );
+}

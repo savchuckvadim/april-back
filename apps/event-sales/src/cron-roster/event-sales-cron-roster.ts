@@ -135,6 +135,12 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
         purpose: 'разбор звонков: догон неполных и упавших разборов',
     },
     {
+        name: 'transcription-budget-alert',
+        purpose: 'распознавание: оповещение о месячном лимите Яндекса',
+        include: portal => (portal.yandexMonthlyBudgetRub ?? 0) > 0,
+        note: portal => `лимит ${portal.yandexMonthlyBudgetRub ?? 0} ₽ в месяц`,
+    },
+    {
         name: 'call-report-smart-backfill',
         purpose: 'разбор звонков: дописывание карточек смарта',
     },

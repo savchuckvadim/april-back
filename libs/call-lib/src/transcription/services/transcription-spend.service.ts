@@ -1,12 +1,5 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-    envOnlyReader,
-    integerSettingValue,
-    TRANSCRIPTION_SPEND_SETTING_RULES,
-    VENDOR_SETTINGS_READER,
-    type VendorSettingsReader,
-} from '@lib/vendor-settings';
+import { Injectable, Logger } from '@nestjs/common';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import type {
     TranscriptionSpendPortalDto,
     TranscriptionSpendPortalRowDto,
@@ -20,40 +13,41 @@ import {
     spendRub,
     spendTotals,
     YANDEX_MIN_BILLED_SEC,
+    type SpendTotals,
 } from '../lib/transcription-spend.util';
 import {
     type SpendSlice,
     TranscriptionSpendRepository,
 } from '../repository/transcription-spend.repository';
+import { YandexSttPriceService } from './yandex-stt-price.service';
 
 /** Сколько самых длинных звонков Яндекса показывать у портала. */
 export const SPEND_TOP_CALLS = 20;
 /** Сколько сотрудников показывать у портала. */
 export const SPEND_TOP_USERS = 50;
 
-const PRICE_RULE =
-    TRANSCRIPTION_SPEND_SETTING_RULES.YANDEX_STT_KOPECKS_PER_MINUTE;
+/** Расход портала за месяц — для оповещения о лимите. */
+export interface YandexMonthSpend {
+    /** Месяц по Москве, YYYY-MM. */
+    month: string;
+    totals: SpendTotals;
+}
 
 /**
- * Расход на распознавание звонков для админки: сводка по всем порталам и
- * подробности одного портала за месяц. Только чтение базы; цена минуты
- * Яндекса — из «Настроек приложения» (YANDEX_STT_KOPECKS_PER_MINUTE).
+ * Расход на распознавание звонков: сводка по всем порталам и подробности
+ * одного портала за месяц (админка), расход портала за текущий месяц
+ * (оповещение о лимите). Только чтение базы; цена минуты Яндекса — из
+ * «Настроек приложения», месячный лимит портала — из настроек AI портала.
  */
 @Injectable()
 export class TranscriptionSpendService {
     private readonly logger = new Logger(TranscriptionSpendService.name);
-    private readonly settings: VendorSettingsReader;
 
     constructor(
         private readonly repository: TranscriptionSpendRepository,
-        configService: ConfigService,
-        @Optional()
-        @Inject(VENDOR_SETTINGS_READER)
-        settings?: VendorSettingsReader,
-    ) {
-        this.settings =
-            settings ?? envOnlyReader(key => configService.get<string>(key));
-    }
+        private readonly price: YandexSttPriceService,
+        private readonly portalAiSettings: PortalAiSettingsService,
+    ) {}
 
     /** Сводка по всем порталам за месяц: самые дорогие первыми. */
     async summary(
@@ -61,9 +55,10 @@ export class TranscriptionSpendService {
         now = new Date(),
     ): Promise<TranscriptionSpendSummaryDto> {
         const range = spendMonthRange(month, now);
-        const [kopecks, rows] = await Promise.all([
-            this.kopecksPerMinute(),
+        const [kopecks, rows, budgets] = await Promise.all([
+            this.price.kopecksPerMinute(),
             this.repository.aggregate(range, 'domain'),
+            this.budgets(),
         ]);
         const groups = spendGroups(rows, row => row.key, kopecks);
         const ids = await this.repository.portalIds(
@@ -73,6 +68,7 @@ export class TranscriptionSpendService {
             ([domain, group]) => ({
                 domain,
                 portalId: ids.get(domain) ?? null,
+                yandexBudgetRub: budgets.get(domain) ?? null,
                 totals: group.totals,
                 providers: group.providers,
             }),
@@ -98,15 +94,23 @@ export class TranscriptionSpendService {
         const range = spendMonthRange(month, now);
         const previous = spendMonthRange(range.month, now, -1);
         const slice: SpendSlice = { ...range, domain };
-        const [kopecks, providerRows, previousRows, dayRows, userRows, calls] =
-            await Promise.all([
-                this.kopecksPerMinute(),
-                this.repository.aggregate(slice, 'domain'),
-                this.repository.aggregate({ ...previous, domain }, 'domain'),
-                this.repository.aggregate(slice, 'day'),
-                this.repository.aggregate(slice, 'user'),
-                this.repository.longestYandexCalls(slice, SPEND_TOP_CALLS),
-            ]);
+        const [
+            kopecks,
+            providerRows,
+            previousRows,
+            dayRows,
+            userRows,
+            calls,
+            yandexBudgetRub,
+        ] = await Promise.all([
+            this.price.kopecksPerMinute(),
+            this.repository.aggregate(slice, 'domain'),
+            this.repository.aggregate({ ...previous, domain }, 'domain'),
+            this.repository.aggregate(slice, 'day'),
+            this.repository.aggregate(slice, 'user'),
+            this.repository.longestYandexCalls(slice, SPEND_TOP_CALLS),
+            this.budgetOf(domain),
+        ]);
 
         const providers = spendByProvider(providerRows, kopecks);
         const days = [...spendGroups(dayRows, row => row.key, kopecks)]
@@ -133,6 +137,7 @@ export class TranscriptionSpendService {
             month: range.month,
             domain,
             kopecksPerMinute: kopecks,
+            yandexBudgetRub,
             totals: spendTotals(providers),
             previousTotals: spendTotals(spendByProvider(previousRows, kopecks)),
             providers,
@@ -148,18 +153,54 @@ export class TranscriptionSpendService {
         };
     }
 
-    /** Цена минуты Яндекса; сбой чтения настроек — цена по умолчанию. */
-    private async kopecksPerMinute(): Promise<number> {
+    /** Расход портала за месяц, в который попадает `now` (по Москве). */
+    async yandexMonth(
+        domain: string,
+        now = new Date(),
+    ): Promise<YandexMonthSpend> {
+        const range = spendMonthRange(undefined, now);
+        const [kopecks, rows] = await Promise.all([
+            this.price.kopecksPerMinute(),
+            this.repository.aggregate({ ...range, domain }, 'domain'),
+        ]);
+        return {
+            month: range.month,
+            totals: spendTotals(spendByProvider(rows, kopecks)),
+        };
+    }
+
+    /**
+     * Месячные лимиты Яндекса порталов с включённым разбором: домен → рубли.
+     * Сбой чтения страницу расхода не роняет — лимиты просто не показаны.
+     */
+    private async budgets(): Promise<Map<string, number>> {
         try {
-            return integerSettingValue(
-                await this.settings.get('YANDEX_STT_KOPECKS_PER_MINUTE'),
-                PRICE_RULE,
+            const portals = await this.portalAiSettings.findEnabled();
+            return new Map(
+                portals.flatMap(portal =>
+                    portal.yandexMonthlyBudgetRub
+                        ? [[portal.domain, portal.yandexMonthlyBudgetRub]]
+                        : [],
+                ),
             );
         } catch (error) {
             this.logger.warn(
-                `Цена минуты Яндекса не прочиталась, считаю по умолчанию: ${(error as Error).message}`,
+                `Лимиты Яндекса порталов не прочитаны: ${(error as Error).message}`,
             );
-            return PRICE_RULE.defaultValue;
+            return new Map();
+        }
+    }
+
+    /** Месячный лимит Яндекса портала; не задан или не прочитан — null. */
+    private async budgetOf(domain: string): Promise<number | null> {
+        try {
+            const record = await this.portalAiSettings.getByDomain(domain);
+            return record?.yandexMonthlyBudgetRub ?? null;
+        } catch (error) {
+            this.logger.warn(
+                `Лимит Яндекса портала ${domain} не прочитан: ${(error as Error).message}`,
+            );
+            return null;
         }
     }
 }

@@ -17,6 +17,7 @@ import { QueueModule } from '@lib/queue/queue.module';
 import {
     TranscriptionModule,
     TranscriptionProviderModule,
+    TranscriptionSpendModule,
     AiModule,
     CallReportAnalyticsModule,
     CallReportSmartModule,
@@ -54,6 +55,8 @@ import { CallReportDomainRosterService } from './cron/call-report-domain-roster.
 import { CallReportScheduler } from './cron/call-report.scheduler';
 import { CallReportCatchUpScheduler } from './cron/call-report-catch-up.scheduler';
 import { CallAnalysisRepairScheduler } from './cron/call-analysis-repair.scheduler';
+import { TranscriptionBudgetAlertScheduler } from './cron/transcription-budget-alert.scheduler';
+import { TranscriptionBudgetAlertUseCase } from './use-cases/transcription-budget-alert.use-case';
 import { CallAnalysisRepairStore } from './services/call-analysis-repair.store';
 import { CallAnalysisRepairUseCase } from './use-cases/call-analysis-repair.use-case';
 import { CallReportWeeklyScheduler } from './cron/call-report-weekly.scheduler';
@@ -78,6 +81,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         QueueModule,
         TranscriptionModule,
         TranscriptionProviderModule,
+        // Расход на распознавание — для оповещения о месячном лимите Яндекса
+        TranscriptionSpendModule,
         AiModule,
         AiRagModule,
         // Шлюз структурных LLM-вызовов: VibeCode + запасной OpenAI-совместимый
@@ -154,6 +159,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallAnalysisRepairStore,
         CallAnalysisRepairUseCase,
         CallAnalysisRepairScheduler,
+        TranscriptionBudgetAlertUseCase,
+        TranscriptionBudgetAlertScheduler,
         // Недельный Excel-отчёт получателям (пятница 19:00 МСК)
         CallReportWeeklyScheduler,
         // Ночной ревизор (Фаза 3): свод по сущностям в 23:30 МСК

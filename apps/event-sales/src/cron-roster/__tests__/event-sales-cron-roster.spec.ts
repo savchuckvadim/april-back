@@ -64,6 +64,7 @@ const EVENT_SALES_CRONS = [
     'presentation-audit',
     'reject-revive',
     'tmc-approval-rescue',
+    'transcription-budget-alert',
     'xo-dispatch-rescue',
 ];
 
