@@ -14,6 +14,7 @@ import {
 } from '../services/whisper-compatible-transcription.service';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
 import { YandexCallRecognizer } from './yandex-call-recognizer';
+import { TranscriptionSegmentsWatch } from './transcription-segments-watch';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
@@ -116,6 +117,10 @@ export class TranscriptionRouterService {
     private readonly whisperLimiter: Semaphore;
     /** Yandex-путь: S3, число каналов по заголовку MP3, повтор по ответу Яндекса. */
     private readonly yandexRecognizer: YandexCallRecognizer;
+    /** Текст без таймкодов — в журнал и раз в час в телеграм. */
+    private readonly segmentsWatch = new TranscriptionSegmentsWatch(
+        this.logger,
+    );
 
     constructor(
         private readonly configService: ConfigService,
@@ -181,7 +186,15 @@ export class TranscriptionRouterService {
 
         for (const [index, step] of steps.entries()) {
             try {
-                return await this.runStep(step, input, prefs);
+                const result = await this.runStep(step, input, prefs);
+                if (result.segments === null && result.text.trim() !== '') {
+                    this.segmentsWatch.report({
+                        domain: input.domain,
+                        stepName: stepName(step),
+                        fileName: input.fileName,
+                    });
+                }
+                return result;
             } catch (error) {
                 const next = steps[index + 1];
                 if (!next || !canFallBack(step, index, error)) throw error;

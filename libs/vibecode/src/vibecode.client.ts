@@ -32,9 +32,14 @@ export interface VibecodeTranscriptionDetailed {
     segments: unknown;
 }
 
-/** Ответ 4xx на `verbose_json` — формат не поддержан, повторяем без него. */
-const isClientError = (error: unknown): boolean =>
-    /\[4\d\d\]/.test((error as Error)?.message ?? '');
+/**
+ * Ответ «формат не принят» на `verbose_json` — 400, 415 или 422: повторяем
+ * без формата. Остальные 4xx (401 ключ, 404 модель, 413 размер, 429 лимит)
+ * формат не лечит: раньше на них тоже шёл повтор без сегментов, и минутный
+ * лимит (429) молча стоил таймкодов (16.11.2026).
+ */
+export const isTranscriptionFormatRejected = (error: unknown): boolean =>
+    /\[(400|415|422)\]/.test((error as Error)?.message ?? '');
 
 interface VibecodeChatCompletionsResponse {
     choices?: { message?: { content?: string } }[];
@@ -75,7 +80,13 @@ export interface VibecodeStructuredCompletionOptions {
 
 /** Базовый адрес VibeCode; экспортируется ради чек-листа провайдеров в админке. */
 export const VIBECODE_BASE_URL = 'https://vibecode.bitrix24.tech/v1';
-const TRANSCRIPTION_MODEL = 'bitrix/deepdml/faster-whisper-large-v3-turbo-ct2';
+/**
+ * Модель транскрибации по умолчанию — когда у портала нет своей в настройках
+ * AI. С 16.11.2026 Whisper (`bitrix/deepdml/faster-whisper-large-v3-turbo-ct2`)
+ * выведен с ИИ-роутера; имя модели уходит в каждом запросе, поэтому старое
+ * значение по умолчанию слало бы отключённую модель.
+ */
+export const VIBECODE_TRANSCRIPTION_MODEL = 'bitrix/bitrixgpt-5.6-transcribe';
 const ANALYSIS_MODEL = 'bitrix/bitrixgpt-5.5';
 
 /**
@@ -140,14 +151,15 @@ export class VibeCodeClient {
 
     /**
      * Транскрибация с сегментами (`response_format=verbose_json`, П6).
-     * Прокси, не знающий формата, отвечает 4xx — тогда один повтор без
-     * него; таймауты и 5xx наружу (fallback на Yandex решает роутер).
+     * Модель, не знающая формата, отвечает 400 / 415 / 422 — тогда один
+     * повтор без него; остальные ошибки, таймауты и 5xx наружу (fallback
+     * на Yandex решает роутер, он же сообщает о пропавших таймкодах).
      */
     async transcribeAudioDetailed(
         buffer: Buffer,
         fileName: string,
         apiKey: string,
-        model: string = TRANSCRIPTION_MODEL,
+        model: string = VIBECODE_TRANSCRIPTION_MODEL,
     ): Promise<VibecodeTranscriptionDetailed> {
         try {
             return await this.postTranscription(
@@ -158,7 +170,7 @@ export class VibeCodeClient {
                 model,
             );
         } catch (error) {
-            if (!isClientError(error)) throw error;
+            if (!isTranscriptionFormatRejected(error)) throw error;
             this.logger.warn(
                 `verbose_json не принят (${(error as Error).message}) — повтор без сегментов`,
             );
@@ -174,9 +186,8 @@ export class VibeCodeClient {
     }
 
     /**
-     * `model` — из настроек AI портала (vibecodeTranscriptionModel), иначе
-     * константа клиента: с 16.11.2026 Whisper уходит с ИИ-роутера, портал
-     * может заранее перейти на bitrix/bitrixgpt-5.6-transcribe.
+     * `model` — из настроек AI портала (vibecodeTranscriptionModel) или из
+     * роли маршрута, иначе {@link VIBECODE_TRANSCRIPTION_MODEL}.
      */
     private async postTranscription(
         buffer: Buffer,

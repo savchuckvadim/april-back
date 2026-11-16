@@ -58,7 +58,7 @@ const text = await this.vibecode.transcribeAudio(buffer, fileName, apiKey);
 
 ## Модели
 
-- Транскрибация: `bitrix/deepdml/faster-whisper-large-v3-turbo-ct2`
+- Транскрибация: `bitrix/bitrixgpt-5.6-transcribe` (с 16.11.2026; Whisper `bitrix/deepdml/faster-whisper-large-v3-turbo-ct2` выведен с ИИ-роутера). Модель портала — в настройках AI портала
 - Анализ/классификация: `bitrix/bitrixgpt-5.5`
 
 ## Потребители в монорепе
