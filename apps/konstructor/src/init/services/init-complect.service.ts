@@ -63,8 +63,16 @@ export class InitComplectService {
         private readonly infoGroupService: InfogroupService,
     ) {}
 
-    async get(): Promise<IComplects | null> {
-        const complects = await this.complectService.findAll();
+    /**
+     * `preloaded` — комплекты, уже прочитанные вызывающим: тот же список нужен
+     * и блоку сервисов, а запрос это самый тяжёлый в init. Не переданы —
+     * читаем сами.
+     */
+    async get(preloaded?: ComplectEntity[] | null): Promise<IComplects | null> {
+        const complects =
+            preloaded === undefined
+                ? await this.complectService.findAll()
+                : preloaded;
         if (!complects) return null;
 
         // В таблице complects лежат и сервисы (lt/star/consalting) —
