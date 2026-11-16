@@ -61,6 +61,7 @@ export class OfferPdfController {
     @ApiParam({
         name: 'code',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         description: 'Код стиля',
     })
     @ApiQuery({
@@ -83,15 +84,19 @@ export class OfferPdfController {
         @Res() res: Response,
         @Query('palette') palette?: string,
     ): Promise<void> {
-        const pdf = await this.stylePreviewService.preview(code, palette);
+        const preview = await this.stylePreviewService.preview(code, palette);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader(
             'Content-Disposition',
             `inline; filename="offer-style-${code}.pdf"`,
         );
-        res.setHeader('Content-Length', pdf.length.toString());
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.end(pdf);
+        res.setHeader('Content-Length', preview.buffer.length.toString());
+        // собрано без картинок или логотипа — браузеру не запоминать: файлы занесут, превью сменится
+        res.setHeader(
+            'Cache-Control',
+            preview.complete ? 'public, max-age=3600' : 'no-store',
+        );
+        res.end(preview.buffer);
     }
 
     @ApiOperation({

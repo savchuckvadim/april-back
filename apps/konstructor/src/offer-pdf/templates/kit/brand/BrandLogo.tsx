@@ -18,7 +18,7 @@ export const BrandLogo: FC<BrandLogoProps> = ({ logo, color, height }) => {
         <Svg
             width={width}
             height={height}
-            viewBox={`0 0 ${logo.width} ${logo.height}`}
+            viewBox={`${logo.minX ?? 0} ${logo.minY ?? 0} ${logo.width} ${logo.height}`}
         >
             <G transform={logo.groupTransform}>
                 {logo.paths.map((path, index) => (

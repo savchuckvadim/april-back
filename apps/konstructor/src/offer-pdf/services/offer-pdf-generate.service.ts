@@ -34,6 +34,8 @@ export interface OfferPdfGenerateResult extends OfferPdfDealResult {
     durationMs: number;
     /** Размер файла в байтах */
     size: number;
+    /** Файлы оформления стиля, которых нет на сервере: документ собран без них */
+    missingAssets: string[];
 }
 
 interface SavedPdf {
@@ -87,6 +89,7 @@ export class OfferPdfGenerateService {
             templateCode: rendered.templateCode,
             durationMs: rendered.durationMs,
             size: rendered.buffer.length,
+            missingAssets: rendered.missingAssets,
             ...deal,
         };
     }

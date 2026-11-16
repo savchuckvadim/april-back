@@ -23,6 +23,7 @@ const createService = (bitrix: 'ok' | 'fallback' | 'throws' = 'ok') => {
             buffer,
             durationMs: 42,
             templateCode: OfferPdfTemplateCode.CLASSIC,
+            missingAssets: ['logos/garant_logo_pink.svg'],
         }),
     };
     const storage = { saveFile: jest.fn().mockResolvedValue('/abs/offer.pdf') };
@@ -160,6 +161,8 @@ describe('генерация PDF-КП', () => {
             templateCode: OfferPdfTemplateCode.CLASSIC,
             durationMs: 42,
             size: buffer.length,
+            // чего не хватило стилю — уходит в ответ, фронт предупредит менеджера
+            missingAssets: ['logos/garant_logo_pink.svg'],
             savedToDeal: true,
             bitrixLink: BITRIX_LINK,
             dealMessage: null,

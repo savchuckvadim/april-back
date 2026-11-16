@@ -23,6 +23,11 @@ export interface OfferPdfRenderResult {
     layout: LayoutNode;
     /** Поля, подобранные под шапку и подвал; null — хватило полей шаблона */
     frame: OfferPdfPageFrame | null;
+    /**
+     * Картинки и логотипы стиля, которых не нашлось в storage: документ собран
+     * без них. Пути внутри storage/app; пусто — всё на месте.
+     */
+    missingAssets: string[];
 }
 
 /**
@@ -49,10 +54,16 @@ export class OfferPdfRenderService {
             );
         }
         // картинки и логотипы стиля — из storage, до рендера
-        const assets = await this.assetStore.load({
+        const { assets, missing } = await this.assetStore.load({
             images: template.assets,
             logos: template.logos,
         });
+        if (missing.length) {
+            // не падаем: КП без фона лучше, чем никакого, но это видно в логе и в ответе
+            this.logger.error(
+                `КП «${template.code}» собран без оформления — нет файлов в storage/app: ${missing.join(', ')}`,
+            );
+        }
         // настройки, которые стиль задаёт сам, — поверх выбора менеджера
         const model = { ...withLockedSettings(input, template), assets };
         registerOfferPdfFonts();
@@ -77,6 +88,7 @@ export class OfferPdfRenderService {
             templateCode: template.code,
             layout: rendered.layout,
             frame,
+            missingAssets: missing,
         };
     }
 }

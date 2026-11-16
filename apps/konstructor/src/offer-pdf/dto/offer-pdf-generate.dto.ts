@@ -146,6 +146,7 @@ export class OfferPdfGenerateDto extends OmitType(
         description:
             'Код встроенного PDF-шаблона (список — GET /offer-pdf/templates).',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         default: OfferPdfTemplateCode.CLASSIC,
     })
     @IsOptional()

@@ -39,10 +39,13 @@ export interface OfferPdfLogoPath {
     transform?: string;
 }
 
-/** Векторный логотип из SVG: размеры, transform группы, пути */
+/** Векторный логотип из SVG: область рисования, transform группы, пути */
 export interface OfferPdfLogo {
     width: number;
     height: number;
+    /** Начало области (viewBox min-x, min-y); не задано — ноль */
+    minX?: number;
+    minY?: number;
     groupTransform?: string;
     paths: OfferPdfLogoPath[];
 }

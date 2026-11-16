@@ -26,6 +26,7 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
     @ApiProperty({
         description: 'Код шаблона — передаётся в preview/generate.',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         example: OfferPdfTemplateCode.CLASSIC,
     })
     code: OfferPdfTemplateCode;
@@ -91,6 +92,7 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
     @ApiProperty({
         description: 'Каким шаблоном собран документ.',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         example: OfferPdfTemplateCode.CLASSIC,
     })
     templateCode: OfferPdfTemplateCode;
@@ -108,6 +110,14 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
         example: 148_233,
     })
     size: number;
+
+    @ApiProperty({
+        description:
+            'Картинки и логотипы стиля, которых нет на сервере (пути внутри storage/app): документ собран без них. Пусто — всё на месте.',
+        type: [String],
+        example: [],
+    })
+    missingAssets: string[];
 
     @ApiProperty({
         description:
