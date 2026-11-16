@@ -404,3 +404,5 @@ export * from './model/phase4.index';
 
 // Отчёт собственнику за период (06.11.2026): факты по звонкам, CRM и телефонии — см. model/owner-report.
 export * from './model/owner-report';
+// Движение сделок (этап 7.3): статус открытой сделки по досье — см. model/deal-movement.
+export * from './model/deal-movement';
