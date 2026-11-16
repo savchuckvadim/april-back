@@ -13,6 +13,7 @@ import {
 } from '@lib/llm-gateway';
 import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
 import { REANALYSIS_PROVIDER } from '@lib/sales-ai-analytics';
+import type { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     durationSecOf,
     prepareAgentAnalysis,
@@ -21,11 +22,20 @@ import { AgentAnalysisSmartRewriteService } from '../../agent-gate/services/agen
 import {
     buildAnalysisVersions,
     buildRegistryHash,
+    CALL_REPORT_PROMPT_VERSION,
     CALL_REPORT_REGISTRY_BUILTIN,
     methodologyTagOf,
 } from '../contracts/call-report-versions.const';
 import { CallAnalysisRepairStore } from '../services/call-analysis-repair.store';
 import { CallAnalysisRerunService } from '../services/call-analysis-rerun.service';
+import {
+    parseStoredFocusPasses,
+    storedFocusPassCount,
+    usableStoredFocusPasses,
+    withFocusPasses,
+    withoutFocusPasses,
+    type StoredFocusPasses,
+} from '../services/call-focus-stored.util';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 import {
     REPAIR_LOOKBACK_HOURS,
@@ -208,7 +218,12 @@ export class CallAnalysisRepairUseCase {
         }
     }
 
-    /** Один неполный разбор: переразбор и замена, только если новый полный. */
+    /**
+     * Один неполный разбор. Если запись несёт сохранённые ответы проходов
+     * текущего промпта, зовутся только недостающий проход и синтез; иначе
+     * разбор переделывается целиком. Замена — только если новый полный;
+     * попытка осталась неполной — её удачные проходы копятся в записи.
+     */
     private async repairOne(
         domain: string,
         candidate: RepairCandidate<AiEntityDto>,
@@ -216,12 +231,22 @@ export class CallAnalysisRepairUseCase {
     ): Promise<'repaired' | 'partial'> {
         const { transcriptionId, record } = candidate;
         try {
+            const kept = parseStoredFocusPasses(record.user_result);
+            const stored = usableStoredFocusPasses(
+                kept,
+                CALL_REPORT_PROMPT_VERSION,
+            )
+                ? kept
+                : undefined;
             const outcome = await this.rerunService.rerun({
                 transcriptionId,
                 source: record.user_result,
                 model,
+                ...(stored ? { stored } : {}),
             });
-            if (!outcome || (outcome.dto.incompleteParts ?? []).length > 0) {
+            if (!outcome) return 'partial';
+            if ((outcome.dto.incompleteParts ?? []).length > 0) {
+                await this.keepPasses(record, outcome.dto, kept);
                 return 'partial';
             }
             const dto = prepareAgentAnalysis(
@@ -246,6 +271,10 @@ export class CallAnalysisRepairUseCase {
             );
             await this.aiService.update(record.id, {
                 status: AI_RECORD_SUPERSEDED_STATUS,
+                // Заменённой записи сохранённые проходы больше не нужны.
+                ...(kept
+                    ? { user_result: withoutFocusPasses(record.user_result) }
+                    : {}),
             });
             const card = await this.smartRewrite.rewrite({
                 id: created.id,
@@ -255,7 +284,9 @@ export class CallAnalysisRepairUseCase {
             });
             this.logger.log(
                 `Догон разбора ${domain}, transcription ${transcriptionId}: ` +
-                    `дособраны ${candidate.parts.join(', ')}; карточка — ${card.kind}`,
+                    `дособраны ${candidate.parts.join(', ')}` +
+                    (stored ? ' (остальные проходы — из сохранённых)' : '') +
+                    `; карточка — ${card.kind}`,
             );
             return 'repaired';
         } catch (error) {
@@ -263,6 +294,34 @@ export class CallAnalysisRepairUseCase {
                 `Догон разбора ${domain}, transcription ${transcriptionId} не удался: ${(error as Error).message}`,
             );
             return 'partial';
+        }
+    }
+
+    /**
+     * Попытка осталась неполной: если проходов собралось больше, чем уже
+     * лежит в записи, они сохраняются в ней — следующей попытке останется
+     * меньше. Сбой записи догон не роняет.
+     */
+    private async keepPasses(
+        record: AiEntityDto,
+        attempt: AgentCallAnalysisDto,
+        kept: StoredFocusPasses | null,
+    ): Promise<void> {
+        const fresh = parseStoredFocusPasses(attempt);
+        if (
+            !fresh ||
+            storedFocusPassCount(fresh) <= storedFocusPassCount(kept)
+        ) {
+            return;
+        }
+        try {
+            await this.aiService.update(record.id, {
+                user_result: withFocusPasses(record.user_result, fresh),
+            });
+        } catch (error) {
+            this.logger.warn(
+                `Догон разбора: проходы записи ${record.id} не сохранены: ${(error as Error).message}`,
+            );
         }
     }
 

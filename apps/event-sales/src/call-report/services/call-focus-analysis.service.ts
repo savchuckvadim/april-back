@@ -14,10 +14,7 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
 import { StructuredLlmGateway, isRetryableLlmError } from '@lib/llm-gateway';
-import {
-    AgentCallAnalysisDto,
-    type CallAnalysisPart,
-} from '../../agent-gate/dto/agent-analysis-request.dto';
+import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -28,7 +25,14 @@ import {
     renderPresentationStrictnessBlock,
     buildDeepAnalysisUserContent,
 } from '../contracts/call-deep-analysis.contract';
+import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { sumCompletionUsage } from './call-analysis-usage.util';
+import {
+    focusIncompleteParts,
+    mergeFocusResults,
+    ownSectionsOf,
+    type FocusResultsByKey,
+} from './call-focus-assemble.util';
 import {
     isFocusProviderFailure,
     type CallFocusOutcome,
@@ -40,6 +44,11 @@ import {
     type WaveCall,
     type WaveResult,
 } from './call-focus-retry.util';
+import {
+    STORED_FOCUS_PASSES_KEY,
+    buildStoredFocusPasses,
+    type StoredFocusPasses,
+} from './call-focus-stored.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
@@ -49,7 +58,6 @@ import {
     FOCUS_FORM_SCHEMA,
     FOCUS_MOVEMENT_PROMPT,
     FOCUS_MOVEMENT_SCHEMA,
-    FOCUS_SECTION_CODES,
     FOCUS_SYNTHESIS_PROMPT,
     FOCUS_SYNTHESIS_SCHEMA,
     renderFocusDigest,
@@ -97,6 +105,17 @@ interface FocusPass {
     label: string;
     prompt: string;
     schema: Record<string, unknown>;
+}
+
+/** Опции запуска фокус-разбора. */
+export interface CallFocusRunOptions {
+    /** Модель VibeCode из настроек портала (deepAnalysisModel). */
+    model?: string;
+    /**
+     * Сохранённые ответы проходов неполного разбора (догон): такие проходы
+     * заново не вызываются. Годность (версия промпта) проверяет вызывающий.
+     */
+    stored?: StoredFocusPasses;
 }
 
 /** Ответ одного вызова модели с расходом токенов. */
@@ -251,7 +270,7 @@ export class CallFocusAnalysisService {
         transcript: string,
         callType: string | null,
         passportBlock?: string,
-        options?: { model?: string },
+        options?: CallFocusRunOptions,
     ): Promise<CallFocusOutcome> {
         if (!transcript.trim()) {
             this.logger.warn(
@@ -281,10 +300,25 @@ export class CallFocusAnalysisService {
             // Ошибки сорвавшихся фокус-проходов — по ним причина провала.
             // Массив свой у каждого вызова: разборы идут параллельно.
             const passErrors: unknown[] = [];
+            // Догон неполного разбора приносит сохранённые ответы проходов:
+            // такие проходы заново не вызываются (call-focus-stored.util.ts).
+            const stored = options?.stored;
+            // Ответ прохода методики годится, пока у портала та же методика
+            // той же версии.
+            const keptMethodology = stored?.methodology;
+            const storedMethodology =
+                methodologyPass &&
+                keptMethodology &&
+                keptMethodology.tag === resolved?.versionTag
+                    ? keptMethodology.result
+                    : null;
+            const livePasses = FOCUS_PASSES.filter(
+                pass => !stored?.passes[pass.key],
+            );
             // Проходы идут одновременно; сорвался ровно один и по временной
             // причине — он повторяется (call-focus-retry.util.ts).
             const calls: WaveCall<string, FocusCompletion>[] = [
-                ...FOCUS_PASSES.map(pass => ({
+                ...livePasses.map(pass => ({
                     key: pass.key,
                     run: (attempt: WaveAttempt) =>
                         this.callFocus(
@@ -296,7 +330,7 @@ export class CallFocusAnalysisService {
                             options?.model,
                         ),
                 })),
-                ...(methodologyPass
+                ...(methodologyPass && !storedMethodology
                     ? [
                           {
                               key: methodologyPass.key,
@@ -322,20 +356,32 @@ export class CallFocusAnalysisService {
                     ),
             );
             const responses: (FocusCompletion | null)[] = [];
+            const byKey: FocusResultsByKey = {
+                form: null,
+                content: null,
+                movement: null,
+            };
             for (const pass of FOCUS_PASSES) {
-                responses.push(
-                    await this.settle(wave, pass, domain, passErrors),
+                const kept = stored?.passes[pass.key];
+                if (kept) {
+                    byKey[pass.key] = kept;
+                    continue;
+                }
+                const response = await this.settle(
+                    wave,
+                    pass,
+                    domain,
+                    passErrors,
                 );
+                responses.push(response);
+                byKey[pass.key] = resultOf(response);
             }
-            const methodologyResponse = methodologyPass
-                ? await this.settle(wave, methodologyPass, domain)
-                : null;
-            const byKey = Object.fromEntries(
-                FOCUS_PASSES.map((pass, index) => [
-                    pass.key,
-                    resultOf(responses[index]),
-                ]),
-            ) as Record<CallFocusKey, Record<string, unknown> | null>;
+            const methodologyResponse =
+                methodologyPass && !storedMethodology
+                    ? await this.settle(wave, methodologyPass, domain)
+                    : null;
+            const methodologyResult =
+                storedMethodology ?? resultOf(methodologyResponse);
 
             const survived = Object.values(byKey).filter(Boolean).length;
             if (survived < 2) {
@@ -382,22 +428,16 @@ export class CallFocusAnalysisService {
             );
             const synthesis = resultOf(synthesisResponse);
             // Что не собралось — по этому списку догон найдёт неполный
-            // разбор и переделает его, когда поставщик снова ответит.
-            const incompleteParts: CallAnalysisPart[] = [
-                ...FOCUS_PASSES.filter(pass => !byKey[pass.key]).map(
-                    pass => pass.key,
-                ),
-                ...(synthesis ? [] : (['synthesis'] as const)),
-                ...(methodologyPass && !resultOf(methodologyResponse)
-                    ? (['methodology'] as const)
-                    : []),
-            ];
-
-            const merged: Record<string, unknown> = {
-                ...(byKey.form ?? {}),
-                ...(byKey.content ?? {}),
-                ...(byKey.movement ?? {}),
-                ...(synthesis ?? {}),
+            // разбор и доделает его, когда поставщик снова ответит.
+            const incompleteParts = focusIncompleteParts(
+                byKey,
+                synthesis,
+                methodologyPass !== null,
+                methodologyResult,
+            );
+            const merged = mergeFocusResults({
+                byKey,
+                synthesis,
                 // Каждый проход — только разделы своей зоны (чужие коды от
                 // модели отбрасываются); дубли кодов схлопываются ниже.
                 sections: FOCUS_PASSES.flatMap(pass =>
@@ -405,21 +445,37 @@ export class CallFocusAnalysisService {
                 ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 incompleteParts,
-                // Расход всех удавшихся вызовов (фокусы + синтез).
+                // Расход вызовов ЭТОГО запуска (фокусы, методика, синтез):
+                // сохранённые проходы оплачены раньше и второй раз не идут.
                 usage: sumCompletionUsage(
                     [
                         ...responses,
                         synthesisResponse,
                         methodologyResponse,
                     ].filter(
-                        (
-                            response,
-                        ): response is VibecodeStructuredCompletionWithUsage =>
+                        (response): response is FocusCompletion =>
                             response !== null,
                     ),
                 ),
-            };
+            });
             const dto = plainToInstance(AgentCallAnalysisDto, merged);
+            // Неполный разбор уносит ответы выживших проходов — догону
+            // останется позвать только недостающее. Полный их не несёт.
+            if (incompleteParts.length > 0) {
+                dto.extra = {
+                    ...(dto.extra ?? {}),
+                    [STORED_FOCUS_PASSES_KEY]: buildStoredFocusPasses(
+                        byKey,
+                        methodologyResult && resolved
+                            ? {
+                                  tag: resolved.versionTag,
+                                  result: methodologyResult,
+                              }
+                            : null,
+                        CALL_REPORT_PROMPT_VERSION,
+                    ),
+                };
+            }
             // Один раздел — одна запись: проход с единственным разрешённым
             // кодом присылал «моменты» приветствия отдельными записями, и в
             // ленту сделки уходили три «Приветствия» (29.10.2026).
@@ -433,7 +489,7 @@ export class CallFocusAnalysisService {
             const applied = applyMethodologyToDto(
                 dto,
                 resolved,
-                resultOf(methodologyResponse),
+                methodologyResult,
                 materials.talkRatioMax,
             );
             if (applied.capsTriggered > 0 || applied.methodology) {
@@ -444,9 +500,13 @@ export class CallFocusAnalysisService {
                             : ''),
                 );
             }
+            const keptKeys = Object.keys(stored?.passes ?? {});
             this.logger.log(
-                `Фокус-разбор (${domain}): проходов ${survived}/3, ` +
-                    `разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
+                `Фокус-разбор (${domain}): проходов ${survived}/3` +
+                    (keptKeys.length > 0
+                        ? ` (из сохранённых: ${keptKeys.join(', ')})`
+                        : '') +
+                    `, разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
             );
             return { analysis: dto, providerFailure: false };
         } catch (error) {
@@ -695,17 +755,8 @@ export class CallFocusAnalysisService {
         pass: FocusPass,
         domain: string,
     ): Record<string, unknown>[] {
-        const raw = Array.isArray(result?.sections)
-            ? (result.sections as Record<string, unknown>[])
-            : [];
-        const allowed = FOCUS_SECTION_CODES[pass.key];
-        const own = raw.filter(section =>
-            allowed.includes(String(section.section)),
-        );
-        if (own.length !== raw.length) {
-            const foreign = raw
-                .filter(section => !allowed.includes(String(section.section)))
-                .map(section => String(section.section));
+        const { own, foreign } = ownSectionsOf(result, pass.key);
+        if (foreign.length > 0) {
             this.logger.warn(
                 `Фокус-разбор (${domain}), проход «${pass.label}»: чужие разделы ${foreign.join(', ')} отброшены`,
             );

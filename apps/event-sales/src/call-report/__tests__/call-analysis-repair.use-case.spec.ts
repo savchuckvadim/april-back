@@ -1,3 +1,4 @@
+import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { CallAnalysisRepairUseCase } from '../use-cases/call-analysis-repair.use-case';
 import { repairSummaryLine } from '../cron/call-analysis-repair.scheduler';
 import { REPAIR_LEGACY_SINCE } from '../use-cases/call-analysis-repair.util';
@@ -302,5 +303,115 @@ describe('repairSummaryLine', () => {
         ).toBe(
             `${DOMAIN}: не разобрано за 72 часа и брошено 3 — смотреть руками`,
         );
+    });
+});
+
+/** 16.11.2026: догон зовёт только недостающий проход и синтез. */
+describe('CallAnalysisRepairUseCase: сохранённые проходы', () => {
+    const PASSES = {
+        promptVersion: CALL_REPORT_PROMPT_VERSION,
+        passes: {
+            form: { sections: [{ section: 'GREETING' }] },
+            content: { sections: [] },
+        },
+    };
+    const withPasses = (stored: Record<string, unknown> = PASSES) =>
+        partialRecord({
+            user_result: {
+                incompleteParts: ['movement'],
+                callType: 'cold',
+                sections: [{ section: 'GREETING' }],
+                extra: { focusPasses: stored },
+            },
+        });
+
+    it('запись несёт проходы текущего промпта — они уходят в переразбор; заменённая запись их теряет', async () => {
+        const { useCase, aiService, rerunService } = makeDeps();
+        aiService.findByDomainTypesInPeriod.mockResolvedValue([withPasses()]);
+
+        const result = await useCase.repairDomain(DOMAIN, NOW);
+
+        expect(result).toMatchObject({ repaired: 1 });
+        expect(rerunService.rerun).toHaveBeenCalledWith(
+            expect.objectContaining({ stored: PASSES }),
+        );
+        expect(aiService.update).toHaveBeenCalledWith('500', {
+            status: 'superseded',
+            user_result: {
+                incompleteParts: ['movement'],
+                callType: 'cold',
+                sections: [{ section: 'GREETING' }],
+            },
+        });
+    });
+
+    it('проходы получены прежним промптом — разбор переделывается целиком', async () => {
+        const { useCase, aiService, rerunService } = makeDeps();
+        aiService.findByDomainTypesInPeriod.mockResolvedValue([
+            withPasses({ ...PASSES, promptVersion: 'focus-v3-2026-11-01' }),
+        ]);
+
+        await useCase.repairDomain(DOMAIN, NOW);
+
+        const [input] = rerunService.rerun.mock.calls[0] as [
+            Record<string, unknown>,
+        ];
+        expect(input).not.toHaveProperty('stored');
+    });
+
+    it('попытка опять неполная, но проходов прибавилось — они сохраняются в записи для следующей попытки', async () => {
+        const { useCase, aiService, rerunService } = makeDeps();
+        aiService.findByDomainTypesInPeriod.mockResolvedValue([
+            partialRecord(),
+        ]);
+        const fresh = {
+            promptVersion: CALL_REPORT_PROMPT_VERSION,
+            passes: {
+                form: { sections: [] },
+                content: { sections: [] },
+                movement: { sections: [] },
+            },
+        };
+        rerunService.rerun.mockResolvedValue({
+            row: ROW,
+            dto: {
+                callType: 'cold',
+                incompleteParts: ['synthesis'],
+                extra: { focusPasses: fresh },
+            },
+            usage: {},
+        });
+
+        const result = await useCase.repairDomain(DOMAIN, NOW);
+
+        expect(result).toMatchObject({ repaired: 0, stillPartial: 1 });
+        expect(aiService.create).not.toHaveBeenCalled();
+        expect(aiService.update).toHaveBeenCalledTimes(1);
+        expect(aiService.update).toHaveBeenCalledWith('500', {
+            user_result: {
+                incompleteParts: ['movement', 'synthesis'],
+                callType: 'cold',
+                sections: [{ section: 'GREETING' }],
+                extra: { focusPasses: fresh },
+            },
+        });
+    });
+
+    it('попытка неполная и проходов не прибавилось — запись не трогаем', async () => {
+        const { useCase, aiService, rerunService } = makeDeps();
+        aiService.findByDomainTypesInPeriod.mockResolvedValue([withPasses()]);
+        rerunService.rerun.mockResolvedValue({
+            row: ROW,
+            dto: {
+                callType: 'cold',
+                incompleteParts: ['movement'],
+                extra: { focusPasses: PASSES },
+            },
+            usage: {},
+        });
+
+        await useCase.repairDomain(DOMAIN, NOW);
+
+        expect(aiService.update).not.toHaveBeenCalled();
     });
 });
