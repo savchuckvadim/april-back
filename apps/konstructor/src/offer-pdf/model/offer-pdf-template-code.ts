@@ -10,6 +10,8 @@ export enum OfferPdfTemplateCode {
     FACET = 'facet',
     LAVENDER = 'lavender',
     PEARL = 'pearl',
+    HALO = 'halo',
+    SILK = 'silk',
 }
 
 export const OFFER_PDF_DEFAULT_TEMPLATE_CODE = OfferPdfTemplateCode.CLASSIC;

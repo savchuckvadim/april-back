@@ -16,8 +16,13 @@ export interface OfferPdfAssetJob {
     source: OfferPdfAssetSource;
     /** Ширина в пикселях после уменьшения */
     width: number;
-    /** Обрезка по высоте, доли листа: [сверху, снизу) */
-    crop?: readonly [number, number];
+    /** Обрезка, доли исходника: сверху/снизу, слева/справа (по умолчанию вся ширина) */
+    crop?: {
+        top: number;
+        bottom: number;
+        left?: number;
+        right?: number;
+    };
     /**
      * jpg — листы без прозрачности; png — вырезки с прозрачностью;
      * palette — PNG в 256 цветов (3D-объекты; мягкие градиенты — без неё)
@@ -59,18 +64,11 @@ export const OFFER_PDF_ASSET_JOBS: readonly OfferPdfAssetJob[] = [
         width: 1414,
         format: 'jpg',
     },
-    // «Ореол» — набор 10: обложка и верх листа с кольцом (черта внизу — вектором)
+    // «Ореол» — набор 10: обложка; на листах только коралловая черта — вектором
     {
         target: 'halo/cover.jpg',
         source: { file: '10/Дизайн без названия (12).png' },
         width: 1414,
-        format: 'jpg',
-    },
-    {
-        target: 'halo/band.jpg',
-        source: { file: '10/Дизайн без названия (14).png' },
-        width: 1414,
-        crop: [0, 0.42],
         format: 'jpg',
     },
     // «Шёлк» — набор 13: обложка; на листах — она же бледно под карточками

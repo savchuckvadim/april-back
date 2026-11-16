@@ -55,15 +55,18 @@ const prepare = async (job: OfferPdfAssetJob): Promise<Buffer> => {
     }
     if (job.crop) {
         const meta = await image.metadata();
+        const width = meta.width ?? 0;
         const height = meta.height ?? 0;
-        const top = Math.round(height * job.crop[0]);
+        const { top, bottom, left = 0, right = 1 } = job.crop;
+        const x = Math.round(width * left);
+        const y = Math.round(height * top);
         image = sharp(
             await image
                 .extract({
-                    left: 0,
-                    top,
-                    width: meta.width ?? 0,
-                    height: Math.round(height * job.crop[1]) - top,
+                    left: x,
+                    top: y,
+                    width: Math.round(width * right) - x,
+                    height: Math.round(height * bottom) - y,
                 })
                 .toBuffer(),
         );
