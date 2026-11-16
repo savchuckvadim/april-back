@@ -24,6 +24,9 @@ import {
 import {
     FORM_FACTS_PROPERTIES,
     FORM_FACTS_REQUIRED,
+    CONTENT_MOMENTS_PROPERTIES,
+    CONTENT_MOMENTS_REQUIRED,
+    CONTENT_MOMENTS_SPEC,
     FORM_FACTS_SPEC,
     MOVEMENT_FACTS_PROPERTIES,
     MOVEMENT_FACTS_REQUIRED,
@@ -166,6 +169,7 @@ export const FOCUS_CONTENT_SCHEMA: Record<string, unknown> = {
         needs: { type: 'array', items: { type: 'string' } },
         presentationDone: { type: 'boolean' },
         productsOffered: { type: 'array', items: { type: 'string' } },
+        ...CONTENT_MOMENTS_PROPERTIES,
     },
     required: [
         'sections',
@@ -173,6 +177,7 @@ export const FOCUS_CONTENT_SCHEMA: Record<string, unknown> = {
         'needs',
         'presentationDone',
         'productsOffered',
+        ...CONTENT_MOMENTS_REQUIRED,
     ],
     additionalProperties: false,
 };
@@ -194,7 +199,8 @@ ${SECTION_FIELDS_SPEC}
 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ТВОЕГО ФОКУСА
 - needsFound / presentationDone — было ли это фактически.
 - needs — выявленные потребности клиента, по одной на пункт.
-- productsOffered — что именно предлагали, по одному на пункт.`;
+- productsOffered — что именно предлагали, по одному на пункт.
+${CONTENT_MOMENTS_SPEC}`;
 
 /**
  * Продвижение сделки по звонку (раздел 7.1 материалов методики; ядро для

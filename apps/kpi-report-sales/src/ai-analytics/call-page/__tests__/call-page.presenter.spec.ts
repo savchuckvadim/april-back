@@ -320,7 +320,7 @@ describe('страница разбора звонка: сборка карто�
         ]);
         expect(byKind('issue')).toEqual([
             expect.objectContaining({
-                label: 'Дубль в CRM: уже звонили, уже клиент, уже отказал',
+                label: 'Дубль в CRM: клиенту уже звонил другой менеджер',
                 tone: 'warn',
                 segmentIndexes: [5],
             }),

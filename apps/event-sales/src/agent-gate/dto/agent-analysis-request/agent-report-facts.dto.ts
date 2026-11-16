@@ -55,6 +55,30 @@ export class AgentIssueDto {
     @IsOptional()
     @IsString()
     note?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда начала цитаты по меткам расшифровки (focus-v3.2); ' +
+            'null — меток не было.',
+        type: Number,
+        nullable: true,
+        example: 212,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    startSec?: number | null;
+
+    @ApiPropertyOptional({
+        description: 'Секунда конца цитаты; null — меток не было.',
+        type: Number,
+        nullable: true,
+        example: 219,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    endSec?: number | null;
 }
 
 /** Цена, прозвучавшая в разговоре. */
@@ -111,6 +135,19 @@ export class AgentPriceDto {
     @IsOptional()
     @IsString()
     quote?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда звонка, когда цена прозвучала (focus-v3.2); null — ' +
+            'меток в расшифровке не было.',
+        type: Number,
+        nullable: true,
+        example: 431,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    startSec?: number | null;
 }
 
 /** Допродажа: предлагал ли менеджер больше, чем просил клиент. */

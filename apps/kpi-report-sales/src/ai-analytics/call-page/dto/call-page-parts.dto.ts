@@ -297,7 +297,9 @@ export class CallPageHighlightDto {
         description:
             'Вид подсветки: signal — ошибка менеджера, objection — ' +
             'возражение, risk — сигнал риска, methodology — пункт методики, ' +
-            'issue — сбой не по вине разговора, price — названная цена.',
+            'issue — сбой не по вине разговора, price — названная цена, ' +
+            'moment — момент разговора: начало выяснения потребностей, ' +
+            'презентации, договорённость о следующем шаге.',
         enum: CALL_PAGE_HIGHLIGHT_KINDS,
         example: 'objection',
     })

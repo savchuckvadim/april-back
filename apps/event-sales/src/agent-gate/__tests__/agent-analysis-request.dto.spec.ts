@@ -39,6 +39,9 @@ const EXPECTED_FIELDS = [
     'needsFound',
     'needs',
     'presentationDone',
+    // focus-v3.2: время начала выяснения потребностей и презентации.
+    'needsStartSec',
+    'presentationStartSec',
     'hvostDone',
     'hvostAnalysis',
     'hvostSteps',
@@ -87,7 +90,7 @@ const REQUIRED = {
 };
 
 describe('AgentCallAnalysisDto (слои наследования)', () => {
-    it('Swagger видит все 58 полей в порядке объявления', () => {
+    it('Swagger видит все 60 полей в порядке объявления', () => {
         const keys = (
             Reflect.getMetadata(
                 DECORATORS.API_MODEL_PROPERTIES_ARRAY,

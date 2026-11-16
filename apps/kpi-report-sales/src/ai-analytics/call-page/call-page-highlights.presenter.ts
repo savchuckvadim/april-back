@@ -16,6 +16,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import {
     CALL_PAGE_HIGHLIGHT_KIND_TITLES,
+    CALL_PAGE_MOMENT_TITLES,
     type CallPageHighlightKind,
     type CallPageTone,
 } from './call-page.const';
@@ -119,6 +120,41 @@ function priceLabel(price: CallPageAnalysisView['prices'][number]): string {
     return `${rubTitle(price.amount)}${period}${promo}`;
 }
 
+/**
+ * Моменты разговора по времени из разбора: с чего началось выяснение
+ * потребностей, показ и где договорились о следующем шаге. Времени нет
+ * (старый разбор, расшифровка без меток) — момента нет.
+ */
+function momentsOf(
+    view: CallPageAnalysisView,
+): { label: string; note: string | null; startSec: number }[] {
+    const moments: { label: string; note: string | null; startSec: number }[] =
+        [];
+    if (view.needsStartSec !== null) {
+        moments.push({
+            label: CALL_PAGE_MOMENT_TITLES.needs,
+            note: null,
+            startSec: view.needsStartSec,
+        });
+    }
+    if (view.presentationStartSec !== null) {
+        moments.push({
+            label: CALL_PAGE_MOMENT_TITLES.presentation,
+            note: null,
+            startSec: view.presentationStartSec,
+        });
+    }
+    const step = view.nextStep;
+    if (step !== null && step.set && step.startSec !== null) {
+        moments.push({
+            label: CALL_PAGE_MOMENT_TITLES.nextStep,
+            note: step.description,
+            startSec: step.startSec,
+        });
+    }
+    return moments.sort((a, b) => a.startSec - b.startSec);
+}
+
 export function buildCallPageHighlights(
     view: CallPageAnalysisView,
     segments: readonly CallPageSegmentView[],
@@ -175,7 +211,12 @@ export function buildCallPageHighlights(
             label,
             tone: 'warn',
             note: issue.note,
-            anchor: { quote: issue.quote, startSec: null, endSec: null },
+            // Время есть у разборов focus-v3.2; у старых место ищется по цитате.
+            anchor: {
+                quote: issue.quote,
+                startSec: issue.startSec,
+                endSec: issue.endSec,
+            },
         });
     }
 
@@ -185,7 +226,21 @@ export function buildCallPageHighlights(
             label: priceLabel(price),
             tone: 'neutral',
             note: price.product,
-            anchor: { quote: price.quote, startSec: null, endSec: null },
+            anchor: {
+                quote: price.quote,
+                startSec: price.startSec,
+                endSec: null,
+            },
+        });
+    }
+
+    for (const moment of momentsOf(view)) {
+        collector.add({
+            kind: 'moment',
+            label: moment.label,
+            tone: 'neutral',
+            note: moment.note,
+            anchor: { quote: null, startSec: moment.startSec, endSec: null },
         });
     }
 

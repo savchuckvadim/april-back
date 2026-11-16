@@ -21,9 +21,16 @@ import {
     FOCUS_MOVEMENT_SCHEMA,
 } from '../contracts/call-focus-analysis.contract';
 import {
+    FOCUS_CONTENT_PROMPT,
+    FOCUS_CONTENT_SCHEMA,
+} from '../contracts/call-focus-analysis.contract';
+import {
+    CONTENT_MOMENTS_REQUIRED,
     FORM_FACTS_REQUIRED,
+    ISSUES_SCHEMA,
     MOVEMENT_FACTS_REQUIRED,
     MOVEMENT_FACTS_SPEC,
+    PRICES_SCHEMA,
 } from '../contracts/call-report-facts.contract';
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 
@@ -85,6 +92,43 @@ describe('контракт фактов для отчётов (focus-v3.1)', () 
     });
 
     it('версия промпта поднята минорно и остаётся в общей серии', () => {
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.1-2026-11-06');
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.2-2026-11-16');
+    });
+
+    it('focus-v3.2: сбой «дубль в CRM» разделён на три кода — в справочнике, схеме и тексте промпта', () => {
+        const codes: readonly string[] = CALL_REPORT_ISSUE_CODES;
+        for (const code of [
+            'crm_duplicate',
+            'crm_repeat_refused',
+            'crm_existing_client',
+        ]) {
+            expect(codes).toContain(code);
+            expect(ISSUES_SCHEMA.items.properties.code.enum).toContain(code);
+            expect(MOVEMENT_FACTS_SPEC).toContain(`${code} —`);
+        }
+        // У каждого кода есть русская подпись для карточки и отчёта.
+        expect(CALL_REPORT_ISSUE_ITEMS.map(item => item.CODE).sort()).toEqual(
+            [...codes].sort(),
+        );
+    });
+
+    it('focus-v3.2: время в звонке у сбоев, цен и следующего шага — обязательные поля схемы', () => {
+        expect(ISSUES_SCHEMA.items.required).toEqual(
+            expect.arrayContaining(['startSec', 'endSec']),
+        );
+        expect(PRICES_SCHEMA.items.required).toContain('startSec');
+        expect(NEXT_STEP_SCHEMA.required).toContain('startSec');
+        expect(MOVEMENT_FACTS_SPEC).toContain('nextStep.startSec');
+    });
+
+    it('focus-v3.2: начало выяснения потребностей и презентации — в фокусе «содержание» и в цельном разборе', () => {
+        for (const field of CONTENT_MOMENTS_REQUIRED) {
+            expect(propertiesOf(FOCUS_CONTENT_SCHEMA)).toContain(field);
+            expect(requiredOf(FOCUS_CONTENT_SCHEMA)).toContain(field);
+            expect(FOCUS_CONTENT_PROMPT).toContain(`${field} —`);
+            expect(propertiesOf(CALL_DEEP_ANALYSIS_SCHEMA)).toContain(field);
+            expect(requiredOf(CALL_DEEP_ANALYSIS_SCHEMA)).toContain(field);
+            expect(DEEP_ANALYSIS_OUTPUT_SPEC).toContain(`${field} —`);
+        }
     });
 });

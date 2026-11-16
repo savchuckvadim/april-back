@@ -58,6 +58,9 @@ export interface CallPageIssueView {
     code: string;
     quote: string | null;
     note: string | null;
+    /** Время цитаты в звонке; null — старый разбор или меток не было. */
+    startSec: number | null;
+    endSec: number | null;
 }
 
 export interface CallPagePriceView {
@@ -66,6 +69,8 @@ export interface CallPagePriceView {
     product: string | null;
     kind: string | null;
     quote: string | null;
+    /** Когда цена прозвучала; null — старый разбор или меток не было. */
+    startSec: number | null;
 }
 
 export interface CallPageNextStepView {
@@ -75,6 +80,8 @@ export interface CallPageNextStepView {
     time: string | null;
     goal: string | null;
     kind: string | null;
+    /** Когда договорились о шаге; null — старый разбор или меток не было. */
+    startSec: number | null;
 }
 
 export interface CallPageUpsellView {
@@ -114,7 +121,11 @@ export interface CallPageAnalysisView {
     outcome: string | null;
     needsFound: boolean | null;
     needs: string[];
+    /** Когда началось выяснение потребностей; null — нет или не размечено. */
+    needsStartSec: number | null;
     presentationDone: boolean | null;
+    /** Когда началась презентация; null — нет или не размечено. */
+    presentationStartSec: number | null;
     productsOffered: string[];
     priceDiscussed: boolean | null;
     competitors: string[];

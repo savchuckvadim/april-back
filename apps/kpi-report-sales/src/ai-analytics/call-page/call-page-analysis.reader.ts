@@ -118,7 +118,13 @@ function issueOf(item: Json): CallPageIssueView | null {
     const code = text(item.code);
     return code === null
         ? null
-        : { code, quote: text(item.quote), note: text(item.note) };
+        : {
+              code,
+              quote: text(item.quote),
+              note: text(item.note),
+              startSec: asNumber(item.startSec),
+              endSec: asNumber(item.endSec),
+          };
 }
 
 function priceOf(item: Json): CallPagePriceView | null {
@@ -130,6 +136,7 @@ function priceOf(item: Json): CallPagePriceView | null {
         product: text(item.product),
         kind: text(item.kind),
         quote: text(item.quote),
+        startSec: asNumber(item.startSec),
     };
 }
 
@@ -144,6 +151,7 @@ function nextStepOf(value: unknown): CallPageNextStepView | null {
         time: text(record.time),
         goal: text(record.goal),
         kind: text(record.kind),
+        startSec: asNumber(record.startSec),
     };
 }
 
@@ -200,7 +208,9 @@ export function readCallPageAnalysis(
         outcome: text(source.outcome),
         needsFound: asBoolean(source.needsFound),
         needs: asStringArray(source.needs),
+        needsStartSec: asNumber(source.needsStartSec),
         presentationDone: asBoolean(source.presentationDone),
+        presentationStartSec: asNumber(source.presentationStartSec),
         productsOffered: asStringArray(source.productsOffered),
         priceDiscussed: asBoolean(source.priceDiscussed),
         competitors: asStringArray(source.competitors),

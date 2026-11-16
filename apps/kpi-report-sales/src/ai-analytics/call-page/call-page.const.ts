@@ -22,6 +22,9 @@ export const CALL_PAGE_HIGHLIGHT_KINDS = [
     'methodology',
     'issue',
     'price',
+    // Ход разговора: начало выяснения потребностей, показа и договорённость
+    // о следующем шаге (время из разбора focus-v3.2).
+    'moment',
 ] as const;
 export type CallPageHighlightKind = (typeof CALL_PAGE_HIGHLIGHT_KINDS)[number];
 
@@ -35,7 +38,15 @@ export const CALL_PAGE_HIGHLIGHT_KIND_TITLES: Readonly<
     methodology: 'Методика',
     issue: 'Сбои',
     price: 'Цены',
+    moment: 'Ход разговора',
 };
+
+/** Подписи моментов разговора. */
+export const CALL_PAGE_MOMENT_TITLES = {
+    needs: 'Выяснение потребностей',
+    presentation: 'Начало презентации',
+    nextStep: 'Договорённость о следующем шаге',
+} as const;
 
 export const CALL_PAGE_SPEAKERS = ['manager', 'client'] as const;
 export type CallPageSpeaker = (typeof CALL_PAGE_SPEAKERS)[number];
