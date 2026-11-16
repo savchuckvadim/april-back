@@ -58,6 +58,9 @@ import { CallAnalysisRepairScheduler } from './cron/call-analysis-repair.schedul
 import { TranscriptionBudgetAlertScheduler } from './cron/transcription-budget-alert.scheduler';
 import { TranscriptionBudgetAlertUseCase } from './use-cases/transcription-budget-alert.use-case';
 import { CallAnalysisRepairStore } from './services/call-analysis-repair.store';
+import { MethodologyPreviewStore } from '@lib/call-lib/call-report/methodology';
+import { MethodologyPreviewProcessor } from './queue/methodology-preview.processor';
+import { MethodologyPreviewUseCase } from './use-cases/methodology-preview.use-case';
 import { CallAnalysisRepairUseCase } from './use-cases/call-analysis-repair.use-case';
 import { CallReportWeeklyScheduler } from './cron/call-report-weekly.scheduler';
 import { CallRevisionScheduler } from './cron/call-revision.scheduler';
@@ -149,6 +152,11 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallReportSmartBackfillStatusService,
         CallReportSmartBackfillUseCase,
         CallReportSmartBackfillScheduler,
+        // Проверка черновика методики на одном звонке (кнопка в форме
+        // методики): джоба CALL_REPORT_METHODOLOGY_PREVIEW, итог в Redis
+        MethodologyPreviewStore,
+        MethodologyPreviewUseCase,
+        MethodologyPreviewProcessor,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportDomainRosterService,

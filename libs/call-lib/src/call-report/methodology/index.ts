@@ -9,6 +9,8 @@ export * from './methodology.repository';
 export * from './methodology.prisma.repository';
 export * from './methodology-registry.service';
 export * from './methodology.module';
+export * from './methodology-preview.types';
+export * from './methodology-preview.store';
 export * from './dto/methodology-admin.dto';
 export * from './dto/methodology-editor.dto';
 export * from './dto/methodology-config.dto';

@@ -73,6 +73,7 @@ export const METHODOLOGY_SECTION: AiGuideSection = {
         AI_GUIDE_ENDPOINT.methodologies,
         AI_GUIDE_ENDPOINT.methodologyItems,
         AI_GUIDE_ENDPOINT.methodologyAssist,
+        AI_GUIDE_ENDPOINT.methodologyPreview,
     ],
     adminPages: [AI_GUIDE_PAGE.methodologies, AI_GUIDE_PAGE.aiSettings],
     related: ['call-analysis', 'model-and-data'],

@@ -114,6 +114,8 @@ export enum JobNames {
     CALL_REPORT_SMART_BACKFILL = 'call-report-smart-backfill',
     /** Догнать факты v3.1 в старых разборах одним коротким вызовом модели по расшифровке (этап B4): части с продолжением */
     CALL_REPORT_FACTS_CATCHUP = 'call-report-facts-catchup',
+    /** Проверка черновика методики на одном звонке из админки: один проход методики, итог в Redis */
+    CALL_REPORT_METHODOLOGY_PREVIEW = 'call-report-methodology-preview',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

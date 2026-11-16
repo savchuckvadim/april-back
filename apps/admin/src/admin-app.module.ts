@@ -46,6 +46,7 @@ import {
 } from '@lib/call-lib';
 import { MethodologyAdminModule } from '@lib/call-lib/call-report/methodology';
 import { MethodologyAssistAdminModule } from './methodology-assist/methodology-assist-admin.module';
+import { MethodologyPreviewAdminModule } from './methodology-preview/methodology-preview-admin.module';
 import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
@@ -120,6 +121,9 @@ import { SiteMediaAdminModule } from '@lib/site-content';
         // Помощник брифа методики: документ → черновик конфига через шлюз
         // моделей (нужны llm-gateway и ai-rag, которых у call-lib нет).
         MethodologyAssistAdminModule,
+        // Проверка черновика методики на одном звонке: задание воркеру
+        // event-sales через очередь разборов, итог из Redis.
+        MethodologyPreviewAdminModule,
         // База знаний RAG: документы общие и по порталам (скрипты типов
         // звонков) — управление из админки, чтение агентами через event-sales.
         AiRagAdminModule,

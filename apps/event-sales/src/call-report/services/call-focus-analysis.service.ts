@@ -113,6 +113,18 @@ export interface CallFocusRunOptions {
 /** Ответ одного вызова модели с расходом токенов. */
 type FocusCompletion = VibecodeStructuredCompletionWithUsage;
 
+/** Ответ одного прохода методики, запущенного отдельно от разбора. */
+export interface CallMethodologyPassOutcome {
+    /** Сырой ответ прохода — разбирает parseMethodologyPass. */
+    result: unknown;
+    /** Модель из ответа; null — не названа. */
+    model: string | null;
+    /** Токены вызова; null — поставщик не сообщил. */
+    tokens: number | null;
+    /** Верхняя норма доли речи менеджера для типа; null — не нормируется. */
+    talkRatioMax: number | null;
+}
+
 /** Синтез итога — в журнале и схеме как отдельный проход. */
 const SYNTHESIS_PASS = {
     key: 'synthesis',
@@ -254,6 +266,62 @@ export class CallFocusAnalysisService {
     }
 
     /**
+     * Один проход методики по ЗАДАННОМУ конфигу — проверка черновика на
+     * готовом звонке из админки. Контекст тот же, что у штатного прохода:
+     * материалы базы знаний (общий слой и объявленные методикой), поправки
+     * этапа, паспорт звонка. Остальные проходы не вызываются. Ошибку модели
+     * бросает — решает вызывающий.
+     * @returns ответ прохода; null — у методики нет прохода для этого типа
+     */
+    async runMethodologyPass(
+        domain: string,
+        transcript: string,
+        callType: string | null,
+        resolved: ResolvedMethodology,
+        passportBlock?: string,
+        options?: Pick<CallFocusRunOptions, 'model'>,
+    ): Promise<CallMethodologyPassOutcome | null> {
+        const pass = buildMethodologyPass(resolved, callType);
+        if (pass === null) return null;
+        const materials = await this.buildMaterials(
+            domain,
+            callType,
+            resolved.methodology.knowledge,
+        );
+        const response = await this.callFocus(
+            pass,
+            methodologyContextOf(materials) +
+                (await this.commonTailOf(domain, callType)),
+            this.buildUserContent(transcript, callType, passportBlock),
+            domain,
+            // Повтора у разовой проверки нет — тревогу не откладываем.
+            2,
+            options?.model,
+        );
+        return {
+            result: response.result,
+            model: response.model,
+            tokens: response.usage?.totalTokens ?? null,
+            talkRatioMax: materials.talkRatioMax,
+        };
+    }
+
+    /**
+     * Общие поправки разбора (этап звонка, требование закрытия хвоста/5К,
+     * строгость презентации) — идут в КАЖДЫЙ проход вместе с материалами.
+     */
+    private async commonTailOf(
+        domain: string,
+        callType: string | null,
+    ): Promise<string> {
+        return (
+            this.buildStageBlock(callType) +
+            (await this.buildAfterPresentationBlock(domain, callType)) +
+            (await this.buildStrictnessBlock(domain))
+        );
+    }
+
+    /**
      * Разбор и причина провала — для процессора. options.model — модель
      * VibeCode из настроек портала (deepAnalysisModel).
      */
@@ -283,12 +351,7 @@ export class CallFocusAnalysisService {
                 callType,
                 methodologyPass ? resolved?.methodology.knowledge : undefined,
             );
-            // Общие поправки разбора (строгость презентации, требование
-            // закрытия хвоста/5К) идут в КАЖДЫЙ проход вместе с материалами.
-            const commonTail =
-                this.buildStageBlock(callType) +
-                (await this.buildAfterPresentationBlock(domain, callType)) +
-                (await this.buildStrictnessBlock(domain));
+            const commonTail = await this.commonTailOf(domain, callType);
             // Якоря шкалы из методики — только проходам, которые ставят
             // оценки, и только когда у методики есть проход для этого типа.
             const scoringTail =
