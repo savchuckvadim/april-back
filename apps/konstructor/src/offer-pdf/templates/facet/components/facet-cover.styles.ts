@@ -1,16 +1,19 @@
-import { StyleSheet } from '@react-pdf/renderer';
-import type { CoverPersonStyles } from '../../kit/cover/CoverPerson';
-import { A4, type OfferPdfTheme } from '../../kit/theme/offer-pdf-theme';
-import { themedStyles } from '../../kit/theme/themed-styles';
+import { brandCoverStyles } from '../../kit/cover/brand-cover.styles';
+import { A4 } from '../../kit/theme/offer-pdf-theme';
 
 /** Поля титульника */
 const MARGIN = 52;
 /** Колонка текста: правее — грани */
 const TEXT_WIDTH = 360;
 
-export const facetCoverStyles = themedStyles(({ colors, sizes, fonts }) => {
+/**
+ * Расстановка титульника «Грани»: тёмный лист, текст цветом титульника,
+ * подписи — светлым оттенком гаммы; люди — столбиком справа внизу.
+ */
+export const facetCoverStyles = brandCoverStyles((base, { colors, sizes }) => {
     const text = colors.coverText ?? '#FFFFFF';
-    return StyleSheet.create({
+    const caption = colors.accentSoft ?? text;
+    return {
         paper: {
             position: 'absolute',
             top: 0,
@@ -26,45 +29,22 @@ export const facetCoverStyles = themedStyles(({ colors, sizes, fonts }) => {
             left: MARGIN,
             width: TEXT_WIDTH,
         },
-        company: {
-            marginTop: 10,
-            fontSize: sizes.sm,
-            color: text,
-            opacity: 0.85,
-        },
+        company: { ...base.company, color: text, opacity: 0.85 },
         main: {
             position: 'absolute',
             top: 250,
             left: MARGIN,
             width: TEXT_WIDTH,
         },
-        kicker: {
-            fontSize: sizes.xs,
-            letterSpacing: 1.6,
-            textTransform: 'uppercase',
-            color: colors.accentSoft ?? text,
-            marginBottom: 14,
-        },
-        product: {
-            fontFamily: fonts.heading,
-            fontSize: sizes.h1,
-            fontWeight: 'bold',
-            lineHeight: 1.12,
-            color: text,
-        },
+        kicker: { ...base.kicker, color: caption, marginBottom: 14 },
+        product: { ...base.product, color: text },
         bar: {
             width: 56,
             height: 4,
             backgroundColor: colors.accent,
             marginTop: 18,
         },
-        supply: {
-            marginTop: 14,
-            fontSize: sizes.lg + 1,
-            lineHeight: 1.35,
-            color: text,
-            opacity: 0.85,
-        },
+        supply: { ...base.supply, marginTop: 14, color: text, opacity: 0.85 },
         // правее нижних граней: они доходят до 280 pt по низу листа
         bottom: {
             position: 'absolute',
@@ -73,30 +53,8 @@ export const facetCoverStyles = themedStyles(({ colors, sizes, fonts }) => {
             bottom: MARGIN + 6,
         },
         person: { marginTop: 14 },
-        label: {
-            fontSize: sizes.xs,
-            letterSpacing: 0.8,
-            textTransform: 'uppercase',
-            color: colors.accentSoft ?? text,
-            marginBottom: 3,
-        },
-        value: {
-            fontFamily: fonts.heading,
-            fontSize: sizes.lg + 1,
-            fontWeight: 'bold',
-            color: text,
-        },
-        detail: { marginTop: 2, fontSize: sizes.sm, color: text, opacity: 0.8 },
-    });
-});
-
-/** Стили блока «для кого / кто подготовил» */
-export const facetPersonStyles = (theme: OfferPdfTheme): CoverPersonStyles => {
-    const styles = facetCoverStyles(theme);
-    return {
-        block: styles.person,
-        label: styles.label,
-        value: styles.value,
-        detail: styles.detail,
+        label: { ...base.label, color: caption },
+        value: { ...base.value, fontSize: sizes.lg + 1, color: text },
+        detail: { ...base.detail, color: text, opacity: 0.8 },
     };
-};
+});

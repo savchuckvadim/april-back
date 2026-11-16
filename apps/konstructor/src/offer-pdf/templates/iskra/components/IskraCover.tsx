@@ -16,7 +16,7 @@ import {
     ISKRA_COVER_TITLE,
     ISKRA_PURPLE,
 } from '../iskra.theme';
-import { iskraCoverStyles, iskraPersonStyles } from './iskra-cover.styles';
+import { iskraCoverStyles } from './iskra-cover.styles';
 
 /**
  * Титульник «Искры» по вордовскому шаблону: логотипы Гаранта и Искры,
@@ -28,7 +28,6 @@ export const IskraCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const cover = offerCoverContent(model);
     const knot = model.assets?.images[ISKRA_ASSETS.knot];
     const company = companyInnLine(cover);
-    const person = iskraPersonStyles(theme);
 
     return (
         <>
@@ -65,7 +64,7 @@ export const IskraCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовлено для"
                         value={cover.recipient}
                         detail={recipientInnLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
                 {cover.manager ? (
@@ -73,7 +72,7 @@ export const IskraCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовил"
                         value={cover.manager.name}
                         detail={managerContactsLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
             </View>

@@ -1,14 +1,12 @@
 import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
-import type { PdfStyle } from '../../shared/style.util';
+import type { BrandCoverStyles } from './brand-cover.styles';
 
-/** Стили блока: их задаёт титульник стиля */
-export interface CoverPersonStyles {
-    block: PdfStyle;
-    label: PdfStyle;
-    value: PdfStyle;
-    detail: PdfStyle;
-}
+/** Стили блока — под теми же именами, что в стилях титульника */
+export type CoverPersonStyles = Pick<
+    BrandCoverStyles,
+    'person' | 'label' | 'value' | 'detail'
+>;
 
 export interface CoverPersonProps {
     label: string;
@@ -25,7 +23,7 @@ export const CoverPerson: FC<CoverPersonProps> = ({
     detail,
     styles,
 }) => (
-    <View style={styles.block}>
+    <View style={styles.person}>
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{value}</Text>
         {detail ? <Text style={styles.detail}>{detail}</Text> : null}

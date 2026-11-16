@@ -10,10 +10,7 @@ import {
 } from '../../kit/lib/cover-details.util';
 import { offerCoverContent } from '../../kit/lib/cover.util';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
-import {
-    lavenderCoverStyles,
-    lavenderPersonStyles,
-} from './lavender-cover.styles';
+import { lavenderCoverStyles } from './lavender-cover.styles';
 
 /**
  * Титульник «Лаванды»: весь лист в мягком градиенте гаммы со светлым
@@ -24,7 +21,6 @@ export const LavenderCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = lavenderCoverStyles(theme);
     const cover = offerCoverContent(model);
     const gradient = theme.colors.gradient;
-    const person = lavenderPersonStyles(theme);
 
     return (
         <>
@@ -67,7 +63,7 @@ export const LavenderCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовлено для"
                         value={cover.recipient}
                         detail={recipientInnLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
                 {cover.manager ? (
@@ -75,7 +71,7 @@ export const LavenderCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовил"
                         value={cover.manager.name}
                         detail={managerContactsLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
             </View>

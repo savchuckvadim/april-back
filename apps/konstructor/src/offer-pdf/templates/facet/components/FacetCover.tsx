@@ -10,7 +10,7 @@ import {
 import { offerCoverContent } from '../../kit/lib/cover.util';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
 import { COVER_FACETS } from '../lib/facet-shapes.util';
-import { facetCoverStyles, facetPersonStyles } from './facet-cover.styles';
+import { facetCoverStyles } from './facet-cover.styles';
 import { FacetShapes } from './FacetShapes';
 
 /**
@@ -21,7 +21,6 @@ import { FacetShapes } from './FacetShapes';
 export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = facetCoverStyles(theme);
     const cover = offerCoverContent(model);
-    const person = facetPersonStyles(theme);
 
     return (
         <>
@@ -62,7 +61,7 @@ export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовлено для"
                         value={cover.recipient}
                         detail={recipientInnLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
                 {cover.manager ? (
@@ -70,7 +69,7 @@ export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                         label="Подготовил"
                         value={cover.manager.name}
                         detail={managerContactsLine(cover)}
-                        styles={person}
+                        styles={styles}
                     />
                 ) : null}
             </View>

@@ -1,7 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import type { OfferPdfImage } from '../../../model/offer-pdf-document.model';
-import type { PdfStyle } from '../../shared/style.util';
 import { BrandLogo } from '../brand/BrandLogo';
 import { SheetBackground } from '../decor/SheetBackground';
 import type { OfferPdfChromeProps } from '../document/offer-pdf-chrome';
@@ -10,23 +9,13 @@ import {
     recipientInnLine,
 } from '../lib/cover-details.util';
 import { offerCoverContent } from '../lib/cover.util';
-import { CoverPerson, type CoverPersonStyles } from './CoverPerson';
-
-/** Расстановка титульника — её задаёт стиль своим файлом стилей */
-export interface BrandCoverStyles {
-    top: PdfStyle;
-    company: PdfStyle;
-    main: PdfStyle;
-    kicker: PdfStyle;
-    product: PdfStyle;
-    supply: PdfStyle;
-    bottom: PdfStyle;
-    person: CoverPersonStyles;
-}
+import type { BrandCoverStyles } from './brand-cover.styles';
+import { CoverPerson } from './CoverPerson';
 
 export interface BrandCoverProps extends OfferPdfChromeProps {
     /** Фон титульника из model.assets.images */
     background: OfferPdfImage | undefined;
+    /** Расстановка — стили титульника стиля (brandCoverStyles) */
     styles: BrandCoverStyles;
     logoColor: string;
     /** Под поставкой: черта стиля (градиент и т. п.) */
@@ -77,7 +66,7 @@ export const BrandCover: FC<BrandCoverProps> = ({
                         label="Подготовлено для"
                         value={cover.recipient}
                         detail={recipientInnLine(cover)}
-                        styles={styles.person}
+                        styles={styles}
                     />
                 ) : null}
                 {cover.manager ? (
@@ -85,7 +74,7 @@ export const BrandCover: FC<BrandCoverProps> = ({
                         label="Подготовил"
                         value={cover.manager.name}
                         detail={managerContactsLine(cover)}
-                        styles={styles.person}
+                        styles={styles}
                     />
                 ) : null}
             </View>
