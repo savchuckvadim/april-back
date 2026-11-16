@@ -1,8 +1,8 @@
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
+import { ManagerFooter } from '../kit/chrome/ManagerFooter';
 import { defineOfferPdfTemplate } from '../kit/document/define-offer-pdf-template';
 import { GarantPromo } from '../kit/promo/GarantPromo';
 import { FacetCover } from './components/FacetCover';
-import { FacetFooter } from './components/FacetFooter';
 import { FacetHeader } from './components/FacetHeader';
 import { FACET_PALETTES } from './facet.theme';
 
@@ -15,7 +15,7 @@ export const facetTemplate = defineOfferPdfTemplate({
     palettes: FACET_PALETTES,
     chrome: {
         Header: FacetHeader,
-        Footer: FacetFooter,
+        Footer: ManagerFooter,
         Cover: FacetCover,
         Promo: GarantPromo,
     },

@@ -41,6 +41,7 @@ const facetTheme = (code: string, colors: FacetColors): OfferPdfTheme => ({
         heading: OFFER_PDF_FONTS.montserrat,
     },
     lineHeight: 1.35,
+    footer: { border: { width: 1.5, color: colors.accent } },
 });
 
 /** Гаммы «Грани»: синий Гаранта — по умолчанию */

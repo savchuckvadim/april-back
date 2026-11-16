@@ -1,8 +1,8 @@
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
+import { ManagerFooter } from '../kit/chrome/ManagerFooter';
 import { defineOfferPdfTemplate } from '../kit/document/define-offer-pdf-template';
 import { GarantPromo } from '../kit/promo/GarantPromo';
 import { LavenderCover } from './components/LavenderCover';
-import { LavenderFooter } from './components/LavenderFooter';
 import { LavenderHeader } from './components/LavenderHeader';
 import { LAVENDER_PALETTES } from './lavender.theme';
 
@@ -15,7 +15,7 @@ export const lavenderTemplate = defineOfferPdfTemplate({
     palettes: LAVENDER_PALETTES,
     chrome: {
         Header: LavenderHeader,
-        Footer: LavenderFooter,
+        Footer: ManagerFooter,
         Cover: LavenderCover,
         Promo: GarantPromo,
     },

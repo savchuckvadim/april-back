@@ -1,13 +1,16 @@
 import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import { BrandLogo } from '../../kit/brand/BrandLogo';
+import { CoverPerson } from '../../kit/cover/CoverPerson';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
+import {
+    managerContactsLine,
+    recipientInnLine,
+} from '../../kit/lib/cover-details.util';
 import { offerCoverContent } from '../../kit/lib/cover.util';
-import { joinNonEmpty } from '../../kit/lib/text.util';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
 import { COVER_FACETS } from '../lib/facet-shapes.util';
-import { facetCoverStyles } from './facet-cover.styles';
-import { FacetCoverPerson } from './FacetCoverPerson';
+import { facetCoverStyles, facetPersonStyles } from './facet-cover.styles';
 import { FacetShapes } from './FacetShapes';
 
 /**
@@ -18,9 +21,7 @@ import { FacetShapes } from './FacetShapes';
 export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = facetCoverStyles(theme);
     const cover = offerCoverContent(model);
-    const contacts = cover.manager
-        ? joinNonEmpty([cover.manager.phone, cover.manager.email], ' · ')
-        : '';
+    const person = facetPersonStyles(theme);
 
     return (
         <>
@@ -57,23 +58,19 @@ export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
             </View>
             <View style={styles.bottom}>
                 {cover.recipient ? (
-                    <FacetCoverPerson
+                    <CoverPerson
                         label="Подготовлено для"
                         value={cover.recipient}
-                        detail={
-                            cover.recipientInn
-                                ? `ИНН ${cover.recipientInn}`
-                                : ''
-                        }
-                        theme={theme}
+                        detail={recipientInnLine(cover)}
+                        styles={person}
                     />
                 ) : null}
                 {cover.manager ? (
-                    <FacetCoverPerson
+                    <CoverPerson
                         label="Подготовил"
                         value={cover.manager.name}
-                        detail={contacts}
-                        theme={theme}
+                        detail={managerContactsLine(cover)}
+                        styles={person}
                     />
                 ) : null}
             </View>

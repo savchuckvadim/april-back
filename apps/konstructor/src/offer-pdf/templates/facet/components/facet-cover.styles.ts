@@ -1,5 +1,6 @@
 import { StyleSheet } from '@react-pdf/renderer';
-import { A4 } from '../../kit/theme/offer-pdf-theme';
+import type { CoverPersonStyles } from '../../kit/cover/CoverPerson';
+import { A4, type OfferPdfTheme } from '../../kit/theme/offer-pdf-theme';
 import { themedStyles } from '../../kit/theme/themed-styles';
 
 /** Поля титульника */
@@ -88,3 +89,14 @@ export const facetCoverStyles = themedStyles(({ colors, sizes, fonts }) => {
         detail: { marginTop: 2, fontSize: sizes.sm, color: text, opacity: 0.8 },
     });
 });
+
+/** Стили блока «для кого / кто подготовил» */
+export const facetPersonStyles = (theme: OfferPdfTheme): CoverPersonStyles => {
+    const styles = facetCoverStyles(theme);
+    return {
+        block: styles.person,
+        label: styles.label,
+        value: styles.value,
+        detail: styles.detail,
+    };
+};

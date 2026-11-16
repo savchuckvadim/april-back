@@ -64,6 +64,13 @@ export interface OfferPdfTheme {
     readonly infoblocks?: {
         readonly namesColumns: 1 | 2;
     };
+    /** Подвал листа (ManagerFooter). Не задан — линия акцента, имя цветом текста */
+    readonly footer?: {
+        /** Черта рамкой подвала: текст отступает уже от неё */
+        readonly border?: { readonly width: number; readonly color: string };
+        /** Цвет имени менеджера */
+        readonly nameColor?: string;
+    };
 }
 
 /** Лист A4 в пунктах */

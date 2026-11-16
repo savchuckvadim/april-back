@@ -10,7 +10,10 @@ export interface ManagerFooterProps extends OfferPdfChromeProps {
     line?: ReactNode;
 }
 
-/** Подвал листа: черта и менеджер одной строкой; номер страницы — справа (kit) */
+/**
+ * Подвал листа: черта и менеджер одной строкой; номер страницы — справа
+ * (kit). Черту рамкой и цвет имени стиль задаёт в теме (theme.footer).
+ */
 export const ManagerFooter: FC<ManagerFooterProps> = ({
     model,
     theme,
@@ -23,7 +26,8 @@ export const ManagerFooter: FC<ManagerFooterProps> = ({
         : '';
     return (
         <View fixed style={styles.footer}>
-            {line ?? <View style={styles.line} />}
+            {line ??
+                (theme.footer?.border ? null : <View style={styles.line} />)}
             {manager ? (
                 <Text style={styles.manager}>
                     <Text style={styles.name}>{manager.name}</Text>

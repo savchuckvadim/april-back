@@ -44,6 +44,10 @@ const lavenderTheme = (
         headingWeight: 600,
     },
     lineHeight: 1.45,
+    footer: {
+        border: { width: 0.75, color: colors.soft },
+        nameColor: colors.accent,
+    },
 });
 
 /** Гаммы «Лаванды»: лаванда — по умолчанию */
