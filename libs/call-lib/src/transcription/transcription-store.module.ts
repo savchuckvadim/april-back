@@ -3,6 +3,7 @@ import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { TranscriptionRepository } from './repository/transcription.repository';
 import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
 import { TranscriptionStoreService } from './services/transcription.store.service';
+import { TranscriptionCallStateService } from './services/transcription-call-state.service';
 
 /**
  * Лёгкий модуль хранилища транскрибаций: репозиторий (Prisma) + store-сервис.
@@ -22,7 +23,8 @@ import { TranscriptionStoreService } from './services/transcription.store.servic
             useClass: TranscriptionPrismaRepository,
         },
         TranscriptionStoreService,
+        TranscriptionCallStateService,
     ],
-    exports: [TranscriptionStoreService],
+    exports: [TranscriptionStoreService, TranscriptionCallStateService],
 })
 export class TranscriptionStoreModule {}

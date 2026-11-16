@@ -26,6 +26,27 @@ export type TranscriptionPipelineLiteRow = Pick<
     keyof typeof TRANSCRIPTION_PIPELINE_LITE_SELECT
 >;
 
+/**
+ * Колонки состояния строки конвейера: дошёл ли звонок до расшифровки и чем
+ * она закончилась. Без текста — выборка идёт на список звонков клиента.
+ */
+export const TRANSCRIPTION_PIPELINE_STATE_SELECT = {
+    id: true,
+    dedup_key: true,
+    activity_id: true,
+    status: true,
+    call_started_at: true,
+    duration: true,
+    user_id: true,
+    updated_at: true,
+} as const satisfies Prisma.TranscriptionSelect;
+
+/** Строка состояния — только колонки TRANSCRIPTION_PIPELINE_STATE_SELECT. */
+export type TranscriptionPipelineStateRow = Pick<
+    Transcription,
+    keyof typeof TRANSCRIPTION_PIPELINE_STATE_SELECT
+>;
+
 export abstract class TranscriptionRepository {
     abstract create(
         transcription: TranscriptionBaseDto,
@@ -143,6 +164,14 @@ export abstract class TranscriptionRepository {
         domain: string,
         ids: readonly string[],
     ): Promise<TranscriptionPipelineLiteRow[]>;
+
+    /**
+     * Состояние строк конвейера по ключам дедупа «domain:activityId» — в
+     * любом статусе. Звонки, до которых конвейер не дошёл, не возвращаются.
+     */
+    abstract findPipelineStatesByDedupKeys(
+        dedupKeys: readonly string[],
+    ): Promise<TranscriptionPipelineStateRow[]>;
 
     /**
      * Момент самой ранней готовой (done) строки автоконвейера домена — по

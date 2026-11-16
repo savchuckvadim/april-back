@@ -101,6 +101,20 @@ export interface TranscriptionPipelineView {
 }
 
 /**
+ * Состояние звонка в конвейере — для списка звонков клиента: расшифрован ли
+ * звонок, в очереди он или упал. Без текста расшифровки.
+ */
+export interface TranscriptionPipelineStateView {
+    id: string;
+    activityId: string;
+    status: string | null;
+    callStartedAt: Date | null;
+    durationSec: string | null;
+    userId: string | null;
+    updatedAt: Date | null;
+}
+
+/**
  * Лёгкое представление done-строки для отчётов и AI-аналитики: без текста
  * транскрипта (LongText) и служебных полей — выборка за большой период не
  * тянет мегабайты текста в память. Колонки — TRANSCRIPTION_PIPELINE_LITE_SELECT.

@@ -6,6 +6,7 @@ export * from './transcription/services/transcription-spend.service';
 export * from './transcription/lib/transcription-spend.util';
 export * from './transcription/services/transcription.service';
 export * from './transcription/services/transcription.store.service';
+export * from './transcription/services/transcription-call-state.service';
 export * from './transcription/provider/transcription-provider.module';
 export * from './transcription/provider/transcription-router.service';
 export * from './transcription/provider/transcription-prefs.util';
