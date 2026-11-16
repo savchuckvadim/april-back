@@ -8,7 +8,9 @@ const data = createOfferRenderDataFixture();
 
 const createService = (
     rq: { director?: string | null; position?: string | null } | null,
+    portalLetter: Promise<{ text: string } | null> = Promise.resolve(null),
 ) => {
+    const letters = { findPortalDefault: jest.fn(() => portalLetter) };
     const renderData = {
         getOfferRenderData: jest.fn().mockResolvedValue(data),
     };
@@ -31,8 +33,9 @@ const createService = (
         renderData as never,
         provider as never,
         enricher as never,
+        letters as never,
     );
-    return { service, renderData, provider, enricher };
+    return { service, renderData, provider, enricher, letters };
 };
 
 const dto = {
@@ -111,5 +114,36 @@ describe('сборка модели PDF-КП', () => {
         expect(model.letter).toEqual({ appeal: 'Уважаемый!', text: null });
         expect(model.settings.withManager).toBe(false);
         expect(model.settings.withStamps).toBe(true);
+    });
+
+    it('письмо: из запроса сильнее письма портала, пустое — письмо портала', async () => {
+        const own = createService(
+            null,
+            Promise.resolve({ text: 'Вот уже 35 лет…' }),
+        );
+        const withText = await own.service.build({
+            ...dto,
+            letter: { text: ' Своё письмо ' },
+        });
+        expect(withText.letter.text).toBe('Своё письмо');
+        expect(own.letters.findPortalDefault).not.toHaveBeenCalled();
+
+        const portal = createService(
+            null,
+            Promise.resolve({ text: ' Вот уже 35 лет… ' }),
+        );
+        const withoutText = await portal.service.build(dto);
+        expect(withoutText.letter.text).toBe('Вот уже 35 лет…');
+        expect(portal.letters.findPortalDefault).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+        );
+    });
+
+    it('сбой чтения письма портала не роняет КП — текст шаблона по умолчанию', async () => {
+        const { service } = createService(
+            null,
+            Promise.reject(new Error('нет таблицы')),
+        );
+        expect((await service.build(dto)).letter.text).toBeNull();
     });
 });

@@ -3,11 +3,30 @@ import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfSettingsDto } from './offer-pdf-generate.dto';
 import { OfferPdfGenerateResult } from '../services/offer-pdf-generate.service';
 import { OfferPdfTemplateInfo } from '../templates/offer-pdf-template.interface';
+import { OfferPdfPaletteInfo } from '../templates/kit/theme/offer-pdf-palette';
+
+export class OfferPdfPaletteItemDto implements OfferPdfPaletteInfo {
+    @ApiProperty({
+        description: 'Код гаммы — передаётся в preview/generate как palette.',
+        example: 'garant',
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название гаммы для выбора.',
+        example: 'Синий Гаранта',
+    })
+    name: string;
+
+    @ApiProperty({ description: 'Цвет кружка в выборе.', example: '#1F4E9C' })
+    swatch: string;
+}
 
 export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
     @ApiProperty({
         description: 'Код шаблона — передаётся в preview/generate.',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         example: OfferPdfTemplateCode.CLASSIC,
     })
     code: OfferPdfTemplateCode;
@@ -35,10 +54,24 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
 
     @ApiProperty({
         description:
+            'Есть ли у стиля промо-страница (о системе, о сервисе): только у таких стилей работает настройка withPromo.',
+        example: false,
+    })
+    hasPromo: boolean;
+
+    @ApiProperty({
+        description:
             'Настройки, которые стиль задаёт сам: в конструкторе их переключатели неактивны, при генерации они ставятся поверх выбора менеджера.',
         type: () => OfferPdfSettingsDto,
     })
     lockedSettings: OfferPdfSettingsDto;
+
+    @ApiProperty({
+        description:
+            'Гаммы стиля; первая — по умолчанию. Пусто — у стиля одна гамма.',
+        type: () => [OfferPdfPaletteItemDto],
+    })
+    palettes: OfferPdfPaletteItemDto[];
 }
 
 export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
@@ -59,6 +92,7 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
     @ApiProperty({
         description: 'Каким шаблоном собран документ.',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         example: OfferPdfTemplateCode.CLASSIC,
     })
     templateCode: OfferPdfTemplateCode;
@@ -76,6 +110,14 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
         example: 148_233,
     })
     size: number;
+
+    @ApiProperty({
+        description:
+            'Картинки и логотипы стиля, которых нет на сервере (пути внутри storage/app): документ собран без них. Пусто — всё на месте.',
+        type: [String],
+        example: [],
+    })
+    missingAssets: string[];
 
     @ApiProperty({
         description:

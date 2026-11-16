@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { registerOfferPdfFonts } from '../fonts/offer-pdf-fonts';
+import { OfferPdfAssetStore } from '../lib/offer-pdf-asset-store';
 import {
     fitPageFrame,
     renderPdfWithLayout,
@@ -22,6 +23,11 @@ export interface OfferPdfRenderResult {
     layout: LayoutNode;
     /** Поля, подобранные под шапку и подвал; null — хватило полей шаблона */
     frame: OfferPdfPageFrame | null;
+    /**
+     * Картинки и логотипы стиля, которых не нашлось в storage: документ собран
+     * без них. Пути внутри storage/app; пусто — всё на месте.
+     */
+    missingAssets: string[];
 }
 
 /**
@@ -35,6 +41,11 @@ export interface OfferPdfRenderResult {
 export class OfferPdfRenderService {
     private readonly logger = new Logger(OfferPdfRenderService.name);
 
+    /** Хранилище по умолчанию — для тестов и аудита, где сервис создаётся руками */
+    constructor(
+        private readonly assetStore: OfferPdfAssetStore = new OfferPdfAssetStore(),
+    ) {}
+
     async render(input: OfferPdfDocumentModel): Promise<OfferPdfRenderResult> {
         const template = findOfferPdfTemplate(input.templateCode);
         if (!template) {
@@ -42,8 +53,19 @@ export class OfferPdfRenderService {
                 `PDF-шаблон КП «${input.templateCode}» не найден`,
             );
         }
+        // картинки и логотипы стиля — из storage, до рендера
+        const { assets, missing } = await this.assetStore.load({
+            images: template.assets,
+            logos: template.logos,
+        });
+        if (missing.length) {
+            // не падаем: КП без фона лучше, чем никакого, но это видно в логе и в ответе
+            this.logger.error(
+                `КП «${template.code}» собран без оформления — нет файлов в storage/app: ${missing.join(', ')}`,
+            );
+        }
         // настройки, которые стиль задаёт сам, — поверх выбора менеджера
-        const model = withLockedSettings(input, template);
+        const model = { ...withLockedSettings(input, template), assets };
         registerOfferPdfFonts();
 
         const started = performance.now();
@@ -66,6 +88,7 @@ export class OfferPdfRenderService {
             templateCode: template.code,
             layout: rendered.layout,
             frame,
+            missingAssets: missing,
         };
     }
 }

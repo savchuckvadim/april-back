@@ -6,6 +6,7 @@ import {
     Param,
     ParseEnumPipe,
     Post,
+    Query,
     Res,
 } from '@nestjs/common';
 import {
@@ -13,6 +14,7 @@ import {
     ApiOperation,
     ApiParam,
     ApiProduces,
+    ApiQuery,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
@@ -42,7 +44,7 @@ export class OfferPdfController {
     @ApiOperation({
         summary: 'Список PDF-шаблонов КП',
         description:
-            'Встроенные стили: код, название, описание, есть ли титульник и какие настройки стиль задаёт сам.',
+            'Встроенные стили: код, название, описание, есть ли титульник, гаммы и какие настройки стиль задаёт сам.',
     })
     @ApiOkResponse({ type: [OfferPdfTemplateItemDto] })
     @Get('templates')
@@ -59,7 +61,15 @@ export class OfferPdfController {
     @ApiParam({
         name: 'code',
         enum: OfferPdfTemplateCode,
+        enumName: 'OfferPdfTemplateCode',
         description: 'Код стиля',
+    })
+    @ApiQuery({
+        name: 'palette',
+        required: false,
+        type: String,
+        description:
+            'Код гаммы (palettes в списке стилей); не задан или неизвестен — первая гамма',
     })
     @ApiProduces('application/pdf')
     @ApiResponse({
@@ -72,16 +82,21 @@ export class OfferPdfController {
         @Param('code', new ParseEnumPipe(OfferPdfTemplateCode))
         code: OfferPdfTemplateCode,
         @Res() res: Response,
+        @Query('palette') palette?: string,
     ): Promise<void> {
-        const pdf = await this.stylePreviewService.preview(code);
+        const preview = await this.stylePreviewService.preview(code, palette);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader(
             'Content-Disposition',
             `inline; filename="offer-style-${code}.pdf"`,
         );
-        res.setHeader('Content-Length', pdf.length.toString());
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.end(pdf);
+        res.setHeader('Content-Length', preview.buffer.length.toString());
+        // собрано без картинок или логотипа — браузеру не запоминать: файлы занесут, превью сменится
+        res.setHeader(
+            'Cache-Control',
+            preview.complete ? 'public, max-age=3600' : 'no-store',
+        );
+        res.end(preview.buffer);
     }
 
     @ApiOperation({

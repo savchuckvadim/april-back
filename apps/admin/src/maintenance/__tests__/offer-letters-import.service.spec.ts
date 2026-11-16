@@ -20,6 +20,10 @@ class MemoryOfferLetterRepository implements OfferLetterRepository {
         );
     }
 
+    findPortalDefault(): Promise<OfferLetterEntity | null> {
+        return Promise.resolve(null);
+    }
+
     findImportedLegacyFieldIds(fieldIds: number[]): Promise<number[]> {
         return Promise.resolve(
             this.rows.flatMap(row =>

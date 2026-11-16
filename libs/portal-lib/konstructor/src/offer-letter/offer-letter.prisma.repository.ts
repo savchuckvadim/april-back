@@ -24,6 +24,19 @@ export class OfferLetterPrismaRepository implements OfferLetterRepository {
         return rows.map(createOfferLetterEntityFromPrisma);
     }
 
+    async findPortalDefault(domain: string): Promise<OfferLetterEntity | null> {
+        const row = await this.prisma.offerLetter.findFirst({
+            where: {
+                portal: { domain },
+                bxUserId: null,
+                isDefault: true,
+                isActive: true,
+            },
+            orderBy: { updatedAt: 'desc' },
+        });
+        return row ? createOfferLetterEntityFromPrisma(row) : null;
+    }
+
     async findImportedLegacyFieldIds(fieldIds: number[]): Promise<number[]> {
         if (!fieldIds.length) return [];
         const rows = await this.prisma.offerLetter.findMany({

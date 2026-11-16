@@ -30,6 +30,35 @@ export interface OfferPdfImages {
     signature?: OfferPdfImage;
 }
 
+/** Логотипы бренда, которые умеет рисовать каркас */
+export type OfferPdfBrand = 'garant' | 'iscra';
+
+/** Путь одноцветного логотипа: заливку задаёт тема */
+export interface OfferPdfLogoPath {
+    d: string;
+    transform?: string;
+}
+
+/** Векторный логотип из SVG: область рисования, transform группы, пути */
+export interface OfferPdfLogo {
+    width: number;
+    height: number;
+    /** Начало области (viewBox min-x, min-y); не задано — ноль */
+    minX?: number;
+    minY?: number;
+    groupTransform?: string;
+    paths: OfferPdfLogoPath[];
+}
+
+/**
+ * Картинки и логотипы стиля из storage — подгружаются до рендера по списку,
+ * который объявил шаблон. Нет файла — нет ключа, стиль рисуется без него.
+ */
+export interface OfferPdfAssets {
+    images: Readonly<Record<string, OfferPdfImage>>;
+    logos: Readonly<Partial<Record<OfferPdfBrand, OfferPdfLogo>>>;
+}
+
 export interface OfferPdfDocumentMeta {
     /** Дата документа по-русски: «31 октября 2026 г.» */
     date: string;
@@ -43,10 +72,14 @@ export interface OfferPdfDocumentMeta {
  */
 export interface OfferPdfDocumentModel {
     templateCode: OfferPdfTemplateCode;
+    /** Гамма стиля; null или неизвестная — первая гамма стиля */
+    palette: string | null;
     settings: OfferPdfSettings;
     data: IOfferWordRenderData;
     letter: OfferPdfLetter;
     signer: OfferPdfSigner | null;
     images: OfferPdfImages;
     meta: OfferPdfDocumentMeta;
+    /** Картинки и логотипы стиля — кладёт сервис рендера */
+    assets?: OfferPdfAssets;
 }

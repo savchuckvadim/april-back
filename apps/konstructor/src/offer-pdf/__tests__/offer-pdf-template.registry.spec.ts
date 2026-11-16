@@ -37,7 +37,7 @@ describe('реестр PDF-шаблонов КП', () => {
         ).toBeUndefined();
     });
 
-    it('список для UI — код, название, описание, титульник, зафиксированные настройки', () => {
+    it('список для UI — код, название, описание, титульник, гаммы, зафиксированные настройки', () => {
         const list = listOfferPdfTemplates();
         expect(list.length).toBe(OFFER_PDF_TEMPLATES.length);
         for (const item of list) {
@@ -45,8 +45,10 @@ describe('реестр PDF-шаблонов КП', () => {
                 'code',
                 'description',
                 'hasCover',
+                'hasPromo',
                 'lockedSettings',
                 'name',
+                'palettes',
             ]);
             expect(item.name.length).toBeGreaterThan(0);
         }

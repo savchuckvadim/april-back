@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Image, Text, View } from '@react-pdf/renderer';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
+import { onSurface } from '../document/surface.styles';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { stampsStyles } from './stamps.styles';
 
@@ -19,7 +20,7 @@ export const OfferStamps: FC<OfferStampsProps> = ({ model, theme }) => {
     const { bold } = baseStyles(theme);
 
     return (
-        <View style={styles.stamps} wrap={false}>
+        <View style={onSurface(theme, styles.stamps)} wrap={false}>
             <View style={styles.side}>
                 <Text style={bold}>{signer?.position ?? ''}</Text>
             </View>

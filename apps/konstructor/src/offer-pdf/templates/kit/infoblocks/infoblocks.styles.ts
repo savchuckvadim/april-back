@@ -38,6 +38,9 @@ export const infoblocksStyles = themedStyles(theme => {
         },
         item: { marginBottom: 3 },
         itemName: { fontSize: sizes.base },
+        /** Список без описаний в две колонки: строка из пары названий */
+        namesRow: { flexDirection: 'row', marginBottom: 3 },
+        namesCell: { width: '50%', paddingRight: 12 },
         itemDesc: {
             fontSize: sizes.sm,
             color: colors.muted,

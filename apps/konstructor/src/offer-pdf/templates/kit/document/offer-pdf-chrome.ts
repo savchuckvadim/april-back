@@ -20,4 +20,11 @@ export interface OfferPdfChrome {
     Cover?: FC<OfferPdfChromeProps>;
     /** Подложка под текстом на каждой странице (fixed, во всю страницу или у края) */
     Underlay?: FC<OfferPdfChromeProps>;
+    /** Промо-страница после титульника (о системе, о сервисе) — включается withPromo */
+    Promo?: FC<OfferPdfChromeProps>;
+    /**
+     * Промо-страница сама показывает письмо (как во вордовском «Модерне»):
+     * тогда в начале документа письма нет. Без промо письмо на месте.
+     */
+    promoReplacesLetter?: boolean;
 }

@@ -11,10 +11,19 @@ const SECTIONS = {
     infoblocks: OfferInfoblocks,
 } as const;
 
+export interface OfferSectionsProps extends OfferPdfChromeProps {
+    /** Подпись уже стоит под письмом на промо-странице — здесь её нет */
+    withoutStamps?: boolean;
+}
+
 /** Разделы КП после письма — в порядке из настроек */
-export const OfferSections: FC<OfferPdfChromeProps> = ({ model, theme }) => (
+export const OfferSections: FC<OfferSectionsProps> = ({
+    model,
+    theme,
+    withoutStamps = false,
+}) => (
     <>
-        {offerSectionOrder(model.settings).map(key => {
+        {offerSectionOrder(model.settings, withoutStamps).map(key => {
             const Section = SECTIONS[key];
             return <Section key={key} model={model} theme={theme} />;
         })}
