@@ -8,6 +8,7 @@ import {
 } from '@lib/core/bootstrap/global-validation-pipe';
 import { DocumentSupplyInitFormDto } from '../dto/document-supply-init-form.dto';
 import { DocumentSupplyReportGenerateDto } from '../dto/document-supply-report-generate.dto';
+import { ProductRowSupplyDto } from '../../document-generate/dto/product-row/product-row.dto';
 
 /**
  * Тела отчёта о поставке через тот же ValidationPipe, что и в проде.
@@ -180,6 +181,78 @@ describe('Отчёт о поставке: тела через глобальны
                 /^(bxContacts|supplyReport|products)\b/.test(m),
             );
             expect(aboutArrays).toEqual([]);
+        });
+    });
+
+    /**
+     * supply отчёта — отдельный SupplyReportSupplyDto: обязателен только type.
+     * Легаси шлёт сюда объект текущей поставки (state.od.currentOd) без forkp —
+     * подпись КП там называется quantityForKp (gsr, 16.11.2026).
+     */
+    describe('POST generate-document: supply', () => {
+        // объект из payload легаси-фронта (длинные тексты укорочены)
+        const legacyCurrentOd = () => ({
+            contractPropSuppliesQuantity: 1,
+            lcontractName: 'Многопользовательская Интернет-версия 1',
+            type: 'internet',
+            contractPropLoginsQuantity: 'Неограниченно',
+            number: 1,
+            acontractName: 'Многопользовательская Интернет-версия 1',
+            quantityForKp: 'Интернет версия на 1 одновременный доступ к системе',
+            name: 'Интернет 1 ОД',
+            coefficient: 1.25,
+            contractName: 'В электронном виде…',
+            contractProp1: '',
+            contractProp2: '',
+        });
+        const supplyErrors = async (supply: unknown) =>
+            (
+                await errorMessages(
+                    pipe,
+                    { supply },
+                    DocumentSupplyReportGenerateDto,
+                )
+            ).filter(m => m.startsWith('supply.') || m.startsWith('supply '));
+
+        it('объект поставки легаси без forkp проходит', async () => {
+            expect(await supplyErrors(legacyCurrentOd())).toEqual([]);
+        });
+
+        it('новый фронт ({ name, forkp, number, type }) проходит', async () => {
+            expect(
+                await supplyErrors({
+                    name: 'Интернет 1 ОД',
+                    forkp: 'Интернет версия на 1 одновременный доступ к системе',
+                    number: 1,
+                    type: 'internet',
+                }),
+            ).toEqual([]);
+        });
+
+        it('type по-прежнему обязателен — по нему выбирается шаблон', async () => {
+            const { type: _type, ...withoutType } = legacyCurrentOd();
+            expect(await supplyErrors(withoutType)).toEqual([
+                'supply.type must be a string',
+            ]);
+        });
+
+        it('до сервиса доходят только описанные поля; лишнее легаси срезано', () => {
+            const dto = plainToInstance(
+                DocumentSupplyReportGenerateDto,
+                { supply: legacyCurrentOd() },
+                GLOBAL_VALIDATION_PIPE_OPTIONS.transformOptions,
+            );
+            expect(dto.supply.type).toBe('internet');
+            expect(dto.supply.name).toBe('Интернет 1 ОД');
+        });
+
+        it('общий ProductRowSupplyDto (строки, договор) не ослаблен: forkp обязателен', async () => {
+            const messages = await errorMessages(
+                pipe,
+                { name: 'Интернет 1 ОД', number: 1, type: 'internet' },
+                ProductRowSupplyDto,
+            );
+            expect(messages).toContain('forkp must be a string');
         });
     });
 });

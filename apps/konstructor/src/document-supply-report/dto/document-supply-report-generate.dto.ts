@@ -14,7 +14,6 @@ import { IsObjectArray } from '@lib/core/decorators/dto/object-array.decorator';
 import {
     ProductRowDto,
     ProductRowSetDto,
-    ProductRowSupplyDto,
     PriceDto,
     RegionDto,
     RegionsDto,
@@ -45,6 +44,43 @@ class PlacementDto {
     @ApiProperty({ description: 'Options of the placement', type: Object })
     @IsObject()
     options: { ID: number };
+}
+
+/**
+ * Поставка отчёта о поставке. Отчёт читает из неё только `type` — выбор
+ * шаблона (generate.use-case) и данные отчёта (supply-report-data.service),
+ * поэтому остальные поля необязательны.
+ *
+ * Отдельный класс, а не `ProductRowSupplyDto`: тот описывает поставку СТРОКИ
+ * КП, счёта и договора, где `forkp` (подпись поставки для КП) обязателен, и
+ * его трогать нельзя. Легаси-фронт кладёт сюда объект текущей поставки
+ * (`state.od.currentOd`): подпись КП в нём называется `quantityForKp`, а
+ * `forkp` нет — с `ProductRowSupplyDto` отчёт отвечал 400
+ * «supply.forkp must be a string» (gsr, 16.11.2026). Лишние поля легаси
+ * (`contractName`, `coefficient`…) whitelist срезает — отчёт их не читает.
+ */
+export class SupplyReportSupplyDto {
+    @ApiProperty({ description: 'internet | proxima', type: String })
+    @IsString()
+    type: 'internet' | 'proxima';
+
+    @ApiPropertyOptional({ type: String })
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @ApiPropertyOptional({
+        description: 'Подпись поставки для КП; отчётом не читается',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    forkp?: string;
+
+    @ApiPropertyOptional({ description: 'Легаси-номер поставки', type: Number })
+    @IsOptional()
+    @IsNumber()
+    number?: number;
 }
 
 /** Тип клиента в виде, в котором его шлёт легаси-конструктор (SelectItem). */
@@ -129,12 +165,13 @@ export class DocumentSupplyReportGenerateDto {
     complect: ComplectDto[];
 
     @ApiProperty({
-        description: 'Supply of the contract',
-        type: ProductRowSupplyDto,
+        description:
+            'Поставка отчёта. Читается только type (шаблон и данные отчёта).',
+        type: SupplyReportSupplyDto,
     })
     @ValidateNested()
-    @Type(() => ProductRowSupplyDto)
-    supply: ProductRowSupplyDto;
+    @Type(() => SupplyReportSupplyDto)
+    supply: SupplyReportSupplyDto;
 
     @ApiPropertyOptional({
         description:
