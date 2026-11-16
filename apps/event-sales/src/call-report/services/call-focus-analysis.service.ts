@@ -34,7 +34,10 @@ import {
     ownSectionsOf,
     type FocusResultsByKey,
 } from './call-focus-assemble.util';
-import { renderMethodologyAnchorsBlock } from './call-focus-anchors.util';
+import {
+    methodologyRelevanceFor,
+    renderMethodologyAnchorsBlock,
+} from './call-focus-anchors.util';
 import {
     isFocusProviderFailure,
     type CallFocusOutcome,
@@ -283,11 +286,10 @@ export class CallFocusAnalysisService {
     ): Promise<CallMethodologyPassOutcome | null> {
         const pass = buildMethodologyPass(resolved, callType);
         if (pass === null) return null;
-        const materials = await this.buildMaterials(
-            domain,
-            callType,
-            resolved.methodology.knowledge,
-        );
+        const materials = await this.buildMaterials(domain, callType, {
+            knowledge: resolved.methodology.knowledge,
+            relevance: methodologyRelevanceFor(resolved, callType),
+        });
         const response = await this.callFocus(
             pass,
             methodologyContextOf(materials) +
@@ -344,12 +346,21 @@ export class CallFocusAnalysisService {
             const resolved = await this.resolveMethodology(domain);
             const methodologyPass: MethodologyPassSpec | null =
                 buildMethodologyPass(resolved, callType);
-            // Виды, объявленные методикой (факты о продукте, плейбуки),
-            // читаются только когда у звонка есть её проход.
+            // Виды, объявленные методикой (факты о продукте, плейбуки), и
+            // её приоры актуальности разделов действуют, только когда у
+            // звонка есть её проход.
             const materials = await this.buildMaterials(
                 domain,
                 callType,
-                methodologyPass ? resolved?.methodology.knowledge : undefined,
+                methodologyPass && resolved
+                    ? {
+                          knowledge: resolved.methodology.knowledge,
+                          relevance: methodologyRelevanceFor(
+                              resolved,
+                              callType,
+                          ),
+                      }
+                    : undefined,
             );
             const commonTail = await this.commonTailOf(domain, callType);
             // Якоря шкалы из методики — только проходам, которые ставят
@@ -589,13 +600,17 @@ export class CallFocusAnalysisService {
      * Материалы базы знаний по проходам + профиль типа звонка. Какие виды и
      * сколько знаков читать — общая таблица бюджетов; что куда подмешать —
      * call-focus-materials.util.ts.
-     * @param knowledge виды, объявленные методикой портала; нет — прохода
-     * методики у звонка нет
+     * @param methodology что методика портала добавляет звонку: виды
+     * материалов и приоры актуальности разделов; нет — прохода методики у
+     * звонка нет
      */
     private async buildMaterials(
         domain: string,
         callType: string | null,
-        knowledge?: Readonly<Record<string, string>>,
+        methodology?: {
+            knowledge?: Readonly<Record<string, string>>;
+            relevance?: Readonly<Record<string, number>>;
+        },
     ): Promise<FocusMaterials> {
         let profileBlock = '';
         let talkRatioMax: number | null = null;
@@ -605,7 +620,18 @@ export class CallFocusAnalysisService {
             const profile: CallTypeDefinition | null =
                 registry.types[callType ?? FALLBACK_CALL_TYPE] ?? null;
             if (profile) {
-                profileBlock = renderCallTypeProfile(profile);
+                // Приоры методики важнее приоров профиля типа звонка.
+                profileBlock = renderCallTypeProfile(
+                    methodology?.relevance
+                        ? {
+                              ...profile,
+                              sectionRelevance: {
+                                  ...profile.sectionRelevance,
+                                  ...methodology.relevance,
+                              },
+                          }
+                        : profile,
+                );
                 typedKind = profile.knowledgeKind ?? typedKind;
                 talkRatioMax = profile.talkRatioNorm?.max ?? null;
             }
@@ -619,7 +645,10 @@ export class CallFocusAnalysisService {
         const focus = focusBudgetLines({ typedKind, presentation });
         const lines = [
             ...focus,
-            ...methodologyBudgetLines(knowledge, { focus, presentation }),
+            ...methodologyBudgetLines(methodology?.knowledge, {
+                focus,
+                presentation,
+            }),
         ];
         const { materials, sharedCutChars } = renderFocusMaterials({
             profileBlock,

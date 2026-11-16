@@ -17,6 +17,25 @@ import {
 import { CALL_REPORT_SECTIONS } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 
 /**
+ * Приоры актуальности разделов для типа звонка из методики портала
+ * (`relevance`): какие разделы на этом этапе важны, а какие почти не
+ * применимы. Раньше поле хранилось в конфиге, но разбор брал приоры только
+ * из профиля типа звонка. У методики приоров для типа нет — undefined:
+ * действует профиль типа.
+ */
+export function methodologyRelevanceFor(
+    resolved: ResolvedMethodology | null,
+    callType: string | null,
+): Readonly<Record<string, number>> | undefined {
+    if (!resolved || callType === null) return undefined;
+    const relevance: Readonly<
+        Record<string, Readonly<Record<string, number>> | undefined>
+    > = resolved.methodology.relevance ?? {};
+    const forType = relevance[callType];
+    return forType && Object.keys(forType).length > 0 ? forType : undefined;
+}
+
+/**
  * Блок якорей для промпта; у методики якорей нет — пустая строка.
  * Разделы идут в порядке ядра, полосы — от низкой к высокой.
  */
