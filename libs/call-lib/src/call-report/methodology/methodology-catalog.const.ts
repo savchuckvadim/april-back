@@ -2,6 +2,11 @@ import {
     CALL_REPORT_CALL_TYPE_ITEMS,
     CALL_REPORT_SECTIONS,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { KNOWN_KNOWLEDGE_KINDS } from '@lib/ai-rag';
+import {
+    METHODOLOGY_KNOWLEDGE_KINDS,
+    type MethodologyKnowledgeKind,
+} from '../knowledge-budget/knowledge-budgets';
 import { CORE_CAPS } from './core-caps.const';
 import { POLYANSKY_METHODOLOGY } from './polyansky.methodology';
 import {
@@ -101,6 +106,11 @@ export interface CatalogCheckpoint extends MethodologyCheckpoint {
     source: string;
 }
 
+/** Вид базы знаний, который методика может объявить своим. */
+export interface CatalogKnowledgeKind extends MethodologyKnowledgeKind {
+    title: string;
+}
+
 export interface MethodologyCatalog {
     callTypes: CatalogEntry[];
     sections: CatalogEntry[];
@@ -114,6 +124,8 @@ export interface MethodologyCatalog {
     checkpoints: CatalogCheckpoint[];
     /** Ограничители ядра — действуют всегда, в форме только для справки. */
     coreCaps: MethodologyCap[];
+    /** Виды базы знаний для прохода методики, с бюджетом знаков. */
+    knowledgeKinds: CatalogKnowledgeKind[];
 }
 
 const SECTION_TITLES = new Map<string, string>(
@@ -161,5 +173,11 @@ export function buildMethodologyCatalog(): MethodologyCatalog {
             source: POLYANSKY_METHODOLOGY.code,
         })),
         coreCaps: [...CORE_CAPS],
+        knowledgeKinds: METHODOLOGY_KNOWLEDGE_KINDS.map(item => ({
+            ...item,
+            title:
+                KNOWN_KNOWLEDGE_KINDS.find(info => info.kind === item.kind)
+                    ?.title ?? item.kind,
+        })),
     };
 }

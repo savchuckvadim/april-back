@@ -480,6 +480,44 @@ describe('CallFocusAnalysisService', () => {
             'ТЕКСТ[product-facts]',
         );
     });
+
+    it('якоря шкалы методики идут в проходы с оценками и в итог, но не в проход методики', async () => {
+        const { service, llm } = makeDeps({
+            methodology: {
+                methodology: {
+                    ...POLYANSKY_METHODOLOGY,
+                    sectionAnchors: {
+                        NEEDS: { '1-2': 'потребности не выяснялись' },
+                    },
+                },
+                scope: 'common',
+                source: 'builtin',
+                versionTag: 'polyansky@1.0.0',
+            },
+        });
+
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const promptOf = (schemaName: string): string =>
+            String(
+                (
+                    llm.structuredCompletionWithUsage.mock.calls.find(
+                        call => (call as unknown[])[2] === schemaName,
+                    ) as unknown[]
+                )[0],
+            );
+        const anchor = 'потребности не выяснялись';
+        for (const schemaName of [
+            'call_focus_form',
+            'call_focus_content',
+            'call_focus_movement',
+            'call_focus_synthesis',
+        ]) {
+            expect(promptOf(schemaName)).toContain(anchor);
+        }
+        // Проход методики оценок не ставит — якоря ему не нужны.
+        expect(promptOf('call_focus_methodology')).not.toContain(anchor);
+    });
 });
 
 /** Виды, которые разбор запросил у базы знаний. */

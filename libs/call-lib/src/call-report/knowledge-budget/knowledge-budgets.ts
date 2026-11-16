@@ -157,6 +157,31 @@ export function methodologyBudgetLines(
         .map(kind => line(kind, KNOWLEDGE_USES.methodology));
 }
 
+/** Вид материалов, который методика может объявить своим. */
+export interface MethodologyKnowledgeKind {
+    kind: string;
+    /** Сколько знаков вида получает проход методики. */
+    budgetChars: number;
+    /**
+     * Вид читается только у звонков презентационного контура — там он и без
+     * объявления идёт во все проходы.
+     */
+    presentationOnly: boolean;
+}
+
+/** Справочник для формы методики: что можно объявить и с каким бюджетом. */
+export const METHODOLOGY_KNOWLEDGE_KINDS: readonly MethodologyKnowledgeKind[] =
+    [
+        KNOWLEDGE_KINDS.productFacts,
+        KNOWLEDGE_KINDS.objectionPlaybook,
+        KNOWLEDGE_KINDS.salesRegulation,
+        KNOWLEDGE_KINDS.presentationPlaybook,
+    ].map(kind => ({
+        kind,
+        budgetChars: FOCUS_BUDGET_CHARS[kind] ?? OTHER_KIND_BUDGET_CHARS,
+        presentationOnly: kind === KNOWLEDGE_KINDS.presentationPlaybook,
+    }));
+
 /** Материалы проверки по регламенту (норма и факты). */
 export function complianceBudgetLines(
     presentation: boolean,

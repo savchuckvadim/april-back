@@ -34,6 +34,7 @@ import {
     ownSectionsOf,
     type FocusResultsByKey,
 } from './call-focus-assemble.util';
+import { renderMethodologyAnchorsBlock } from './call-focus-anchors.util';
 import {
     isFocusProviderFailure,
     type CallFocusOutcome,
@@ -288,6 +289,13 @@ export class CallFocusAnalysisService {
                 this.buildStageBlock(callType) +
                 (await this.buildAfterPresentationBlock(domain, callType)) +
                 (await this.buildStrictnessBlock(domain));
+            // Якоря шкалы из методики — только проходам, которые ставят
+            // оценки, и только когда у методики есть проход для этого типа.
+            const scoringTail =
+                commonTail +
+                (methodologyPass
+                    ? renderMethodologyAnchorsBlock(resolved)
+                    : '');
             const userContent = this.buildUserContent(
                 transcript,
                 callType,
@@ -320,7 +328,7 @@ export class CallFocusAnalysisService {
                     run: (attempt: WaveAttempt) =>
                         this.callFocus(
                             pass,
-                            focusContextFor(materials, pass.key) + commonTail,
+                            focusContextFor(materials, pass.key) + scoringTail,
                             userContent,
                             domain,
                             attempt,
@@ -395,7 +403,8 @@ export class CallFocusAnalysisService {
 
             // Синтез выставляет итоговую оценку — ему дополнительно идут
             // эталонные разборы РОПа, чтобы шкала не «плавала».
-            const synthesisContext = synthesisContextOf(materials) + commonTail;
+            const synthesisContext =
+                synthesisContextOf(materials) + scoringTail;
             const synthesisWave = await runWaveWithRetry(
                 [
                     {
