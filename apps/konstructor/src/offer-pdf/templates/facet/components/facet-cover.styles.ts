@@ -1,5 +1,9 @@
 import { brandCoverStyles } from '../../kit/cover/brand-cover.styles';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
+import {
+    coverPaperColor,
+    coverTextColor,
+} from '../../kit/theme/theme-colors.util';
 
 /** Поля титульника */
 const MARGIN = 52;
@@ -13,8 +17,9 @@ export const FACET_COVER_LOGO_HEIGHT = 30;
  * Расстановка титульника «Грани»: тёмный лист, текст цветом титульника,
  * подписи — светлым оттенком гаммы; люди — столбиком справа внизу.
  */
-export const facetCoverStyles = brandCoverStyles((base, { colors, sizes }) => {
-    const text = colors.coverText ?? '#FFFFFF';
+export const facetCoverStyles = brandCoverStyles((base, theme) => {
+    const { colors, sizes } = theme;
+    const text = coverTextColor(theme);
     const caption = colors.accentSoft ?? text;
     return {
         paper: {
@@ -23,7 +28,7 @@ export const facetCoverStyles = brandCoverStyles((base, { colors, sizes }) => {
             left: 0,
             width: A4.width,
             height: A4.height,
-            backgroundColor: colors.coverPaper ?? colors.accent,
+            backgroundColor: coverPaperColor(theme),
         },
         shapes: { position: 'absolute', top: 0, left: 0 },
         top: {

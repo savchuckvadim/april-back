@@ -10,8 +10,7 @@ export const ISKRA_ASSETS = {
     coins: 'iskra/coins.jpg',
 } as const;
 
-/** Фирменные цвета логотипов, как во вордовском шаблоне */
-export const GARANT_PINK = '#FF0066';
+/** Фирменный цвет логотипа Искры, как во вордовском шаблоне */
 export const ISKRA_PURPLE = '#A02B93';
 
 /**

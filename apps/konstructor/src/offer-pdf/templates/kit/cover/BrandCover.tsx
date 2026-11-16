@@ -3,6 +3,7 @@ import { Text, View } from '@react-pdf/renderer';
 import { BrandLogo } from '../brand/BrandLogo';
 import type { OfferPdfChromeProps } from '../document/offer-pdf-chrome';
 import { offerCoverContent } from '../lib/cover.util';
+import { strongAccent } from '../theme/theme-colors.util';
 import { COVER_LOGO_HEIGHT, type BrandCoverStyles } from './brand-cover.styles';
 import { CoverPeople } from './CoverPeople';
 
@@ -47,11 +48,7 @@ export const BrandCover: FC<BrandCoverProps> = ({
                 <View style={styles.top}>
                     <BrandLogo
                         logo={model.assets?.logos.garant}
-                        color={
-                            logoColor ??
-                            theme.colors.accentStrong ??
-                            theme.colors.accent
-                        }
+                        color={logoColor ?? strongAccent(theme)}
                         height={logoHeight}
                     />
                     {cover.company ? (

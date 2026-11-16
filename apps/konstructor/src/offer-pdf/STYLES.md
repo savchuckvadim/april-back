@@ -25,13 +25,16 @@
 ```
 templates/
   kit/                 общее для всех стилей, красится темой
-    theme/             OfferPdfTheme (цвета, кегли, поля, шрифты, карточки), гаммы, themedStyles
-    document/          OfferPdfDocument (титульник → промо → страницы), ChromePage, разделы, карточки
+    theme/             OfferPdfTheme (цвета, кегли, поля, шрифты, карточки, подвал), гаммы,
+                       themedStyles, цвета с запасным значением (theme-colors.util)
+    document/          defineOfferPdfTemplate, OfferPdfDocument (титульник → промо → страницы),
+                       ChromePage, разделы, карточки
     letter/ price/ infoblocks/ stamps/   блоки КП
-    chrome/            общие шапка (BrandHeader) и подвал (ManagerFooter)
-    cover/             общий титульник на картинке (BrandCover), блок «для кого / кто»
-    promo/             промо-страница: блок и общий текст о системе
-    brand/             логотипы Гаранта и Искры вектором
+    chrome/            общие шапка (BrandHeader) и подвал (ManagerFooter; вид черты — из темы)
+    cover/             общий титульник (BrandCover: фон и добавки слотами), общие стили
+                       титульника (brandCoverStyles), блок «для кого / кто» (CoverPeople)
+    promo/             промо-страница: блок (PromoBlock), пункт (PromoItem), общий текст о системе
+    brand/             логотипы Гаранта и Искры вектором, фирменный цвет Гаранта
     decor/             GlassStripes, SoftGradient, GradientLine, SheetBackground, CornerImage
     lib/               текст, менеджер, содержимое титульника
   classic/             «Классический»: тема + шапка/подвал
@@ -41,19 +44,23 @@ templates/
   offer-pdf-template.registry.ts   список стилей
 ```
 
-Стиль — это `OfferPdfTemplate`:
+Стиль — это `OfferPdfTemplate`. Собирает его `defineOfferPdfTemplate` (kit/document) из описания:
 
-- **тема** (`OfferPdfTheme`) — всё, чем общие блоки отличаются: цвета, кегли, поля, шрифты;
-- **оформление листа** (`OfferPdfChrome`): `Header`, `Footer` (fixed, их высота задаёт поля),
-  необязательные `Cover` (титульник отдельной страницей), `Underlay` (подложка каждой страницы),
-  `Promo` (страница после титульника) и `promoReplacesLetter` (промо само показывает письмо);
-- `hasCover`, `hasPromo` — есть ли титульник и промо (настройки `withCover`, `withPromo`);
-- `palettes` — гаммы стиля (та же вёрстка в другом цвете), первая — по умолчанию; в запросе
-  `palette`, в превью `?palette=`;
-- `assets`, `logos` — картинки и логотипы из storage (см. ниже): рендер подгружает их в
-  `model.assets` до отрисовки, шаблон данных не читает сам;
+- **тема** (`theme`, `OfferPdfTheme`) — всё, чем общие блоки отличаются: цвета, кегли, поля,
+  шрифты, вид подвала; либо **гаммы** (`palettes`) — та же вёрстка в другом цвете, первая — по
+  умолчанию; в запросе `palette`, в превью `?palette=`;
+- **оформление листа** (`chrome`, `OfferPdfChrome`): `Header`, `Footer` (fixed, их высота задаёт
+  поля), необязательные `Cover` (титульник отдельной страницей), `Underlay` (подложка каждой
+  страницы), `Promo` (страница после титульника) и `promoReplacesLetter` (промо само показывает
+  письмо);
+- `assets` — объект картинок стиля целиком (`X_ASSETS`), `logos` — логотипы; всё из storage
+  (см. ниже): рендер подгружает их в `model.assets` до отрисовки, шаблон данных не читает сам;
 - `lockedSettings` — настройки, которые стиль задаёт сам: рендер ставит их поверх выбора
   менеджера, фронт по списку стилей гасит эти переключатели.
+
+Руками не задаются: `hasCover` и `hasPromo` (настройки `withCover`, `withPromo`) выводятся из
+того, есть ли в chrome `Cover` и `Promo`; в список картинок попадают все значения `X_ASSETS`;
+`render` общий. Так флаг или список не расходятся с оформлением.
 
 Тема передаётся пропсом, без React-контекста: тесты обходят дерево, вызывая компоненты как функции.
 
@@ -91,15 +98,26 @@ templates/
 
 ## Как добавить стиль
 
-1. Папка `templates/<code>/`: `<code>.theme.ts`, `components/` (шапка, подвал, по желанию титульник
-   и подложка — по компоненту на файл, стили через `themedStyles`), `<code>.template.tsx`.
+1. Папка `templates/<code>/`: `<code>.theme.ts` (тема или гаммы, картинки `X_ASSETS`),
+   `components/` — только то, чего нет в kit (по компоненту на файл, стили через `themedStyles`),
+   `<code>.template.tsx` — вызов `defineOfferPdfTemplate`.
 2. Код в `OfferPdfTemplateCode`, шаблон в `OFFER_PDF_TEMPLATES`.
-3. Картинки — в манифест `dev/offer-pdf-assets.manifest.ts`, `npm run offer-pdf:assets`; в шаблоне
-   `assets` и `logos`. Шапка, подвал, титульник на картинке — из `kit/chrome` и `kit/cover`, если
-   стилю не нужно своё.
-4. Тест в `__tests__/` по образцу `facet.template.spec.ts` (гаммы) или `pearl.template.spec.ts`.
-5. `npm run offer-pdf:audit -- --out tmp/offer-pdf-audit [--only <код>]` — все сценарии во всех
+3. Шапка и подвал — `BrandHeader` и `ManagerFooter` из `kit/chrome`. Черту подвала выбирает тема:
+   `footer.border` — рамка; иначе у темы с `colors.gradient` — градиентная черта (толщина —
+   `footer.gradientHeight`); иначе линия акцента. Цвет имени менеджера — `footer.nameColor`.
+4. Титульник — `BrandCover` из `kit/cover`: фон узлом (`SheetBackground` с картинкой или свой
+   вектор), стили — `brandCoverStyles(base => ({ … }))`: правки поверх общей расстановки, блок
+   из правок заменяет общий (`main: { ...base.main, top: 130 }` — поменять пару свойств). Своё
+   стиль добавляет слотами: `top`, `beforeProduct`, `afterProduct`, `afterSupply`.
+5. Промо — `GarantPromo` или свой текст в `PromoBlock`; свой вид пункта — `renderItem` и
+   `PromoItem` со слотом `mark`.
+6. Картинки — в манифест `dev/offer-pdf-assets.manifest.ts`, `npm run offer-pdf:assets`; в описании
+   стиля `assets: X_ASSETS` и `logos`.
+7. Тест в `__tests__/` по образцу `facet.template.spec.ts` (гаммы) или `pearl.template.spec.ts`.
+8. `npm run offer-pdf:audit -- --out tmp/offer-pdf-audit [--only <код>]` — все сценарии во всех
    стилях и остальные гаммы на сценарии по умолчанию, «Проблем нет»; глазами посмотреть PDF.
+   Правка каркаса (kit) не должна менять готовые стили: PDF аудита сверяются с прошлым прогоном
+   побайтно, без даты создания и ID документа.
 
 ## Правила оформления
 

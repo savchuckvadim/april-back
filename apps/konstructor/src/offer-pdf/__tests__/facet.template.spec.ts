@@ -12,11 +12,21 @@ import {
     OfferPdfSettings,
 } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
+import { CLASSIC_THEME } from '../templates/classic/classic.theme';
 import { FACET_PALETTES } from '../templates/facet/facet.theme';
 import { facetTemplate } from '../templates/facet/facet.template';
-import { polygonPath } from '../templates/facet/lib/facet-shapes.util';
+import {
+    COVER_FACETS,
+    HEADER_FACETS,
+    polygonPath,
+} from '../templates/facet/lib/facet-shapes.util';
 import { GARANT_PROMO } from '../templates/kit/promo/garant-promo';
 import { paletteTheme } from '../templates/kit/theme/offer-pdf-palette';
+import {
+    coverPaperColor,
+    coverTextColor,
+    strongAccent,
+} from '../templates/kit/theme/theme-colors.util';
 import { createOfferPdfModelFixture } from './fixtures/offer-pdf-model.fixture';
 import { collectTexts } from './helpers/react-pdf.mock';
 
@@ -84,5 +94,26 @@ describe('гаммы и грани', () => {
                 [10, 5],
             ]),
         ).toBe('M 0 0 L 10 0 L 10 5 Z');
+    });
+
+    it('у каждой грани путь готов заранее', () => {
+        for (const facet of [...COVER_FACETS, ...HEADER_FACETS]) {
+            expect(facet.d).toMatch(/^M [\d.]+ [\d.]+( L [\d.]+ [\d.]+)+ Z$/);
+        }
+    });
+
+    it('цвета темы с запасным значением', () => {
+        const [facet] = FACET_PALETTES;
+        expect(strongAccent(facet.theme)).toBe(facet.theme.colors.accentStrong);
+        expect(coverPaperColor(facet.theme)).toBe(
+            facet.theme.colors.coverPaper,
+        );
+        expect(coverTextColor(facet.theme)).toBe('#FFFFFF');
+        // у темы без этих цветов — акцент и белый
+        expect(strongAccent(CLASSIC_THEME)).toBe(CLASSIC_THEME.colors.accent);
+        expect(coverPaperColor(CLASSIC_THEME)).toBe(
+            CLASSIC_THEME.colors.accent,
+        );
+        expect(coverTextColor(CLASSIC_THEME)).toBe('#FFFFFF');
     });
 });

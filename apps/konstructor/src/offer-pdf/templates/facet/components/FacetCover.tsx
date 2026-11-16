@@ -3,6 +3,7 @@ import { View } from '@react-pdf/renderer';
 import { BrandCover } from '../../kit/cover/BrandCover';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
+import { coverTextColor } from '../../kit/theme/theme-colors.util';
 import { COVER_FACETS } from '../lib/facet-shapes.util';
 import {
     FACET_COVER_LOGO_HEIGHT,
@@ -36,7 +37,7 @@ export const FacetCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                     </View>
                 </>
             }
-            logoColor={theme.colors.coverText ?? '#FFFFFF'}
+            logoColor={coverTextColor(theme)}
             logoHeight={FACET_COVER_LOGO_HEIGHT}
             afterProduct={<View style={styles.bar} />}
         />

@@ -4,6 +4,7 @@ import { BrandLogo } from '../../kit/brand/BrandLogo';
 import { SoftGradient } from '../../kit/decor/SoftGradient';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
+import { strongAccent } from '../../kit/theme/theme-colors.util';
 import { themedStyles } from '../../kit/theme/themed-styles';
 
 /** Высота полосы градиента под шапкой */
@@ -59,7 +60,7 @@ export const LavenderHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                 <View style={styles.brand}>
                     <BrandLogo
                         logo={model.assets?.logos.garant}
-                        color={theme.colors.accentStrong ?? theme.colors.accent}
+                        color={strongAccent(theme)}
                         height={18}
                     />
                     {company ? (

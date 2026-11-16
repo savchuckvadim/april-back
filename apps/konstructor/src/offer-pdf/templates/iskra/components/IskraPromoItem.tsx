@@ -18,14 +18,11 @@ export const IskraPromoItem: FC<IskraPromoItemProps> = ({
     item,
     icon,
     theme,
-}) => {
-    const styles = iskraPromoStyles(theme);
-    return (
-        <PromoItem
-            item={item}
-            theme={theme}
-            style={styles.item}
-            mark={icon ? <Image style={styles.icon} src={icon} /> : null}
-        />
-    );
-};
+}) => (
+    <PromoItem
+        item={item}
+        theme={theme}
+        style={iskraPromoStyles.item}
+        mark={icon ? <Image style={iskraPromoStyles.icon} src={icon} /> : null}
+    />
+);

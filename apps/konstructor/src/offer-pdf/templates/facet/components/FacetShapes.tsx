@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { Path, Svg } from '@react-pdf/renderer';
 import type { OfferPdfTheme } from '../../kit/theme/offer-pdf-theme';
-import { facetColor, polygonPath, type Facet } from '../lib/facet-shapes.util';
+import { facetColor, type Facet } from '../lib/facet-shapes.util';
 
 export interface FacetShapesProps {
     facets: readonly Facet[];
@@ -20,8 +20,8 @@ export const FacetShapes: FC<FacetShapesProps> = ({
     <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         {facets.map(facet => (
             <Path
-                key={polygonPath(facet.points)}
-                d={polygonPath(facet.points)}
+                key={facet.d}
+                d={facet.d}
                 fill={facetColor(facet.tone, theme)}
                 fillOpacity={facet.opacity}
             />

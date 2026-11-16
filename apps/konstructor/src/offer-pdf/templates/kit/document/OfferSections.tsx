@@ -23,11 +23,9 @@ export const OfferSections: FC<OfferSectionsProps> = ({
     withoutStamps = false,
 }) => (
     <>
-        {offerSectionOrder(model.settings)
-            .filter(key => !(withoutStamps && key === 'stamps'))
-            .map(key => {
-                const Section = SECTIONS[key];
-                return <Section key={key} model={model} theme={theme} />;
-            })}
+        {offerSectionOrder(model.settings, withoutStamps).map(key => {
+            const Section = SECTIONS[key];
+            return <Section key={key} model={model} theme={theme} />;
+        })}
     </>
 );

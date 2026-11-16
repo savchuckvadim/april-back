@@ -13,7 +13,10 @@ import {
 } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { glassStripes } from '../templates/kit/decor/glass-stripes.util';
-import { offerSectionOrder } from '../templates/kit/document/document.util';
+import {
+    offerDocumentPages,
+    offerSectionOrder,
+} from '../templates/kit/document/document.util';
 import { offerCoverContent } from '../templates/kit/lib/cover.util';
 import { prismTemplate } from '../templates/prism/prism.template';
 import { createOfferPdfModelFixture } from './fixtures/offer-pdf-model.fixture';
@@ -77,6 +80,47 @@ describe('общие части стилей', () => {
                 withStamps: false,
             }),
         ).toEqual(['infoblocks', 'price']);
+    });
+
+    it('подпись уже стоит под письмом на промо-странице — среди разделов её нет', () => {
+        expect(offerSectionOrder(OFFER_PDF_DEFAULT_SETTINGS, true)).toEqual([
+            'infoblocks',
+            'price',
+        ]);
+    });
+
+    it('листы документа: титульник и промо — когда есть у стиля и включены', () => {
+        const Part = (): null => null;
+        const settings = { ...OFFER_PDF_DEFAULT_SETTINGS };
+        expect(offerDocumentPages(settings, {})).toEqual({
+            withCover: false,
+            withPromo: false,
+            letterInPromo: false,
+        });
+        expect(
+            offerDocumentPages(settings, { Cover: Part, Promo: Part }),
+        ).toEqual({ withCover: true, withPromo: true, letterInPromo: false });
+        expect(
+            offerDocumentPages(
+                { ...settings, withCover: false, withPromo: false },
+                { Cover: Part, Promo: Part, promoReplacesLetter: true },
+            ),
+        ).toEqual({
+            withCover: false,
+            withPromo: false,
+            letterInPromo: false,
+        });
+        // письмо уходит на промо-страницу, только когда она печатается
+        expect(
+            offerDocumentPages(settings, {
+                Promo: Part,
+                promoReplacesLetter: true,
+            }).letterInPromo,
+        ).toBe(true);
+        expect(
+            offerDocumentPages(settings, { promoReplacesLetter: true })
+                .letterInPromo,
+        ).toBe(false);
     });
 
     it('содержимое титульника — из данных КП, пустое — null', () => {

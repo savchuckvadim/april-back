@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import { BrandLogo } from '../brand/BrandLogo';
 import type { OfferPdfChromeProps } from '../document/offer-pdf-chrome';
+import { strongAccent } from '../theme/theme-colors.util';
 import { brandHeaderStyles } from './brand-header.styles';
 
 export interface BrandHeaderProps extends OfferPdfChromeProps {
@@ -32,11 +33,7 @@ export const BrandHeader: FC<BrandHeaderProps> = ({
             <View style={styles.brand}>
                 <BrandLogo
                     logo={logos?.garant}
-                    color={
-                        logoColor ??
-                        theme.colors.accentStrong ??
-                        theme.colors.accent
-                    }
+                    color={logoColor ?? strongAccent(theme)}
                     height={18}
                 />
                 {iscraColor ? <View style={styles.logoGap} /> : null}

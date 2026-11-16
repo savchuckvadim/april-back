@@ -3,6 +3,10 @@ import { StyleSheet, Text, View } from '@react-pdf/renderer';
 import { BrandLogo } from '../../kit/brand/BrandLogo';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
+import {
+    coverPaperColor,
+    coverTextColor,
+} from '../../kit/theme/theme-colors.util';
 import { themedStyles } from '../../kit/theme/themed-styles';
 import {
     HEADER_BAND,
@@ -11,8 +15,10 @@ import {
 } from '../lib/facet-shapes.util';
 import { FacetShapes } from './FacetShapes';
 
-const headerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
-    StyleSheet.create({
+const headerStyles = themedStyles(theme => {
+    const { sizes, page, lineHeight } = theme;
+    const text = coverTextColor(theme);
+    return StyleSheet.create({
         band: {
             fontSize: sizes.base,
             lineHeight,
@@ -21,7 +27,7 @@ const headerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
             left: 0,
             right: 0,
             height: HEADER_BAND,
-            backgroundColor: colors.coverPaper ?? colors.accent,
+            backgroundColor: coverPaperColor(theme),
         },
         facets: { position: 'absolute', top: 0, left: 0 },
         row: {
@@ -38,22 +44,17 @@ const headerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
             maxWidth: '60%',
             marginLeft: 10,
             fontSize: sizes.sm,
-            color: colors.coverText ?? '#FFFFFF',
+            color: text,
         },
         brand: { flexDirection: 'row', alignItems: 'center', maxWidth: '65%' },
-        doc: {
-            fontSize: sizes.xs,
-            color: colors.coverText ?? '#FFFFFF',
-            textAlign: 'right',
-        },
-    }),
-);
+        doc: { fontSize: sizes.xs, color: text, textAlign: 'right' },
+    });
+});
 
 /** Шапка «Грани»: полоса в цвет гаммы — логотип и компания слева, грани справа */
 export const FacetHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const styles = headerStyles(theme);
     const company = model.data.MyCompanyName || model.data.MyCompanyFullName;
-    const textColor = theme.colors.coverText ?? '#FFFFFF';
 
     return (
         <View fixed style={styles.band}>
@@ -69,7 +70,7 @@ export const FacetHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                 <View style={styles.brand}>
                     <BrandLogo
                         logo={model.assets?.logos.garant}
-                        color={textColor}
+                        color={coverTextColor(theme)}
                         height={18}
                     />
                     {company ? (

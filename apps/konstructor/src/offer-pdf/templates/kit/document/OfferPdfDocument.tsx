@@ -6,7 +6,7 @@ import { baseStyles } from '../base.styles';
 import { OfferLetter } from '../letter/OfferLetter';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { ChromePage } from './ChromePage';
-import { offerDocumentTitle } from './document.util';
+import { offerDocumentPages, offerDocumentTitle } from './document.util';
 import type { OfferPdfChrome } from './offer-pdf-chrome';
 import { OfferSections } from './OfferSections';
 
@@ -32,8 +32,7 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     const { data, settings } = model;
     const base = baseStyles(theme);
     const { Cover, Promo } = chrome;
-    const withPromo = Boolean(Promo) && settings.withPromo;
-    const letterInPromo = withPromo && Boolean(chrome.promoReplacesLetter);
+    const pages = offerDocumentPages(settings, chrome);
 
     return (
         <Document
@@ -43,12 +42,12 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
             producer="April Konstructor"
             language="ru"
         >
-            {Cover && settings.withCover ? (
+            {Cover && pages.withCover ? (
                 <Page size="A4" style={base.coverPage}>
                     <Cover model={model} theme={theme} />
                 </Page>
             ) : null}
-            {Promo && withPromo ? (
+            {Promo && pages.withPromo ? (
                 <ChromePage
                     model={model}
                     theme={theme}
@@ -64,13 +63,13 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                 chrome={chrome}
                 frame={frame}
             >
-                {letterInPromo ? null : (
+                {pages.letterInPromo ? null : (
                     <OfferLetter model={model} theme={theme} />
                 )}
                 <OfferSections
                     model={model}
                     theme={theme}
-                    withoutStamps={letterInPromo}
+                    withoutStamps={pages.letterInPromo}
                 />
             </ChromePage>
         </Document>

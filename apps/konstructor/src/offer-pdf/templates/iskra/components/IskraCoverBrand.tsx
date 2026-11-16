@@ -1,10 +1,11 @@
 import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
+import { GARANT_PINK } from '../../kit/brand/brand-colors';
 import { BrandLogo } from '../../kit/brand/BrandLogo';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { companyInnLine } from '../../kit/lib/cover-details.util';
 import { offerCoverContent } from '../../kit/lib/cover.util';
-import { GARANT_PINK, ISKRA_PURPLE } from '../iskra.theme';
+import { ISKRA_PURPLE } from '../iskra.theme';
 import { iskraCoverStyles } from './iskra-cover.styles';
 
 /** Верх титульника «Искры»: логотипы Гаранта и Искры, под ними наша компания с ИНН */

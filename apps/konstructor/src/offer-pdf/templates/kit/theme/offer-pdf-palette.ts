@@ -35,8 +35,7 @@ export type OfferPdfPalettes = readonly [OfferPdfPalette, ...OfferPdfPalette[]];
 export const paletteTheme = (
     palettes: OfferPdfPalettes,
     code: string | null | undefined,
-): OfferPdfTheme =>
-    (palettes.find(palette => palette.code === code) ?? palettes[0]).theme;
+): OfferPdfTheme => (findPalette(palettes, code) ?? palettes[0]).theme;
 
 export const paletteInfo = ({
     code,
