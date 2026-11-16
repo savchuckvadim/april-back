@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
+import { PortalSessionModule } from '@lib/auth';
 import { CallPageLinkModule, TranscriptionStoreModule } from '@lib/call-lib';
+import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
+import { CallPageLinksController } from './call-page-links.controller';
+import { CallPageLinksUseCase } from './call-page-links.use-case';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { CallPageAudioService } from './call-page-audio.service';
 import { CallPageCallResolver } from './call-page-call.resolver';
@@ -22,16 +26,21 @@ import { CallPageUseCase } from './call-page.use-case';
 @Module({
     imports: [
         PBXModule,
+        // Периметр видимости менеджеров и сессия портала — для выдачи
+        // ссылок спискам «Отчёта»
+        AiAnalyticsCoreModule,
+        PortalSessionModule,
         CallPageLinkModule,
         TranscriptionStoreModule,
         PbxAicallSmartModule,
     ],
-    controllers: [CallPageController],
+    controllers: [CallPageController, CallPageLinksController],
     providers: [
         CallPageCallResolver,
         CallPageManagerNameService,
         CallPageAudioService,
         CallPageUseCase,
+        CallPageLinksUseCase,
     ],
 })
 export class AiAnalyticsCallPageModule {}

@@ -27,6 +27,12 @@ import {
 const REPORT_SITE_SETTING: VendorSettingKey =
     'MARKETPLACE_WIDGET_URL_REPORT_SALES';
 
+/**
+ * С какого момента искать отзывы ссылок: страница разбора появилась в
+ * ноябре 2026, раньше записей отзыва быть не может.
+ */
+const CALL_PAGE_LINKS_SINCE = new Date('2026-11-01T00:00:00.000Z');
+
 /** Звонок, на который ведёт проверенная ссылка, и его записи `ais`. */
 export interface ResolvedCallPageLink {
     transcriptionId: string;
@@ -78,6 +84,46 @@ export class CallPageLinkService {
         if (token === null) return null;
         const site = await this.site();
         return site === null ? null : callPageUrl(site, token);
+    }
+
+    /**
+     * Адреса страниц разбора сразу для нескольких звонков одного портала
+     * (списки в приложении «Отчёт»). Отзывы читаются одним узким запросом —
+     * только записи отзыва портала, сами разборы звонков не загружаются.
+     * Нет секрета или адрес сайта битый — пустой набор.
+     */
+    async urlsFor(
+        domain: string,
+        transcriptionIds: readonly string[],
+    ): Promise<Map<string, string>> {
+        const urls = new Map<string, string>();
+        const secret = this.secret();
+        if (secret === null || transcriptionIds.length === 0) return urls;
+        const site = await this.site();
+        if (site === null) return urls;
+
+        const revocations = await this.aiService.findByDomainTypesInPeriod(
+            domain,
+            [CALL_PAGE_LINK_TYPE],
+            CALL_PAGE_LINKS_SINCE,
+            new Date(),
+        );
+        for (const transcriptionId of transcriptionIds) {
+            const token = buildCallPageToken(
+                secret,
+                transcriptionId,
+                callPageMarkOf(
+                    revocations.filter(
+                        record => record.transcription_id === transcriptionId,
+                    ),
+                ),
+            );
+            // Номер не годится для ссылки — звонок остаётся без неё.
+            if (token !== null) {
+                urls.set(transcriptionId, callPageUrl(site, token));
+            }
+        }
+        return urls;
     }
 
     private async site(): Promise<string | null> {

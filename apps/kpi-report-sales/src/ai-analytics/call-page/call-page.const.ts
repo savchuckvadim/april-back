@@ -5,6 +5,10 @@
 
 /** Карточка звонка по ссылке-пропуску. */
 export const CALL_PAGE_ROUTE = 'call-page/:token' as const;
+/** Ссылки на страницы разбора для списка звонков — под сессией портала. */
+export const CALL_PAGE_LINKS_ROUTE = 'call-page/links' as const;
+/** Сколько звонков можно запросить за один раз. */
+export const CALL_PAGE_LINKS_MAX = 100;
 /** Запись разговора потоком. */
 export const CALL_PAGE_AUDIO_ROUTE = 'call-page/:token/audio' as const;
 

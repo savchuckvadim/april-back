@@ -136,6 +136,15 @@ export abstract class TranscriptionRepository {
     ): Promise<TranscriptionPipelineLiteRow[]>;
 
     /**
+     * Лёгкие строки портала по номерам расшифровок (без текста): чужие и
+     * несуществующие номера просто не возвращаются.
+     */
+    abstract findPipelineLiteByIds(
+        domain: string,
+        ids: readonly string[],
+    ): Promise<TranscriptionPipelineLiteRow[]>;
+
+    /**
      * Момент самой ранней готовой (done) строки автоконвейера домена — по
      * тем же условиям и той же дате, что выборки за период: время звонка
      * (call_started_at), а без него — created_at. null — готовых строк нет.
