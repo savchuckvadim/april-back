@@ -163,4 +163,64 @@ describe('llm-error.util — классификация ошибок прова�
         );
         expect(describeLlmError(new Error('a'.repeat(300))).length).toBe(200);
     });
+
+    /** 16.11.2026: пропуск по размеру запроса про здоровье поставщика не говорит. */
+    it('запасной не взял запрос по размеру — решает основной, как и раньше', () => {
+        const timeoutThenTooLarge = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                { provider: 'vibecode', transient: true },
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+            ],
+            'vibecode',
+        );
+        expect(isTransientLlmError(timeoutThenTooLarge)).toBe(true);
+    });
+
+    it('сам основной не берёт запрос по размеру — решает следующий с настоящей попыткой; не взял никто — отказ постоянный', () => {
+        const tooLargeThenTimeout = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+                { provider: 'vibecode', transient: true },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(tooLargeThenTimeout)).toBe(true);
+
+        const tooLargeThenBadAnswer = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+                { provider: 'vibecode', transient: false },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(tooLargeThenBadAnswer)).toBe(false);
+
+        const nobodyTakes = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(nobodyTakes)).toBe(false);
+    });
 });

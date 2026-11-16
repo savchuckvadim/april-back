@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { EgressProxyService } from '@lib/egress-proxy';
 import {
@@ -5,8 +6,12 @@ import {
     type LlmFallbackJsonMode,
 } from '@lib/vendor-settings';
 import { withJsonInstruction } from '../json-instruction.util';
-import { LlmEndpointResolverService } from '../llm-endpoint-resolver.service';
+import {
+    LlmEndpointResolverService,
+    type LlmEndpoint,
+} from '../llm-endpoint-resolver.service';
 import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
+import { LlmRequestSizeMemory } from '../llm-request-size-memory';
 import type {
     LlmSendGuard,
     StructuredLlmAdapter,
@@ -72,6 +77,24 @@ export function parseJsonContent(content: string): unknown {
     return JSON.parse(fenced ? fenced[1] : trimmed) as unknown;
 }
 
+/** HTTP-код «запрос слишком большой»: размер запоминается, повтор бесполезен. */
+const HTTP_TOO_LARGE = 413;
+
+/**
+ * Ключ памяти размеров: адрес, модель и отпечаток ключа доступа (сам ключ в
+ * память и журнал не попадает). У ключа портала тариф может быть другим,
+ * чем у общего, — их отказы по размеру не смешиваются.
+ */
+export function requestSizeKey(endpoint: LlmEndpoint): string {
+    const fingerprint = endpoint.apiKey
+        ? createHash('sha256')
+              .update(endpoint.apiKey)
+              .digest('hex')
+              .slice(0, 12)
+        : 'no-key';
+    return `${endpoint.baseUrl}|${endpoint.model}|${fingerprint}`;
+}
+
 const toTokenCount = (value: unknown): number | null =>
     typeof value === 'number' && Number.isFinite(value) ? value : null;
 
@@ -104,10 +127,31 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
         private readonly egress: EgressProxyService,
     ) {}
 
+    /** Размеры запросов, на которых поставщик ответил 413 (память процесса, час). */
+    private readonly tooLarge = new LlmRequestSizeMemory();
+
     async configurationIssue(domain: string): Promise<string | null> {
         return (await this.endpoints.resolve(domain))
             ? null
             : 'не настроен: нет кредов LLM портала, своего запасного поставщика, ключа Cloud.ru или Groq в «Настройках приложения»';
+    }
+
+    /**
+     * В последний час поставщик уже отказал запросу такого же или меньшего
+     * размера (413) — этот тоже не пройдёт, шлюз к поставщику не обращается.
+     */
+    async rejectsBySize(request: StructuredLlmRequest): Promise<boolean> {
+        const endpoint = await this.endpoints.resolve(request.domain);
+        if (!endpoint) return false;
+        const { jsonMode } = await this.settings.fallbackCall();
+        const body = JSON.stringify(
+            buildChatCompletionBody(endpoint.model, request, jsonMode),
+        );
+        return this.tooLarge.blocks(
+            requestSizeKey(endpoint),
+            body.length,
+            Date.now(),
+        );
     }
 
     async complete(
@@ -122,6 +166,9 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
         }
         const { jsonMode, timeoutMs } = await this.settings.fallbackCall();
         const where = `LLM (${endpoint.source}, ${endpoint.model}) ${request.schemaName}`;
+        const body = JSON.stringify(
+            buildChatCompletionBody(endpoint.model, request, jsonMode),
+        );
         // Проверка шлюза у самой отправки: пауза предохранителя, замок пробы.
         await guard?.beforeSend();
         let response: Response;
@@ -138,13 +185,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
                             ? { Authorization: `Bearer ${endpoint.apiKey}` }
                             : {}),
                     },
-                    body: JSON.stringify(
-                        buildChatCompletionBody(
-                            endpoint.model,
-                            request,
-                            jsonMode,
-                        ),
-                    ),
+                    body,
                     signal: AbortSignal.timeout(timeoutMs),
                 },
             );
@@ -154,6 +195,13 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
             );
         }
         if (!response.ok) {
+            if (response.status === HTTP_TOO_LARGE) {
+                this.tooLarge.remember(
+                    requestSizeKey(endpoint),
+                    body.length,
+                    Date.now(),
+                );
+            }
             const text = await response.text().catch(() => '');
             throw new Error(
                 `${where} failed [${response.status}]: ${text.slice(0, 500)}`,

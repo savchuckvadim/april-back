@@ -3,10 +3,16 @@ import type { Logger } from '@nestjs/common';
 import {
     describeLlmCallFailure,
     describeLlmCallSuccess,
+    describeLlmTooLarge,
+    describeLlmTooLargeCall,
     llmCallMeta,
 } from './llm-call-log.util';
 import type { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
-import { describeLlmError, isTransientLlmError } from './llm-error.util';
+import {
+    describeLlmError,
+    isTransientLlmError,
+    llmErrorStatus,
+} from './llm-error.util';
 import {
     LlmProviderPausedError,
     type LlmProviderFailure,
@@ -37,6 +43,9 @@ export type LlmAttemptOutcome = StructuredLlmResponse | 'paused' | null;
 /** Проверка перед отправкой: бросает LlmProviderPausedError — не отправлять. */
 type SendCheck = () => Promise<void>;
 
+/** HTTP-код «запрос слишком большой» — пропуск по размеру, а не сбой. */
+const HTTP_TOO_LARGE = 413;
+
 const PAUSED_NOTES: Record<LlmProviderPausedError['reason'], string> = {
     paused: 'встал на паузу, пока вызов ждал очереди',
     'probe-busy': 'на паузе, пробный вызов уже идёт',
@@ -57,6 +66,22 @@ export class LlmProviderCalls {
         private readonly breaker: LlmCircuitBreakerService,
         private readonly logger: Logger,
     ) {}
+
+    /**
+     * Пропуск по размеру до обращения: адаптер помнит, что на таком же или
+     * меньшем запросе поставщик уже ответил 413. Запрос не уходит, в
+     * сводную ошибку пишется «исправен, но запрос такого размера не
+     * принимает» — это не сбой поставщика и не повод его пробовать.
+     */
+    async skippedBySize(
+        adapter: StructuredLlmAdapter,
+        request: StructuredLlmRequest,
+        trail: LlmCallTrail,
+    ): Promise<boolean> {
+        if (!(await adapter.rejectsBySize?.(request))) return false;
+        this.noteTooLarge(adapter.code, request, trail);
+        return true;
+    }
 
     /**
      * Обычная попытка. Пока вызов ждал слота, поставщик мог встать на
@@ -177,6 +202,22 @@ export class LlmProviderCalls {
                 );
                 return 'paused';
             }
+            const queueMs =
+                timing.sentAt === null ? 0 : timing.sentAt - startedAt;
+            if (llmErrorStatus(error) === HTTP_TOO_LARGE) {
+                this.noteTooLarge(adapter.code, request, trail);
+                this.logger.log(
+                    describeLlmTooLargeCall(request, adapter.code),
+                    llmCallMeta(
+                        request,
+                        adapter.code,
+                        failedAt - startedAt,
+                        queueMs,
+                        null,
+                    ),
+                );
+                return null;
+            }
             const text = describeLlmError(error);
             const transient = isTransientLlmError(error);
             trail.notes.push(`${adapter.code} — ${text}`);
@@ -189,8 +230,6 @@ export class LlmProviderCalls {
                     fallbackAvailable,
                 );
             }
-            const queueMs =
-                timing.sentAt === null ? 0 : timing.sentAt - startedAt;
             this.logger.warn(
                 describeLlmCallFailure(
                     request,
@@ -209,6 +248,16 @@ export class LlmProviderCalls {
             );
             return null;
         }
+    }
+
+    /** Поставщик не берёт запрос такого размера — в сводку, без счёта в предохранителе. */
+    private noteTooLarge(
+        provider: LlmProviderCode,
+        request: StructuredLlmRequest,
+        trail: LlmCallTrail,
+    ): void {
+        trail.notes.push(`${provider} — ${describeLlmTooLarge(request)}`);
+        trail.failures.push({ provider, transient: false, tooLarge: true });
     }
 
     private async assertNotPaused(provider: LlmProviderCode): Promise<void> {

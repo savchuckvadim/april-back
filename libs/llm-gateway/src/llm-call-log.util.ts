@@ -133,3 +133,41 @@ export function llmCallMeta(
         },
     };
 }
+
+/** Размер входа запроса, знаков: системный промпт + контент (как в журнале). */
+export const llmInputChars = (request: LoggedLlmRequest): number =>
+    request.systemPrompt.length + request.userContent.length;
+
+/**
+ * Почему поставщик пропущен по размеру (16.11.2026) — в сводную ошибку и
+ * тревогу. Не «не ответил»: поставщик исправен, запрос больше его предела
+ * (бесплатный Groq отвечает 413 на разборы длинных звонков).
+ */
+export const describeLlmTooLarge = (request: LoggedLlmRequest): string =>
+    `исправен, но запрос такого размера (${llmInputChars(request)} знаков) не принимает`;
+
+/** Строка журнала: поставщик ответил 413 — размер запомнен, повторов не будет. */
+export const describeLlmTooLargeCall = (
+    request: LoggedLlmRequest,
+    provider: LlmProviderCode,
+): string =>
+    `LLM ${provider} ${request.schemaName} (${request.domain}): ` +
+    `запрос ${llmInputChars(request)} знаков поставщик не принимает (HTTP 413) — ` +
+    'пропущен, такие запросы час к нему не уходят';
+
+/**
+ * Текст тревоги «не ответил никто». Когда кто-то из поставщиков пропущен по
+ * размеру, заголовок не говорит «отказали все»: запасной исправен, он просто
+ * не берёт запрос такого размера — чинить его не нужно.
+ */
+export function describeLlmExhausted(
+    request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
+    notes: readonly string[],
+    hasTooLarge: boolean,
+): string {
+    const head = `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain})`;
+    const reasons = notes.join('; ');
+    return hasTooLarge
+        ? `${head}: ${reasons}`
+        : `${head} — отказали все поставщики: ${reasons}`;
+}

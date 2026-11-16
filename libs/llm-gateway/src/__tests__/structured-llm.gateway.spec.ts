@@ -878,3 +878,119 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
         );
     });
 });
+
+/** 16.11.2026: запасной не берёт большой запрос — это пропуск, а не сбой. */
+describe('StructuredLlmGateway — запрос слишком большой для поставщика', () => {
+    let warn: jest.SpyInstance;
+    let error: jest.SpyInstance;
+
+    beforeEach(() => {
+        jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+        warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    const timedOut = () =>
+        fakeAdapter('vibecode', {
+            complete: jest
+                .fn()
+                .mockRejectedValue(
+                    new Error(
+                        'Vibecode call_focus_form timeout after 180000 ms',
+                    ),
+                ),
+        });
+
+    const textsOf = (spy: jest.SpyInstance): string[] =>
+        (spy.mock.calls as [string][]).map(([text]) => text);
+
+    it('запасной ответил 413: в предохранителе не считается, в тревоге он назван исправным', async () => {
+        const openai = fakeAdapter('openai-compatible', {
+            complete: jest
+                .fn()
+                .mockRejectedValue(
+                    new Error(
+                        'LLM (env, openai/gpt-oss-120b) call_focus_form failed [413]: Request too large',
+                    ),
+                ),
+        });
+        const { gateway, breaker } = makeGateway(
+            {},
+            { vibecode: timedOut(), openai },
+        );
+
+        const failure = await gateway
+            .complete(REQUEST)
+            .catch(e => e as unknown);
+
+        expect(failure).toBeInstanceOf(LlmUnavailableError);
+        expect((failure as LlmUnavailableError).failures).toEqual([
+            { provider: 'vibecode', transient: true },
+            { provider: 'openai-compatible', transient: false, tooLarge: true },
+        ]);
+        // Отказ временный: решает основной, а запасной по размеру не в счёт.
+        expect(isTransientLlmError(failure)).toBe(true);
+        expect(breaker.recordFailure).toHaveBeenCalledTimes(1);
+        expect(breaker.recordFailure).toHaveBeenCalledWith(
+            'vibecode',
+            expect.any(String),
+            expect.any(Number),
+            true,
+        );
+
+        const [alert] = textsOf(error);
+        expect(alert).toContain('ПОПЫТКИ ИСЧЕРПАНЫ');
+        expect(alert).toContain(
+            'openai-compatible — исправен, но запрос такого размера (12 знаков) не принимает',
+        );
+        expect(alert).not.toContain('отказали все поставщики');
+        expect(
+            textsOf(warn).some(text =>
+                text.includes('Провайдер LLM openai-compatible не ответил'),
+            ),
+        ).toBe(false);
+    });
+
+    it('адаптер помнит отказ по размеру — запрос не уходит, поставщика на паузе не пробуют', async () => {
+        const openai: FakeAdapter = {
+            ...fakeAdapter('openai-compatible'),
+            rejectsBySize: jest.fn().mockResolvedValue(true),
+        };
+        const breaker = fakeBreaker({ 'openai-compatible': true });
+        const { gateway } = makeGateway(
+            {},
+            { vibecode: timedOut(), openai, breaker },
+        );
+
+        await expect(gateway.complete(REQUEST)).rejects.toMatchObject({
+            failures: [
+                { provider: 'vibecode', transient: true },
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+            ],
+        });
+        expect(openai.complete).not.toHaveBeenCalled();
+        expect(breaker.tryStartProbe).not.toHaveBeenCalled();
+    });
+
+    it('запрос по размеру проходит — поставщик зовётся как обычно', async () => {
+        const openai: FakeAdapter = {
+            ...fakeAdapter('openai-compatible'),
+            rejectsBySize: jest.fn().mockResolvedValue(false),
+        };
+        const { gateway } = makeGateway({}, { vibecode: timedOut(), openai });
+
+        await expect(gateway.complete(REQUEST)).resolves.toMatchObject({
+            provider: 'openai-compatible',
+        });
+        expect(openai.sent).toHaveBeenCalledTimes(1);
+    });
+});
