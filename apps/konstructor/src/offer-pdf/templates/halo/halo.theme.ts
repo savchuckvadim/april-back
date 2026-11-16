@@ -4,6 +4,9 @@ import type { OfferPdfTheme } from '../kit/theme/offer-pdf-theme';
 /** Картинки «Ореола» в storage/app/konstructor/offer-pdf */
 export const HALO_ASSETS = { cover: 'halo/cover.jpg' } as const;
 
+/** Толщина коралловой черты под шапкой и в подвале */
+export const HALO_LINE_HEIGHT = 2.5;
+
 /**
  * «Ореол»: размытые кольца и коралловая черта на титульнике (набор 10 из
  * Canva владельца), на листах — коралловая градиентная черта под шапкой и
@@ -35,4 +38,5 @@ export const HALO_THEME: OfferPdfTheme = {
         heading: OFFER_PDF_FONTS.montserrat,
     },
     lineHeight: 1.35,
+    footer: { gradientHeight: HALO_LINE_HEIGHT },
 };

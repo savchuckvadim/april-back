@@ -1,8 +1,8 @@
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
+import { ManagerFooter } from '../kit/chrome/ManagerFooter';
 import { defineOfferPdfTemplate } from '../kit/document/define-offer-pdf-template';
 import { GarantPromo } from '../kit/promo/GarantPromo';
 import { HaloCover } from './components/HaloCover';
-import { HaloFooter } from './components/HaloFooter';
 import { HaloHeader } from './components/HaloHeader';
 import { HALO_ASSETS, HALO_THEME } from './halo.theme';
 
@@ -15,7 +15,7 @@ export const haloTemplate = defineOfferPdfTemplate({
     theme: HALO_THEME,
     chrome: {
         Header: HaloHeader,
-        Footer: HaloFooter,
+        Footer: ManagerFooter,
         Cover: HaloCover,
         Promo: GarantPromo,
     },

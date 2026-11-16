@@ -1,7 +1,7 @@
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
+import { ManagerFooter } from '../kit/chrome/ManagerFooter';
 import { defineOfferPdfTemplate } from '../kit/document/define-offer-pdf-template';
 import { IskraCover } from './components/IskraCover';
-import { IskraFooter } from './components/IskraFooter';
 import { IskraHeader } from './components/IskraHeader';
 import { IskraPromo } from './components/IskraPromo';
 import { IskraUnderlay } from './components/IskraUnderlay';
@@ -16,7 +16,7 @@ export const iskraTemplate = defineOfferPdfTemplate({
     theme: ISKRA_THEME,
     chrome: {
         Header: IskraHeader,
-        Footer: IskraFooter,
+        Footer: ManagerFooter,
         Cover: IskraCover,
         Underlay: IskraUnderlay,
         Promo: IskraPromo,

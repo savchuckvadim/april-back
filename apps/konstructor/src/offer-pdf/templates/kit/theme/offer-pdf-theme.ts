@@ -64,10 +64,15 @@ export interface OfferPdfTheme {
     readonly infoblocks?: {
         readonly namesColumns: 1 | 2;
     };
-    /** Подвал листа (ManagerFooter). Не задан — линия акцента, имя цветом текста */
+    /**
+     * Подвал листа (ManagerFooter). Не задан — линия акцента, у темы с
+     * градиентом — градиентная черта; имя цветом текста.
+     */
     readonly footer?: {
-        /** Черта рамкой подвала: текст отступает уже от неё */
+        /** Черта рамкой подвала: текст отступает уже от неё. Важнее градиента */
         readonly border?: { readonly width: number; readonly color: string };
+        /** Толщина градиентной черты; не задана — 2 */
+        readonly gradientHeight?: number;
         /** Цвет имени менеджера */
         readonly nameColor?: string;
     };

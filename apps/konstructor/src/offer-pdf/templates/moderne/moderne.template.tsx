@@ -1,8 +1,8 @@
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
 import { BrandHeader } from '../kit/chrome/BrandHeader';
+import { ManagerFooter } from '../kit/chrome/ManagerFooter';
 import { defineOfferPdfTemplate } from '../kit/document/define-offer-pdf-template';
 import { ModerneCover } from './components/ModerneCover';
-import { ModerneFooter } from './components/ModerneFooter';
 import { ModernePromo } from './components/ModernePromo';
 import { ModerneUnderlay } from './components/ModerneUnderlay';
 import { MODERNE_ASSETS, MODERNE_THEME } from './moderne.theme';
@@ -16,7 +16,7 @@ export const moderneTemplate = defineOfferPdfTemplate({
     theme: MODERNE_THEME,
     chrome: {
         Header: BrandHeader,
-        Footer: ModerneFooter,
+        Footer: ManagerFooter,
         Cover: ModerneCover,
         Underlay: ModerneUnderlay,
         Promo: ModernePromo,
