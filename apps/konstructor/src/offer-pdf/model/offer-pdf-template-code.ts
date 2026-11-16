@@ -11,6 +11,7 @@ export enum OfferPdfTemplateCode {
     LAVENDER = 'lavender',
     PEARL = 'pearl',
     MODERNE = 'moderne',
+    ISKRA = 'iskra',
     HALO = 'halo',
     SILK = 'silk',
 }

@@ -10,3 +10,10 @@ export const managerContactsLine = (cover: OfferCoverContent): string =>
     cover.manager
         ? joinNonEmpty([cover.manager.phone, cover.manager.email], ' · ')
         : '';
+
+/** Наша компания и её ИНН одной строкой: «ООО «Гарант-Сервис» · ИНН 3666012345» */
+export const companyInnLine = (cover: OfferCoverContent): string =>
+    joinNonEmpty(
+        [cover.company, cover.companyInn ? `ИНН ${cover.companyInn}` : null],
+        ' · ',
+    );
