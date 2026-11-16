@@ -114,7 +114,9 @@ export class CallReportReanalysisReportService {
     async recentUsage(
         domain: string,
         now: Date,
-    ): Promise<{ tokens_count: number; price: number }[]> {
+    ): Promise<
+        { tokens_count: number; price: number; user_result?: unknown }[]
+    > {
         const from = new Date(
             now.getTime() - REANALYSIS_DEFAULTS.estimateLookbackDays * DAY_MS,
         );

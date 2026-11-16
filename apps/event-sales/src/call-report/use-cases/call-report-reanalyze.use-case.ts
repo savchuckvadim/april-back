@@ -51,6 +51,7 @@ import {
     buildRegistryHash,
     CALL_REPORT_REGISTRY_BUILTIN,
 } from '../contracts/call-report-versions.const';
+import { MethodologyRegistryService } from '@lib/call-lib/call-report/methodology';
 import { CallAnalysisRerunService } from '../services/call-analysis-rerun.service';
 import { CallReportReanalysisReportService } from '../services/call-report-reanalysis-report.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
@@ -59,9 +60,11 @@ import {
     type ReanalysisOneOutcome,
 } from './call-report-reanalyze.pool';
 import {
-    buildReanalysisRecord,
-    estimateReanalysisCost,
-} from './call-report-reanalyze.record';
+    estimateReanalysisCostWithMethodology,
+    reanalysisMethodologyOf,
+    type ReanalysisMethodology,
+} from './call-report-reanalyze.methodology';
+import { buildReanalysisRecord } from './call-report-reanalyze.record';
 import {
     accountOutcome,
     dayKeyInWindow,
@@ -88,6 +91,7 @@ export class CallReportReanalyzeUseCase {
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly reports: CallReportReanalysisReportService,
         private readonly queueDispatcher: QueueDispatcherService,
+        private readonly methodologyRegistry: MethodologyRegistryService,
     ) {}
 
     async execute(
@@ -102,6 +106,7 @@ export class CallReportReanalyzeUseCase {
         const roster = data.userIds ?? settings.allowedUserIds;
         const transcriptions = await this.transcriptionsOf(data);
         const transcriptionIds = transcriptions.map(row => row.id);
+        const methodology = await this.methodologyOf(data.domain);
         const selection = selectReanalysisCandidates({
             transcriptions,
             records: await this.reports.loadAnalyses(
@@ -110,6 +115,7 @@ export class CallReportReanalyzeUseCase {
             ),
             currentPromptVersion: versions.prompt,
             roster,
+            methodology,
         });
         const previous = await this.reports.loadStatus(
             data.domain,
@@ -126,9 +132,11 @@ export class CallReportReanalyzeUseCase {
         });
         let statusId = previous?.id ?? null;
         if (data.dryRun === true) {
-            status.estimate = estimateReanalysisCost(
+            status.estimate = estimateReanalysisCostWithMethodology(
                 await this.reports.recentUsage(data.domain, now),
                 selection.candidates.length,
+                methodology,
+                selection.methodologyOnly,
             );
             status.finished = true;
             statusId = await this.reports.saveStatus(status, statusId);
@@ -284,6 +292,21 @@ export class CallReportReanalyzeUseCase {
             REANALYSIS_JOB_OPTIONS,
         );
         return jobId;
+    }
+
+    /** Методика портала для отбора; реестр недоступен — отбор без методики. */
+    private async methodologyOf(
+        domain: string,
+    ): Promise<ReanalysisMethodology | null> {
+        try {
+            const resolved = await this.methodologyRegistry.resolve(domain);
+            return resolved ? reanalysisMethodologyOf(resolved) : null;
+        } catch (error) {
+            this.logger.warn(
+                `Реестр методик недоступен (${domain}): ${(error as Error).message} — подсчёт без методики`,
+            );
+            return null;
+        }
     }
 
     /** Хэш реестра типов домена; реестр недоступен — builtin (как в процессоре). */

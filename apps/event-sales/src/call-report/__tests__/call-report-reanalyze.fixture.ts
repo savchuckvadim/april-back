@@ -84,7 +84,9 @@ export interface FixtureOptions {
     rows?: ReturnType<typeof liteRow>[];
     records?: Record<string, unknown>[];
     allowedUserIds?: number[] | null;
-    recent?: { tokens_count: number; price: number }[];
+    recent?: { tokens_count: number; price: number; user_result?: unknown }[];
+    /** Методика портала из реестра; нет — методика не выбрана. */
+    methodology?: unknown;
     /** deferred — ответ модели держится до `release()` (проверка одновременности). */
     rerun?: 'ok' | 'null' | 'throw' | 'deferred';
 }
@@ -196,6 +198,9 @@ export function makeUseCase(options: FixtureOptions = {}) {
         callTypeRegistry as never,
         new CallReportReanalysisReportService(aiService as never),
         queueDispatcher as never,
+        {
+            resolve: jest.fn().mockResolvedValue(options.methodology ?? null),
+        } as never,
     );
     const ofType = (type: string) => db.filter(record => record.type === type);
     /** Первый аргумент n-го вызова повторного прогона. */
