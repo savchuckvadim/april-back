@@ -102,6 +102,12 @@ export interface PortalScope {
     callings?: boolean;
     /** Только смарты этих типов (колонка type); не задано — все */
     smartTypes?: readonly string[];
+    /**
+     * Сущности, от которых нужны только строки (тип, код, bitrixId,
+     * entityTypeId): их поля и воронки не читаются. Поля — самая тяжёлая
+     * часть портала, а, например, от смарта фронту нужен один entityTypeId.
+     */
+    rowsOnly?: readonly BuilderEntityKey[];
 }
 
 /** Все relations агрегата пустыми — основа узкого чтения */

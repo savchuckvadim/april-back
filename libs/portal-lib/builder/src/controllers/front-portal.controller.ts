@@ -57,6 +57,7 @@ export class FrontPortalController {
             dto.domain,
             dto.parts,
             dto.smartTypes,
+            dto.withoutFields,
         );
     }
 }

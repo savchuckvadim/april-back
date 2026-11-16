@@ -21,11 +21,12 @@ export class FrontPortalPartsService {
         domain: string,
         parts: readonly PortalPartName[],
         smartTypes?: readonly string[],
+        withoutFields?: readonly PortalPartName[],
     ): Promise<FrontPortalPartsDto> {
         const wanted = new Set(parts);
         const aggregate = await this.repository.findScopedByDomain(
             domain,
-            portalScopeOf(wanted, smartTypes),
+            portalScopeOf(wanted, smartTypes, withoutFields),
         );
         if (!aggregate) {
             throw new NotFoundException('portal does not exist!');

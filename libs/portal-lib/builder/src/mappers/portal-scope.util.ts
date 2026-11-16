@@ -44,15 +44,21 @@ const PART_ENTITY: Partial<Record<PortalPartName, BuilderEntityKey>> = {
 export const portalScopeOf = (
     parts: ReadonlySet<PortalPartName>,
     smartTypes?: readonly string[],
+    withoutFields?: readonly PortalPartName[],
 ): PortalScope => {
-    const entities = PORTAL_PARTS.flatMap(part => {
-        const entity = PART_ENTITY[part];
-        return parts.has(part) && entity ? [entity] : [];
-    });
+    const entitiesOf = (wanted: (part: PortalPartName) => boolean) =>
+        PORTAL_PARTS.flatMap(part => {
+            const entity = PART_ENTITY[part];
+            return wanted(part) && entity ? [entity] : [];
+        });
+    const rowsOnly = entitiesOf(
+        part => parts.has(part) && (withoutFields ?? []).includes(part),
+    );
     return {
-        entities,
+        entities: entitiesOf(part => parts.has(part)),
         departaments: parts.has('departament'),
         callings: parts.has('bitrixCallingTasksGroup'),
         ...(parts.has('smarts') && smartTypes?.length ? { smartTypes } : {}),
+        ...(rowsOnly.length ? { rowsOnly } : {}),
     };
 };

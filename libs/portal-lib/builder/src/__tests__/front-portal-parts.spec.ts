@@ -40,6 +40,25 @@ describe('portalScopeOf — что читать под запрошенные ч
     });
 });
 
+describe('portalScopeOf — части без полей', () => {
+    it('названные без полей читаются строками, остальные — целиком', () => {
+        expect(
+            portalScopeOf(new Set(['smarts', 'company']), undefined, [
+                'smarts',
+            ]),
+        ).toMatchObject({
+            entities: ['company', 'smart'],
+            rowsOnly: ['smart'],
+        });
+    });
+
+    it('«без полей» у незапрошенной части ничего не значит', () => {
+        expect(
+            portalScopeOf(new Set(['company']), undefined, ['smarts']),
+        ).not.toHaveProperty('rowsOnly');
+    });
+});
+
 describe('FrontPortalPartsService', () => {
     const createService = (findScopedByDomain: jest.Mock) =>
         new FrontPortalPartsService({
@@ -163,6 +182,29 @@ describe('PortalAggregatePrismaRepository.findScopedByDomain', () => {
         expect(prisma.btx_categories.findMany).not.toHaveBeenCalled();
     });
 
+    it('сущности «только строки» поля и воронки не читают', async () => {
+        const prisma = createPrisma();
+        prisma.portal.findFirst.mockResolvedValue({
+            id: 1n,
+            btx_deals: [dealRow({ id: 3n })],
+            smarts: [smartRow({ id: 4n })],
+        });
+
+        const aggregate = await createRepository(prisma).findScopedByDomain(
+            'test.bitrix24.ru',
+            { entities: ['deal', 'smart'], rowsOnly: ['smart'] },
+        );
+
+        const [{ where }] = prisma.bitrixfields.findMany.mock.calls[0] as [
+            PolymorphicArg,
+        ];
+        // поля читаются только для сделки; сама строка смарта при этом на месте
+        expect(where.OR.map(pair => pair.entity_type)).toEqual([
+            'App\\Models\\BtxDeal',
+        ]);
+        expect(aggregate?.portal.smarts).toHaveLength(1);
+    });
+
     it('портала нет — null', async () => {
         const prisma = createPrisma();
         prisma.portal.findFirst.mockResolvedValue(null);
@@ -191,6 +233,7 @@ describe('FrontPortalController.getPortalParts', () => {
         expect(buildByDomain).toHaveBeenCalledWith(
             'test.bitrix24.ru',
             ['company'],
+            undefined,
             undefined,
         );
         expect(response).toEqual({ id: 1 });

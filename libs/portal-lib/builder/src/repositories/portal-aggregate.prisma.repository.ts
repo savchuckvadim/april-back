@@ -80,13 +80,19 @@ export class PortalAggregatePrismaRepository extends PortalAggregateRepository {
         });
         if (!row) return null;
         // неподключённых relations в ответе Prisma нет — подставляем пустые
-        return this.loadPolymorphic({ ...EMPTY_PORTAL_RELATIONS, ...row });
+        return this.loadPolymorphic(
+            { ...EMPTY_PORTAL_RELATIONS, ...row },
+            scope.rowsOnly,
+        );
     }
 
+    /** `rowsOnly` — сущности, для которых поля и воронки не читаются */
     private async loadPolymorphic(
         portal: PortalWithRelations,
+        rowsOnly: readonly BuilderEntityKey[] = [],
     ): Promise<PortalAggregate> {
         const ids = this.collectEntityIds(portal);
+        for (const key of rowsOnly) ids[key] = [];
 
         const fieldPairs = this.buildOrPairs(ids, [
             ...(Object.keys(ENTITY_TYPE_DB_VALUES) as BuilderEntityKey[]),

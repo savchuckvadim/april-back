@@ -45,4 +45,17 @@ export class FrontPortalPartsRequestDto {
     @IsArray()
     @IsString({ each: true })
     smartTypes?: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Части, от которых нужны только строки сущностей (тип, код, bitrixId, entityTypeId): их поля и воронки не читаются и приходят пустыми. Например, от смарта фронту обычно нужен один entityTypeId.',
+        enum: PORTAL_PARTS,
+        enumName: 'PortalPartName',
+        isArray: true,
+        example: ['smarts'],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsIn(PORTAL_PARTS, { each: true })
+    withoutFields?: PortalPartName[];
 }
