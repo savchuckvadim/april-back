@@ -85,15 +85,19 @@ export class CallAnalysisRerunService {
             (row.text ?? '');
         if (!transcript.trim()) return null;
         const domain = row.domain as string;
+        // Без модели портала и без сохранённых проходов опции не передаются.
+        const hasOptions = input.model !== null || input.stored !== undefined;
         const dto = await this.focusAnalysis.run(
             domain,
             transcript,
             callTypeOfAnalysis(input.source),
             await this.passportBlock(row),
-            {
-                ...(input.model === null ? {} : { model: input.model }),
-                ...(input.stored ? { stored: input.stored } : {}),
-            },
+            hasOptions
+                ? {
+                      ...(input.model === null ? {} : { model: input.model }),
+                      ...(input.stored ? { stored: input.stored } : {}),
+                  }
+                : undefined,
         );
         if (dto === null) return null;
         const usage = dto.usage

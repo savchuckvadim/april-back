@@ -92,6 +92,10 @@ export interface WaveCallInfo {
  * `failures`. Тревога первой попытки была отложена (шлюз не знал, будет ли
  * повтор): раз повтора не было — она уходит сейчас; после повтора шлюз
  * тревожит сам.
+ *
+ * Сбой самой тревоги (нет связи с Телеграмом) исход разбора не меняет:
+ * иначе разбор, оборвавшийся на поставщике модели, считался бы упавшим «по
+ * другой причине», и следом уходил бы самый тяжёлый страховочный запрос.
  */
 export async function settleWaveCall<T>(
     result: WaveResult<T> | undefined,
@@ -112,10 +116,17 @@ export async function settleWaveCall<T>(
             `: ${reason}`,
     );
     if (result.attempts === 1 && result.error instanceof LlmUnavailableError) {
-        await deps.reportExhausted(result.error, {
-            schemaName: info.schemaName,
-            domain: info.domain,
-        });
+        try {
+            await deps.reportExhausted(result.error, {
+                schemaName: info.schemaName,
+                domain: info.domain,
+            });
+        } catch (error) {
+            deps.warn(
+                `${info.title} (${info.domain}): тревога о сбое модели не отправлена — ` +
+                    (error instanceof Error ? error.message : String(error)),
+            );
+        }
     }
     return null;
 }

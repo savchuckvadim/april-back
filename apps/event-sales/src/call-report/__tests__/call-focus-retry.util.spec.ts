@@ -187,4 +187,30 @@ describe('settleWaveCall — итог вызова, журнал и отложе
         expect(deps.reportExhausted).not.toHaveBeenCalled();
         expect(await settleWaveCall(undefined, INFO, deps)).toBeNull();
     });
+
+    it('тревога сама упала — исход разбора не меняется: сбой остаётся в списке, наружу ошибка не уходит', async () => {
+        const deps = {
+            warn: jest.fn(),
+            reportExhausted: jest
+                .fn()
+                .mockRejectedValue(new Error('Телеграм недоступен')),
+        };
+        const failures: unknown[] = [];
+        const error = gatewayError();
+
+        await expect(
+            settleWaveCall(
+                { ok: false, error, attempts: 1 },
+                INFO,
+                deps,
+                failures,
+            ),
+        ).resolves.toBeNull();
+
+        // По этой ошибке решается, звать ли страховочный разбор.
+        expect(failures).toEqual([error]);
+        expect(deps.warn).toHaveBeenLastCalledWith(
+            'Фокус «движение сделки» (test.bitrix24.ru): тревога о сбое модели не отправлена — Телеграм недоступен',
+        );
+    });
 });
