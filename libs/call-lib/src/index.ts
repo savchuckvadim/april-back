@@ -45,6 +45,7 @@ export * from './call-report/methodology';
 export * from './call-analysis/call-analysis.module';
 export * from './ai/ai.module';
 export * from './call-page/call-page-link.module';
+export * from './call-page/call-page-link.admin.module';
 export * from './call-page/call-page-link.service';
 export * from './call-page/call-page-link.util';
 export * from './ai/ai.admin.module';

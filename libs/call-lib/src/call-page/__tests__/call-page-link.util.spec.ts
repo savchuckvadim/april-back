@@ -3,6 +3,7 @@ import {
     CALL_PAGE_LINK_TYPE,
     callPageMarkOf,
     callPageSecretOf,
+    callPageSiteOf,
     callPageUrl,
     isCallPageTokenValid,
     parseCallPageToken,
@@ -101,6 +102,22 @@ describe('ссылка-пропуск на страницу разбора зв�
                 { id: '9', type: CALL_PAGE_LINK_TYPE, user_result: null },
             ]),
         ).toBe('b');
+    });
+
+    it('сайт из адреса виджета: только схема и домен; пустой или битый — нет', () => {
+        expect(callPageSiteOf('https://kpi-sales.april-app.ru/')).toBe(
+            'https://kpi-sales.april-app.ru',
+        );
+        expect(callPageSiteOf(' https://site.ru/frame/page?x=1 ')).toBe(
+            'https://site.ru',
+        );
+        expect(callPageSiteOf('http://localhost:5000/')).toBe(
+            'http://localhost:5000',
+        );
+        expect(callPageSiteOf('')).toBeNull();
+        expect(callPageSiteOf(null)).toBeNull();
+        expect(callPageSiteOf('не адрес')).toBeNull();
+        expect(callPageSiteOf('javascript:alert(1)')).toBeNull();
     });
 
     it('адрес страницы: сайт без хвостового «/» и путь /call/', () => {

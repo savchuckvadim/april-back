@@ -1,7 +1,14 @@
 import { randomBytes } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from 'generated/prisma';
+import {
+    envOnlyReader,
+    VENDOR_SETTINGS_READER,
+    vendorSettingOf,
+    type VendorSettingKey,
+    type VendorSettingsReader,
+} from '@lib/vendor-settings';
 import { AiEntityDto } from '../ai/dto/ai-entity.dto';
 import { AiService } from '../ai/services/ai.service';
 import {
@@ -9,10 +16,16 @@ import {
     CALL_PAGE_LINK_TYPE,
     callPageMarkOf,
     callPageSecretOf,
+    callPageSiteOf,
+    callPageUrl,
     isCallPageTokenValid,
     parseCallPageToken,
     type CallPageLinkRecordView,
 } from './call-page-link.util';
+
+/** Настройка адреса сайта «Отчёта»: на нём живёт страница разбора звонка. */
+const REPORT_SITE_SETTING: VendorSettingKey =
+    'MARKETPLACE_WIDGET_URL_REPORT_SALES';
 
 /** Звонок, на который ведёт проверенная ссылка, и его записи `ais`. */
 export interface ResolvedCallPageLink {
@@ -41,10 +54,41 @@ export class CallPageLinkService {
     private readonly logger = new Logger(CallPageLinkService.name);
     private warned = false;
 
+    private readonly settings: VendorSettingsReader;
+
     constructor(
         private readonly config: ConfigService,
         private readonly aiService: AiService,
-    ) {}
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
+    ) {
+        this.settings =
+            settings ?? envOnlyReader(key => config.get<string>(key));
+    }
+
+    /**
+     * Полный адрес страницы разбора звонка на сайте «Отчёта». Сайт — из
+     * настройки адреса виджета «Отчёт ОП KPI» («Настройки приложения»),
+     * не задана — адрес по умолчанию. Нет секрета или адрес сайта битый —
+     * null: ссылку не пишем.
+     */
+    async urlFor(transcriptionId: string): Promise<string | null> {
+        const token = await this.issue(transcriptionId);
+        if (token === null) return null;
+        const site = await this.site();
+        return site === null ? null : callPageUrl(site, token);
+    }
+
+    private async site(): Promise<string | null> {
+        const configured = await this.settings
+            .get(REPORT_SITE_SETTING)
+            .catch(() => null);
+        return (
+            callPageSiteOf(configured) ??
+            callPageSiteOf(vendorSettingOf(REPORT_SITE_SETTING).example)
+        );
+    }
 
     /** Ссылка-пропуск по уже прочитанным записям звонка; нет секрета — null. */
     tokenFor(

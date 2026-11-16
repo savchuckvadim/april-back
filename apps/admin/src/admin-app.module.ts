@@ -38,7 +38,11 @@ import { PortalStoreAdminModule } from '@lib/portal-lib/store/portal-store.admin
 import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
 import { VendorSettingsAdminModule } from './vendor-settings/vendor-settings-admin.module';
 import { RenewalOfferLinkAdminModule } from '@lib/renewal-offer';
-import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
+import {
+    AiAdminModule,
+    CallPageLinkAdminModule,
+    TranscriptionAdminModule,
+} from '@lib/call-lib';
 import { MethodologyAdminModule } from '@lib/call-lib/call-report/methodology';
 import { MethodologyAssistAdminModule } from './methodology-assist/methodology-assist-admin.module';
 import { AiRagAdminModule } from '@lib/ai-rag';
@@ -103,6 +107,8 @@ import { SiteMediaAdminModule } from '@lib/site-content';
         // Звонки/AI: админ-CRUD транскрибаций и AI-записей (без инфраструктуры
         // транскрибации — только store-сервисы поверх Prisma).
         TranscriptionAdminModule,
+        // Ссылка на страницу разбора звонка: получить и отозвать
+        CallPageLinkAdminModule,
         AiAdminModule,
         // Методики продаж: список доступных порталу для выбора бейджем в
         // настройках AI (встроенные + таблица ai_methodologies), 01.11.2026.

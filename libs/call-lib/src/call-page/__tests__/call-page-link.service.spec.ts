@@ -16,7 +16,10 @@ interface Harness {
 const recordOf = (fields: Partial<AiEntityDto>): AiEntityDto =>
     fields as AiEntityDto;
 
-function harness(env: Record<string, string | undefined>): Harness {
+function harness(
+    env: Record<string, string | undefined>,
+    settings?: Record<string, string | null>,
+): Harness {
     const records: AiEntityDto[] = [];
     const find = jest.fn(() => Promise.resolve(records));
     const create = jest.fn((dto: Partial<AiEntityDto>) => {
@@ -30,7 +33,14 @@ function harness(env: Record<string, string | undefined>): Harness {
     };
     const config = { get: (key: string) => env[key] } as ConfigService;
     return {
-        service: new CallPageLinkService(config, ai as AiService),
+        service: new CallPageLinkService(
+            config,
+            ai as AiService,
+            settings && {
+                get: key => Promise.resolve(settings[key] ?? null),
+                getMany: () => Promise.resolve({}),
+            },
+        ),
         records,
         find,
         create,
@@ -78,6 +88,38 @@ describe('CallPageLinkService', () => {
             '42',
         );
         expect(await service.issue('42')).toBe(after);
+    });
+
+    it('адрес страницы: сайт «Отчёта» по умолчанию и путь /call/', async () => {
+        const { service } = harness({ AUTH_JWT_SECRET: 'secret' });
+        const token = await service.issue('42');
+        expect(await service.urlFor('42')).toBe(
+            `https://kpi-sales.april-app.ru/call/${token}`,
+        );
+    });
+
+    it('адрес страницы: сайт из настройки адреса виджета, путь виджета отбрасывается', async () => {
+        const { service } = harness(
+            { AUTH_JWT_SECRET: 'secret' },
+            {
+                MARKETPLACE_WIDGET_URL_REPORT_SALES:
+                    'https://report.example.ru/frame/?x=1',
+            },
+        );
+        expect(await service.urlFor('42')).toMatch(
+            /^https:\/\/report\.example\.ru\/call\/[0-9a-z]+-[\w-]{32}$/,
+        );
+    });
+
+    it('адрес страницы: битая настройка сайта — адрес по умолчанию; нет секрета — ссылки нет', async () => {
+        const broken = harness(
+            { AUTH_JWT_SECRET: 'secret' },
+            { MARKETPLACE_WIDGET_URL_REPORT_SALES: 'не адрес' },
+        );
+        expect(await broken.service.urlFor('42')).toMatch(
+            /^https:\/\/kpi-sales\.april-app\.ru\/call\//,
+        );
+        expect(await harness({}).service.urlFor('42')).toBeNull();
     });
 
     it('секрет не задан — ссылки не выпускаются и не открываются', async () => {

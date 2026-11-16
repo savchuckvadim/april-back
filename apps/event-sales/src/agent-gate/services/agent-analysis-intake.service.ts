@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiService,
+    CallPageLinkService,
     pickActiveAnalysis,
     TranscriptionPipelineView,
     TranscriptionStoreService,
@@ -58,6 +59,7 @@ export class AgentAnalysisIntakeService {
         private readonly dealFamily: CallReportDealFamilyService,
         private readonly dealVerify: CallReportDealVerifyService,
         private readonly llmPrice: LlmPriceResolverService,
+        private readonly callPageLinks: CallPageLinkService,
     ) {}
 
     async intake(
@@ -288,7 +290,13 @@ export class AgentAnalysisIntakeService {
         await new AgentAnalysisTimelineWriter(
             bitrix,
             this.logger,
-        ).writeSmartElement(smartInfo, row, written, dto);
+        ).writeSmartElement(
+            smartInfo,
+            row,
+            written,
+            dto,
+            await this.callPageUrl(row),
+        );
     }
 
     /** Дубль разбора в таймлайн сущности-владельца звонка (сделка/лид). */
@@ -302,6 +310,13 @@ export class AgentAnalysisIntakeService {
         await new AgentAnalysisTimelineWriter(
             bitrix,
             this.logger,
-        ).duplicateToEntity(row, dto, managerId);
+        ).duplicateToEntity(row, dto, managerId, await this.callPageUrl(row));
+    }
+
+    /** Адрес страницы разбора звонка; сбой — без ссылки, разбор пишется. */
+    private callPageUrl(
+        row: TranscriptionPipelineView,
+    ): Promise<string | null> {
+        return this.callPageLinks.urlFor(row.id).catch(() => null);
     }
 }

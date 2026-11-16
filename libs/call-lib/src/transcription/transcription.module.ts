@@ -14,7 +14,6 @@ import { TranscriptionService } from './services/transcription.service';
 import { FileStorageService } from './services/file-storage.service';
 import { OnlineClientModule } from '@lib/online';
 import { TranscriptionStoreModule } from './transcription-store.module';
-import { TranscriptionStoreController } from './controllers/transcription-store.controller';
 
 @Module({
     imports: [
@@ -28,7 +27,10 @@ import { TranscriptionStoreController } from './controllers/transcription-store.
         // Репозиторий + TranscriptionStoreService (CRUD по транскрибациям).
         TranscriptionStoreModule,
     ],
-    controllers: [TranscriptionController, TranscriptionStoreController],
+    // Открытого CRUD по расшифровкам (`transcription-store`) в приложениях
+    // нет: он отдавал, менял и удалял расшифровки без проверки (16.11.2026).
+    // Хранилище читается сервисом, людям — через `admin/transcription-store`.
+    controllers: [TranscriptionController],
     providers: [
         StartTranscriptionUseCase,
         GetTranscriptionResultUseCase,

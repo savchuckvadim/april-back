@@ -33,6 +33,7 @@ function makeService(records: unknown[]) {
         {} as never,
         {} as never,
         {} as never,
+        { urlFor: jest.fn().mockResolvedValue(null) } as never,
     );
     return { service, aiService, pbxService };
 }

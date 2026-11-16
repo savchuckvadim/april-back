@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import { BxRecordsByCompanyRequestDto } from '../dto/bx-records.dto';
 import { BxCallingRecordDto } from '../dto/bx-record-response.dto';
 import { RecordsByCompanyUseCase } from '../use-cases/records-by-company.use-case';
@@ -15,8 +16,11 @@ export class BxRecordsController {
         summary: 'Записи звонков по компании',
         description:
             'Записи звонков из Bitrix-активностей компании (+связанные контакты/лиды/сделки), ' +
-            'отсортированы от новых к старым.',
+            'отсортированы от новых к старым. Отдаёт адреса записей, поэтому ' +
+            'проверяется сессия портала: домен запроса должен совпадать с ' +
+            'доменом сессии (режим проверки — общий для приложения).',
     })
+    @PortalSessionProtected()
     @ApiBody({ type: BxRecordsByCompanyRequestDto })
     @ApiOkResponse({ type: BxCallingRecordDto, isArray: true })
     @Post('company')
