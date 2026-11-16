@@ -1,18 +1,25 @@
-import type { FC } from 'react';
+import { Fragment, type FC, type ReactNode } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import { RichText } from '../../shared/RichText';
 import { surfaceOnly } from '../document/surface.styles';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { promoStyles } from './promo.styles';
-import type { OfferPdfPromo } from './promo.types';
+import type { OfferPdfPromo, OfferPdfPromoItem } from './promo.types';
+import { PromoItem } from './PromoItem';
 
 export interface PromoBlockProps {
     promo: OfferPdfPromo;
     theme: OfferPdfTheme;
+    /** Свой вид пункта (иконка и т. п.); по умолчанию — PromoItem с акцентной чертой */
+    renderItem?: (item: OfferPdfPromoItem, index: number) => ReactNode;
 }
 
-/** Промо-страница: заголовок, вступление, пункты с акцентной чертой, заключение */
-export const PromoBlock: FC<PromoBlockProps> = ({ promo, theme }) => {
+/** Промо-страница: заголовок, вступление, пункты, заключение */
+export const PromoBlock: FC<PromoBlockProps> = ({
+    promo,
+    theme,
+    renderItem,
+}) => {
     const styles = promoStyles(theme);
     const { accent, danger } = theme.colors;
     return (
@@ -26,20 +33,14 @@ export const PromoBlock: FC<PromoBlockProps> = ({ promo, theme }) => {
                     dangerColor={danger}
                 />
             ) : null}
-            {promo.items.map(item => (
-                <View key={item.title} style={styles.item} wrap={false}>
-                    <View style={styles.mark} />
-                    <View style={styles.itemBody}>
-                        <Text style={styles.itemTitle}>{item.title}</Text>
-                        <RichText
-                            text={item.text}
-                            style={styles.itemText}
-                            accentColor={accent}
-                            dangerColor={danger}
-                            paragraphGap={3}
-                        />
-                    </View>
-                </View>
+            {promo.items.map((item, index) => (
+                <Fragment key={item.title}>
+                    {renderItem ? (
+                        renderItem(item, index)
+                    ) : (
+                        <PromoItem item={item} theme={theme} />
+                    )}
+                </Fragment>
             ))}
             {promo.note ? (
                 <RichText

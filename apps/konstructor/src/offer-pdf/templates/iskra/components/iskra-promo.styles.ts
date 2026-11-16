@@ -6,6 +6,5 @@ export const iskraPromoStyles = themedStyles(() =>
     StyleSheet.create({
         item: { marginTop: 16, flexDirection: 'row' },
         icon: { width: 46, height: 46, objectFit: 'contain', marginRight: 14 },
-        body: { flex: 1 },
     }),
 );
