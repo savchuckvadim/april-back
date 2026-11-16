@@ -26,12 +26,17 @@ import {
     requiredVolume,
     resolveNumberParam,
     resolveTarget,
+    topPipelineEpisodes,
     type FunnelLeak,
 } from '@lib/sales-ai-analytics';
 import { AI_FORECAST_CI80_Z } from '../../constants/ai-portal-model.const';
 import { AI_QUALITY_LINK_OFFSET_EDGE } from '../../constants/ai-quality-link.const';
 import { buildPlan, leversOf, linkOf } from './forecast.plan';
-import type { ForecastBuildInput, ForecastPayload } from './forecast.types';
+import {
+    AI_FORECAST_TOP_EPISODES,
+    type ForecastBuildInput,
+    type ForecastPayload,
+} from './forecast.types';
 import type {
     PortalManagerNorms,
     PortalModelPayload,
@@ -231,6 +236,23 @@ export function buildForecastPayload(
             fBar,
         }),
         leaks: [...leaks],
+        breakdown: {
+            entryDone: manager.entryDone,
+            entryRate,
+            conversion,
+            fBar,
+            openEpisodes: manager.openEpisodes.length,
+            topEpisodes: input.hasStageHistory
+                ? topPipelineEpisodes(
+                      {
+                          episodes: manager.openEpisodes,
+                          cdf,
+                          daysRemaining: input.daysLeft,
+                      },
+                      AI_FORECAST_TOP_EPISODES,
+                  )
+                : [],
+        },
         meta: { ...input.meta, modelSnapshotId: input.modelSnapshotId },
     };
 }

@@ -199,6 +199,7 @@ export * from './model/timestamp-audit';
 export * from './model/quantile.util';
 export * from './model/lag-cdf';
 export * from './model/forecast';
+export * from './model/forecast-pipeline-top';
 export * from './model/capacity';
 export * from './model/target';
 export * from './model/ramp';

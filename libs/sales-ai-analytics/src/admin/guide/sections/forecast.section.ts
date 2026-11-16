@@ -33,6 +33,7 @@ export const FORECAST_SECTION: AiGuideSection = {
 
 ## Где смотреть результат
 - \`GET admin/ai-analytics/forecast-backtest\` и карточка «Точность прогноза» на странице «Модель и обратная связь»: статус, причины, покрытие, отношение ошибок, теневые месяцы.
+- \`GET admin/ai-analytics/forecast-breakdown\` и карточка «Разложение прогноза» там же: закрыто, ожидание от открытых сделок, ожидание от новых встреч — по отделу и менеджерам; по ней ищут, какое слагаемое завышает прогноз.
 - \`GET admin/ai-analytics/stage-history/probe\` — хватает ли истории стадий для ожидания от пайплайна.
 - \`etl-status\` — прошли ли шаги \`forecast-log-replay\` / \`forecast-backtest\` и не пропущены ли они по причине.
 - В витрине — блок прогноза отдела (после включения флага).
@@ -78,6 +79,7 @@ export const FORECAST_SECTION: AiGuideSection = {
         AI_GUIDE_ENDPOINT.backfill,
         AI_GUIDE_ENDPOINT.recompute,
         AI_GUIDE_ENDPOINT.forecastBacktest,
+        AI_GUIDE_ENDPOINT.forecastBreakdown,
         AI_GUIDE_ENDPOINT.stageHistoryProbe,
         AI_GUIDE_ENDPOINT.qualityLink,
         AI_GUIDE_ENDPOINT.poolStatus,

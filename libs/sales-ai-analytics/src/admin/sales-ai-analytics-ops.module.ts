@@ -31,6 +31,7 @@ import { AiAnalyticsEtlStatusService } from './services/ai-analytics-etl-status.
 import { AiAnalyticsFeedbackSummaryService } from './services/ai-analytics-feedback-summary.service';
 import { AiAnalyticsGoldenSetService } from './services/ai-analytics-golden-set.service';
 import { AiAnalyticsPhase4StatusService } from './services/ai-analytics-phase4-status.service';
+import { AiAnalyticsForecastBreakdownService } from './services/ai-analytics-forecast-breakdown.service';
 import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipeline-admin.service';
 import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.service';
 import { AiAnalyticsFactsCatchupService } from './services/ai-analytics-facts-catchup.service';
@@ -55,6 +56,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
+        AiAnalyticsForecastBreakdownService,
         // Переразбор истории (этап 1B): джоба CALL_REPORT_REANALYZE + статус
         AiAnalyticsReanalyzeService,
         AiAnalyticsFactsCatchupService,
@@ -74,6 +76,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
+        AiAnalyticsForecastBreakdownService,
         AiAnalyticsReanalyzeService,
         AiAnalyticsFactsCatchupService,
         AiAnalyticsSmartBackfillService,
