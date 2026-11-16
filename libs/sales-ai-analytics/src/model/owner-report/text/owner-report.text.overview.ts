@@ -188,6 +188,26 @@ export function buildOverview(
     };
 }
 
+/**
+ * «База отчёта» для шапки: сколько звонили и сколько разговоров состоялось по
+ * телефонии и сколько из них разобрано — чтобы объём был сопоставим с
+ * другими отчётами по тем же звонкам. Телефония не ответила — null.
+ */
+export function baseLineOf(facts: OwnerReportFacts): string | null {
+    const telephony = facts.coverage.telephony;
+    if (!telephony) return null;
+    const parts = [
+        telephony.outbound === null
+            ? null
+            : `исходящих вызовов — ${telephony.outbound}`,
+        telephony.connected === null
+            ? null
+            : `состоявшихся разговоров — ${telephony.connected}`,
+    ].filter((part): part is string => part !== null);
+    if (parts.length === 0) return null;
+    return `База отчёта по телефонии: ${parts.join(', ')}; разобрано — ${facts.coverage.analyzed}.`;
+}
+
 /** Строка «исход не размечен»: сколько разговоров и что сделать. */
 export function unmarkedNoteOf(facts: OwnerReportFacts): string | null {
     const { coverage } = facts;

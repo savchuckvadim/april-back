@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { BxVoximplantStatisticService } from '@lib/bitrix/domain/telephony';
+import {
+    BX_VOX_CALL_TYPES,
+    BxVoximplantStatisticService,
+} from '@lib/bitrix/domain/telephony';
 import { ManagersLoader } from './managers.loader';
 import { portalRangeUtc } from './period.util';
 import {
@@ -52,25 +55,8 @@ export class PulseTelephonyLoader {
         input: PulseTelephonyInput,
     ): Promise<PulseShortShare | null> {
         try {
-            const userIds = pulseTelephonyUserIds({
-                callReport: input.callReport,
-                salesRoster: pulseScopeSalesOnly(input.callReport)
-                    ? await this.managers.resolve(domain)
-                    : null,
-            });
-            const { from, to } = portalRangeUtc(
-                input.from,
-                input.to,
-                input.timeZone,
-            );
-            const { bitrix } = await this.pbx.init(domain);
-            const telephony = new BxVoximplantStatisticService(bitrix);
-            const base = {
-                fromIso: from.toISOString(),
-                toIso: to.toISOString(),
-                minDurationSec: 1,
-                ...(userIds ? { userIds } : {}),
-            };
+            const { telephony, window } = await this.source(domain, input);
+            const base = { ...window, minDurationSec: 1 };
             const connected = await telephony.countCalls(base);
             const short = await telephony.countCalls({
                 ...base,
@@ -84,5 +70,52 @@ export class PulseTelephonyLoader {
             );
             return null;
         }
+    }
+
+    /**
+     * Исходящих вызовов окна у тех же сотрудников — все наборы, включая
+     * недозвоны: это база отчёта собственнику («сколько звонили»). Один
+     * запрос `total`. Сбой или портал без total — null.
+     */
+    async outbound(
+        domain: string,
+        input: PulseTelephonyInput,
+    ): Promise<number | null> {
+        try {
+            const { telephony, window } = await this.source(domain, input);
+            return await telephony.countCalls({
+                ...window,
+                callType: BX_VOX_CALL_TYPES.outgoing,
+            });
+        } catch (error) {
+            this.logger.warn(
+                `Исходящие вызовы по телефонии (${domain}) не посчитаны: ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
+    /** Телефония портала и окно запроса: период и круг сотрудников разбора. */
+    private async source(domain: string, input: PulseTelephonyInput) {
+        const userIds = pulseTelephonyUserIds({
+            callReport: input.callReport,
+            salesRoster: pulseScopeSalesOnly(input.callReport)
+                ? await this.managers.resolve(domain)
+                : null,
+        });
+        const { from, to } = portalRangeUtc(
+            input.from,
+            input.to,
+            input.timeZone,
+        );
+        const { bitrix } = await this.pbx.init(domain);
+        return {
+            telephony: new BxVoximplantStatisticService(bitrix),
+            window: {
+                fromIso: from.toISOString(),
+                toIso: to.toISOString(),
+                ...(userIds ? { userIds } : {}),
+            },
+        };
     }
 }

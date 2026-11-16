@@ -28,6 +28,44 @@ const rows = (): OwnerReportCallInput[] => [
     ...coldCalls('2026-10-20', 5, 1),
 ];
 
+describe('отчёт собственнику: «База отчёта» в шапке', () => {
+    beforeEach(resetCounter);
+
+    const textWith = (
+        telephony: {
+            outbound: number | null;
+            connected: number | null;
+            short: number | null;
+        } | null,
+    ) =>
+        buildOwnerReportText(
+            buildOwnerReportFacts(rows(), OCTOBER, { telephony }),
+        );
+
+    it('исходящие вызовы, состоявшиеся разговоры и сколько разобрано', () => {
+        expect(
+            textWith({ outbound: 1240, connected: 312, short: 180 }).base,
+        ).toBe(
+            'База отчёта по телефонии: исходящих вызовов — 1240, состоявшихся разговоров — 312; разобрано — 13.',
+        );
+    });
+
+    it('телефония отдала не всё — в строке только то, что есть', () => {
+        expect(
+            textWith({ outbound: null, connected: 312, short: 180 }).base,
+        ).toBe(
+            'База отчёта по телефонии: состоявшихся разговоров — 312; разобрано — 13.',
+        );
+    });
+
+    it('телефония не ответила — строки нет', () => {
+        expect(textWith(null).base).toBeNull();
+        expect(
+            textWith({ outbound: null, connected: null, short: null }).base,
+        ).toBeNull();
+    });
+});
+
 describe('отчёт собственнику: недели с малым числом холодных звонков', () => {
     beforeEach(resetCounter);
 

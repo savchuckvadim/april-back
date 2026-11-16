@@ -245,6 +245,12 @@ export interface OwnerReportManagerText {
 export interface OwnerReportText {
     title: string;
     periodLabel: string;
+    /**
+     * «База отчёта» под заголовком: исходящие вызовы и состоявшиеся разговоры
+     * по телефонии, сколько разобрано; null — телефония не ответила. Поля нет —
+     * отчёт собран до 16.11.2026.
+     */
+    base?: string | null;
     tiles: OwnerReportTile[];
     /** До четырёх пунктов: главные утечки и провалы управления с действием. */
     attention: OwnerReportAttentionItem[];

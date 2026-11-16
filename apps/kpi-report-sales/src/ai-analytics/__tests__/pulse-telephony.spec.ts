@@ -132,6 +132,40 @@ describe('PulseTelephonyLoader', () => {
         expect(calls[0].FILTER).not.toHaveProperty('PORTAL_USER_ID');
     });
 
+    it('исходящие вызовы: один запрос total по типу «исходящий», все наборы, тот же круг сотрудников', async () => {
+        const { pbx, calls } = pbxWith([{ result: [], total: 1240 }]);
+        const outbound = await new PulseTelephonyLoader(
+            pbx,
+            managersWith([174, 194]).loader,
+        ).outbound('april-garant.bitrix24.ru', INPUT);
+
+        expect(outbound).toBe(1240);
+        expect(calls).toHaveLength(1);
+        expect(calls[0].FILTER).toEqual({
+            '>=CALL_START_DATE': '2026-10-28T21:00:00.000Z',
+            '<=CALL_START_DATE': '2026-11-03T20:59:59.999Z',
+            PORTAL_USER_ID: ['174', '194'],
+            CALL_TYPE: 1,
+        });
+    });
+
+    it('исходящие: сбой Битрикса или нет total — null, а не ноль', async () => {
+        const failing = pbxWith([new Error('socket hang up')]);
+        expect(
+            await new PulseTelephonyLoader(
+                failing.pbx,
+                managersWith([1]).loader,
+            ).outbound('d', INPUT),
+        ).toBeNull();
+        const noTotal = pbxWith([{ result: [] }]);
+        expect(
+            await new PulseTelephonyLoader(
+                noTotal.pbx,
+                managersWith([1]).loader,
+            ).outbound('d', INPUT),
+        ).toBeNull();
+    });
+
     it('сбой Битрикса или нет total — null, а не ноль', async () => {
         const failing = pbxWith([new Error('socket hang up')]);
         expect(

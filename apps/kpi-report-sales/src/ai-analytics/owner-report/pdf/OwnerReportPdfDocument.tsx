@@ -59,6 +59,7 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
                     {OWNER_PDF_TEXT.generatedAt(generatedAtText)} ·{' '}
                     {OWNER_PDF_TEXT.writtenBy[report.source]}
                 </Text>
+                {text.base ? <Text style={s.subtitle}>{text.base}</Text> : null}
                 <PdfTiles tiles={text.tiles} />
                 <PdfAttention items={text.attention} />
                 <PdfSection title={OWNER_PDF_TEXT.sections.summary}>

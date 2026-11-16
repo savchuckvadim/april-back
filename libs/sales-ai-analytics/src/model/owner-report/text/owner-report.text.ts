@@ -27,6 +27,7 @@ import { OWNER_REPORT_GLOSSARY } from './owner-report.glossary';
 import { buildOwnerReportAttention } from './owner-report.attention';
 import {
     buildOverview,
+    baseLineOf,
     buildTiles,
     unmarkedNoteOf,
 } from './owner-report.text.overview';
@@ -69,6 +70,7 @@ export function buildOwnerReportText(
     return {
         title: `Управленческий отчёт по отделу продаж за ${PERIOD_KIND_LABELS[facts.period.kind]}`,
         periodLabel: periodText(facts.period.from, facts.period.to),
+        base: baseLineOf(facts),
         tiles: buildTiles(facts, previous),
         attention: buildOwnerReportAttention(facts),
         summary: buildSummaryParagraphs(facts),

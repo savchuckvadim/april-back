@@ -119,6 +119,9 @@ export function buildStatisticFilter(
     if (params.userIds?.length) {
         filter.PORTAL_USER_ID = params.userIds.map(String);
     }
+    if (params.callType !== undefined) {
+        filter.CALL_TYPE = params.callType;
+    }
     return filter;
 }
 
