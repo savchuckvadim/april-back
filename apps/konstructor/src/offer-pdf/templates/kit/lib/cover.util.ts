@@ -5,6 +5,8 @@ import { managerOf, type OfferManager } from './manager.util';
 export interface OfferCoverContent {
     /** Наша компания (поставщик) */
     company: string | null;
+    /** ИНН нашей компании */
+    companyInn: string | null;
     /** Комплект: «Гарант-Предприятие» */
     product: string | null;
     /** Поставка: «Интернет версия на 2 одновременных доступа» */
@@ -27,6 +29,7 @@ export const offerCoverContent = (
     const { data, meta } = model;
     return {
         company: filled(data.MyCompanyName) ?? filled(data.MyCompanyFullName),
+        companyInn: filled(data.MyCompanyINN),
         product: filled(data.GeneralProductName),
         supply: filled(data.GeneralSupplyNameMarketing),
         date: meta.date,

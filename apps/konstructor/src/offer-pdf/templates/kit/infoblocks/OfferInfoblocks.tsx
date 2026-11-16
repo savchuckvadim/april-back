@@ -4,6 +4,7 @@ import { DocumentFieldViewMode } from '../../../model/offer-document-settings.ty
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
 import { onSurface } from '../document/surface.styles';
+import { SurfaceGate } from '../document/SurfaceGate';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { groupsWithItems } from './infoblock-description.util';
 import { infoblocksStyles } from './infoblocks.styles';
@@ -23,32 +24,35 @@ export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
     const base = baseStyles(theme);
 
     return (
-        <View style={onSurface(theme, base.section)}>
-            <Text style={base.h2} minPresenceAhead={80}>
-                Информационное наполнение
-            </Text>
-            {data.GeneralProductName ? (
-                <Text style={infoblocksStyles(theme).complectName}>
-                    {data.GeneralProductName}
+        <>
+            <SurfaceGate theme={theme} />
+            <View style={onSurface(theme, base.section)}>
+                <Text style={base.h2} minPresenceAhead={80}>
+                    Информационное наполнение
                 </Text>
-            ) : null}
-            {settings.viewMode === DocumentFieldViewMode.LIST ? (
-                <ListView
-                    groups={groups}
-                    mode={settings.descriptionMode}
-                    theme={theme}
-                />
-            ) : (
-                <TableView
-                    groups={groups}
-                    mode={settings.descriptionMode}
-                    theme={theme}
-                    withGroups={
-                        settings.viewMode ===
-                        DocumentFieldViewMode.TABLE_WITH_GROUP
-                    }
-                />
-            )}
-        </View>
+                {data.GeneralProductName ? (
+                    <Text style={infoblocksStyles(theme).complectName}>
+                        {data.GeneralProductName}
+                    </Text>
+                ) : null}
+                {settings.viewMode === DocumentFieldViewMode.LIST ? (
+                    <ListView
+                        groups={groups}
+                        mode={settings.descriptionMode}
+                        theme={theme}
+                    />
+                ) : (
+                    <TableView
+                        groups={groups}
+                        mode={settings.descriptionMode}
+                        theme={theme}
+                        withGroups={
+                            settings.viewMode ===
+                            DocumentFieldViewMode.TABLE_WITH_GROUP
+                        }
+                    />
+                )}
+            </View>
+        </>
     );
 };

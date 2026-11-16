@@ -5,6 +5,7 @@ import { classicTemplate } from './classic/classic.template';
 import { prismTemplate } from './prism/prism.template';
 import { facetTemplate } from './facet/facet.template';
 import { lavenderTemplate } from './lavender/lavender.template';
+import { pearlTemplate } from './pearl/pearl.template';
 import { monochromeTemplate } from './monochrome/monochrome.template';
 import {
     OfferPdfTemplate,
@@ -18,6 +19,7 @@ export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     monochromeTemplate,
     facetTemplate,
     lavenderTemplate,
+    pearlTemplate,
 ];
 
 export const findOfferPdfTemplate = (

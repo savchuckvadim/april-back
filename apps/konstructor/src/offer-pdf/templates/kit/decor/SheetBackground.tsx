@@ -16,6 +16,8 @@ const styles = StyleSheet.create({
 export interface SheetBackgroundProps {
     /** Картинка из model.assets.images; нет файла — лист без фона */
     image: OfferPdfImage | undefined;
+    /** Бледнее под текстом внутренних листов; по умолчанию — как есть */
+    opacity?: number;
 }
 
 /**
@@ -23,5 +25,18 @@ export interface SheetBackgroundProps {
  * страницы (fixed — повторяется на всех листах). Во всю высоту листа она
  * не считается ни шапкой, ни подвалом.
  */
-export const SheetBackground: FC<SheetBackgroundProps> = ({ image }) =>
-    image ? <Image fixed style={styles.sheet} src={image} /> : null;
+export const SheetBackground: FC<SheetBackgroundProps> = ({
+    image,
+    opacity,
+}) =>
+    image ? (
+        <Image
+            fixed
+            style={
+                opacity === undefined
+                    ? styles.sheet
+                    : [styles.sheet, { opacity }]
+            }
+            src={image}
+        />
+    ) : null;

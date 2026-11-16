@@ -6,14 +6,14 @@ import { OfferPdfTemplate } from '../offer-pdf-template.interface';
 import { LavenderCover } from './components/LavenderCover';
 import { LavenderFooter } from './components/LavenderFooter';
 import { LavenderHeader } from './components/LavenderHeader';
-import { LavenderPromo } from './components/LavenderPromo';
+import { GarantPromo } from '../kit/promo/GarantPromo';
 import { LAVENDER_PALETTES } from './lavender.theme';
 
 const LAVENDER_CHROME: OfferPdfChrome = {
     Header: LavenderHeader,
     Footer: LavenderFooter,
     Cover: LavenderCover,
-    Promo: LavenderPromo,
+    Promo: GarantPromo,
 };
 
 /** «Лаванда»: светлый титульник в мягком градиенте, полоса градиента на листах. */
