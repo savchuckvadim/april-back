@@ -28,12 +28,15 @@ export const findPalette = (
 ): OfferPdfPalette | undefined =>
     palettes.find(palette => palette.code === code) ?? palettes[0];
 
-/** Тема выбранной гаммы; у стиля без гамм — его единственная тема */
+/** Гаммы стиля: хотя бы одна, первая — по умолчанию */
+export type OfferPdfPalettes = readonly [OfferPdfPalette, ...OfferPdfPalette[]];
+
+/** Тема выбранной гаммы; неизвестная или не задана — первой */
 export const paletteTheme = (
-    palettes: readonly OfferPdfPalette[],
+    palettes: OfferPdfPalettes,
     code: string | null | undefined,
-    fallback: OfferPdfTheme,
-): OfferPdfTheme => findPalette(palettes, code)?.theme ?? fallback;
+): OfferPdfTheme =>
+    (palettes.find(palette => palette.code === code) ?? palettes[0]).theme;
 
 export const paletteInfo = ({
     code,
