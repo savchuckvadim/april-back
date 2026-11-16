@@ -1,5 +1,6 @@
 import {
     describeLlmError,
+    isRetryableLlmError,
     isTransientLlmError,
     llmErrorStatus,
 } from '../llm-error.util';
@@ -222,5 +223,68 @@ describe('llm-error.util — классификация ошибок прова�
             'openai-compatible',
         );
         expect(isTransientLlmError(nobodyTakes)).toBe(false);
+    });
+});
+
+/** 16.11.2026: одиночный сорвавшийся проход разбора повторяется один раз. */
+describe('isRetryableLlmError — стоит ли сразу повторить вызов шлюза', () => {
+    const unavailable = (
+        failures: ConstructorParameters<typeof LlmUnavailableError>[1],
+        primary: 'vibecode' | 'openai-compatible' | null = 'vibecode',
+    ) => new LlmUnavailableError('LLM недоступна', failures, primary);
+
+    it('основной сам сорвался по временной причине — повторяем, даже если запасной отказал', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'vibecode', transient: true },
+                    {
+                        provider: 'openai-compatible',
+                        transient: false,
+                        tooLarge: true,
+                    },
+                ]),
+            ),
+        ).toBe(true);
+    });
+
+    it('негодный ответ основного, пауза, проба и отказ по размеру — не повторяем', () => {
+        const cases = [
+            [{ provider: 'vibecode', transient: false }],
+            [{ provider: 'vibecode', transient: true, paused: true }],
+            [{ provider: 'vibecode', transient: true, probe: true }],
+            [{ provider: 'vibecode', transient: false, tooLarge: true }],
+        ] as const;
+        for (const failures of cases) {
+            expect(isRetryableLlmError(unavailable([...failures]))).toBe(false);
+        }
+    });
+
+    it('основного не звали или его нет — не повторяем; чужая ошибка — тоже', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'openai-compatible', transient: true },
+                ]),
+            ),
+        ).toBe(false);
+        expect(
+            isRetryableLlmError(
+                unavailable([{ provider: 'vibecode', transient: true }], null),
+            ),
+        ).toBe(false);
+        expect(isRetryableLlmError(new Error('timeout'))).toBe(false);
+    });
+
+    it('решает последняя попытка основного: после паузы проба сорвалась — не повторяем', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'vibecode', transient: true },
+                    { provider: 'openai-compatible', transient: true },
+                    { provider: 'vibecode', transient: true, probe: true },
+                ]),
+            ),
+        ).toBe(false);
     });
 });

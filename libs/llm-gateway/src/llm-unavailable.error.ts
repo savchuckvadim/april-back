@@ -21,6 +21,11 @@ export interface LlmProviderFailure {
      * предохранителе не считается, «временный ли отказ» решают остальные.
      */
     tooLarge?: boolean;
+    /**
+     * Сбой пробного вызова к поставщику на паузе (16.11.2026). Поставщик и
+     * так считался недоступным — повторять такой вызов сразу незачем.
+     */
+    probe?: boolean;
 }
 
 /**
@@ -40,6 +45,8 @@ export class LlmUnavailableError extends Error {
         message: string,
         readonly failures: readonly LlmProviderFailure[],
         readonly primary: LlmProviderCode | null = null,
+        /** Причины по каждому поставщику — для отложенной тревоги. */
+        readonly notes: readonly string[] = [],
     ) {
         super(message);
         this.name = 'LlmUnavailableError';

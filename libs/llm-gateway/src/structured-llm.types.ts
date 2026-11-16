@@ -40,6 +40,13 @@ export interface StructuredLlmOptions {
      * Запасной провайдер его игнорирует — у него своя модель из endpoint'а.
      */
     model?: string;
+    /**
+     * Не слать тревогу «ПОПЫТКИ ИСЧЕРПАНЫ», если не ответил никто: её решит
+     * вызывающий (16.11.2026). Фокус-разбор повторяет одиночный сорвавшийся
+     * проход — тревога нужна, только когда повтора не будет; тогда её шлёт
+     * StructuredLlmGateway.reportExhausted. Ошибка бросается как обычно.
+     */
+    deferExhaustedAlert?: boolean;
 }
 
 export interface StructuredLlmRequest extends StructuredLlmOptions {

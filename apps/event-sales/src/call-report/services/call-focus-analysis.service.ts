@@ -13,7 +13,7 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
-import { StructuredLlmGateway } from '@lib/llm-gateway';
+import { StructuredLlmGateway, isRetryableLlmError } from '@lib/llm-gateway';
 import {
     AgentCallAnalysisDto,
     type CallAnalysisPart,
@@ -33,6 +33,13 @@ import {
     isFocusProviderFailure,
     type CallFocusOutcome,
 } from './call-focus-failure.util';
+import {
+    runWaveWithRetry,
+    settleWaveCall,
+    type WaveAttempt,
+    type WaveCall,
+    type WaveResult,
+} from './call-focus-retry.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
@@ -91,6 +98,17 @@ interface FocusPass {
     prompt: string;
     schema: Record<string, unknown>;
 }
+
+/** Ответ одного вызова модели с расходом токенов. */
+type FocusCompletion = VibecodeStructuredCompletionWithUsage;
+
+/** Синтез итога — в журнале и схеме как отдельный проход. */
+const SYNTHESIS_PASS = {
+    key: 'synthesis',
+    label: 'синтез',
+    title: 'Синтез фокус-разбора',
+    schema: FOCUS_SYNTHESIS_SCHEMA,
+} as const;
 
 const FOCUS_PASSES: FocusPass[] = [
     {
@@ -263,29 +281,55 @@ export class CallFocusAnalysisService {
             // Ошибки сорвавшихся фокус-проходов — по ним причина провала.
             // Массив свой у каждого вызова: разборы идут параллельно.
             const passErrors: unknown[] = [];
-            const [responses, methodologyResponse] = await Promise.all([
-                Promise.all(
-                    FOCUS_PASSES.map(pass =>
-                        this.runFocus(
+            // Проходы идут одновременно; сорвался ровно один и по временной
+            // причине — он повторяется (call-focus-retry.util.ts).
+            const calls: WaveCall<string, FocusCompletion>[] = [
+                ...FOCUS_PASSES.map(pass => ({
+                    key: pass.key,
+                    run: (attempt: WaveAttempt) =>
+                        this.callFocus(
                             pass,
                             this.contextFor(materials, pass.key) + commonTail,
                             userContent,
                             domain,
+                            attempt,
                             options?.model,
-                            passErrors,
                         ),
+                })),
+                ...(methodologyPass
+                    ? [
+                          {
+                              key: methodologyPass.key,
+                              run: (attempt: WaveAttempt) =>
+                                  this.callFocus(
+                                      methodologyPass,
+                                      materials.shared + commonTail,
+                                      userContent,
+                                      domain,
+                                      attempt,
+                                      options?.model,
+                                  ),
+                          },
+                      ]
+                    : []),
+            ];
+            const wave = await runWaveWithRetry(
+                calls,
+                isRetryableLlmError,
+                key =>
+                    this.logger.warn(
+                        `Фокус-разбор (${domain}): проход ${key} сорвался один из всех — повтор`,
                     ),
-                ),
-                methodologyPass
-                    ? this.runFocus(
-                          methodologyPass,
-                          materials.shared + commonTail,
-                          userContent,
-                          domain,
-                          options?.model,
-                      )
-                    : Promise.resolve(null),
-            ]);
+            );
+            const responses: (FocusCompletion | null)[] = [];
+            for (const pass of FOCUS_PASSES) {
+                responses.push(
+                    await this.settle(wave, pass, domain, passErrors),
+                );
+            }
+            const methodologyResponse = methodologyPass
+                ? await this.settle(wave, methodologyPass, domain)
+                : null;
             const byKey = Object.fromEntries(
                 FOCUS_PASSES.map((pass, index) => [
                     pass.key,
@@ -310,12 +354,31 @@ export class CallFocusAnalysisService {
             const synthesisContext = materials.synthesis
                 ? `${materials.shared}\n\n${materials.synthesis}${commonTail}`
                 : materials.shared + commonTail;
-            const synthesisResponse = await this.runSynthesis(
-                byKey,
-                synthesisContext,
-                userContent,
+            const synthesisWave = await runWaveWithRetry(
+                [
+                    {
+                        key: SYNTHESIS_PASS.key,
+                        run: (attempt: WaveAttempt) =>
+                            this.callSynthesis(
+                                byKey,
+                                synthesisContext,
+                                userContent,
+                                domain,
+                                attempt,
+                                options?.model,
+                            ),
+                    },
+                ],
+                isRetryableLlmError,
+                () =>
+                    this.logger.warn(
+                        `Фокус-разбор (${domain}): синтез сорвался — повтор`,
+                    ),
+            );
+            const synthesisResponse = await this.settle(
+                synthesisWave,
+                SYNTHESIS_PASS,
                 domain,
-                options?.model,
             );
             const synthesis = resultOf(synthesisResponse);
             // Что не собралось — по этому списку догон найдёт неполный
@@ -548,63 +611,78 @@ export class CallFocusAnalysisService {
     }
 
     /**
-     * Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается
-     * без него), сама ошибка — в `failures`, если он передан.
+     * Один фокус-проход (ответ + usage). Ошибку бросает: повторять ли проход
+     * и что писать в журнал, решает волна (runWaveWithRetry / settle).
+     * Тревога «не ответил никто» первой попытки откладывается — одиночный
+     * сбой повторяется, и тревожить о нём рано.
      */
-    private async runFocus(
-        pass: Pick<FocusPass, 'label' | 'prompt' | 'schema'> & { key: string },
+    private callFocus(
+        pass: Pick<FocusPass, 'prompt' | 'schema'> & { key: string },
         sharedContext: string,
         userContent: string,
         domain: string,
+        attempt: WaveAttempt,
         model?: string,
-        failures?: unknown[],
-    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
-        try {
-            return await this.llm.structuredCompletionWithUsage(
-                `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
-                userContent,
-                `call_focus_${pass.key}`,
-                pass.schema,
-                domain,
-                { model },
-            );
-        } catch (error) {
-            failures?.push(error);
-            this.logger.warn(
-                `Фокус «${pass.label}» не выполнен (${domain}): ${(error as Error).message}`,
-            );
-            return null;
-        }
+    ): Promise<FocusCompletion> {
+        return this.llm.structuredCompletionWithUsage(
+            `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
+            userContent,
+            `call_focus_${pass.key}`,
+            pass.schema,
+            domain,
+            { model, deferExhaustedAlert: attempt === 1 },
+        );
     }
 
-    /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибка → null. */
-    private async runSynthesis(
+    /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибку бросает. */
+    private callSynthesis(
         byKey: Record<CallFocusKey, Record<string, unknown> | null>,
         sharedContext: string,
         userContent: string,
         domain: string,
+        attempt: WaveAttempt,
         model?: string,
-    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
+    ): Promise<FocusCompletion> {
         const digests = [
             renderFocusDigest('ФОРМА РАЗГОВОРА', byKey.form),
             renderFocusDigest('СОДЕРЖАНИЕ ПРОДАЖИ', byKey.content),
             renderFocusDigest('ДВИЖЕНИЕ СДЕЛКИ', byKey.movement),
         ].join('\n\n');
-        try {
-            return await this.llm.structuredCompletionWithUsage(
-                `${FOCUS_SYNTHESIS_PROMPT}${sharedContext ? `\n${sharedContext}` : ''}`,
-                `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
-                'call_focus_synthesis',
-                FOCUS_SYNTHESIS_SCHEMA,
+        return this.callFocus(
+            { ...SYNTHESIS_PASS, prompt: FOCUS_SYNTHESIS_PROMPT },
+            sharedContext,
+            `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
+            domain,
+            attempt,
+            model,
+        );
+    }
+
+    /**
+     * Ответ вызова из волны или null: сбой — в журнал и в `failures`
+     * (разбор продолжается без этого прохода); тревога, отложенная на первой
+     * попытке, уходит здесь, если повтора не было.
+     */
+    private settle(
+        wave: ReadonlyMap<string, WaveResult<FocusCompletion>>,
+        pass: { key: string; label: string; title?: string },
+        domain: string,
+        failures?: unknown[],
+    ): Promise<FocusCompletion | null> {
+        return settleWaveCall(
+            wave.get(pass.key),
+            {
+                title: pass.title ?? `Фокус «${pass.label}»`,
+                schemaName: `call_focus_${pass.key}`,
                 domain,
-                { model },
-            );
-        } catch (error) {
-            this.logger.warn(
-                `Синтез фокус-разбора не выполнен (${domain}): ${(error as Error).message}`,
-            );
-            return null;
-        }
+            },
+            {
+                warn: message => this.logger.warn(message),
+                reportExhausted: (error, request) =>
+                    this.llm.reportExhausted(error, request),
+            },
+            failures,
+        );
     }
 
     /**

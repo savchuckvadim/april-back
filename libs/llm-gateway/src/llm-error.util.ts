@@ -124,6 +124,26 @@ function nextProviderTransient(real: readonly LlmProviderFailure[]): boolean {
     );
 }
 
+/**
+ * Стоит ли сразу повторить сорвавшийся вызов шлюза (16.11.2026): основной
+ * поставщик сам сорвался по временной причине — таймаут, 5xx, 429, сеть.
+ * Не стоит, если основного не звали или он на паузе (вызов упадёт сразу
+ * же), если это была проба поставщика на паузе (он и так считался
+ * недоступным) или если он не берёт запрос по размеру.
+ */
+export function isRetryableLlmError(error: unknown): boolean {
+    if (!(error instanceof LlmUnavailableError) || error.primary === null) {
+        return false;
+    }
+    const own = error.failures.filter(
+        failure => failure.provider === error.primary,
+    );
+    const last = own[own.length - 1];
+    return Boolean(
+        last && last.transient && !last.paused && !last.probe && !last.tooLarge,
+    );
+}
+
 /** Короткое описание для логов и сводной ошибки: код, если есть, и начало текста. */
 export function describeLlmError(error: unknown): string {
     const status = llmErrorStatus(error);

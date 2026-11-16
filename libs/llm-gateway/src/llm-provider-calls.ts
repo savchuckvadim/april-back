@@ -135,6 +135,7 @@ export class LlmProviderCalls {
                         );
                     }
                 },
+                true,
             );
             return outcome === 'paused' ? null : outcome;
         } finally {
@@ -155,6 +156,7 @@ export class LlmProviderCalls {
         trail: LlmCallTrail,
         fallbackAvailable: boolean,
         check: SendCheck,
+        probe = false,
     ): Promise<LlmAttemptOutcome> {
         const startedAt = Date.now();
         // Объект, а не let: отметку ставит замыкание проверки, а сужение
@@ -221,7 +223,11 @@ export class LlmProviderCalls {
             const text = describeLlmError(error);
             const transient = isTransientLlmError(error);
             trail.notes.push(`${adapter.code} — ${text}`);
-            trail.failures.push({ provider: adapter.code, transient });
+            trail.failures.push({
+                provider: adapter.code,
+                transient,
+                ...(probe ? { probe: true } : {}),
+            });
             if (transient) {
                 await this.breaker.recordFailure(
                     adapter.code,

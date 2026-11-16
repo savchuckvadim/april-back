@@ -128,6 +128,9 @@ export class StructuredLlmGateway {
             schemaName,
             schema,
             ...(options?.model ? { model: options.model } : {}),
+            ...(options?.deferExhaustedAlert
+                ? { deferExhaustedAlert: true }
+                : {}),
         });
     }
 
@@ -188,12 +191,29 @@ export class StructuredLlmGateway {
             if (response) return this.answered(response, request, trail);
         }
         const reasons = trail.notes.join('; ');
-        await this.alertExhausted(request, primary, trail);
+        if (!request.deferExhaustedAlert) {
+            await this.alertExhausted(request, primary, trail);
+        }
         throw new LlmUnavailableError(
             `LLM недоступна для ${request.schemaName} (${request.domain}): ${reasons}`,
             trail.failures,
             primary,
+            trail.notes,
         );
+    }
+
+    /**
+     * Тревога по ошибке вызова с deferExhaustedAlert: вызывающий решил, что
+     * повтора не будет. Правила те же, что у обычной тревоги.
+     */
+    reportExhausted(
+        error: LlmUnavailableError,
+        request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
+    ): Promise<void> {
+        return this.alertExhausted(request, error.primary, {
+            notes: [...error.notes],
+            failures: [...error.failures],
+        });
     }
 
     /**
@@ -207,7 +227,7 @@ export class StructuredLlmGateway {
      * (16.11.2026) — см. describeLlmExhausted.
      */
     private async alertExhausted(
-        request: StructuredLlmRequest,
+        request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
         primary: LlmProviderCode | null,
         trail: LlmCallTrail,
     ): Promise<void> {
