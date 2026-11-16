@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import type { OfferPdfImage } from '../../../model/offer-pdf-document.model';
 import type { PdfStyle } from '../../shared/style.util';
@@ -29,6 +29,8 @@ export interface BrandCoverProps extends OfferPdfChromeProps {
     background: OfferPdfImage | undefined;
     styles: BrandCoverStyles;
     logoColor: string;
+    /** Под поставкой: черта стиля (градиент и т. п.) */
+    divider?: ReactNode;
 }
 
 /**
@@ -41,6 +43,7 @@ export const BrandCover: FC<BrandCoverProps> = ({
     background,
     styles,
     logoColor,
+    divider,
 }) => {
     const cover = offerCoverContent(model);
     return (
@@ -66,6 +69,7 @@ export const BrandCover: FC<BrandCoverProps> = ({
                 {cover.supply ? (
                     <Text style={styles.supply}>{cover.supply}</Text>
                 ) : null}
+                {divider}
             </View>
             <View style={styles.bottom}>
                 {cover.recipient ? (

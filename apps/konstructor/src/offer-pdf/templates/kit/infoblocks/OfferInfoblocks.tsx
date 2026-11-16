@@ -5,6 +5,8 @@ import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
 import { onSurface } from '../document/surface.styles';
 import { SurfaceGate } from '../document/SurfaceGate';
+import { HEADING_PRESENCE } from '../document/section.layout';
+import { SplitGate } from './SplitGate';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { groupsWithItems } from './infoblock-description.util';
 import { infoblocksStyles } from './infoblocks.styles';
@@ -27,7 +29,13 @@ export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
         <>
             <SurfaceGate theme={theme} />
             <View style={onSurface(theme, base.section)}>
-                <Text style={base.h2} minPresenceAhead={80}>
+                {/* заголовок не остаётся последним на листе и не рвётся: minPresenceAhead на самом тексте react-pdf соблюдает не всегда, а разорванный заголовок оставлял внизу пустой узел */}
+                <SplitGate presence={HEADING_PRESENCE} />
+                <Text
+                    style={base.h2}
+                    wrap={false}
+                    minPresenceAhead={HEADING_PRESENCE}
+                >
                     Информационное наполнение
                 </Text>
                 {data.GeneralProductName ? (

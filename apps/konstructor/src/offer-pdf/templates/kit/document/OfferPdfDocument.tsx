@@ -67,7 +67,11 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                 {letterInPromo ? null : (
                     <OfferLetter model={model} theme={theme} />
                 )}
-                <OfferSections model={model} theme={theme} />
+                <OfferSections
+                    model={model}
+                    theme={theme}
+                    withoutStamps={letterInPromo}
+                />
             </ChromePage>
         </Document>
     );

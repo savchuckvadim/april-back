@@ -30,7 +30,9 @@ const withRegions = (count: number): IInfblockGroupsRenderData[] => [
         groupsName: 'Нормативно-правовые акты',
         infoblocks: [
             ...base.infoblocksByGroups[0].infoblocks,
-            ...Array.from({ length: count }, (_, index) => regionBlock(index + 1)),
+            ...Array.from({ length: count }, (_, index) =>
+                regionBlock(index + 1),
+            ),
         ],
     },
     ...base.infoblocksByGroups.slice(1),
@@ -48,7 +50,8 @@ const longCompany = {
         'Общество с ограниченной ответственностью «Гарант-Сервис Воронеж, Липецк, Тамбов и Белгород»',
     MyCompanyPrimaryAddress:
         '394018, Воронежская область, город Воронеж, улица Фридриха Энгельса, дом 25б, этаж 3, офис 301, помещение 7, литера А',
-    MyCompanyPhone: '+7 (473) 200-00-00, +7 (473) 200-00-01, +7 (473) 200-00-02',
+    MyCompanyPhone:
+        '+7 (473) 200-00-00, +7 (473) 200-00-01, +7 (473) 200-00-02',
     MyCompanyEmail: 'sales@garant-vrn.ru, support@garant-vrn.ru',
     ManagerName: 'Александра Константиновна Преображенская-Воронцова',
     ManagerPosition: 'Руководитель отдела продаж и сопровождения клиентов',
@@ -69,7 +72,8 @@ const letterText = (paragraphs: number): string =>
  */
 const journals = Array.from(
     { length: 70 },
-    (_, index) => `Журнал «Правовое обозрение № ${index + 1}: практика и комментарии»`,
+    (_, index) =>
+        `Журнал «Правовое обозрение № ${index + 1}: практика и комментарии»`,
 ).join('\n');
 
 const hugeBlocks = (): IInfblockGroupsRenderData[] => [
@@ -157,7 +161,9 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             salePhrase:
                 'При оплате до конца месяца — дополнительная скидка 5 %.\nПри оплате за год — подарок: Академия ГАРАНТ на 32 часа.\nПредложение действует до конца квартала, количество мест ограничено.\nПодробности у вашего менеджера.',
         },
-        model: { data: createOfferRenderDataFixture({ ProductRows: manyRows }) },
+        model: {
+            data: createOfferRenderDataFixture({ ProductRows: manyRows }),
+        },
     },
     {
         name: '08-price-first-many-rows',
@@ -195,7 +201,11 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             viewMode: DocumentFieldViewMode.TABLE,
             descriptionMode: DocumentFieldDescriptionMode.BIG,
         },
-        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
+        model: {
+            data: createOfferRenderDataFixture({
+                infoblocksByGroups: hugeBlocks(),
+            }),
+        },
     },
     {
         name: '12-huge-descriptions-table-groups',
@@ -203,11 +213,29 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             viewMode: DocumentFieldViewMode.TABLE_WITH_GROUP,
             descriptionMode: DocumentFieldDescriptionMode.BIG,
         },
-        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
+        model: {
+            data: createOfferRenderDataFixture({
+                infoblocksByGroups: hugeBlocks(),
+            }),
+        },
     },
     {
         name: '13-huge-descriptions-list',
         settings: { descriptionMode: DocumentFieldDescriptionMode.BIG },
-        model: { data: createOfferRenderDataFixture({ infoblocksByGroups: hugeBlocks() }) },
+        model: {
+            data: createOfferRenderDataFixture({
+                infoblocksByGroups: hugeBlocks(),
+            }),
+        },
+    },
+    // список без описаний: у «Модерна» и «Искры» — названия в две колонки
+    {
+        name: '14-regions-35-list-names',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.NO },
+        model: {
+            data: createOfferRenderDataFixture({
+                infoblocksByGroups: withRegions(35),
+            }),
+        },
     },
 ];

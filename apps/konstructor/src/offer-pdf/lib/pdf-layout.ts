@@ -89,10 +89,15 @@ export const pageNodesOf = (root: LayoutNode): LayoutNode[] =>
         node.type === 'PAGE' ? [node] : (node.children ?? []),
     );
 
-const fixedExtent = (node: LayoutNode, offsetTop: number): LayoutBox[] => {
+interface FixedBlock {
+    box: LayoutBox;
+    node: LayoutNode;
+}
+
+const fixedExtent = (node: LayoutNode, offsetTop: number): FixedBlock[] => {
     if (!node.box) return [];
     const top = offsetTop + node.box.top;
-    if (node.props?.fixed) return [{ ...node.box, top }];
+    if (node.props?.fixed) return [{ box: { ...node.box, top }, node }];
     return (node.children ?? []).flatMap(child => fixedExtent(child, top));
 };
 
@@ -128,16 +133,24 @@ const isBareSheet = ({ style }: LayoutNode): boolean =>
     !style?.paddingLeft &&
     !style?.paddingRight;
 
-/** Fixed-блок — оформление листа: в боковом поле или на титульнике */
-export const isDecoration = (box: LayoutBox, page: LayoutNode): boolean =>
-    isBareSheet(page) || isSideDecoration(box, page);
+/**
+ * Fixed-блок — оформление листа: в боковом поле, на титульнике или
+ * картинка (фон, угловое пятно — шапки и подвалы собираются из View).
+ */
+export const isDecoration = (
+    box: LayoutBox,
+    page: LayoutNode,
+    node?: LayoutNode,
+): boolean =>
+    node?.type === 'IMAGE' || isBareSheet(page) || isSideDecoration(box, page);
 
 const chromeOf = (page: LayoutNode): PageChrome | null => {
     if (!page.box) return null;
     const pageHeight = page.box.height;
     const fixed = (page.children ?? [])
         .flatMap(child => fixedExtent(child, 0))
-        .filter(box => !isDecoration(box, page));
+        .filter(block => !isDecoration(block.box, page, block.node))
+        .map(block => block.box);
     // подложка во всю высоту листа не шапка и не подвал: обе проверки её отсекают
     const headers = fixed.filter(box => box.top + box.height <= pageHeight / 2);
     const footers = fixed.filter(box => box.top >= pageHeight / 2);

@@ -140,6 +140,28 @@ describe('поля страницы под шапку и подвал', () => {
         expect(fitPageFrame(withTab)).toEqual(fitPageFrame(page(80, 48)));
     });
 
+    it('fixed-картинка (угловое пятно) — оформление, поля под неё не растут', () => {
+        const [content] = page(55, 48).children ?? [];
+        const corner: LayoutNode = {
+            type: 'IMAGE',
+            props: { fixed: true },
+            box: { top: 0, left: 365, width: 230, height: 123 },
+        };
+        const withCorner: LayoutNode = {
+            type: 'DOCUMENT',
+            children: content
+                ? [
+                      {
+                          ...content,
+                          children: [...(content.children ?? []), corner],
+                      },
+                  ]
+                : [],
+        };
+        expect(measurePageChrome(withCorner)?.headerBottom).toBe(26 + 55);
+        expect(fitPageFrame(withCorner)).toBeNull();
+    });
+
     it('fixed в боковом поле не шапка: вкладка справа поля не раздвигает', () => {
         const [content] = page(55, 48).children ?? [];
         const sideTab: LayoutNode = {

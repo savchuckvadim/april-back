@@ -84,7 +84,7 @@ const leaves = (
     const isFixed = fixed || fixedRoot;
     // повёрнутый текст вкладки в раскладке лежит неповёрнутым и вылезает из
     // поля — поэтому украшение определяется по корню, а не по листьям
-    const isDecor = decor || (fixedRoot && isDecoration(box, page));
+    const isDecor = decor || (fixedRoot && isDecoration(box, page, node));
     const children = node.children ?? [];
     if (!children.length || node.type === 'TEXT') {
         return [{ node, box, fixed: isFixed, decor: isDecor }];

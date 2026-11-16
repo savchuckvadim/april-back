@@ -8,6 +8,7 @@ import { lavenderTemplate } from './lavender/lavender.template';
 import { pearlTemplate } from './pearl/pearl.template';
 import { haloTemplate } from './halo/halo.template';
 import { silkTemplate } from './silk/silk.template';
+import { moderneTemplate } from './moderne/moderne.template';
 import { monochromeTemplate } from './monochrome/monochrome.template';
 import {
     OfferPdfTemplate,
@@ -24,6 +25,7 @@ export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     pearlTemplate,
     haloTemplate,
     silkTemplate,
+    moderneTemplate,
 ];
 
 export const findOfferPdfTemplate = (
