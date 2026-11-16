@@ -6,6 +6,7 @@ import { PortalRepository } from '@lib/portal-lib/store/portal.repository';
 import { PortalPrismaRepository } from '@lib/portal-lib/store/portal.prisma.repository';
 import { FrontPortalController } from './controllers/front-portal.controller';
 import { FrontPortalBuilderService } from './services/front-portal-builder.service';
+import { FrontPortalPartsService } from './services/front-portal-parts.service';
 import { BackendPortalBuilderService } from './services/backend-portal-builder.service';
 import { PortalAggregateRepository } from './repositories/portal-aggregate.repository';
 import { PortalAggregatePrismaRepository } from './repositories/portal-aggregate.prisma.repository';
@@ -31,8 +32,13 @@ import { PortalAggregatePrismaRepository } from './repositories/portal-aggregate
         PortalKeyCryptoService,
         PortalKeysService,
         FrontPortalBuilderService,
+        FrontPortalPartsService,
         BackendPortalBuilderService,
     ],
-    exports: [FrontPortalBuilderService, BackendPortalBuilderService],
+    exports: [
+        FrontPortalBuilderService,
+        FrontPortalPartsService,
+        BackendPortalBuilderService,
+    ],
 })
 export class PortalBuilderModule {}

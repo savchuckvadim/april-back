@@ -89,6 +89,46 @@ export const CATEGORY_ENTITY_KEYS: readonly BuilderEntityKey[] = [
     'lead',
 ];
 
+/**
+ * Узкое чтение портала: только названные сущности со своими полями и
+ * воронками. Остальные relations в агрегате остаются пустыми — их из БД не
+ * читают вовсе.
+ */
+export interface PortalScope {
+    entities: readonly BuilderEntityKey[];
+    /** Отделы (плоская таблица, без полей) */
+    departaments?: boolean;
+    /** Группы задач на прозвон (плоская таблица, без полей) */
+    callings?: boolean;
+    /** Только смарты этих типов (колонка type); не задано — все */
+    smartTypes?: readonly string[];
+    /**
+     * Сущности, от которых нужны только строки (тип, код, bitrixId,
+     * entityTypeId): их поля и воронки не читаются. Поля — самая тяжёлая
+     * часть портала, а, например, от смарта фронту нужен один entityTypeId.
+     */
+    rowsOnly?: readonly BuilderEntityKey[];
+}
+
+/** Все relations агрегата пустыми — основа узкого чтения */
+export const EMPTY_PORTAL_RELATIONS: Pick<
+    PortalWithRelations,
+    keyof typeof PORTAL_AGGREGATE_INCLUDE
+> = {
+    bitrixlists: [],
+    smarts: [],
+    btx_deals: [],
+    btx_companies: [],
+    btx_contacts: [],
+    btx_leads: [],
+    btx_rpas: [],
+    btx_users: [],
+    departaments: [],
+    callings: [],
+    bxRqs: [],
+    portal_measure: [],
+};
+
 /** Агрегат портала: плоские relations + индексы полиморфных таблиц. */
 export interface PortalAggregate {
     portal: PortalWithRelations;

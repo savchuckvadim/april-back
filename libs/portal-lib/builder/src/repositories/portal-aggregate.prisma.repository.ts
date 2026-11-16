@@ -4,10 +4,12 @@ import { PortalAggregateRepository } from './portal-aggregate.repository';
 import {
     BuilderEntityKey,
     CATEGORY_ENTITY_KEYS,
+    EMPTY_PORTAL_RELATIONS,
     ENTITY_TYPE_DB_VALUES,
     PORTAL_AGGREGATE_INCLUDE,
     PolymorphicIndex,
     PortalAggregate,
+    PortalScope,
     PortalWithRelations,
 } from './portal-aggregate.types';
 
@@ -47,10 +49,50 @@ export class PortalAggregatePrismaRepository extends PortalAggregateRepository {
         return portal ? this.loadPolymorphic(portal) : null;
     }
 
+    /**
+     * Узкое чтение: в первом запросе подключаются только relations названных
+     * сущностей, поэтому поля и воронки (второй и третий запрос) читаются
+     * тоже только для них. Непрошеные relations остаются пустыми.
+     */
+    async findScopedByDomain(
+        domain: string,
+        scope: PortalScope,
+    ): Promise<PortalAggregate | null> {
+        const has = (key: BuilderEntityKey): boolean =>
+            scope.entities.includes(key);
+        const row = await this.prisma.portal.findFirst({
+            where: { domain },
+            include: {
+                bitrixlists: has('list'),
+                smarts:
+                    has('smart') && scope.smartTypes?.length
+                        ? { where: { type: { in: [...scope.smartTypes] } } }
+                        : has('smart'),
+                btx_deals: has('deal'),
+                btx_companies: has('company'),
+                btx_contacts: has('contact'),
+                btx_leads: has('lead'),
+                btx_rpas: has('rpa'),
+                btx_users: has('user'),
+                departaments: scope.departaments ?? false,
+                callings: scope.callings ?? false,
+            },
+        });
+        if (!row) return null;
+        // неподключённых relations в ответе Prisma нет — подставляем пустые
+        return this.loadPolymorphic(
+            { ...EMPTY_PORTAL_RELATIONS, ...row },
+            scope.rowsOnly,
+        );
+    }
+
+    /** `rowsOnly` — сущности, для которых поля и воронки не читаются */
     private async loadPolymorphic(
         portal: PortalWithRelations,
+        rowsOnly: readonly BuilderEntityKey[] = [],
     ): Promise<PortalAggregate> {
         const ids = this.collectEntityIds(portal);
+        for (const key of rowsOnly) ids[key] = [];
 
         const fieldPairs = this.buildOrPairs(ids, [
             ...(Object.keys(ENTITY_TYPE_DB_VALUES) as BuilderEntityKey[]),
