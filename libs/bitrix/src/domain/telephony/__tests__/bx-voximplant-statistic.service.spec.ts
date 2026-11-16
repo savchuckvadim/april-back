@@ -149,6 +149,17 @@ describe('buildStatisticFilter', () => {
         });
     });
 
+    it('тип звонка уходит в фильтр; не задан — фильтра по типу нет', () => {
+        const period = {
+            fromIso: '2026-08-01T00:00:00+03:00',
+            toIso: '2026-08-31T23:59:59+03:00',
+        };
+        expect(buildStatisticFilter({ ...period, callType: 1 })).toMatchObject({
+            CALL_TYPE: 1,
+        });
+        expect(buildStatisticFilter(period)).not.toHaveProperty('CALL_TYPE');
+    });
+
     it('нулевой порог длительности в фильтр не уходит (нужны все наборы)', () => {
         expect(
             buildStatisticFilter({

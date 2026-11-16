@@ -40,6 +40,13 @@ export interface StructuredLlmOptions {
      * Запасной провайдер его игнорирует — у него своя модель из endpoint'а.
      */
     model?: string;
+    /**
+     * Не слать тревогу «ПОПЫТКИ ИСЧЕРПАНЫ», если не ответил никто: её решит
+     * вызывающий (16.11.2026). Фокус-разбор повторяет одиночный сорвавшийся
+     * проход — тревога нужна, только когда повтора не будет; тогда её шлёт
+     * StructuredLlmGateway.reportExhausted. Ошибка бросается как обычно.
+     */
+    deferExhaustedAlert?: boolean;
 }
 
 export interface StructuredLlmRequest extends StructuredLlmOptions {
@@ -99,6 +106,13 @@ export interface StructuredLlmAdapter {
     readonly code: LlmProviderCode;
     /** Почему провайдер нельзя использовать для домена (нет ключа, нет endpoint'а); null — настроен. */
     configurationIssue(domain: string): Promise<string | null>;
+    /**
+     * Знает ли адаптер заранее, что этот запрос поставщик не примет по
+     * размеру (в последний час уже отказал на таком же или меньшем — HTTP
+     * 413). true — шлюз к поставщику не обращается: запрос не пройдёт,
+     * сколько ни повторяй. Не задано — адаптер размеры не помнит.
+     */
+    rejectsBySize?(request: StructuredLlmRequest): Promise<boolean>;
     complete(
         request: StructuredLlmRequest,
         guard?: LlmSendGuard,

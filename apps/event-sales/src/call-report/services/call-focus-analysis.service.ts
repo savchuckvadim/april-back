@@ -3,21 +3,19 @@ import { plainToInstance } from 'class-transformer';
 import {
     CallTypeDefinition,
     CallTypeRegistryService,
-    KnowledgeMaterialRequest,
     KnowledgeMaterialsService,
-    renderMaterialBlock,
+    budgetRequests,
+    focusBudgetLines,
+    isPresentationContour,
+    methodologyBudgetLines,
 } from '@lib/call-lib';
-import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
-import { StructuredLlmGateway } from '@lib/llm-gateway';
-import {
-    AgentCallAnalysisDto,
-    type CallAnalysisPart,
-} from '../../agent-gate/dto/agent-analysis-request.dto';
+import { StructuredLlmGateway, isRetryableLlmError } from '@lib/llm-gateway';
+import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -28,11 +26,41 @@ import {
     renderPresentationStrictnessBlock,
     buildDeepAnalysisUserContent,
 } from '../contracts/call-deep-analysis.contract';
+import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { sumCompletionUsage } from './call-analysis-usage.util';
+import {
+    focusIncompleteParts,
+    mergeFocusResults,
+    ownSectionsOf,
+    type FocusResultsByKey,
+} from './call-focus-assemble.util';
+import {
+    methodologyRelevanceFor,
+    renderMethodologyAnchorsBlock,
+} from './call-focus-anchors.util';
 import {
     isFocusProviderFailure,
     type CallFocusOutcome,
 } from './call-focus-failure.util';
+import {
+    focusContextFor,
+    methodologyContextOf,
+    renderFocusMaterials,
+    synthesisContextOf,
+    type FocusMaterials,
+} from './call-focus-materials.util';
+import {
+    runWaveWithRetry,
+    settleWaveCall,
+    type WaveAttempt,
+    type WaveCall,
+    type WaveResult,
+} from './call-focus-retry.util';
+import {
+    STORED_FOCUS_PASSES_KEY,
+    buildStoredFocusPasses,
+    type StoredFocusPasses,
+} from './call-focus-stored.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
@@ -42,7 +70,6 @@ import {
     FOCUS_FORM_SCHEMA,
     FOCUS_MOVEMENT_PROMPT,
     FOCUS_MOVEMENT_SCHEMA,
-    FOCUS_SECTION_CODES,
     FOCUS_SYNTHESIS_PROMPT,
     FOCUS_SYNTHESIS_SCHEMA,
     renderFocusDigest,
@@ -67,23 +94,6 @@ const FALLBACK_CALL_TYPE = 'other';
  */
 export const BASE_KNOWLEDGE_KIND = 'call-analysis-base';
 
-/** Потолок материалов в промпте, символов (контекст модели не резиновый). */
-const MATERIALS_BUDGET_CHARS = 24000;
-
-/** Материалы разбора: общий слой и добавки конкретных проходов. */
-interface FocusMaterials {
-    /** Идёт во все проходы и в синтез. */
-    shared: string;
-    /** Плейбук возражений — фокус «содержание продажи». */
-    content: string;
-    /** Регламент отдела — фокус «движение сделки». */
-    movement: string;
-    /** Эталонные разборы — синтез (калибровка оценок). */
-    synthesis: string;
-    /** Верхняя норма доли речи менеджера для типа; null — не нормируется. */
-    talkRatioMax: number | null;
-}
-
 /** Описание одного фокус-прохода. */
 interface FocusPass {
     key: CallFocusKey;
@@ -91,6 +101,40 @@ interface FocusPass {
     prompt: string;
     schema: Record<string, unknown>;
 }
+
+/** Опции запуска фокус-разбора. */
+export interface CallFocusRunOptions {
+    /** Модель VibeCode из настроек портала (deepAnalysisModel). */
+    model?: string;
+    /**
+     * Сохранённые ответы проходов неполного разбора (догон): такие проходы
+     * заново не вызываются. Годность (версия промпта) проверяет вызывающий.
+     */
+    stored?: StoredFocusPasses;
+}
+
+/** Ответ одного вызова модели с расходом токенов. */
+type FocusCompletion = VibecodeStructuredCompletionWithUsage;
+
+/** Ответ одного прохода методики, запущенного отдельно от разбора. */
+export interface CallMethodologyPassOutcome {
+    /** Сырой ответ прохода — разбирает parseMethodologyPass. */
+    result: unknown;
+    /** Модель из ответа; null — не названа. */
+    model: string | null;
+    /** Токены вызова; null — поставщик не сообщил. */
+    tokens: number | null;
+    /** Верхняя норма доли речи менеджера для типа; null — не нормируется. */
+    talkRatioMax: number | null;
+}
+
+/** Синтез итога — в журнале и схеме как отдельный проход. */
+const SYNTHESIS_PASS = {
+    key: 'synthesis',
+    label: 'синтез',
+    title: 'Синтез фокус-разбора',
+    schema: FOCUS_SYNTHESIS_SCHEMA,
+} as const;
 
 const FOCUS_PASSES: FocusPass[] = [
     {
@@ -225,6 +269,61 @@ export class CallFocusAnalysisService {
     }
 
     /**
+     * Один проход методики по ЗАДАННОМУ конфигу — проверка черновика на
+     * готовом звонке из админки. Контекст тот же, что у штатного прохода:
+     * материалы базы знаний (общий слой и объявленные методикой), поправки
+     * этапа, паспорт звонка. Остальные проходы не вызываются. Ошибку модели
+     * бросает — решает вызывающий.
+     * @returns ответ прохода; null — у методики нет прохода для этого типа
+     */
+    async runMethodologyPass(
+        domain: string,
+        transcript: string,
+        callType: string | null,
+        resolved: ResolvedMethodology,
+        passportBlock?: string,
+        options?: Pick<CallFocusRunOptions, 'model'>,
+    ): Promise<CallMethodologyPassOutcome | null> {
+        const pass = buildMethodologyPass(resolved, callType);
+        if (pass === null) return null;
+        const materials = await this.buildMaterials(domain, callType, {
+            knowledge: resolved.methodology.knowledge,
+            relevance: methodologyRelevanceFor(resolved, callType),
+        });
+        const response = await this.callFocus(
+            pass,
+            methodologyContextOf(materials) +
+                (await this.commonTailOf(domain, callType)),
+            this.buildUserContent(transcript, callType, passportBlock),
+            domain,
+            // Повтора у разовой проверки нет — тревогу не откладываем.
+            2,
+            options?.model,
+        );
+        return {
+            result: response.result,
+            model: response.model,
+            tokens: response.usage?.totalTokens ?? null,
+            talkRatioMax: materials.talkRatioMax,
+        };
+    }
+
+    /**
+     * Общие поправки разбора (этап звонка, требование закрытия хвоста/5К,
+     * строгость презентации) — идут в КАЖДЫЙ проход вместе с материалами.
+     */
+    private async commonTailOf(
+        domain: string,
+        callType: string | null,
+    ): Promise<string> {
+        return (
+            this.buildStageBlock(callType) +
+            (await this.buildAfterPresentationBlock(domain, callType)) +
+            (await this.buildStrictnessBlock(domain))
+        );
+    }
+
+    /**
      * Разбор и причина провала — для процессора. options.model — модель
      * VibeCode из настроек портала (deepAnalysisModel).
      */
@@ -233,7 +332,7 @@ export class CallFocusAnalysisService {
         transcript: string,
         callType: string | null,
         passportBlock?: string,
-        options?: { model?: string },
+        options?: CallFocusRunOptions,
     ): Promise<CallFocusOutcome> {
         if (!transcript.trim()) {
             this.logger.warn(
@@ -242,18 +341,35 @@ export class CallFocusAnalysisService {
             return { analysis: null, providerFailure: false };
         }
         try {
-            const materials = await this.buildMaterials(domain, callType);
             // Методика портала (конфиг чек-пунктов): четвёртый проход идёт
             // только на порталах с выбранной методикой и для её типов.
             const resolved = await this.resolveMethodology(domain);
             const methodologyPass: MethodologyPassSpec | null =
                 buildMethodologyPass(resolved, callType);
-            // Общие поправки разбора (строгость презентации, требование
-            // закрытия хвоста/5К) идут в КАЖДЫЙ проход вместе с материалами.
-            const commonTail =
-                this.buildStageBlock(callType) +
-                (await this.buildAfterPresentationBlock(domain, callType)) +
-                (await this.buildStrictnessBlock(domain));
+            // Виды, объявленные методикой (факты о продукте, плейбуки), и
+            // её приоры актуальности разделов действуют, только когда у
+            // звонка есть её проход.
+            const materials = await this.buildMaterials(
+                domain,
+                callType,
+                methodologyPass && resolved
+                    ? {
+                          knowledge: resolved.methodology.knowledge,
+                          relevance: methodologyRelevanceFor(
+                              resolved,
+                              callType,
+                          ),
+                      }
+                    : undefined,
+            );
+            const commonTail = await this.commonTailOf(domain, callType);
+            // Якоря шкалы из методики — только проходам, которые ставят
+            // оценки, и только когда у методики есть проход для этого типа.
+            const scoringTail =
+                commonTail +
+                (methodologyPass
+                    ? renderMethodologyAnchorsBlock(resolved)
+                    : '');
             const userContent = this.buildUserContent(
                 transcript,
                 callType,
@@ -263,35 +379,89 @@ export class CallFocusAnalysisService {
             // Ошибки сорвавшихся фокус-проходов — по ним причина провала.
             // Массив свой у каждого вызова: разборы идут параллельно.
             const passErrors: unknown[] = [];
-            const [responses, methodologyResponse] = await Promise.all([
-                Promise.all(
-                    FOCUS_PASSES.map(pass =>
-                        this.runFocus(
+            // Догон неполного разбора приносит сохранённые ответы проходов:
+            // такие проходы заново не вызываются (call-focus-stored.util.ts).
+            const stored = options?.stored;
+            // Ответ прохода методики годится, пока у портала та же методика
+            // той же версии.
+            const keptMethodology = stored?.methodology;
+            const storedMethodology =
+                methodologyPass &&
+                keptMethodology &&
+                keptMethodology.tag === resolved?.versionTag
+                    ? keptMethodology.result
+                    : null;
+            const livePasses = FOCUS_PASSES.filter(
+                pass => !stored?.passes[pass.key],
+            );
+            // Проходы идут одновременно; сорвался ровно один и по временной
+            // причине — он повторяется (call-focus-retry.util.ts).
+            const calls: WaveCall<string, FocusCompletion>[] = [
+                ...livePasses.map(pass => ({
+                    key: pass.key,
+                    run: (attempt: WaveAttempt) =>
+                        this.callFocus(
                             pass,
-                            this.contextFor(materials, pass.key) + commonTail,
+                            focusContextFor(materials, pass.key) + scoringTail,
                             userContent,
                             domain,
+                            attempt,
                             options?.model,
-                            passErrors,
                         ),
+                })),
+                ...(methodologyPass && !storedMethodology
+                    ? [
+                          {
+                              key: methodologyPass.key,
+                              run: (attempt: WaveAttempt) =>
+                                  this.callFocus(
+                                      methodologyPass,
+                                      methodologyContextOf(materials) +
+                                          commonTail,
+                                      userContent,
+                                      domain,
+                                      attempt,
+                                      options?.model,
+                                  ),
+                          },
+                      ]
+                    : []),
+            ];
+            const wave = await runWaveWithRetry(
+                calls,
+                isRetryableLlmError,
+                key =>
+                    this.logger.warn(
+                        `Фокус-разбор (${domain}): проход ${key} сорвался один из всех — повтор`,
                     ),
-                ),
-                methodologyPass
-                    ? this.runFocus(
-                          methodologyPass,
-                          materials.shared + commonTail,
-                          userContent,
-                          domain,
-                          options?.model,
-                      )
-                    : Promise.resolve(null),
-            ]);
-            const byKey = Object.fromEntries(
-                FOCUS_PASSES.map((pass, index) => [
-                    pass.key,
-                    resultOf(responses[index]),
-                ]),
-            ) as Record<CallFocusKey, Record<string, unknown> | null>;
+            );
+            const responses: (FocusCompletion | null)[] = [];
+            const byKey: FocusResultsByKey = {
+                form: null,
+                content: null,
+                movement: null,
+            };
+            for (const pass of FOCUS_PASSES) {
+                const kept = stored?.passes[pass.key];
+                if (kept) {
+                    byKey[pass.key] = kept;
+                    continue;
+                }
+                const response = await this.settle(
+                    wave,
+                    pass,
+                    domain,
+                    passErrors,
+                );
+                responses.push(response);
+                byKey[pass.key] = resultOf(response);
+            }
+            const methodologyResponse =
+                methodologyPass && !storedMethodology
+                    ? await this.settle(wave, methodologyPass, domain)
+                    : null;
+            const methodologyResult =
+                storedMethodology ?? resultOf(methodologyResponse);
 
             const survived = Object.values(byKey).filter(Boolean).length;
             if (survived < 2) {
@@ -307,34 +477,46 @@ export class CallFocusAnalysisService {
 
             // Синтез выставляет итоговую оценку — ему дополнительно идут
             // эталонные разборы РОПа, чтобы шкала не «плавала».
-            const synthesisContext = materials.synthesis
-                ? `${materials.shared}\n\n${materials.synthesis}${commonTail}`
-                : materials.shared + commonTail;
-            const synthesisResponse = await this.runSynthesis(
-                byKey,
-                synthesisContext,
-                userContent,
+            const synthesisContext =
+                synthesisContextOf(materials) + scoringTail;
+            const synthesisWave = await runWaveWithRetry(
+                [
+                    {
+                        key: SYNTHESIS_PASS.key,
+                        run: (attempt: WaveAttempt) =>
+                            this.callSynthesis(
+                                byKey,
+                                synthesisContext,
+                                userContent,
+                                domain,
+                                attempt,
+                                options?.model,
+                            ),
+                    },
+                ],
+                isRetryableLlmError,
+                () =>
+                    this.logger.warn(
+                        `Фокус-разбор (${domain}): синтез сорвался — повтор`,
+                    ),
+            );
+            const synthesisResponse = await this.settle(
+                synthesisWave,
+                SYNTHESIS_PASS,
                 domain,
-                options?.model,
             );
             const synthesis = resultOf(synthesisResponse);
             // Что не собралось — по этому списку догон найдёт неполный
-            // разбор и переделает его, когда поставщик снова ответит.
-            const incompleteParts: CallAnalysisPart[] = [
-                ...FOCUS_PASSES.filter(pass => !byKey[pass.key]).map(
-                    pass => pass.key,
-                ),
-                ...(synthesis ? [] : (['synthesis'] as const)),
-                ...(methodologyPass && !resultOf(methodologyResponse)
-                    ? (['methodology'] as const)
-                    : []),
-            ];
-
-            const merged: Record<string, unknown> = {
-                ...(byKey.form ?? {}),
-                ...(byKey.content ?? {}),
-                ...(byKey.movement ?? {}),
-                ...(synthesis ?? {}),
+            // разбор и доделает его, когда поставщик снова ответит.
+            const incompleteParts = focusIncompleteParts(
+                byKey,
+                synthesis,
+                methodologyPass !== null,
+                methodologyResult,
+            );
+            const merged = mergeFocusResults({
+                byKey,
+                synthesis,
                 // Каждый проход — только разделы своей зоны (чужие коды от
                 // модели отбрасываются); дубли кодов схлопываются ниже.
                 sections: FOCUS_PASSES.flatMap(pass =>
@@ -342,21 +524,37 @@ export class CallFocusAnalysisService {
                 ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 incompleteParts,
-                // Расход всех удавшихся вызовов (фокусы + синтез).
+                // Расход вызовов ЭТОГО запуска (фокусы, методика, синтез):
+                // сохранённые проходы оплачены раньше и второй раз не идут.
                 usage: sumCompletionUsage(
                     [
                         ...responses,
                         synthesisResponse,
                         methodologyResponse,
                     ].filter(
-                        (
-                            response,
-                        ): response is VibecodeStructuredCompletionWithUsage =>
+                        (response): response is FocusCompletion =>
                             response !== null,
                     ),
                 ),
-            };
+            });
             const dto = plainToInstance(AgentCallAnalysisDto, merged);
+            // Неполный разбор уносит ответы выживших проходов — догону
+            // останется позвать только недостающее. Полный их не несёт.
+            if (incompleteParts.length > 0) {
+                dto.extra = {
+                    ...(dto.extra ?? {}),
+                    [STORED_FOCUS_PASSES_KEY]: buildStoredFocusPasses(
+                        byKey,
+                        methodologyResult && resolved
+                            ? {
+                                  tag: resolved.versionTag,
+                                  result: methodologyResult,
+                              }
+                            : null,
+                        CALL_REPORT_PROMPT_VERSION,
+                    ),
+                };
+            }
             // Один раздел — одна запись: проход с единственным разрешённым
             // кодом присылал «моменты» приветствия отдельными записями, и в
             // ленту сделки уходили три «Приветствия» (29.10.2026).
@@ -370,7 +568,7 @@ export class CallFocusAnalysisService {
             const applied = applyMethodologyToDto(
                 dto,
                 resolved,
-                resultOf(methodologyResponse),
+                methodologyResult,
                 materials.talkRatioMax,
             );
             if (applied.capsTriggered > 0 || applied.methodology) {
@@ -381,9 +579,13 @@ export class CallFocusAnalysisService {
                             : ''),
                 );
             }
+            const keptKeys = Object.keys(stored?.passes ?? {});
             this.logger.log(
-                `Фокус-разбор (${domain}): проходов ${survived}/3, ` +
-                    `разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
+                `Фокус-разбор (${domain}): проходов ${survived}/3` +
+                    (keptKeys.length > 0
+                        ? ` (из сохранённых: ${keptKeys.join(', ')})`
+                        : '') +
+                    `, разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
             );
             return { analysis: dto, providerFailure: false };
         } catch (error) {
@@ -395,25 +597,20 @@ export class CallFocusAnalysisService {
     }
 
     /**
-     * Материалы базы знаний по ролям + профиль типа звонка.
-     *
-     * Каждый вид получает СВОЙ бюджет и СВОЮ точку подмешивания
-     * (Фаза 2 плана ai/tasks/rag-driven-analysis-plan.md):
-     * - общий слой (все проходы и синтез): профиль типа, скрипт разговора,
-     *   устаревший `call-analysis-base` как алиас скрипта, материалы типа
-     *   звонка и общие материалы компании;
-     * - «содержание продажи» дополнительно получает плейбук возражений;
-     * - «движение сделки» — регламент отдела;
-     * - синтез — эталонные разборы РОПа (калибровка шкалы оценок).
-     *
-     * ПРЕЗЕНТАЦИИ — отдельный усиленный контур (требование владельца
-     * 27.08.2026): методология показа, хвоста и 5К подмешивается во ВСЕ
-     * проходы и с большим бюджетом, потому что презентация — самый
-     * дорогой звонок воронки.
+     * Материалы базы знаний по проходам + профиль типа звонка. Какие виды и
+     * сколько знаков читать — общая таблица бюджетов; что куда подмешать —
+     * call-focus-materials.util.ts.
+     * @param methodology что методика портала добавляет звонку: виды
+     * материалов и приоры актуальности разделов; нет — прохода методики у
+     * звонка нет
      */
     private async buildMaterials(
         domain: string,
         callType: string | null,
+        methodology?: {
+            knowledge?: Readonly<Record<string, string>>;
+            relevance?: Readonly<Record<string, number>>;
+        },
     ): Promise<FocusMaterials> {
         let profileBlock = '';
         let talkRatioMax: number | null = null;
@@ -423,7 +620,18 @@ export class CallFocusAnalysisService {
             const profile: CallTypeDefinition | null =
                 registry.types[callType ?? FALLBACK_CALL_TYPE] ?? null;
             if (profile) {
-                profileBlock = renderCallTypeProfile(profile);
+                // Приоры методики важнее приоров профиля типа звонка.
+                profileBlock = renderCallTypeProfile(
+                    methodology?.relevance
+                        ? {
+                              ...profile,
+                              sectionRelevance: {
+                                  ...profile.sectionRelevance,
+                                  ...methodology.relevance,
+                              },
+                          }
+                        : profile,
+                );
                 typedKind = profile.knowledgeKind ?? typedKind;
                 talkRatioMax = profile.talkRatioNorm?.max ?? null;
             }
@@ -433,105 +641,30 @@ export class CallFocusAnalysisService {
             );
         }
 
-        // Презентационный контур: показ, дожим решения И ДОРАБОТКА —
-        // в доработке добивают то, что не закрыли на презентации
-        // (невыясненные 5К, несогласованная дата).
-        const isPresentation =
-            callType === 'presentation' ||
-            callType === 'decision' ||
-            callType === 'refine';
-        const requests: KnowledgeMaterialRequest[] = [
-            { kind: KNOWLEDGE_KINDS.salesScript, budgetChars: 6000 },
-            { kind: KNOWLEDGE_KINDS.callAnalysisBase, budgetChars: 4000 },
-            { kind: KNOWLEDGE_KINDS.general, budgetChars: 2000 },
-            {
-                kind: KNOWLEDGE_KINDS.presentationPlaybook,
-                budgetChars: isPresentation ? 6000 : 1500,
-            },
-            { kind: KNOWLEDGE_KINDS.objectionPlaybook, budgetChars: 3000 },
-            { kind: KNOWLEDGE_KINDS.salesRegulation, budgetChars: 3000 },
-            { kind: KNOWLEDGE_KINDS.callEtalon, budgetChars: 3000 },
+        const presentation = isPresentationContour(callType);
+        const focus = focusBudgetLines({ typedKind, presentation });
+        const lines = [
+            ...focus,
+            ...methodologyBudgetLines(methodology?.knowledge, {
+                focus,
+                presentation,
+            }),
         ];
-        if (typedKind !== KNOWLEDGE_KINDS.callAnalysisBase) {
-            requests.push({ kind: typedKind, budgetChars: 6000 });
-        }
-        const blocks = await this.materials.collect(domain, requests);
-        const byKind = new Map(blocks.map(block => [block.kind, block]));
-
-        const shared = [
+        const { materials, sharedCutChars } = renderFocusMaterials({
             profileBlock,
-            renderMaterialBlock(
-                'СТАНДАРТЫ КОМПАНИИ (скрипт разговора) — обязательны к ' +
-                    'применению в любом разборе:',
-                byKind.get(KNOWLEDGE_KINDS.salesScript),
-            ),
-            renderMaterialBlock(
-                'СТАНДАРТЫ КОМПАНИИ (базовый слой):',
-                byKind.get(KNOWLEDGE_KINDS.callAnalysisBase),
-            ),
-            renderMaterialBlock(
-                'ОБЩИЕ МАТЕРИАЛЫ КОМПАНИИ:',
-                byKind.get(KNOWLEDGE_KINDS.general),
-            ),
-            renderMaterialBlock(
-                'МАТЕРИАЛЫ ПО ЭТОМУ ТИПУ ЗВОНКА (критерии оценки):',
-                byKind.get(typedKind),
-            ),
-            isPresentation
-                ? renderMaterialBlock(
-                      'МЕТОДОЛОГИЯ ПРЕЗЕНТАЦИИ (показ под задачи, хвост, 5К) — ' +
-                          'по ней судим этот звонок:',
-                      byKind.get(KNOWLEDGE_KINDS.presentationPlaybook),
-                  )
-                : '',
-        ]
-            .filter(Boolean)
-            .join('\n\n');
-
-        return {
-            shared: this.fitToBudget(shared),
-            content: renderMaterialBlock(
-                'ПЛЕЙБУК ОТРАБОТКИ ВОЗРАЖЕНИЙ:',
-                byKind.get(KNOWLEDGE_KINDS.objectionPlaybook),
-            ),
-            movement: renderMaterialBlock(
-                'РЕГЛАМЕНТ ОТДЕЛА (обещания, сроки, что запрещено):',
-                byKind.get(KNOWLEDGE_KINDS.salesRegulation),
-            ),
-            synthesis: renderMaterialBlock(
-                'ЭТАЛОННЫЕ РАЗБОРЫ (калибровка шкалы оценок):',
-                byKind.get(KNOWLEDGE_KINDS.callEtalon),
-            ),
+            typedKind,
+            presentation,
+            lines,
+            blocks: await this.materials.collect(domain, budgetRequests(lines)),
             talkRatioMax,
-        };
-    }
-
-    /** Контекст конкретного прохода: общий слой + слой этого фокуса. */
-    private contextFor(materials: FocusMaterials, key: CallFocusKey): string {
-        const extra =
-            key === 'content'
-                ? materials.content
-                : key === 'movement'
-                  ? materials.movement
-                  : '';
-        return extra ? `${materials.shared}\n\n${extra}` : materials.shared;
-    }
-
-    /**
-     * Бюджет материалов в промпте: методички клиента могут быть на сотни
-     * страниц, а контекст модели не резиновый — режем с явной пометкой,
-     * чтобы транскрипт и инструкции разбора точно поместились.
-     */
-    private fitToBudget(text: string): string {
-        if (text.length <= MATERIALS_BUDGET_CHARS) return text;
-        this.logger.warn(
-            `Материалы базы знаний ${text.length} симв. — усечены до ` +
-                `${MATERIALS_BUDGET_CHARS} (контекст модели)`,
-        );
-        return (
-            `${text.slice(0, MATERIALS_BUDGET_CHARS)}\n\n` +
-            '… материалы усечены по размеру контекста'
-        );
+        });
+        if (sharedCutChars > 0) {
+            this.logger.warn(
+                `Материалы базы знаний (${domain}): общий слой не поместился, ` +
+                    `обрезано ${sharedCutChars} симв. (контекст модели)`,
+            );
+        }
+        return materials;
     }
 
     /** User-часть — та же, что у цельного разбора: тип словами, паспорт, расшифровка. */
@@ -548,63 +681,78 @@ export class CallFocusAnalysisService {
     }
 
     /**
-     * Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается
-     * без него), сама ошибка — в `failures`, если он передан.
+     * Один фокус-проход (ответ + usage). Ошибку бросает: повторять ли проход
+     * и что писать в журнал, решает волна (runWaveWithRetry / settle).
+     * Тревога «не ответил никто» первой попытки откладывается — одиночный
+     * сбой повторяется, и тревожить о нём рано.
      */
-    private async runFocus(
-        pass: Pick<FocusPass, 'label' | 'prompt' | 'schema'> & { key: string },
+    private callFocus(
+        pass: Pick<FocusPass, 'prompt' | 'schema'> & { key: string },
         sharedContext: string,
         userContent: string,
         domain: string,
+        attempt: WaveAttempt,
         model?: string,
-        failures?: unknown[],
-    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
-        try {
-            return await this.llm.structuredCompletionWithUsage(
-                `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
-                userContent,
-                `call_focus_${pass.key}`,
-                pass.schema,
-                domain,
-                { model },
-            );
-        } catch (error) {
-            failures?.push(error);
-            this.logger.warn(
-                `Фокус «${pass.label}» не выполнен (${domain}): ${(error as Error).message}`,
-            );
-            return null;
-        }
+    ): Promise<FocusCompletion> {
+        return this.llm.structuredCompletionWithUsage(
+            `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
+            userContent,
+            `call_focus_${pass.key}`,
+            pass.schema,
+            domain,
+            { model, deferExhaustedAlert: attempt === 1 },
+        );
     }
 
-    /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибка → null. */
-    private async runSynthesis(
+    /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибку бросает. */
+    private callSynthesis(
         byKey: Record<CallFocusKey, Record<string, unknown> | null>,
         sharedContext: string,
         userContent: string,
         domain: string,
+        attempt: WaveAttempt,
         model?: string,
-    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
+    ): Promise<FocusCompletion> {
         const digests = [
             renderFocusDigest('ФОРМА РАЗГОВОРА', byKey.form),
             renderFocusDigest('СОДЕРЖАНИЕ ПРОДАЖИ', byKey.content),
             renderFocusDigest('ДВИЖЕНИЕ СДЕЛКИ', byKey.movement),
         ].join('\n\n');
-        try {
-            return await this.llm.structuredCompletionWithUsage(
-                `${FOCUS_SYNTHESIS_PROMPT}${sharedContext ? `\n${sharedContext}` : ''}`,
-                `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
-                'call_focus_synthesis',
-                FOCUS_SYNTHESIS_SCHEMA,
+        return this.callFocus(
+            { ...SYNTHESIS_PASS, prompt: FOCUS_SYNTHESIS_PROMPT },
+            sharedContext,
+            `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
+            domain,
+            attempt,
+            model,
+        );
+    }
+
+    /**
+     * Ответ вызова из волны или null: сбой — в журнал и в `failures`
+     * (разбор продолжается без этого прохода); тревога, отложенная на первой
+     * попытке, уходит здесь, если повтора не было.
+     */
+    private settle(
+        wave: ReadonlyMap<string, WaveResult<FocusCompletion>>,
+        pass: { key: string; label: string; title?: string },
+        domain: string,
+        failures?: unknown[],
+    ): Promise<FocusCompletion | null> {
+        return settleWaveCall(
+            wave.get(pass.key),
+            {
+                title: pass.title ?? `Фокус «${pass.label}»`,
+                schemaName: `call_focus_${pass.key}`,
                 domain,
-                { model },
-            );
-        } catch (error) {
-            this.logger.warn(
-                `Синтез фокус-разбора не выполнен (${domain}): ${(error as Error).message}`,
-            );
-            return null;
-        }
+            },
+            {
+                warn: message => this.logger.warn(message),
+                reportExhausted: (error, request) =>
+                    this.llm.reportExhausted(error, request),
+            },
+            failures,
+        );
     }
 
     /**
@@ -617,17 +765,8 @@ export class CallFocusAnalysisService {
         pass: FocusPass,
         domain: string,
     ): Record<string, unknown>[] {
-        const raw = Array.isArray(result?.sections)
-            ? (result.sections as Record<string, unknown>[])
-            : [];
-        const allowed = FOCUS_SECTION_CODES[pass.key];
-        const own = raw.filter(section =>
-            allowed.includes(String(section.section)),
-        );
-        if (own.length !== raw.length) {
-            const foreign = raw
-                .filter(section => !allowed.includes(String(section.section)))
-                .map(section => String(section.section));
+        const { own, foreign } = ownSectionsOf(result, pass.key);
+        if (foreign.length > 0) {
             this.logger.warn(
                 `Фокус-разбор (${domain}), проход «${pass.label}»: чужие разделы ${foreign.join(', ')} отброшены`,
             );

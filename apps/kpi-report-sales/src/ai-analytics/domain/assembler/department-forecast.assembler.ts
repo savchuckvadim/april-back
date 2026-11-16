@@ -88,6 +88,7 @@ export function buildForecastLogDay(
         naive: aggregate.naive,
         mean3: input.mean3,
         done: aggregate.done,
+        descriptive: aggregate.descriptive,
         money: { low: money.low, p50: money.p50, high: money.high },
         managers: aggregate.managers,
         pipelineUnknown: aggregate.pipelineUnknown,

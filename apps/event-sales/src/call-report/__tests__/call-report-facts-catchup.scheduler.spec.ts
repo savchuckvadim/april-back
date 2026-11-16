@@ -1,5 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { CallReportFactsCatchupScheduler } from '../cron/call-report-facts-catchup.scheduler';
+import {
+    CallReportFactsCatchupScheduler,
+    nightlyLimitNote,
+} from '../cron/call-report-facts-catchup.scheduler';
 
 /**
  * Ночной догон фактов (B6): джоба ставится только порталам с лимитом в
@@ -11,7 +14,10 @@ const NOW = new Date('2026-11-10T22:30:00Z');
 const makeScheduler = (
     settings: Record<
         string,
-        { factsCatchupNightlyBudgetRub: number | null } | null
+        {
+            factsCatchupNightlyBudgetRub?: number | null;
+            factsCatchupNightlyMaxCalls?: number | null;
+        } | null
     >,
 ) => {
     const dispatch = jest.fn().mockResolvedValue({ id: 'bull-1' });
@@ -84,5 +90,53 @@ describe('CallReportFactsCatchupScheduler', () => {
             expect.objectContaining({ telegram: true }),
         );
         expect(dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    /** 16.11.2026: модели бесплатные — рублёвый лимит не срабатывает, нужен лимит в звонках. */
+    it('лимит только в звонках — джоба ставится, рублёвого лимита в ней нет', async () => {
+        const { scheduler, dispatch } = makeScheduler({
+            'gsr.bitrix24.ru': { factsCatchupNightlyMaxCalls: 200 },
+            'idle.bitrix24.ru': {
+                factsCatchupNightlyBudgetRub: 0,
+                factsCatchupNightlyMaxCalls: 0,
+            },
+        });
+
+        await scheduler.tick(NOW);
+
+        expect(dispatch).toHaveBeenCalledTimes(1);
+        const [, , payload] = dispatch.mock.calls[0] as [
+            string,
+            string,
+            Record<string, unknown>,
+        ];
+        expect(payload).toMatchObject({
+            domain: 'gsr.bitrix24.ru',
+            maxCalls: 200,
+        });
+        expect(payload).not.toHaveProperty('budgetRub');
+    });
+
+    it('оба лимита — оба уходят в джобу; подпись лимита называет заданные', async () => {
+        const { scheduler, dispatch } = makeScheduler({
+            'gsr.bitrix24.ru': {
+                factsCatchupNightlyBudgetRub: 100,
+                factsCatchupNightlyMaxCalls: 200,
+            },
+        });
+
+        await scheduler.tick(NOW);
+
+        const [, , payload] = dispatch.mock.calls[0] as [
+            string,
+            string,
+            Record<string, unknown>,
+        ];
+        expect(payload).toMatchObject({ budgetRub: 100, maxCalls: 200 });
+        expect(nightlyLimitNote(100, 200)).toBe(
+            'лимит 100 ₽ и 200 звонков за ночь',
+        );
+        expect(nightlyLimitNote(0, 200)).toBe('лимит 200 звонков за ночь');
+        expect(nightlyLimitNote(100, 0)).toBe('лимит 100 ₽ за ночь');
     });
 });

@@ -75,3 +75,99 @@ export function describeLlmCallFailure(
         `(${request.domain}) через ${wholeMs(elapsedMs - queue)} мс${waited}: ${errorText}`
     );
 }
+
+/**
+ * Замер одного вызова модели в поле `meta` журнала (16.11.2026). Строка
+ * журнала читается глазами, а `meta.llm` — запросом: «сколько в среднем
+ * отвечает проход call_focus_movement и сколько токенов пишет» решает,
+ * делить ли проход, без разбора текста регулярками. В ClickHouse:
+ * `JSONExtractInt(meta, 'llm', 'ms')`, `JSONExtractString(meta, 'llm', 'schema')`.
+ */
+export interface LlmCallMeta {
+    provider: LlmProviderCode;
+    /** Имя схемы — оно же проход разбора (`call_focus_movement`). */
+    schema: string;
+    domain: string;
+    /** Ответил ли поставщик. */
+    ok: boolean;
+    /** Время ответа (сбой — молчания) поставщика без ожидания слота, мс. */
+    ms: number;
+    /** Ожидание свободного слота перед отправкой, мс. */
+    queueMs: number;
+    /** Размер входа: системный промпт + контент, знаков. */
+    inputChars: number;
+    promptTokens: number | null;
+    completionTokens: number | null;
+    /** Фактическая модель; сбой или провайдер не сообщил — null. */
+    model: string | null;
+}
+
+/** Что из ответа нужно замеру; сбой — ответа нет. */
+type MeasuredAnswer = Pick<StructuredLlmResponse, 'usage' | 'model'>;
+
+/**
+ * Поля `meta` для строки журнала вызова. `elapsedMs` — замер шлюза от начала
+ * вызова, `queueMs` — ожидание слота внутри него (как в строках выше).
+ */
+export function llmCallMeta(
+    request: LoggedLlmRequest,
+    provider: LlmProviderCode,
+    elapsedMs: number,
+    queueMs: number | undefined,
+    answer: MeasuredAnswer | null,
+): { llm: LlmCallMeta } {
+    const queue = wholeMs(queueMs);
+    return {
+        llm: {
+            provider,
+            schema: request.schemaName,
+            domain: request.domain,
+            ok: answer !== null,
+            ms: wholeMs(elapsedMs - queue),
+            queueMs: queue,
+            inputChars:
+                request.systemPrompt.length + request.userContent.length,
+            promptTokens: answer?.usage.promptTokens ?? null,
+            completionTokens: answer?.usage.completionTokens ?? null,
+            model: answer?.model ?? null,
+        },
+    };
+}
+
+/** Размер входа запроса, знаков: системный промпт + контент (как в журнале). */
+export const llmInputChars = (request: LoggedLlmRequest): number =>
+    request.systemPrompt.length + request.userContent.length;
+
+/**
+ * Почему поставщик пропущен по размеру (16.11.2026) — в сводную ошибку и
+ * тревогу. Не «не ответил»: поставщик исправен, запрос больше его предела
+ * (бесплатный Groq отвечает 413 на разборы длинных звонков).
+ */
+export const describeLlmTooLarge = (request: LoggedLlmRequest): string =>
+    `исправен, но запрос такого размера (${llmInputChars(request)} знаков) не принимает`;
+
+/** Строка журнала: поставщик ответил 413 — размер запомнен, повторов не будет. */
+export const describeLlmTooLargeCall = (
+    request: LoggedLlmRequest,
+    provider: LlmProviderCode,
+): string =>
+    `LLM ${provider} ${request.schemaName} (${request.domain}): ` +
+    `запрос ${llmInputChars(request)} знаков поставщик не принимает (HTTP 413) — ` +
+    'пропущен, такие запросы час к нему не уходят';
+
+/**
+ * Текст тревоги «не ответил никто». Когда кто-то из поставщиков пропущен по
+ * размеру, заголовок не говорит «отказали все»: запасной исправен, он просто
+ * не берёт запрос такого размера — чинить его не нужно.
+ */
+export function describeLlmExhausted(
+    request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
+    notes: readonly string[],
+    hasTooLarge: boolean,
+): string {
+    const head = `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain})`;
+    const reasons = notes.join('; ');
+    return hasTooLarge
+        ? `${head}: ${reasons}`
+        : `${head} — отказали все поставщики: ${reasons}`;
+}

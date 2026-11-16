@@ -100,6 +100,9 @@ export const CALL_REPORT_OBJECTION_TOPIC_ITEMS = [
 /** Сбой не по вине разговора: данные, связь, демо-доступ, обещания, бренд. */
 export const CALL_REPORT_ISSUE_CODES = [
     'crm_duplicate',
+    // focus-v3.2 (16.11.2026): общий «дубль» разделён на три причины.
+    'crm_repeat_refused',
+    'crm_existing_client',
     'wrong_contact',
     'telephony',
     'demo_access',
@@ -110,8 +113,18 @@ export type CallReportIssueCode = (typeof CALL_REPORT_ISSUE_CODES)[number];
 export const CALL_REPORT_ISSUE_ITEMS = [
     {
         CODE: 'crm_duplicate',
-        VALUE: 'Дубль в CRM: уже звонили, уже клиент, уже отказал',
+        VALUE: 'Дубль в CRM: клиенту уже звонил другой менеджер',
         SORT: 100,
+    },
+    {
+        CODE: 'crm_repeat_refused',
+        VALUE: 'Повторный звонок отказавшему',
+        SORT: 130,
+    },
+    {
+        CODE: 'crm_existing_client',
+        VALUE: 'Звонок действующему клиенту как новому',
+        SORT: 160,
     },
     { CODE: 'wrong_contact', VALUE: 'Неверный контакт', SORT: 200 },
     { CODE: 'telephony', VALUE: 'Телефония и связь', SORT: 300 },

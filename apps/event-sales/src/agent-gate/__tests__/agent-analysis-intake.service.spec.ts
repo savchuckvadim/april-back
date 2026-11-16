@@ -47,6 +47,8 @@ interface Options {
     family?: Record<string, unknown>;
     /** Что осталось от догадок агента после проверки воронок. */
     verified?: Record<string, number | undefined>;
+    /** Адрес страницы разбора звонка; null — ссылки нет. */
+    pageUrl?: string | null;
 }
 
 const makeDeps = (options?: Options) => {
@@ -131,6 +133,9 @@ const makeDeps = (options?: Options) => {
         dealFamily as never,
         dealVerify as never,
         llmPrice as never,
+        {
+            urlFor: jest.fn().mockResolvedValue(options?.pageUrl ?? null),
+        } as never,
     );
     return {
         service,
@@ -676,6 +681,37 @@ describe('AgentAnalysisIntakeService', () => {
             smartItemId: 7,
             smartInstalled: true,
         });
+    });
+
+    it('ссылка на страницу разбора: верхней записью в карточке разбора и строкой в дубле у сделки', async () => {
+        const pageUrl = 'https://kpi-sales.april-app.ru/call/abc-token';
+        const { service, timeline } = makeDeps({ pageUrl });
+        await service.intake('42', 'claw-main', DTO);
+
+        const comments = (
+            timeline.addTimelineComment.mock.calls as [
+                { ENTITY_TYPE: string; COMMENT: string },
+            ][]
+        ).map(([comment]) => comment);
+        const smart = comments.filter(item =>
+            item.ENTITY_TYPE.startsWith('DYNAMIC_'),
+        );
+        // Комменты ленты — новые сверху: ссылка постится последней.
+        expect(smart[smart.length - 1]?.COMMENT).toContain(
+            `[url=${pageUrl}]Открыть разбор звонка`,
+        );
+        const deal = comments.find(item => item.ENTITY_TYPE === 'deal');
+        expect(deal?.COMMENT).toContain(`[url=${pageUrl}]`);
+    });
+
+    it('ссылки на страницу разбора нет — записи ленты без неё, разбор доходит до конца', async () => {
+        const { service, timeline } = makeDeps();
+        const result = await service.intake('42', 'claw-main', DTO);
+
+        expect(result.smartItemId).toBe(7);
+        expect(
+            JSON.stringify(timeline.addTimelineComment.mock.calls),
+        ).not.toContain('Открыть разбор звонка');
     });
 
     it('без установленного смарта анализ сохраняется только в БД (graceful)', async () => {

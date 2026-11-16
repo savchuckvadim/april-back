@@ -23,6 +23,17 @@ import type {
 } from './owner-report.text.types';
 
 /**
+ * Меньше стольких холодных звонков за неделю — доля продвижения по ней
+ * случайна: один звонок двигает её на десятки пунктов. Число показываем с
+ * пометкой «мало холодных звонков», в вывод о динамике неделя не идёт.
+ */
+export const OWNER_REPORT_WEEK_MIN_COLD = 5;
+
+/** Хватает ли холодных звонков недели, чтобы судить по ней о динамике. */
+export const hasEnoughColdCalls = (cold: number): boolean =>
+    cold >= OWNER_REPORT_WEEK_MIN_COLD;
+
+/**
  * Шапка и «Общая картина» отчёта собственнику: плитки с тоном, исходы,
  * виды разговоров, недели и пометка о неразмеченных исходах. Вынесено из
  * owner-report.text.ts по лимиту файла.
@@ -171,10 +182,30 @@ export function buildOverview(
             coldAdvanced: shareText(week.coldAdvanced),
             contacted: week.contacted,
             contactedAdvanced: shareText(week.contactedAdvanced),
-            note: weekNote(week.partial, week.silentWorkdays),
+            note: weekNote(week.partial, week.silentWorkdays, week.cold),
         })),
         notes,
     };
+}
+
+/**
+ * «База отчёта» для шапки: сколько звонили и сколько разговоров состоялось по
+ * телефонии и сколько из них разобрано — чтобы объём был сопоставим с
+ * другими отчётами по тем же звонкам. Телефония не ответила — null.
+ */
+export function baseLineOf(facts: OwnerReportFacts): string | null {
+    const telephony = facts.coverage.telephony;
+    if (!telephony) return null;
+    const parts = [
+        telephony.outbound === null
+            ? null
+            : `исходящих вызовов — ${telephony.outbound}`,
+        telephony.connected === null
+            ? null
+            : `состоявшихся разговоров — ${telephony.connected}`,
+    ].filter((part): part is string => part !== null);
+    if (parts.length === 0) return null;
+    return `База отчёта по телефонии: ${parts.join(', ')}; разобрано — ${facts.coverage.analyzed}.`;
 }
 
 /** Строка «исход не размечен»: сколько разговоров и что сделать. */
@@ -189,9 +220,17 @@ export function unmarkedNoteOf(facts: OwnerReportFacts): string | null {
         : `Исход размечен у ${coverage.outcomeFromAnalysis} из ${countText(coverage.analyzed, REPORT_FORMS.callsGenitive)}${since}; доли исходов посчитаны по размеченным, остальные ${coverage.outcomeUnmarked} в них не входят.`;
 }
 
-function weekNote(partial: boolean, silent: readonly string[]): string | null {
+function weekNote(
+    partial: boolean,
+    silent: readonly string[],
+    cold: number,
+): string | null {
     const parts: string[] = [];
     if (partial) parts.push('неполная неделя');
+    // Ноль холодных — доли нет вовсе, пометка не нужна.
+    if (cold > 0 && !hasEnoughColdCalls(cold)) {
+        parts.push('мало холодных звонков');
+    }
     if (silent.length > 0) {
         parts.push(`нет звонков: ${silent.map(formatRuDayMonth).join(', ')}`);
     }

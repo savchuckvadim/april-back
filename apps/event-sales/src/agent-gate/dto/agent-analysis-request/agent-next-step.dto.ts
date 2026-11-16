@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
+import {
+    IsBoolean,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    Min,
+} from 'class-validator';
 import {
     CALL_REPORT_NEXT_STEP_KINDS,
     type CallReportNextStepKind,
@@ -99,4 +106,17 @@ export class AgentNextStepDto {
     @IsString()
     @IsIn(CALL_REPORT_NEXT_STEP_KINDS as unknown as string[])
     kind?: CallReportNextStepKind | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда звонка, когда договорились о следующем шаге ' +
+            '(focus-v3.2); null — шаг не назначен или меток не было.',
+        type: Number,
+        nullable: true,
+        example: 1284,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    startSec?: number | null;
 }

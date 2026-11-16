@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
     CatalogCheckpoint,
     CatalogEntry,
+    CatalogKnowledgeKind,
     MethodologyCatalog,
 } from '../methodology-catalog.const';
 import type { MethodologyCapTarget } from '../methodology.types';
@@ -48,6 +49,39 @@ export class CatalogCheckpointDto
         type: String,
     })
     source: string;
+}
+
+/** Вид базы знаний, который методика может объявить своим. */
+export class CatalogKnowledgeKindDto implements CatalogKnowledgeKind {
+    @ApiProperty({
+        description: 'Код вида базы знаний.',
+        example: 'product-facts',
+        type: String,
+    })
+    kind: string;
+
+    @ApiProperty({
+        description: 'Название вида для формы.',
+        example: 'Факты о продукте, комплектах и ценах',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description: 'Сколько знаков вида получает проход методики.',
+        example: 6000,
+        type: Number,
+    })
+    budgetChars: number;
+
+    @ApiProperty({
+        description:
+            'Вид читается только у показов, звонков по решению и доработки — ' +
+            'там он идёт во все проходы и без объявления.',
+        example: false,
+        type: Boolean,
+    })
+    presentationOnly: boolean;
 }
 
 /** Каталог для формы-брифа методики. */
@@ -105,6 +139,14 @@ export class MethodologyCatalogDto implements MethodologyCatalog {
         type: [MethodologyCapDto],
     })
     coreCaps: MethodologyCapDto[];
+
+    @ApiProperty({
+        description:
+            'Виды базы знаний, которые методика может объявить своими: ' +
+            'проход методики получает их вдобавок к общему слою разбора.',
+        type: [CatalogKnowledgeKindDto],
+    })
+    knowledgeKinds: CatalogKnowledgeKindDto[];
 }
 
 /** Реэкспорт для удобства импорта из одного места. */

@@ -152,6 +152,7 @@ describe('initialRunStatus', () => {
     const selection: ReanalysisSelection = {
         candidates: [],
         skippedBy: { upToDate: 2, noAnalysis: 1, notInRoster: 0, noActive: 0 },
+        methodologyOnly: 0,
     };
     const data = { domain: 'd', from: '2026-09-01', to: '2026-09-30' };
     const now = new Date('2026-10-20T01:00:00Z');
@@ -243,6 +244,7 @@ describe('initialRunStatus', () => {
             selection: {
                 candidates: ['a', 'b', 'c'].map(candidate),
                 skippedBy: selection.skippedBy,
+                methodologyOnly: 0,
             },
             previous,
             now,

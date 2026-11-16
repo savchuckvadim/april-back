@@ -15,15 +15,26 @@ import { CallReportDomainRosterService } from './call-report-domain-roster.servi
 /** 22:30 UTC = 01:30 МСК: до ночного пересчёта витрины (03:45) и после ревизора (23:30). */
 const NIGHTLY_AT_MSK_0130 = '30 22 * * *';
 
+/** «лимит 100 ₽ и 200 звонков за ночь» — для журнала и реестра кронов. */
+export function nightlyLimitNote(budgetRub: number, maxCalls: number): string {
+    const parts = [
+        ...(budgetRub > 0 ? [`${budgetRub} ₽`] : []),
+        ...(maxCalls > 0 ? [`${maxCalls} звонков`] : []),
+    ];
+    return `лимит ${parts.join(' и ')} за ночь`;
+}
+
 export const FACTS_CATCHUP_NIGHTLY_CRON_NAME =
     'call-report-facts-catchup-nightly';
 
 /**
  * НОЧНОЙ ДОГОН ФАКТОВ v3.1 (этап B6): раз в сутки для каждого портала с
- * включённым AI-конвейером и лимитом `factsCatchupNightlyBudgetRub` > 0 в
- * настройках AI ставит джобу CALL_REPORT_FACTS_CATCHUP за текущий и
- * прошлый месяц с лимитом в рублях. Расход считается по записям догона;
- * лимит достигнут — остаток ждёт следующей ночи. Итог ночи use-case шлёт
+ * включённым AI-конвейером и хотя бы одним лимитом в настройках AI — в
+ * рублях (`factsCatchupNightlyBudgetRub`) или в звонках
+ * (`factsCatchupNightlyMaxCalls`, 16.11.2026: модели бесплатные, рублёвый
+ * лимит при нулевой цене не срабатывает) — ставит джобу
+ * CALL_REPORT_FACTS_CATCHUP за текущий и прошлый месяц. Расход считается по
+ * записям догона; лимит достигнут — остаток ждёт следующей ночи. Итог ночи use-case шлёт
  * в Telegram. Полный переразбор — только кнопкой из админки.
  */
 @Injectable()
@@ -38,8 +49,8 @@ export class CallReportFactsCatchupScheduler implements OnModuleInit {
 
     onModuleInit(): void {
         this.logger.log(
-            'Ночной догон фактов: 01:30 МСК, порталы с лимитом в рублях в ' +
-                'настройках AI, текущий и прошлый месяц',
+            'Ночной догон фактов: 01:30 МСК, порталы с лимитом в рублях или в ' +
+                'звонках в настройках AI, текущий и прошлый месяц',
         );
     }
 
@@ -58,11 +69,12 @@ export class CallReportFactsCatchupScheduler implements OnModuleInit {
         }
     }
 
-    /** Домен: лимит задан → одна джоба на текущий и прошлый месяц. */
+    /** Домен: задан хотя бы один лимит → одна джоба на текущий и прошлый месяц. */
     private async tickDomain(domain: string, now: Date): Promise<void> {
         const record = await this.portalAiSettings.getByDomain(domain);
         const budget = record?.factsCatchupNightlyBudgetRub ?? 0;
-        if (budget <= 0) return;
+        const maxCalls = record?.factsCatchupNightlyMaxCalls ?? 0;
+        if (budget <= 0 && maxCalls <= 0) return;
         const timeZone = resolveTimezoneByDomain(domain);
         const window = factsCatchupNightlyWindow(now, timeZone);
         const payload: FactsCatchupJobData = {
@@ -70,7 +82,8 @@ export class CallReportFactsCatchupScheduler implements OnModuleInit {
             from: window.from,
             to: window.to,
             part: 1,
-            budgetRub: budget,
+            ...(budget > 0 ? { budgetRub: budget } : {}),
+            ...(maxCalls > 0 ? { maxCalls } : {}),
             timeZone,
             requestedBy: FACTS_CATCHUP_NIGHTLY_REQUESTER,
         };
@@ -82,7 +95,7 @@ export class CallReportFactsCatchupScheduler implements OnModuleInit {
             FACTS_CATCHUP_JOB_OPTIONS,
         );
         this.logger.log(
-            `Ночной догон фактов ${domain}: ${window.from}..${window.to}, лимит ${budget} ₽`,
+            `Ночной догон фактов ${domain}: ${window.from}..${window.to}, ${nightlyLimitNote(budget, maxCalls)}`,
         );
     }
 }

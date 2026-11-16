@@ -52,6 +52,8 @@ export const AI_SANITY_LIMITS = {
     durationCutShare: 0.25,
     /** Алертов на менеджера в неделю больше — это шум, а не сигнал. */
     alertsPerManagerWeek: 3,
+    /** Сколько строк «менеджер × неделя» с сигналами сохраняем в разбивке. */
+    alertDetails: 30,
     /** Месяцев фактов для медианы полосы стажа. */
     factMonths: 3,
     /** Запасной порог наблюдений, если реестр молчит (`n_min_none`). */
@@ -108,6 +110,14 @@ export const AI_SANITY_DATA_QUALITY = {
 export type AiSanityDataQuality =
     (typeof AI_SANITY_DATA_QUALITY)[keyof typeof AI_SANITY_DATA_QUALITY];
 
+/** Сигналы одного менеджера за одну неделю — строка разбивки правила «шум». */
+export interface AiSanityAlertDetail {
+    managerId: string;
+    /** ISO-неделя звонков 'YYYY-Www'; null — время звонков неизвестно. */
+    weekKey: string | null;
+    alerts: number;
+}
+
 /** Вердикт одного правила: предупреждения либо причина пропуска. */
 export interface AiSanityRuleResult {
     rule: AiSanityRuleCode;
@@ -115,6 +125,12 @@ export interface AiSanityRuleResult {
     warnings: string[];
     /** Почему правило пропущено (обязательно при status = 'skipped'). */
     reason?: string;
+    /**
+     * Разбивка правила «шум сигналов»: у кого и в какую неделю сколько
+     * сигналов, крупные первыми. В тексте предупреждения менеджер не
+     * назван (тексты без идентификаторов) — он здесь.
+     */
+    details?: AiSanityAlertDetail[];
 }
 
 /**
@@ -164,6 +180,8 @@ export interface SanityCallFact {
     callType: string;
     durationSec: number | null;
     alert: boolean;
+    /** ISO-неделя звонка 'YYYY-Www' в часовом поясе портала; null — времени нет. */
+    weekKey: string | null;
 }
 
 /** Менеджер-месяц с источником знаменателя экспозиции. */

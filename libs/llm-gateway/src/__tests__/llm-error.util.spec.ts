@@ -1,5 +1,6 @@
 import {
     describeLlmError,
+    isRetryableLlmError,
     isTransientLlmError,
     llmErrorStatus,
 } from '../llm-error.util';
@@ -162,5 +163,128 @@ describe('llm-error.util — классификация ошибок прова�
             'fetch failed',
         );
         expect(describeLlmError(new Error('a'.repeat(300))).length).toBe(200);
+    });
+
+    /** 16.11.2026: пропуск по размеру запроса про здоровье поставщика не говорит. */
+    it('запасной не взял запрос по размеру — решает основной, как и раньше', () => {
+        const timeoutThenTooLarge = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                { provider: 'vibecode', transient: true },
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+            ],
+            'vibecode',
+        );
+        expect(isTransientLlmError(timeoutThenTooLarge)).toBe(true);
+    });
+
+    it('сам основной не берёт запрос по размеру — решает следующий с настоящей попыткой; не взял никто — отказ постоянный', () => {
+        const tooLargeThenTimeout = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+                { provider: 'vibecode', transient: true },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(tooLargeThenTimeout)).toBe(true);
+
+        const tooLargeThenBadAnswer = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+                { provider: 'vibecode', transient: false },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(tooLargeThenBadAnswer)).toBe(false);
+
+        const nobodyTakes = new LlmUnavailableError(
+            'LLM недоступна',
+            [
+                {
+                    provider: 'openai-compatible',
+                    transient: false,
+                    tooLarge: true,
+                },
+            ],
+            'openai-compatible',
+        );
+        expect(isTransientLlmError(nobodyTakes)).toBe(false);
+    });
+});
+
+/** 16.11.2026: одиночный сорвавшийся проход разбора повторяется один раз. */
+describe('isRetryableLlmError — стоит ли сразу повторить вызов шлюза', () => {
+    const unavailable = (
+        failures: ConstructorParameters<typeof LlmUnavailableError>[1],
+        primary: 'vibecode' | 'openai-compatible' | null = 'vibecode',
+    ) => new LlmUnavailableError('LLM недоступна', failures, primary);
+
+    it('основной сам сорвался по временной причине — повторяем, даже если запасной отказал', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'vibecode', transient: true },
+                    {
+                        provider: 'openai-compatible',
+                        transient: false,
+                        tooLarge: true,
+                    },
+                ]),
+            ),
+        ).toBe(true);
+    });
+
+    it('негодный ответ основного, пауза, проба и отказ по размеру — не повторяем', () => {
+        const cases = [
+            [{ provider: 'vibecode', transient: false }],
+            [{ provider: 'vibecode', transient: true, paused: true }],
+            [{ provider: 'vibecode', transient: true, probe: true }],
+            [{ provider: 'vibecode', transient: false, tooLarge: true }],
+        ] as const;
+        for (const failures of cases) {
+            expect(isRetryableLlmError(unavailable([...failures]))).toBe(false);
+        }
+    });
+
+    it('основного не звали или его нет — не повторяем; чужая ошибка — тоже', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'openai-compatible', transient: true },
+                ]),
+            ),
+        ).toBe(false);
+        expect(
+            isRetryableLlmError(
+                unavailable([{ provider: 'vibecode', transient: true }], null),
+            ),
+        ).toBe(false);
+        expect(isRetryableLlmError(new Error('timeout'))).toBe(false);
+    });
+
+    it('решает последняя попытка основного: после паузы проба сорвалась — не повторяем', () => {
+        expect(
+            isRetryableLlmError(
+                unavailable([
+                    { provider: 'vibecode', transient: true },
+                    { provider: 'openai-compatible', transient: true },
+                    { provider: 'vibecode', transient: true, probe: true },
+                ]),
+            ),
+        ).toBe(false);
     });
 });

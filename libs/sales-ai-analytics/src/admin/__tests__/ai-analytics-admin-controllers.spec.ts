@@ -18,6 +18,7 @@ import {
     AI_ANALYTICS_PHASE4_ADMIN_ROUTES,
     AiAnalyticsPhase4AdminController,
 } from '../controllers/phase4.admin.controller';
+import { AiAnalyticsForecastBreakdownAdminController } from '../controllers/forecast-breakdown.admin.controller';
 import {
     AI_ANALYTICS_FACTS_CATCHUP_ROUTES,
     AiAnalyticsFactsCatchupAdminController,
@@ -55,6 +56,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsFeedbackCostAdminController,
     AiAnalyticsGoldenSetAdminController,
     AiAnalyticsPhase4AdminController,
+    AiAnalyticsForecastBreakdownAdminController,
     AiAnalyticsReanalyzeAdminController,
     AiAnalyticsFactsCatchupAdminController,
     AiAnalyticsSmartBackfillAdminController,

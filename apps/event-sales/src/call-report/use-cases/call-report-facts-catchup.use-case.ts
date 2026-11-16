@@ -71,6 +71,10 @@ export const formatNightlyCatchupSummary = (
 ): string => {
     const limit =
         status.budgetRub != null ? ` из лимита ${status.budgetRub} ₽` : '';
+    const calls =
+        status.maxCalls != null
+            ? ` (лимит ${status.maxCalls} звонков за ночь)`
+            : '';
     const tail = status.budgetHit
         ? ' — лимит исчерпан, остаток следующей ночью'
         : status.stopped
@@ -78,7 +82,7 @@ export const formatNightlyCatchupSummary = (
           : '';
     return (
         `🌙 Ночной догон фактов ${status.domain} (${status.from}..${status.to}): ` +
-        `догнано ${status.done} из ${status.total}, сбоев ${status.failed}, ` +
+        `догнано ${status.done} из ${status.total}${calls}, сбоев ${status.failed}, ` +
         `потрачено ${status.price.toFixed(2)} ₽${limit}${tail}`
     );
 };
@@ -123,6 +127,7 @@ export class CallReportFactsCatchupUseCase {
             now,
         });
         status.budgetRub = data.budgetRub ?? null;
+        status.maxCalls = data.maxCalls ?? null;
         let statusId = previous?.id ?? null;
         if (data.dryRun === true) {
             status.estimate = estimateFactsCatchupCost(
@@ -144,8 +149,15 @@ export class CallReportFactsCatchupUseCase {
         const recordId = statusId;
         const quota = data.quota ?? FACTS_CATCHUP_DEFAULTS.quota;
         const budget = data.budgetRub;
+        // Лимит в звонках — на весь прогон: счёт частей переносится статусом,
+        // поэтому берём не больше остатка (перерасхода нет и при трёх
+        // звонках одновременно).
+        const callsLeft =
+            data.maxCalls === undefined
+                ? quota
+                : Math.max(0, data.maxCalls - (status.done + status.failed));
         const pool = await runReanalysisPool(
-            selection.candidates.slice(0, quota),
+            selection.candidates.slice(0, Math.min(quota, callsLeft)),
             candidate =>
                 this.catchUpOne(
                     data.domain,
@@ -177,13 +189,16 @@ export class CallReportFactsCatchupUseCase {
         );
         status.timeBudgetHit = pool.timeBudgetHit;
         status.stopped = pool.stopped;
-        status.budgetHit = pool.budgetHit;
+        const callsHit =
+            data.maxCalls !== undefined &&
+            status.done + status.failed >= data.maxCalls;
+        status.budgetHit = pool.budgetHit || callsHit;
         const remaining = selection.candidates.length - pool.processed;
         status.continuedWith =
             remaining > 0 &&
             pool.doneInPart > 0 &&
             !pool.stopped &&
-            !pool.budgetHit
+            !status.budgetHit
                 ? await this.dispatchContinuation(data, status.part + 1)
                 : null;
         status.finished = status.continuedWith === null && !pool.stopped;

@@ -24,6 +24,7 @@ import {
 import { LlmPriceResolverService } from '../../agent-gate/services/llm-price-resolver.service';
 import { CallContextBuilderService } from './call-context-builder.service';
 import { CallFocusAnalysisService } from './call-focus-analysis.service';
+import type { StoredFocusPasses } from './call-focus-stored.util';
 
 export interface CallAnalysisRerunInput {
     transcriptionId: string;
@@ -31,6 +32,11 @@ export interface CallAnalysisRerunInput {
     source: unknown;
     /** Модель глубокого разбора портала; null — модель провайдера по умолчанию. */
     model: string | null;
+    /**
+     * Сохранённые ответы проходов неполного разбора (догон): эти проходы
+     * заново не вызываются. Не задано — разбор целиком.
+     */
+    stored?: StoredFocusPasses;
 }
 
 export interface CallAnalysisRerunOutcome {
@@ -79,12 +85,19 @@ export class CallAnalysisRerunService {
             (row.text ?? '');
         if (!transcript.trim()) return null;
         const domain = row.domain as string;
+        // Без модели портала и без сохранённых проходов опции не передаются.
+        const hasOptions = input.model !== null || input.stored !== undefined;
         const dto = await this.focusAnalysis.run(
             domain,
             transcript,
             callTypeOfAnalysis(input.source),
             await this.passportBlock(row),
-            input.model === null ? undefined : { model: input.model },
+            hasOptions
+                ? {
+                      ...(input.model === null ? {} : { model: input.model }),
+                      ...(input.stored ? { stored: input.stored } : {}),
+                  }
+                : undefined,
         );
         if (dto === null) return null;
         const usage = dto.usage

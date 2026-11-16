@@ -28,6 +28,8 @@ const MONTHS_IN_YEAR = 12;
 /** Коды сбоев, которые говорят о качестве базы CRM. */
 export const CRM_ISSUE_CODES: ReadonlySet<string> = new Set([
     'crm_duplicate',
+    'crm_repeat_refused',
+    'crm_existing_client',
     'wrong_contact',
 ]);
 

@@ -130,6 +130,18 @@ export class AiOwnerReportTextDto {
     })
     periodLabel: string;
 
+    @ApiProperty({
+        description:
+            'База отчёта под заголовком: исходящие вызовы и состоявшиеся ' +
+            'разговоры по телефонии за период и сколько из них разобрано; ' +
+            'null — телефония портала не ответила или отчёт собран раньше.',
+        type: String,
+        nullable: true,
+        example:
+            'База отчёта по телефонии: исходящих вызовов — 1240, состоявшихся разговоров — 312; разобрано — 148.',
+    })
+    base: string | null;
+
     @ApiProperty({ type: [AiOwnerReportTileDto], description: 'Плитки шапки.' })
     tiles: AiOwnerReportTileDto[];
 

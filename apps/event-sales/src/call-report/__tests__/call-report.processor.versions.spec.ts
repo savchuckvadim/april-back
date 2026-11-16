@@ -263,8 +263,13 @@ describe('версии промпта и классификатора 21.10.2026
         // шага, тема возражения, сбои, цены, допродажа, самопредставление)
         // — минорная, в общей серии; v3.0 (01.11.2026) — по существу, но
         // тоже в серии (решение владельца: оценки должны продолжаться).
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.1-2026-11-06');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-06');
+        // v3.2 (16.11.2026): три кода сбоев CRM и время в звонке —
+        // минорная, в общей серии.
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.2-2026-11-16');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-16');
+        expect(PROMPT_SERIES_START['focus-v3.1-2026-11-06']).toBe(
+            SERIES_BOUNDARY,
+        );
         expect(PROMPT_SERIES_START['focus-v3.0-2026-11-01']).toBe(
             SERIES_BOUNDARY,
         );

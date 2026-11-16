@@ -5,8 +5,10 @@ import {
     IsBoolean,
     IsIn,
     IsNotEmpty,
+    IsNumber,
     IsOptional,
     IsString,
+    Min,
     ValidateNested,
 } from 'class-validator';
 import {
@@ -69,6 +71,32 @@ export class AgentCallAnalysisContentDto extends AgentCallAnalysisClassification
     })
     @IsBoolean()
     presentationDone: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда звонка, с которой менеджер начал выяснять ' +
+            'потребности (focus-v3.2); null — не выяснял или меток не было.',
+        type: Number,
+        nullable: true,
+        example: 95,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    needsStartSec?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда начала презентации (focus-v3.2); null — презентации ' +
+            'не было или меток не было.',
+        type: Number,
+        nullable: true,
+        example: 340,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    presentationStartSec?: number | null;
 
     @ApiPropertyOptional({
         description:

@@ -69,6 +69,8 @@ export interface BxVoximplantStatisticParams {
     minDurationSec?: number;
     /** Длительность СТРОГО меньше этого числа секунд; не задано — без потолка. */
     maxDurationSecExclusive?: number;
+    /** Тип звонка (исходящий, входящий…); не задан — все типы. */
+    callType?: BxVoxCallType;
     /** Потолок собираемых строк (защита от разноса пагинации). */
     maxRows?: number;
 }

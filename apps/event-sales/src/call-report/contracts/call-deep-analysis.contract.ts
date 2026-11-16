@@ -1,7 +1,11 @@
 import {
     FORM_FACTS_PROPERTIES,
     FORM_FACTS_REQUIRED,
+    CONTENT_MOMENTS_PROPERTIES,
+    CONTENT_MOMENTS_REQUIRED,
+    CONTENT_MOMENTS_SPEC,
     FORM_FACTS_SPEC,
+    MOMENT_SEC_SCHEMA,
     MOVEMENT_FACTS_PROPERTIES,
     MOVEMENT_FACTS_REQUIRED,
     MOVEMENT_FACTS_SPEC,
@@ -93,6 +97,9 @@ export const NEXT_STEP_SCHEMA = {
         managerAction: { type: ['string', 'null'] },
         // Вид шага (focus-v3.1, 06.11.2026) — конверсии отчёта собственнику.
         kind: NEXT_STEP_KIND_SCHEMA,
+        // Когда в звонке договорились о шаге (focus-v3.2) — подсветка на
+        // странице разбора.
+        startSec: MOMENT_SEC_SCHEMA,
     },
     required: [
         'set',
@@ -103,6 +110,7 @@ export const NEXT_STEP_SCHEMA = {
         'clientAction',
         'managerAction',
         'kind',
+        'startSec',
     ],
     additionalProperties: false,
 } as const;
@@ -301,6 +309,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         productive: { type: 'boolean' },
         needsFound: { type: 'boolean' },
         presentationDone: { type: 'boolean' },
+        ...CONTENT_MOMENTS_PROPERTIES,
         priceDiscussed: { type: 'boolean' },
         interlocutorRole: {
             type: ['string', 'null'],
@@ -367,6 +376,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'productive',
         'needsFound',
         'presentationDone',
+        ...CONTENT_MOMENTS_REQUIRED,
         'priceDiscussed',
         'interlocutorRole',
         'specialist',
@@ -686,6 +696,7 @@ export const DEEP_ANALYSIS_OUTPUT_SPEC = `ИТОГОВЫЕ ПОЛЯ
 - presentationDone — СТРОГО по определению презентации выше: показ или
   предметный рассказ под задачи клиента. «Выслал демо-доступ», «рассказал
   в общих словах», «договорились о показе» — это presentationDone=false.
+${CONTENT_MOMENTS_SPEC}
 - specialist — специальность собеседника ПО ЛЕКСИКЕ разговора: проводки, НДС,
   1С, отчётность — бухгалтер; договоры, иски, претензии, судебная практика —
   юрист; кадры, приказы, отпуска, трудовые споры — кадровик; управление

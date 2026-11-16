@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { AI_TRANSCRIPTION_MODES } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import { TRANSCRIPTION_ROUTER_MODES } from '../provider/transcription-router.service';
 import { YandexSttHttpError } from '../services/streaming-transcription.service';
@@ -469,5 +470,52 @@ describe('TranscriptionRouterService: модель VibeCode из настрое�
             input.fileName,
             'portal-vibe-key',
         );
+    });
+});
+
+/** 16.11.2026: текст без таймкодов раньше проходил молча. */
+describe('TranscriptionRouterService: пропавшие таймкоды', () => {
+    const telegramWarnings = (warn: jest.SpyInstance): string[] =>
+        (warn.mock.calls as [string, { telegram?: boolean } | undefined][])
+            .filter(([, meta]) => meta?.telegram === true)
+            .map(([text]) => text);
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it('VibeCode вернул текст без сегментов — сообщение в телеграм с порталом и распознавателем', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        const { router } = makeRouter({ TRANSCRIPTION_YANDEX_MIN_SEC: '600' });
+
+        await router.transcribe({ ...input, durationSec: 120 });
+        // Второй такой же звонок в течение часа — только в журнал.
+        await router.transcribe({ ...input, durationSec: 130 });
+
+        const alerts = telegramWarnings(warn);
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]).toContain('Распознавание без таймкодов');
+        expect(alerts[0]).toContain('Vibecode');
+        expect(alerts[0]).toContain(input.domain);
+    });
+
+    it('сегменты пришли — сообщения нет', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        const vibecode = makeVibecode();
+        vibecode.transcribeAudioDetailed.mockResolvedValue({
+            text: 'vibecode text',
+            segments: [{ start: 0, end: 2.5, text: 'vibecode text' }],
+        });
+        const { router } = makeRouter(
+            { TRANSCRIPTION_YANDEX_MIN_SEC: '600' },
+            { vibecode },
+        );
+
+        const result = await router.transcribe({ ...input, durationSec: 120 });
+
+        expect(result.segments).not.toBeNull();
+        expect(telegramWarnings(warn)).toHaveLength(0);
     });
 });

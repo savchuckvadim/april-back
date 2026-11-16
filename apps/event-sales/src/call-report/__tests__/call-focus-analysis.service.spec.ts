@@ -38,9 +38,15 @@ const badAnswer = () =>
         ],
     );
 
+/** Ответ модели на один вызов: результат или ошибка. */
+type FocusAnswer = Record<string, unknown> | Error;
+
 const makeDeps = (options?: {
-    /** schemaName → ответ (или Error для падения прохода). */
-    responses?: Record<string, Record<string, unknown> | Error>;
+    /**
+     * schemaName → ответ (или Error для падения прохода); массив — ответы
+     * по попыткам, последний повторяется.
+     */
+    responses?: Record<string, FocusAnswer | FocusAnswer[]>;
     /** Методика портала из реестра; нет — разбор одним ядром. */
     methodology?: ResolvedMethodology | null;
 }) => {
@@ -52,7 +58,12 @@ const makeDeps = (options?: {
                 _user: string,
                 schemaName: string,
             ): Promise<unknown> => {
-                const answer = responses[schemaName];
+                const entry = responses[schemaName];
+                const answer = Array.isArray(entry)
+                    ? entry.length > 1
+                        ? entry.shift()
+                        : entry[0]
+                    : entry;
                 if (answer instanceof Error) return Promise.reject(answer);
                 return Promise.resolve({
                     result: answer ?? focusResult(),
@@ -61,6 +72,8 @@ const makeDeps = (options?: {
                 });
             },
         ),
+        // Отложенная тревога «не ответил никто»: её шлёт шлюз по просьбе сервиса.
+        reportExhausted: jest.fn().mockResolvedValue(undefined),
     };
     // Сервис материалов по ролям: по умолчанию база пуста.
     const materials = {
@@ -396,8 +409,37 @@ describe('CallFocusAnalysisService', () => {
         }
     });
 
-    it('обычный звонок: методология презентации запрашивается по остаточному бюджету', async () => {
+    it('обычный звонок: методология презентации не читается — в промпт она не идёт', async () => {
         const { service, materials } = makeDeps();
+
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const kinds = requestedKinds(materials);
+        expect(kinds).not.toContain('presentation-playbook');
+        // Без методики портала факты о продукте основной разбор не читает.
+        expect(kinds).not.toContain('product-facts');
+    });
+
+    it('методика объявила свои материалы: факты о продукте, возражения и регламент идут в проход методики', async () => {
+        const { service, llm, materials } = makeDeps({
+            methodology: {
+                methodology: POLYANSKY_METHODOLOGY,
+                scope: 'common',
+                source: 'builtin',
+                versionTag: 'polyansky@1.0.0',
+            },
+        });
+        materials.collect.mockImplementation(
+            (_domain: string, requests: { kind: string }[]) =>
+                Promise.resolve(
+                    requests.map(request => ({
+                        kind: request.kind,
+                        text: `ТЕКСТ[${request.kind}]`,
+                        chars: 12,
+                        truncated: false,
+                    })),
+                ),
+        );
 
         await service.run('test.bitrix24.ru', 'текст', 'cold');
 
@@ -405,12 +447,86 @@ describe('CallFocusAnalysisService', () => {
             kind: string;
             budgetChars: number;
         }[];
-        const playbook = requests.find(
-            request => request.kind === 'presentation-playbook',
+        // Один запрос на вид, даже если вид нужен двум проходам.
+        expect(new Set(requests.map(item => item.kind)).size).toBe(
+            requests.length,
         );
-        expect(playbook?.budgetChars).toBe(1500);
+        expect(
+            requests.find(item => item.kind === 'product-facts')?.budgetChars,
+        ).toBe(6000);
+        // Холодный звонок вне презентационного контура.
+        expect(requestedKinds(materials)).not.toContain(
+            'presentation-playbook',
+        );
+
+        const promptOf = (schemaName: string): string =>
+            String(
+                (
+                    llm.structuredCompletionWithUsage.mock.calls.find(
+                        call => (call as unknown[])[2] === schemaName,
+                    ) as unknown[]
+                )[0],
+            );
+        const methodology = promptOf('call_focus_methodology');
+        expect(methodology).toContain('ТЕКСТ[sales-script]');
+        expect(methodology).toContain('ТЕКСТ[product-facts]');
+        expect(methodology).toContain('ТЕКСТ[objection-playbook]');
+        expect(methodology).toContain('ТЕКСТ[sales-regulation]');
+        // Остальные проходы факты о продукте не получают.
+        expect(promptOf('call_focus_form')).not.toContain(
+            'ТЕКСТ[product-facts]',
+        );
+        expect(promptOf('call_focus_synthesis')).not.toContain(
+            'ТЕКСТ[product-facts]',
+        );
+    });
+
+    it('якоря шкалы методики идут в проходы с оценками и в итог, но не в проход методики', async () => {
+        const { service, llm } = makeDeps({
+            methodology: {
+                methodology: {
+                    ...POLYANSKY_METHODOLOGY,
+                    sectionAnchors: {
+                        NEEDS: { '1-2': 'потребности не выяснялись' },
+                    },
+                },
+                scope: 'common',
+                source: 'builtin',
+                versionTag: 'polyansky@1.0.0',
+            },
+        });
+
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const promptOf = (schemaName: string): string =>
+            String(
+                (
+                    llm.structuredCompletionWithUsage.mock.calls.find(
+                        call => (call as unknown[])[2] === schemaName,
+                    ) as unknown[]
+                )[0],
+            );
+        const anchor = 'потребности не выяснялись';
+        for (const schemaName of [
+            'call_focus_form',
+            'call_focus_content',
+            'call_focus_movement',
+            'call_focus_synthesis',
+        ]) {
+            expect(promptOf(schemaName)).toContain(anchor);
+        }
+        // Проход методики оценок не ставит — якоря ему не нужны.
+        expect(promptOf('call_focus_methodology')).not.toContain(anchor);
     });
 });
+
+/** Виды, которые разбор запросил у базы знаний. */
+function requestedKinds(materials: { collect: jest.Mock }): string[] {
+    const requests = (materials.collect.mock.calls[0] as unknown[])[1] as {
+        kind: string;
+    }[];
+    return requests.map(request => request.kind);
+}
 
 /**
  * Проход «методика» (этап 1 плана методики Полянского): на портале с
@@ -649,5 +765,159 @@ describe('CallFocusAnalysisService: причина провала (runWithOutcom
             service.runWithOutcome('test.bitrix24.ru', '   ', 'call'),
         ).resolves.toEqual({ analysis: null, providerFailure: false });
         expect(llm.structuredCompletionWithUsage).not.toHaveBeenCalled();
+    });
+});
+
+/** 16.11.2026: одиночный временный сбой прохода повторяется один раз. */
+describe('CallFocusAnalysisService: один повтор сорвавшегося прохода', () => {
+    /** Основной поставщик сам не дождался ответа — такой сбой повторяем. */
+    const primaryTimeout = () =>
+        new LlmUnavailableError(
+            'LLM недоступна: vibecode — Vibecode timeout after 180000 ms',
+            [{ provider: 'vibecode', transient: true }],
+            'vibecode',
+        );
+    /** Основной ответил негодным JSON — повтор не поможет. */
+    const primaryBadAnswer = () =>
+        new LlmUnavailableError(
+            'LLM недоступна: vibecode — Unexpected end of JSON input',
+            [{ provider: 'vibecode', transient: false }],
+            'vibecode',
+        );
+
+    /** Опции вызовов одной схемы по порядку попыток. */
+    const optionsOf = (
+        llm: { structuredCompletionWithUsage: jest.Mock },
+        schemaName: string,
+    ): unknown[] =>
+        (llm.structuredCompletionWithUsage.mock.calls as unknown[][])
+            .filter(call => call[2] === schemaName)
+            .map(call => call[5]);
+
+    beforeEach(() => {
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(
+            () => undefined,
+        );
+        jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('один проход не дождался ответа — повтор вылечил: разбор полный, тревоги нет', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_movement: [primaryTimeout(), focusResult()],
+                call_focus_synthesis: { summary: 'Итог', score: 6 },
+            },
+        });
+
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.incompleteParts).toEqual([]);
+        // Три прохода, повтор «движения» и синтез.
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(5);
+        // Первая попытка — с отложенной тревогой, повтор — с обычной.
+        expect(optionsOf(llm, 'call_focus_movement')).toEqual([
+            { model: undefined, deferExhaustedAlert: true },
+            { model: undefined, deferExhaustedAlert: false },
+        ]);
+        expect(llm.reportExhausted).not.toHaveBeenCalled();
+    });
+
+    it('повтор не помог — проход помечен неполным; тревогу о повторе шлёт шлюз, сервис её не дублирует', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_movement: [primaryTimeout(), primaryTimeout()],
+                call_focus_synthesis: { summary: 'Итог', score: 6 },
+            },
+        });
+
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.incompleteParts).toEqual(['movement']);
+        expect(optionsOf(llm, 'call_focus_movement')).toHaveLength(2);
+        expect(llm.reportExhausted).not.toHaveBeenCalled();
+    });
+
+    it('сорвались два прохода — поставщик не справляется: повторов нет, отложенные тревоги уходят сразу', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_form: primaryTimeout(),
+                call_focus_content: primaryTimeout(),
+            },
+        });
+
+        const outcome = await service.runWithOutcome(
+            'test.bitrix24.ru',
+            'текст',
+            'call',
+        );
+
+        expect(outcome).toEqual({ analysis: null, providerFailure: true });
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(3);
+        expect(llm.reportExhausted).toHaveBeenCalledTimes(2);
+        expect(llm.reportExhausted).toHaveBeenCalledWith(
+            expect.any(LlmUnavailableError),
+            { schemaName: 'call_focus_form', domain: 'test.bitrix24.ru' },
+        );
+    });
+
+    it('негодный ответ модели не повторяется: проход неполный, тревога одна', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_content: primaryBadAnswer(),
+                call_focus_synthesis: { summary: 'Итог', score: 5 },
+            },
+        });
+
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.incompleteParts).toEqual(['content']);
+        expect(optionsOf(llm, 'call_focus_content')).toHaveLength(1);
+        expect(llm.reportExhausted).toHaveBeenCalledTimes(1);
+    });
+
+    it('синтез не дождался ответа — повторяется и собирает итог', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_synthesis: [
+                    primaryTimeout(),
+                    { summary: 'Итог со второй попытки', score: 7 },
+                ],
+            },
+        });
+
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.summary).toBe('Итог со второй попытки');
+        expect(dto?.incompleteParts).toEqual([]);
+        expect(optionsOf(llm, 'call_focus_synthesis')).toHaveLength(2);
+        expect(llm.reportExhausted).not.toHaveBeenCalled();
+    });
+
+    it('проход методики сорвался один из всех — тоже повторяется', async () => {
+        const { service, llm } = makeDeps({
+            methodology: {
+                methodology: POLYANSKY_METHODOLOGY,
+                scope: 'common',
+                source: 'builtin',
+                versionTag: 'polyansky@1.0.0',
+            },
+            responses: {
+                call_focus_methodology: [
+                    primaryTimeout(),
+                    { checkpoints: [], spirals: [] },
+                ],
+                call_focus_synthesis: { summary: 'Итог', score: 6 },
+            },
+        });
+
+        const dto = await service.run(
+            'test.bitrix24.ru',
+            'текст',
+            'presentation',
+        );
+
+        expect(optionsOf(llm, 'call_focus_methodology')).toHaveLength(2);
+        expect(dto?.incompleteParts).toEqual([]);
     });
 });

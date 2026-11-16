@@ -199,7 +199,7 @@ export class OwnerReportSourcesLoader {
         minDurationByType: MinDurationSecByType,
         callReport: OwnerReportSourcesCallReport,
     ): Promise<OwnerReportTelephonyFacts | null> {
-        const share = await this.telephony.shortShare(domain, {
+        const input = {
             from: bounds.from,
             to: bounds.to,
             timeZone,
@@ -207,10 +207,17 @@ export class OwnerReportSourcesLoader {
                 minDurationByType[MIN_DURATION_DEFAULT_TYPE] ??
                 AI_ANALYTICS_THRESHOLDS.shortCallSec,
             ...(callReport ? { callReport } : {}),
-        });
-        return share
-            ? { outbound: null, connected: share.connected, short: share.short }
-            : null;
+        };
+        // По очереди, а не разом: три лёгких запроса total к одному порталу.
+        const share = await this.telephony.shortShare(domain, input);
+        const outbound = await this.telephony.outbound(domain, input);
+        return share === null && outbound === null
+            ? null
+            : {
+                  outbound,
+                  connected: share?.connected ?? null,
+                  short: share?.short ?? null,
+              };
     }
 
     /** Имена по Bitrix ID; сбой Битрикса — пустая карта, карточки по id. */

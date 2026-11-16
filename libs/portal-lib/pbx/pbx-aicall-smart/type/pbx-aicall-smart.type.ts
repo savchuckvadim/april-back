@@ -494,6 +494,14 @@ export const CALL_REPORT_OBJECTION_REACTIONS = [
 ] as const;
 export type CallReportObjectionReaction =
     (typeof CALL_REPORT_OBJECTION_REACTIONS)[number];
+/** Подписи реакции для людей: карточка разбора в Битриксе и страница звонка. */
+export const CALL_REPORT_OBJECTION_REACTION_TITLES: Readonly<
+    Record<CallReportObjectionReaction, string>
+> = {
+    answer: 'ответил по существу',
+    clarify: 'уточнил вопросом',
+    other: 'иное или не отреагировал',
+};
 export const CALL_REPORT_OBJECTION_ITEMS = [
     { CODE: 'price', VALUE: 'Цена', SORT: 100 },
     { CODE: 'timing', VALUE: 'Сроки / не сейчас', SORT: 200 },
@@ -693,6 +701,20 @@ export const CALL_REPORT_COMPLIANCE_SEVERITY_ITEMS = [
     { CODE: 'low', VALUE: 'Мелкие замечания', SORT: 200 },
     { CODE: 'medium', VALUE: 'Нарушен порядок', SORT: 300 },
     { CODE: 'high', VALUE: 'Риск для компании', SORT: 400 },
+] as const;
+
+/**
+ * Поля сводки методики продаж и ограничителей в карточке разбора. Без них
+ * разбор по методике в карточке не виден (полные пункты остаются в
+ * таймлайне и в ais) — проверка полей смарта показывает их отдельно.
+ */
+export const CALL_REPORT_METHODOLOGY_FIELD_CODES = [
+    'METHODOLOGY',
+    'CHECKPOINTS_DONE',
+    'CHECKPOINTS_TOTAL',
+    'SPIRALS_FULL',
+    'DEAL_PROGRESS',
+    'CAPS_APPLIED',
 ] as const;
 
 export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [

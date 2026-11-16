@@ -198,6 +198,13 @@ export interface ForecastLogDay {
     readonly mean3: number | null;
     /** Сделано на день нарастающим итогом. */
     readonly done: number;
+    /**
+     * «Сделано + ожидание от открытых сделок» по отделу (`Σ(Y₀ + λ_pipe)`).
+     * Вместе с `done` и `p50` раскладывает прогноз на слагаемые: открытые
+     * сделки = descriptive − done, новые встречи = p50 − descriptive. Нет
+     * поля — день записан до 16.11.2026.
+     */
+    readonly descriptive?: number;
     /** Деньги по чеку: вилка в ₽; null — чека нет. */
     readonly money: {
         readonly low: number;

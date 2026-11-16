@@ -3,6 +3,7 @@ import {
     OpenAiCompatibleStructuredAdapter,
     buildChatCompletionBody,
     parseJsonContent,
+    requestSizeKey,
 } from '../adapters/openai-compatible-structured.adapter';
 import type { LlmEndpoint } from '../llm-endpoint-resolver.service';
 import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
@@ -222,5 +223,61 @@ describe('OpenAiCompatibleStructuredAdapter', () => {
         );
         await expect(adapter.complete(REQUEST)).rejects.toThrow('не настроен');
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 16.11.2026: бесплатный Groq отвечает 413 на разборы длинных звонков —
+     * запрос не пройдёт, сколько ни повторяй. Размер запоминается на час.
+     */
+    it('413 — размер запоминается: такой же и больший запрос больше не принимается, меньший идёт', async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response('Request too large', { status: 413 }),
+        );
+        const { adapter } = makeAdapter();
+        expect(await adapter.rejectsBySize(REQUEST)).toBe(false);
+
+        await expect(adapter.complete(REQUEST)).rejects.toThrow('failed [413]');
+
+        expect(await adapter.rejectsBySize(REQUEST)).toBe(true);
+        expect(
+            await adapter.rejectsBySize({
+                ...REQUEST,
+                userContent: REQUEST.userContent.repeat(50),
+            }),
+        ).toBe(true);
+        expect(
+            await adapter.rejectsBySize({ ...REQUEST, userContent: 'т' }),
+        ).toBe(false);
+    });
+
+    it('другой отказ (503) размер не запоминает; у другого ключа память своя', async () => {
+        fetchMock.mockResolvedValueOnce(new Response('down', { status: 503 }));
+        const { adapter } = makeAdapter();
+        await expect(adapter.complete(REQUEST)).rejects.toThrow('failed [503]');
+        expect(await adapter.rejectsBySize(REQUEST)).toBe(false);
+
+        fetchMock.mockResolvedValueOnce(
+            new Response('Request too large', { status: 413 }),
+        );
+        const { adapter: own, endpoints } = makeAdapter();
+        await expect(own.complete(REQUEST)).rejects.toThrow('failed [413]');
+        expect(await own.rejectsBySize(REQUEST)).toBe(true);
+        // Портал поставил свой ключ — у него другой тариф, память не действует.
+        endpoints.resolve.mockResolvedValue({ ...ENDPOINT, apiKey: 'own-key' });
+        expect(await own.rejectsBySize(REQUEST)).toBe(false);
+    });
+
+    it('ключ памяти размеров не содержит самого ключа доступа', () => {
+        const key = requestSizeKey(ENDPOINT);
+        expect(key).toContain('https://llm.example/v1|Qwen/Qwen3-235B|');
+        expect(key).not.toContain('secret');
+        expect(requestSizeKey({ ...ENDPOINT, apiKey: null })).toContain(
+            '|no-key',
+        );
+    });
+
+    it('endpoint не настроен — по размеру не отказывает', async () => {
+        const { adapter } = makeAdapter({}, null);
+        expect(await adapter.rejectsBySize(REQUEST)).toBe(false);
     });
 });

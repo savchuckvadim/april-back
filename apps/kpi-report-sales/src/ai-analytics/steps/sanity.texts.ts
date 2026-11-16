@@ -13,6 +13,8 @@ import {
     callTypeTitleOf,
     managerLevelLabel,
     RU_FORMS,
+    formatRuDayMonth,
+    mondayOfIsoWeek,
     ruCount,
     type RuPluralForms,
     type StageSlaFact,
@@ -127,9 +129,18 @@ export function durationWarning(
 }
 
 /** Слишком много тревожных сигналов по звонкам одного менеджера. */
-export function alertsWarning(alerts: number, limit: number): string {
+export function alertsWarning(
+    alerts: number,
+    limit: number,
+    weekKey: string | null = null,
+): string {
+    // «за неделю с 9 ноября» — когда неделя звонков известна.
+    const week =
+        weekKey === null
+            ? 'за неделю'
+            : `за неделю с ${formatRuDayMonth(mondayOfIsoWeek(weekKey))}`;
     return (
-        `У одного из менеджеров ${ruCount(alerts, SIGNALS)} за неделю ` +
+        `У одного из менеджеров ${ruCount(alerts, SIGNALS)} ${week} ` +
         `при допустимых ${limit} — разбирать столько некогда, сигнал ` +
         'тонет в шуме'
     );

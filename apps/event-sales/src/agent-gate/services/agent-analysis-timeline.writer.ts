@@ -11,6 +11,7 @@ import { resolveCallDirection } from './agent-analysis-smart-input.mapper';
 import {
     renderAnalysisDuplicateComment,
     renderAudioCommentTitle,
+    renderCallPageLink,
     renderDialogComments,
     renderMethodologyComments,
     renderSectionComment,
@@ -38,6 +39,7 @@ export class AgentAnalysisTimelineWriter {
         row: TranscriptionPipelineView,
         written: SmartItemWriteResult,
         dto: AgentCallAnalysisDto,
+        pageUrl: string | null = null,
     ): Promise<void> {
         const entityType = `DYNAMIC_${smartInfo.entityTypeId}`;
         const authorId = this.resolveAuthorId(row, written.managerId);
@@ -91,6 +93,10 @@ export class AgentAnalysisTimelineWriter {
             const audioComment = await this.buildAudioComment(row, written);
             if (audioComment) await post(audioComment);
         }
+
+        // Страница разбора на сайте (расшифровка с подсветкой и запись) —
+        // последней записью, в ленте она окажется самой верхней.
+        if (pageUrl) await post(renderCallPageLink(pageUrl));
     }
 
     /**
@@ -107,12 +113,17 @@ export class AgentAnalysisTimelineWriter {
         row: TranscriptionPipelineView,
         dto: AgentCallAnalysisDto,
         managerId: number | undefined,
+        pageUrl: string | null = null,
     ): Promise<void> {
         const isLead = row.entityType === 'lead';
         await this.bitrix.timeline.addTimelineComment({
             ENTITY_ID: Number(row.entityId),
             ENTITY_TYPE: isLead ? 'lead' : 'deal',
-            COMMENT: renderAnalysisDuplicateComment(row.activityId, dto),
+            COMMENT: renderAnalysisDuplicateComment(
+                row.activityId,
+                dto,
+                pageUrl,
+            ),
             AUTHOR_ID: this.resolveAuthorId(row, managerId),
         });
     }

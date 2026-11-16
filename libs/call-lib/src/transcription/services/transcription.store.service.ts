@@ -248,6 +248,21 @@ export class TranscriptionStoreService {
         return this.transcriptionRepository.findFirstDonePipelineAt(domain);
     }
 
+    /**
+     * Лёгкие строки портала по номерам расшифровок (без текста): кто
+     * менеджер и чей звонок. Чужие и несуществующие номера не возвращаются.
+     */
+    async findLiteByIds(
+        domain: string,
+        ids: readonly string[],
+    ): Promise<TranscriptionPipelineLiteView[]> {
+        const rows = await this.transcriptionRepository.findPipelineLiteByIds(
+            domain,
+            ids,
+        );
+        return rows.map(row => this.toPipelineLiteView(row));
+    }
+
     /** Строка по id в pipeline-представлении (с dedup/call-полями). */
     async findPipelineById(id: string): Promise<TranscriptionPipelineView> {
         const row = await this.transcriptionRepository.findById(id);

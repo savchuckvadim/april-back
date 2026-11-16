@@ -85,8 +85,16 @@ import { AnalysisVersions } from '@lib/sales-ai-analytics';
  * цены (prices), допродажа (upsell), самопредставление (selfIntro).
  * Рубрика и оценки разделов не менялись; постановка
  * ai/tasks/2026-11-06-owner-period-report.md, §3.
+ *
+ * v3.2 — 16.11.2026, МИНОРНАЯ (та же серия, запись в PROMPT_SERIES_START):
+ * сбой «дубль в CRM» разделён на три кода (звонил другой менеджер, повторный
+ * звонок отказавшему, звонок действующему клиенту); время в звонке у сбоев
+ * и цен (startSec/endSec), у следующего шага (nextStep.startSec), у начала
+ * выяснения потребностей и презентации (needsStartSec,
+ * presentationStartSec) — для подсветки на странице разбора. Рубрика и
+ * оценки разделов не менялись.
  */
-export const CALL_REPORT_PROMPT_VERSION = 'focus-v3.1-2026-11-06';
+export const CALL_REPORT_PROMPT_VERSION = 'focus-v3.2-2026-11-16';
 /**
  * Рубрика: 7 разделов × relevance/score, взвешенная оценка 0–100.
  * v2 (01.11.2026) — ограничители оценки и продвижение сделки; без даты в

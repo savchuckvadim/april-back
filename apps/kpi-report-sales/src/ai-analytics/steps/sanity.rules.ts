@@ -32,6 +32,7 @@ import {
     AI_SANITY_SKIP_REASONS,
     AiSanityReadiness,
     AiSanityRuleCode,
+    AiSanityAlertDetail,
     AiSanityRuleResult,
     SanityCallFact,
     SanityExposureFact,
@@ -178,6 +179,37 @@ export function durationRule(
         : verdict(AI_SANITY_RULES.duration, warnings);
 }
 
+/**
+ * Сигналы по менеджеру и неделе звонка, крупные первыми. Неделя — из самого
+ * звонка: месячный прогон видит звонки месяца, и без разбивки по неделям
+ * месячное число сравнивалось бы с недельным порогом.
+ */
+export function alertDetails(
+    rows: readonly SanityCallFact[],
+): AiSanityAlertDetail[] {
+    const counts = new Map<string, AiSanityAlertDetail>();
+    for (const row of rows) {
+        if (!row.alert) continue;
+        const key = `${row.managerId}|${row.weekKey ?? ''}`;
+        const known = counts.get(key);
+        if (known) {
+            known.alerts += 1;
+        } else {
+            counts.set(key, {
+                managerId: row.managerId,
+                weekKey: row.weekKey,
+                alerts: 1,
+            });
+        }
+    }
+    return [...counts.values()].sort(
+        (a, b) =>
+            b.alerts - a.alerts ||
+            a.managerId.localeCompare(b.managerId) ||
+            (a.weekKey ?? '').localeCompare(b.weekKey ?? ''),
+    );
+}
+
 /** Шум алертов: больше трёх на менеджера за неделю — это не сигнал. */
 export function alertsRule(
     rows: readonly SanityCallFact[],
@@ -186,20 +218,18 @@ export function alertsRule(
     if (rows.length < minN) {
         return skip(AI_SANITY_RULES.alerts, AI_SANITY_SKIP_REASONS.alertFacts);
     }
-    const byManager = groupBy(
-        rows.filter(row => row.alert),
-        row => row.managerId,
-        () => 1,
-    );
-    const warnings = [...byManager.entries()]
-        .filter(
-            ([, alerts]) =>
-                alerts.length > AI_SANITY_LIMITS.alertsPerManagerWeek,
-        )
-        .map(([, alerts]) =>
-            alertsWarning(alerts.length, AI_SANITY_LIMITS.alertsPerManagerWeek),
-        );
-    return verdict(AI_SANITY_RULES.alerts, warnings);
+    const limit = AI_SANITY_LIMITS.alertsPerManagerWeek;
+    const details = alertDetails(rows);
+    const warnings = details
+        .filter(detail => detail.alerts > limit)
+        .map(detail => alertsWarning(detail.alerts, limit, detail.weekKey));
+    const result = verdict(AI_SANITY_RULES.alerts, warnings);
+    return details.length === 0
+        ? result
+        : {
+              ...result,
+              details: details.slice(0, AI_SANITY_LIMITS.alertDetails),
+          };
 }
 
 /** Календарь: «на год праздников нет» и месяцы со странным числом дней. */

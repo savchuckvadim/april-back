@@ -3,6 +3,7 @@ import { AiAnalyticsAuditAdminController } from './controllers/audit.admin.contr
 import { AiAnalyticsFeedbackCostAdminController } from './controllers/feedback-cost.admin.controller';
 import { AiAnalyticsGoldenSetAdminController } from './controllers/golden-set.admin.controller';
 import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.controller';
+import { AiAnalyticsForecastBreakdownAdminController } from './controllers/forecast-breakdown.admin.controller';
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
 import { AiAnalyticsFactsCatchupAdminController } from './controllers/facts-catchup.admin.controller';
@@ -58,6 +59,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsFeedbackCostAdminController,
         AiAnalyticsGoldenSetAdminController,
         AiAnalyticsPhase4AdminController,
+        // Разложение прогноза отдела на слагаемые (п. 4.1)
+        AiAnalyticsForecastBreakdownAdminController,
         // Переразбор истории текущей версией промпта (этап 1B)
         AiAnalyticsReanalyzeAdminController,
         AiAnalyticsFactsCatchupAdminController,

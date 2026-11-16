@@ -8,7 +8,12 @@
  * `sanity.sources.ts` (записи стора менеджер-месяцев и плацебо-тест):
  * каждый файл — одна ответственность и лимит 300 строк.
  */
-import { type AiModelParams, type StageSlaFact } from '@lib/sales-ai-analytics';
+import {
+    type AiModelParams,
+    type StageSlaFact,
+    toPortalDate,
+} from '@lib/sales-ai-analytics';
+import { isoWeekKey } from '../domain/loaders/period.util';
 import {
     AI_SANITY_SLA_STAGES,
     SanityCallFact,
@@ -37,11 +42,26 @@ export function agreedSla(params: AiModelParams): Record<string, number> {
     return agreed;
 }
 
+/** ISO-неделя звонка по его началу в часовом поясе портала; времени нет — null. */
+function weekKeyOf(startedAt: unknown, timeZone: string): string | null {
+    const at =
+        startedAt instanceof Date
+            ? startedAt
+            : typeof startedAt === 'string'
+              ? new Date(startedAt)
+              : null;
+    if (at === null || Number.isNaN(at.getTime())) return null;
+    return isoWeekKey(toPortalDate(at, timeZone));
+}
+
 /**
  * Строки звонков из шины в объёме панели (чужая форма отбрасывается).
  * Сигнал — ошибка менеджера по правилу пульса (sanity.signal).
  */
-export function callFacts(value: unknown): SanityCallFact[] {
+export function callFacts(
+    value: unknown,
+    timeZone: string = 'Europe/Moscow',
+): SanityCallFact[] {
     if (!Array.isArray(value)) return [];
     return value.flatMap((item: unknown) => {
         const row = asRecord(item);
@@ -55,6 +75,7 @@ export function callFacts(value: unknown): SanityCallFact[] {
                         ? row.durationSec
                         : null,
                 alert: hasManagerSignal(row),
+                weekKey: weekKeyOf(row.callStartedAt, timeZone),
             },
         ];
     });

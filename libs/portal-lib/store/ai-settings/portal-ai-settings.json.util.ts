@@ -60,6 +60,8 @@ export function parseAiSettingsJson(value: Prisma.JsonValue | undefined): {
     whisperApiKeyEncrypted?: string;
     vibecodeTranscriptionModel?: string;
     factsCatchupNightlyBudgetRub?: number;
+    factsCatchupNightlyMaxCalls?: number;
+    yandexMonthlyBudgetRub?: number;
     transcriptionRoute?: PortalTranscriptionRoute;
 } {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -105,11 +107,13 @@ export function parseAiSettingsJson(value: Prisma.JsonValue | undefined): {
         ),
         transcriptionRoute:
             normalizeTranscriptionRoute(raw.transcriptionRoute) ?? undefined,
-        factsCatchupNightlyBudgetRub:
-            Number.isFinite(Number(raw.factsCatchupNightlyBudgetRub)) &&
-            Number(raw.factsCatchupNightlyBudgetRub) > 0
-                ? Number(raw.factsCatchupNightlyBudgetRub)
-                : undefined,
+        factsCatchupNightlyBudgetRub: positiveNumber(
+            raw.factsCatchupNightlyBudgetRub,
+        ),
+        factsCatchupNightlyMaxCalls: positiveInteger(
+            raw.factsCatchupNightlyMaxCalls,
+        ),
+        yandexMonthlyBudgetRub: positiveNumber(raw.yandexMonthlyBudgetRub),
         methodologyCode: nonEmptyString(raw.methodologyCode),
         weeklyReportDelivery: (
             WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
@@ -134,6 +138,24 @@ export function parseAiSettingsJson(value: Prisma.JsonValue | undefined): {
             ? (raw.presentationStrictness as PresentationStrictnessLevel)
             : undefined,
     };
+}
+
+/**
+ * Положительное число из JSON или из запроса; ноль, null, мусор —
+ * undefined (ключ в JSON не хранится: «не задано»).
+ */
+export function positiveNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+/** То же для целых (звонки за ночь): дробная часть отбрасывается. */
+export function positiveInteger(value: unknown): number | undefined {
+    const parsed = positiveNumber(value);
+    if (parsed === undefined) return undefined;
+    const whole = Math.floor(parsed);
+    return whole > 0 ? whole : undefined;
 }
 
 /** Непустая строка из JSON; иначе undefined. */

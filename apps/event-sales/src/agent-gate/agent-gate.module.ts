@@ -4,6 +4,7 @@ import { PBXModule } from '@lib/pbx/pbx.module';
 import {
     TranscriptionModule,
     AiModule,
+    CallPageLinkModule,
     CallReportSmartModule,
     CallTypeRegistryModule,
 } from '@lib/call-lib';
@@ -37,6 +38,8 @@ import { LlmPriceResolverService } from './services/llm-price-resolver.service';
         // Настройки kpiSales: цена 1 000 токенов портала (llm_price_per_1k)
         // для колонок расхода ais при приёме разбора
         PortalAppSettingsModule,
+        // Ссылка на страницу разбора звонка в ленте карточки и сделки
+        CallPageLinkModule,
     ],
     controllers: [AgentCallsController, AgentKnowledgeController],
     providers: [

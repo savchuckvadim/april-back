@@ -177,17 +177,29 @@ export function pipelineExpected(
     if (!input || input.hasStageHistory === false) {
         return { value: null, reason: 'no-stage-history' };
     }
-    const estimand: AiPipelineEstimand = input.estimand ?? 'cure';
-    const daysRemaining = Math.max(0, finite(input.daysRemaining));
     let total = 0;
     for (const episode of input.episodes) {
-        total +=
-            estimand === 'cif'
-                ? cifContribution(episode)
-                : cureContribution(episode, input.cdf, daysRemaining);
+        total += pipelineEpisodeExpected(episode, input);
     }
 
     return { value: total };
+}
+
+/**
+ * Вклад одного открытого эпизода в `λ_pipe` — то самое слагаемое, что
+ * суммирует `pipelineExpected`. Отдельно нужен разложению прогноза: по нему
+ * видно, какие сделки дают основную часть ожидания.
+ */
+export function pipelineEpisodeExpected(
+    episode: PipelineEpisode,
+    input: Pick<PipelineExpectedInput, 'estimand' | 'cdf' | 'daysRemaining'>,
+): number {
+    const estimand: AiPipelineEstimand = input.estimand ?? 'cure';
+    const daysRemaining = Math.max(0, finite(input.daysRemaining));
+
+    return estimand === 'cif'
+        ? cifContribution(episode)
+        : cureContribution(episode, input.cdf, daysRemaining);
 }
 
 /**

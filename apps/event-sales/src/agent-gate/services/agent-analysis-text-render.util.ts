@@ -172,13 +172,22 @@ export function renderMethodologyComments(dto: AgentCallAnalysisDto): string[] {
 }
 
 /**
+ * Ссылка на страницу разбора звонка (расшифровка с подсветкой мест разбора
+ * и запись) — отдельной строкой записи таймлайна.
+ */
+export const renderCallPageLink = (pageUrl: string): string =>
+    `🔎 [url=${pageUrl}]Открыть разбор звонка: расшифровка, запись и места разбора[/url]`;
+
+/**
  * Дубль анализа для таймлайна сделки/лида. В таймлайне — ТОЛЬКО русские
  * названия: внутренние коды (GREETING, cold, call-report-analyzer)
- * читателю ничего не говорят.
+ * читателю ничего не говорят. Ссылка на страницу разбора — последней
+ * строкой, если она есть.
  */
 export function renderAnalysisDuplicateComment(
     activityId: string | null,
     dto: AgentCallAnalysisDto,
+    pageUrl: string | null = null,
 ): string {
     const sectionLines = (dto.sections ?? [])
         .filter(section => section.relevance > 0)
@@ -207,7 +216,8 @@ export function renderAnalysisDuplicateComment(
             : '') +
         (dto.employeeRecommendations
             ? `\n[b]Сотруднику:[/b] ${dto.employeeRecommendations.slice(0, 500)}`
-            : '')
+            : '') +
+        (pageUrl ? `\n\n${renderCallPageLink(pageUrl)}` : '')
     );
 }
 

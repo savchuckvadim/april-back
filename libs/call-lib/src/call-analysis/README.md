@@ -46,7 +46,7 @@ Env-переменной ключа нет (BITRIX_VIBE_TEST выпилен 2026
 Ключ выпускается в личном кабинете [vibecode.bitrix24.tech](https://vibecode.bitrix24.tech).
 
 Используемые модели:
-- **Транскрибация**: `bitrix/deepdml/faster-whisper-large-v3-turbo-ct2` (бесплатная)
+- **Транскрибация**: `bitrix/bitrixgpt-5.6-transcribe` (с 16.11.2026 вместо Whisper)
 - **Анализ**: `bitrix/bitrixgpt-5.5` (структурированный вывод JSON schema)
 
 ## API

@@ -10,6 +10,7 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AiAnalyticsAboutModule } from '../about/ai-analytics-about.module';
 import { AiAnalyticsModule } from '../ai-analytics.module';
 import { AiAnalyticsBriefModule } from '../brief/ai-analytics-brief.module';
+import { AiAnalyticsCallPageModule } from '../call-page/ai-analytics-call-page.module';
 import {
     AI_ANALYTICS_CORE_PBX_PROVIDERS,
     AiAnalyticsCorePbxModule,
@@ -114,6 +115,10 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsReviewController',
     'AiAnalyticsRopMarkController',
     'AiAnalyticsStyleController',
+    // Страница разбора звонка: две открытые ручки по ссылке-пропуску.
+    'CallPageController',
+    // Ссылки на страницы разбора для списков витрины — под сессией портала.
+    'CallPageLinksController',
 ];
 
 /** Модули фичи, в которых объявлены провайдеры (для проверки дублей). */
@@ -135,6 +140,7 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsAboutModule,
     AiAnalyticsReviewModule,
     AiAnalyticsOwnerReportModule,
+    AiAnalyticsCallPageModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;
@@ -257,7 +263,7 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         },
     );
 
-    it('поверхность API — ровно восемь контроллеров фичи, чужих через транзитивные импорты нет', () => {
+    it('поверхность API — только контроллеры фичи из списка, чужих через транзитивные импорты нет', () => {
         const graph = [AiAnalyticsModule, ...importsDeep(AiAnalyticsModule)];
         const controllers = graph
             .flatMap(module => metadataList(module, 'controllers'))

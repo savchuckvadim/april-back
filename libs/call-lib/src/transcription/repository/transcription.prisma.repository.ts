@@ -355,6 +355,19 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         });
     }
 
+    async findPipelineLiteByIds(
+        domain: string,
+        ids: readonly string[],
+    ): Promise<TranscriptionPipelineLiteRow[]> {
+        // Номер — десятичное целое: остальное в BigInt не превращаем.
+        const numeric = ids.filter(id => /^\d{1,18}$/.test(id));
+        if (numeric.length === 0) return [];
+        return this.prisma.transcription.findMany({
+            where: { domain, id: { in: numeric.map(id => BigInt(id)) } },
+            select: TRANSCRIPTION_PIPELINE_LITE_SELECT,
+        });
+    }
+
     async findFirstDonePipelineAt(domain: string): Promise<Date | null> {
         const done = this.donePipelineWhere(domain);
         // MIN(COALESCE(call_started_at, created_at)) двумя агрегатами:

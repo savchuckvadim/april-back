@@ -21,6 +21,10 @@ import type {
     ReanalysisOneOutcome,
     ReanalysisPoolState,
 } from './call-report-reanalyze.pool';
+import {
+    isMethodologyStale,
+    type ReanalysisMethodology,
+} from './call-report-reanalyze.methodology';
 import { promptVersionOf } from './call-report-retest.util';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -60,6 +64,11 @@ export interface ReanalysisCandidate {
 export interface ReanalysisSelection {
     candidates: ReanalysisCandidate[];
     skippedBy: Record<ReanalysisSkipReason, number>;
+    /**
+     * Из кандидатов — разборы ТЕКУЩЕЙ версии промпта, сделанные без прохода
+     * методики портала (или с другой её версией).
+     */
+    methodologyOnly: number;
 }
 
 /** Итог части прогона — в лог и в результат джобы. */
@@ -152,17 +161,22 @@ export function analysisByTranscription<T extends ReanalysisRecordView>(
  * пересчитать историю именно текущей версией, а серии накопленной
  * истории объединены (AI_ANALYSIS_SERIES_START). Без разбора — пропуск
  * (короткие/нерелевантные заново не разбираем); активный разбор текущей
- * версии — пропуск (повтор запуска безопасен).
+ * версии — пропуск (повтор запуска безопасен), кроме случая, когда на
+ * портале выбрана методика, применимая к типу звонка, а разбор сделан без
+ * её прохода: такой звонок — тоже кандидат.
  */
 export function selectReanalysisCandidates(input: {
     transcriptions: readonly ReanalysisTranscriptionView[];
     records: readonly ReanalysisRecordView[];
     currentPromptVersion: string;
     roster: readonly number[] | null;
+    /** Методика портала; нет поля или null — методика не выбрана. */
+    methodology?: ReanalysisMethodology | null;
 }): ReanalysisSelection {
     const grouped = analysisByTranscription(input.records);
     const skippedBy = emptySkipCounts();
     const candidates: ReanalysisCandidate[] = [];
+    let methodologyOnly = 0;
     for (const transcription of input.transcriptions) {
         if (!isInRoster(transcription.userId, input.roster)) {
             skippedBy.notInRoster += 1;
@@ -180,8 +194,11 @@ export function selectReanalysisCandidates(input: {
         }
         const oldPromptVersion = promptVersionOf(old.user_result);
         if (oldPromptVersion === input.currentPromptVersion) {
-            skippedBy.upToDate += 1;
-            continue;
+            if (!isMethodologyStale(old.user_result, input.methodology)) {
+                skippedBy.upToDate += 1;
+                continue;
+            }
+            methodologyOnly += 1;
         }
         const oldSeries =
             oldPromptVersion === null
@@ -195,7 +212,7 @@ export function selectReanalysisCandidates(input: {
             oldSeries,
         });
     }
-    return { candidates, skippedBy };
+    return { candidates, skippedBy, methodologyOnly };
 }
 
 /**

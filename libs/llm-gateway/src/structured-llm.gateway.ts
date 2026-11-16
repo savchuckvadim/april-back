@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AiRagStructuredAdapter } from './adapters/ai-rag-structured.adapter';
 import { OpenAiCompatibleStructuredAdapter } from './adapters/openai-compatible-structured.adapter';
 import { VibecodeStructuredAdapter } from './adapters/vibecode-structured.adapter';
+import { describeLlmExhausted } from './llm-call-log.util';
 import { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
 import { LlmProviderCalls, type LlmCallTrail } from './llm-provider-calls';
 import { LlmProviderOrderResolver } from './llm-provider-order.resolver';
@@ -127,6 +128,9 @@ export class StructuredLlmGateway {
             schemaName,
             schema,
             ...(options?.model ? { model: options.model } : {}),
+            ...(options?.deferExhaustedAlert
+                ? { deferExhaustedAlert: true }
+                : {}),
         });
     }
 
@@ -153,6 +157,11 @@ export class StructuredLlmGateway {
                 continue;
             }
             primary ??= adapter.code;
+            // До проверки паузы: поставщика, который запрос такого размера не
+            // берёт, не зовут и не пробуют — запрос не пройдёт в любом случае.
+            if (await this.calls.skippedBySize(adapter, request, trail)) {
+                continue;
+            }
             if (await this.breaker.isOpen(adapter.code)) {
                 paused.push(adapter);
                 trail.notes.push(
@@ -182,12 +191,29 @@ export class StructuredLlmGateway {
             if (response) return this.answered(response, request, trail);
         }
         const reasons = trail.notes.join('; ');
-        await this.alertExhausted(request, reasons, primary, trail);
+        if (!request.deferExhaustedAlert) {
+            await this.alertExhausted(request, primary, trail);
+        }
         throw new LlmUnavailableError(
             `LLM недоступна для ${request.schemaName} (${request.domain}): ${reasons}`,
             trail.failures,
             primary,
+            trail.notes,
         );
+    }
+
+    /**
+     * Тревога по ошибке вызова с deferExhaustedAlert: вызывающий решил, что
+     * повтора не будет. Правила те же, что у обычной тревоги.
+     */
+    reportExhausted(
+        error: LlmUnavailableError,
+        request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
+    ): Promise<void> {
+        return this.alertExhausted(request, error.primary, {
+            notes: [...error.notes],
+            failures: [...error.failures],
+        });
     }
 
     /**
@@ -197,16 +223,19 @@ export class StructuredLlmGateway {
      * уже сообщил) — тревога одна за паузу, остальные такие отказы — в
      * журнал (ревью 11.11.2026: иначе каждый отложенный вызов слал своё
      * «ПОПЫТКИ ИСЧЕРПАНЫ», и Telegram глушил сообщение «снова отвечает»).
+     * Поставщик, пропущенный по размеру запроса, в тексте назван исправным
+     * (16.11.2026) — см. describeLlmExhausted.
      */
     private async alertExhausted(
-        request: StructuredLlmRequest,
-        reasons: string,
+        request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
         primary: LlmProviderCode | null,
         trail: LlmCallTrail,
     ): Promise<void> {
-        const text =
-            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
-            `отказали все поставщики: ${reasons}`;
+        const text = describeLlmExhausted(
+            request,
+            trail.notes,
+            trail.failures.some(failure => failure.tooLarge),
+        );
         const primaryTried =
             primary === null ||
             trail.failures.some(

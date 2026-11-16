@@ -6,6 +6,7 @@ import {
     PortalAppSettingsRecord,
 } from '@lib/portal-lib/store/app-settings';
 import { PortalAiSettingsWithDomain } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
+import { nightlyLimitNote } from '../call-report/cron/call-report-facts-catchup.scheduler';
 
 /**
  * Сведения о кронах event-sales для стартового отчёта: что делает крон и
@@ -134,6 +135,12 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
         purpose: 'разбор звонков: догон неполных и упавших разборов',
     },
     {
+        name: 'transcription-budget-alert',
+        purpose: 'распознавание: оповещение о месячном лимите Яндекса',
+        include: portal => (portal.yandexMonthlyBudgetRub ?? 0) > 0,
+        note: portal => `лимит ${portal.yandexMonthlyBudgetRub ?? 0} ₽ в месяц`,
+    },
+    {
         name: 'call-report-smart-backfill',
         purpose: 'разбор звонков: дописывание карточек смарта',
     },
@@ -158,12 +165,19 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
         name: 'call-report-analytics-snapshot',
         purpose: 'недельные снимки отчётов по звонкам для трендов',
     },
-    // Ночной догон фактов (B6): порталы с лимитом в рублях в настройках AI.
+    // Ночной догон фактов (B6): порталы с лимитом в рублях или в звонках
+    // в настройках AI.
     {
         name: 'call-report-facts-catchup-nightly',
         purpose: 'ночной догон признаков в старых разборах',
-        include: portal => (portal.factsCatchupNightlyBudgetRub ?? 0) > 0,
-        note: portal => `${portal.factsCatchupNightlyBudgetRub ?? 0} ₽ за ночь`,
+        include: portal =>
+            (portal.factsCatchupNightlyBudgetRub ?? 0) > 0 ||
+            (portal.factsCatchupNightlyMaxCalls ?? 0) > 0,
+        note: portal =>
+            nightlyLimitNote(
+                portal.factsCatchupNightlyBudgetRub ?? 0,
+                portal.factsCatchupNightlyMaxCalls ?? 0,
+            ),
     },
 ];
 

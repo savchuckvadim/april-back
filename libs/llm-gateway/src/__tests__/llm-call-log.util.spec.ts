@@ -1,6 +1,7 @@
 import {
     describeLlmCallFailure,
     describeLlmCallSuccess,
+    llmCallMeta,
 } from '../llm-call-log.util';
 import type { StructuredLlmResponse } from '../structured-llm.types';
 
@@ -89,5 +90,54 @@ describe('llm-call-log.util — строки журнала вызова мод�
             'Провайдер LLM vibecode не ответил на call_focus_form (test.bitrix24.ru) ' +
                 'через 180012 мс (ждал слота 30000 мс): Vibecode call_focus_form timeout after 180000 ms',
         );
+    });
+});
+
+/** 16.11.2026: замер уходит в meta журнала — считать проходы запросом. */
+describe('llm-call-log.util — замер вызова в meta журнала', () => {
+    it('удачный вызов: время ответа без ожидания слота, вход, токены и модель', () => {
+        const meta = llmCallMeta(REQUEST, 'vibecode', 53_280, 12_000, {
+            usage: {
+                promptTokens: 5120,
+                completionTokens: 860,
+                totalTokens: 5980,
+            },
+            model: 'bitrix/bitrixgpt-5.5',
+        });
+
+        expect(meta).toEqual({
+            llm: {
+                provider: 'vibecode',
+                schema: 'call_focus_form',
+                domain: 'test.bitrix24.ru',
+                ok: true,
+                ms: 41_280,
+                queueMs: 12_000,
+                inputChars: 19,
+                promptTokens: 5120,
+                completionTokens: 860,
+                model: 'bitrix/bitrixgpt-5.5',
+            },
+        });
+    });
+
+    it('сбой: ok=false, токенов и модели нет, время — молчание поставщика', () => {
+        const { llm } = llmCallMeta(
+            REQUEST,
+            'openai-compatible',
+            180_012,
+            undefined,
+            null,
+        );
+
+        expect(llm).toMatchObject({
+            provider: 'openai-compatible',
+            ok: false,
+            ms: 180_012,
+            queueMs: 0,
+            promptTokens: null,
+            completionTokens: null,
+            model: null,
+        });
     });
 });

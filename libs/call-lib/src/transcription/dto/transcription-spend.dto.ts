@@ -152,6 +152,15 @@ export class TranscriptionSpendPortalRowDto {
     portalId: number | null;
 
     @ApiProperty({
+        description:
+            'Месячный лимит расхода портала на Яндекс, рублей (настройка AI портала); null — лимит не задан.',
+        type: Number,
+        nullable: true,
+        example: 1500,
+    })
+    yandexBudgetRub: number | null;
+
+    @ApiProperty({
         description: 'Итог портала за месяц.',
         type: TranscriptionSpendTotalsDto,
     })
@@ -321,6 +330,15 @@ export class TranscriptionSpendPortalDto {
         example: 60,
     })
     kopecksPerMinute: number;
+
+    @ApiProperty({
+        description:
+            'Месячный лимит расхода портала на Яндекс, рублей (настройка AI портала); null — лимит не задан.',
+        type: Number,
+        nullable: true,
+        example: 1500,
+    })
+    yandexBudgetRub: number | null;
 
     @ApiProperty({
         description: 'Итог портала за месяц.',

@@ -16,7 +16,9 @@
  * - вход повтора тот же, что у штатного разбора: расшифровка с
  *   таймкодами (П6) и паспорт звонка;
  * - расход модели повтора пишется в колонки ais (tokens_count / price по
- *   цене портала) — повторы видны в GET admin/ai-analytics/cost.
+ *   цене портала) — повторы видны в GET admin/ai-analytics/cost;
+ * - прогон идёт под контролем: в телеграм уходит сообщение на старте,
+ *   каждые 50 пар и итог (`call-report-retest.progress.ts`).
  *
  * `@Injectable` без bitrix-состояния: Битрикс здесь не нужен вовсе.
  */
@@ -45,6 +47,7 @@ import {
 } from '../contracts/call-report-versions.const';
 import { CallAnalysisRerunService } from '../services/call-analysis-rerun.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
+import { RetestProgress } from './call-report-retest.progress';
 import {
     latestPerTranscription,
     pairsHashOf,
@@ -73,6 +76,8 @@ export interface CallReportRetestResult {
     sampled: number;
     /** Повторено моделью в этом запуске. */
     rerun: number;
+    /** Повторов не получилось: сбой модели или пустой ответ. */
+    failed: number;
     /** Повторы взяты из прошлых запусков той же версии. */
     reused: number;
     /** Пар в отчёте. */
@@ -131,7 +136,14 @@ export class CallReportRetestUseCase {
         const settings = await this.settingsService.resolve(data.domain);
         const pairs: AgreementPair[] = [];
         let rerun = 0;
+        let failed = 0;
         let timeBudgetHit = false;
+        const progress = new RetestProgress(this.logger, data.domain);
+        progress.start(
+            sample.length,
+            reused.size,
+            RETEST_DEFAULTS.timeBudgetMs,
+        );
         for (const original of sample) {
             const transcriptionId = original.transcription_id as string;
             let second: unknown = reused.get(transcriptionId) ?? null;
@@ -145,7 +157,10 @@ export class CallReportRetestUseCase {
                     versions,
                     settings.deepAnalysisModel,
                 );
-                if (second === null) continue;
+                if (second === null) {
+                    failed += 1;
+                    continue;
+                }
                 rerun += 1;
             }
             const pair = toAgreementPair(
@@ -154,6 +169,13 @@ export class CallReportRetestUseCase {
                 second,
             );
             if (pair !== null) pairs.push(pair);
+            progress.tick({
+                sampled: sample.length,
+                pairs: pairs.length,
+                rerun,
+                failed,
+                elapsedMs: Date.now() - startedAt,
+            });
         }
         const report =
             pairs.length === 0
@@ -180,6 +202,7 @@ export class CallReportRetestUseCase {
             candidates: candidates.length,
             sampled: sample.length,
             rerun,
+            failed,
             reused: pairs.length - rerun,
             pairs: pairs.length,
             reportId,
@@ -193,6 +216,16 @@ export class CallReportRetestUseCase {
             timeBudgetHit,
             elapsedMs: Date.now() - startedAt,
         };
+        progress.finish({
+            sampled: result.sampled,
+            pairs: result.pairs,
+            rerun,
+            failed,
+            reused: result.reused,
+            sigma: result.sigmaLlm?.value ?? null,
+            timeBudgetHit,
+            elapsedMs: result.elapsedMs,
+        });
         this.logger.log(
             `Test-retest ${data.domain} (${versions.prompt}): пар ${result.pairs}, ` +
                 `повторено ${rerun}, из прошлых ${result.reused}, отчёт ${reportId ?? '—'}`,

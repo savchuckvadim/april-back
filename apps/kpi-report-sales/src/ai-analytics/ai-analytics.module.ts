@@ -17,6 +17,7 @@ import { AiAnalyticsForecastController } from './ai-analytics-forecast.controlle
 import { AiAnalyticsOverviewController } from './ai-analytics-overview.controller';
 import { AiAnalyticsController } from './ai-analytics.controller';
 import { AiAnalyticsBriefModule } from './brief/ai-analytics-brief.module';
+import { AiAnalyticsCallPageModule } from './call-page/ai-analytics-call-page.module';
 import { AiAnalyticsCorePbxModule } from './core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from './core/ai-analytics-core.module';
 import { AiAnalyticsAuditScheduler } from './cron/ai-analytics-audit.scheduler';
@@ -126,6 +127,7 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         AiAnalyticsAboutModule,
         AiAnalyticsReviewModule,
         AiAnalyticsOwnerReportModule,
+        AiAnalyticsCallPageModule,
     ],
     controllers: [
         AiAnalyticsController,

@@ -9,6 +9,7 @@ import { CallReportBaseItemService } from './services/call-report-base-item.serv
 import { CallReportDealFamilyService } from './services/call-report-deal-family.service';
 import { CallReportDealVerifyService } from './services/call-report-deal-verify.service';
 import { CallReportSmartResolverService } from './services/call-report-smart-resolver.service';
+import { CheckCallReportSmartUseCase } from './use-cases/check-call-report-smart.use-case';
 import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-smart.use-case';
 
 /**
@@ -31,6 +32,7 @@ import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-s
     providers: [
         CallReportSmartResolverService,
         InstallCallReportSmartUseCase,
+        CheckCallReportSmartUseCase,
         CallReportBaseItemService,
         CallReportDealFamilyService,
         CallReportDealVerifyService,
@@ -38,6 +40,7 @@ import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-s
     exports: [
         CallReportSmartResolverService,
         InstallCallReportSmartUseCase,
+        CheckCallReportSmartUseCase,
         CallReportBaseItemService,
         CallReportDealFamilyService,
         CallReportDealVerifyService,

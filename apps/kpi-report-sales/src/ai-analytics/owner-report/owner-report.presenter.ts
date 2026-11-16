@@ -29,6 +29,7 @@ export function toOwnerReportDto(
         text: {
             title: text.title,
             periodLabel: text.periodLabel,
+            base: text.base ?? null,
             tiles: text.tiles,
             attention: text.attention,
             summary: text.summary,

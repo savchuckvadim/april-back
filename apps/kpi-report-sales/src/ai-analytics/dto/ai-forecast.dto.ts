@@ -6,10 +6,11 @@ import {
     type AiForecastMode,
 } from '../constants/ai-forecast.const';
 import { AiForecastBacktestSummaryDto } from './ai-forecast-backtest.dto';
+import { AiForecastShownDto } from './ai-forecast-shown.dto';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 
-export { AiForecastBacktestSummaryDto };
+export { AiForecastBacktestSummaryDto, AiForecastShownDto };
 
 /**
  * Прогноз отдела на месяц (Фаза 4, план §4.8, §10 L4): вилка продаж
@@ -191,6 +192,17 @@ export class AiForecastDto {
         example: 41.3,
     })
     mean3: number | null;
+
+    @ApiProperty({
+        description:
+            'Число для карточки прогноза: показывается всегда, когда есть ' +
+            'журнал дня, в том числе в режиме shadow — с пометкой, чей это ' +
+            'расчёт и насколько ему верить. null — журнала дня нет ' +
+            '(прогноз ещё не считался), показывать нечего.',
+        type: AiForecastShownDto,
+        nullable: true,
+    })
+    shown: AiForecastShownDto | null;
 
     @ApiProperty({
         description:

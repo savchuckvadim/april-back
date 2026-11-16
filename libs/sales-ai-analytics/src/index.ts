@@ -199,6 +199,7 @@ export * from './model/timestamp-audit';
 export * from './model/quantile.util';
 export * from './model/lag-cdf';
 export * from './model/forecast';
+export * from './model/forecast-pipeline-top';
 export * from './model/capacity';
 export * from './model/target';
 export * from './model/ramp';
@@ -403,3 +404,5 @@ export * from './model/phase4.index';
 
 // Отчёт собственнику за период (06.11.2026): факты по звонкам, CRM и телефонии — см. model/owner-report.
 export * from './model/owner-report';
+// Движение сделок (этап 7.3): статус открытой сделки по досье — см. model/deal-movement.
+export * from './model/deal-movement';

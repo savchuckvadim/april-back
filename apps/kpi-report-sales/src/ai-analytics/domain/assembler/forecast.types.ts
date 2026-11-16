@@ -14,6 +14,7 @@ import type {
     LeverCandidate,
     ParamContext,
     PipelineEpisode,
+    PipelineEpisodeShare,
 } from '@lib/sales-ai-analytics';
 import type { AiSnapshotMeta } from './manager-snapshot.types';
 import type {
@@ -79,6 +80,28 @@ export interface ForecastBuildInput {
     readonly meta: AiSnapshotMeta;
 }
 
+/** Сколько самых «тяжёлых» открытых сделок сохраняем в разложении. */
+export const AI_FORECAST_TOP_EPISODES = 5;
+
+/**
+ * Входы расчёта прогноза менеджера — для разложения в админке: из чего
+ * сложились ожидание от новых встреч и ожидание от открытых сделок.
+ */
+export interface ForecastBreakdown {
+    /** Сделано входной активности с начала месяца. */
+    entryDone: number;
+    /** Темп входной активности в рабочий день. */
+    entryRate: number;
+    /** Конверсия входной активности в продажу (`Π θ` по пути). */
+    conversion: number;
+    /** Зрелость `F̄`: какая доля будущих продаж успеет закрыться до конца месяца. */
+    fBar: number;
+    /** Открытых сделок в расчёте ожидания от пайплайна. */
+    openEpisodes: number;
+    /** Сделки с наибольшим вкладом в ожидание; пусто — истории стадий нет. */
+    topEpisodes: PipelineEpisodeShare[];
+}
+
 /** Нагрузка снапшота `ai-analytics-forecast` за день менеджера. */
 export interface ForecastPayload {
     day: string;
@@ -111,5 +134,7 @@ export interface ForecastPayload {
     levers: LeverCandidate[];
     /** Утечки рёбер — вклад каждого ребра в недобор продаж. */
     leaks: FunnelLeak[];
+    /** Входы расчёта; нет поля — запись до 16.11.2026. */
+    breakdown?: ForecastBreakdown;
     meta: AiSnapshotMeta;
 }

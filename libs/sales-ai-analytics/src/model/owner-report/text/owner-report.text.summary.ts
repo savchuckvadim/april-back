@@ -1,5 +1,6 @@
 import type { OwnerReportFacts, OwnerShare } from '../owner-report.types';
 import { ISSUE_LABELS, TYPE_GROUP_LABELS } from './owner-report.labels';
+import { hasEnoughColdCalls } from './owner-report.text.overview';
 import {
     countText,
     moneyText,
@@ -126,7 +127,8 @@ function trendParagraph(facts: OwnerReportFacts): string | null {
     const full = facts.weeks.filter(week => !week.partial);
     const parts = [
         trendText(
-            full.filter(week => week.cold > 0),
+            // Недели с малым числом холодных звонков в вывод не идут.
+            full.filter(week => hasEnoughColdCalls(week.cold)),
             week => week.coldAdvanced.pct,
             'доля холодных звонков с продвижением',
         ),

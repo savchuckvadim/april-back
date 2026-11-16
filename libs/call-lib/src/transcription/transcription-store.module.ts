@@ -10,9 +10,9 @@ import { TranscriptionStoreService } from './services/transcription.store.servic
  * CRUD по транскрибациям (админка, admin-контроллер), не тянули тяжёлую
  * инфраструктуру транскрибации и её очередной воркер.
  *
- * Целевой (`transcription-store`) и админский (`admin/transcription-store`)
- * контроллеры регистрируются в потребляющих модулях
- * ({@link TranscriptionModule} / TranscriptionAdminModule), а не здесь.
+ * Контроллер у хранилища один — админский (`admin/transcription-store`),
+ * регистрируется в TranscriptionAdminModule (только apps/admin). Открытого
+ * контроллера в приложениях нет: расшифровки — данные клиента.
  */
 @Module({
     imports: [PrismaModule],

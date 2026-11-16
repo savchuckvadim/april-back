@@ -35,6 +35,13 @@ export const OBJECTION_TOPIC_SCHEMA = {
     enum: [...CALL_REPORT_OBJECTION_TOPICS, null],
 } as const;
 
+/**
+ * Секунда звонка по меткам [mm:ss] расшифровки (focus-v3.2, 16.11.2026):
+ * по ней страница разбора подсвечивает место и ставит запись. null — меток
+ * нет или место не определить.
+ */
+export const MOMENT_SEC_SCHEMA = { type: ['number', 'null'] } as const;
+
 export const ISSUES_SCHEMA = {
     type: 'array',
     items: {
@@ -43,8 +50,10 @@ export const ISSUES_SCHEMA = {
             code: { type: 'string', enum: [...CALL_REPORT_ISSUE_CODES] },
             quote: { type: 'string' },
             note: { type: ['string', 'null'] },
+            startSec: MOMENT_SEC_SCHEMA,
+            endSec: MOMENT_SEC_SCHEMA,
         },
-        required: ['code', 'quote', 'note'],
+        required: ['code', 'quote', 'note', 'startSec', 'endSec'],
         additionalProperties: false,
     },
 } as const;
@@ -59,8 +68,16 @@ export const PRICES_SCHEMA = {
             product: { type: ['string', 'null'] },
             kind: { type: 'string', enum: [...CALL_REPORT_PRICE_KINDS] },
             quote: { type: 'string' },
+            startSec: MOMENT_SEC_SCHEMA,
         },
-        required: ['amount', 'periodMonths', 'product', 'kind', 'quote'],
+        required: [
+            'amount',
+            'periodMonths',
+            'product',
+            'kind',
+            'quote',
+            'startSec',
+        ],
         additionalProperties: false,
     },
 } as const;
@@ -107,6 +124,26 @@ export const MOVEMENT_FACTS_REQUIRED = [
     'upsell',
 ] as const;
 
+/**
+ * Поля фокуса «содержание продажи» и цельного разбора (focus-v3.2): когда
+ * в звонке началось выяснение потребностей и когда — презентация.
+ */
+export const CONTENT_MOMENTS_PROPERTIES = {
+    needsStartSec: MOMENT_SEC_SCHEMA,
+    presentationStartSec: MOMENT_SEC_SCHEMA,
+} as const;
+export const CONTENT_MOMENTS_REQUIRED = [
+    'needsStartSec',
+    'presentationStartSec',
+] as const;
+
+export const CONTENT_MOMENTS_SPEC = `- needsStartSec — секунда звонка, с которой менеджер начал выяснять
+  потребности клиента (первый вопрос о его задачах), по метке [mm:ss]
+  расшифровки; потребности не выяснялись или меток нет — null.
+- presentationStartSec — секунда начала презентации (показа или предметного
+  рассказа под задачи клиента), по метке [mm:ss]; презентации не было или
+  меток нет — null.`;
+
 /** Поля фокуса «форма»: самопредставление. */
 export const FORM_FACTS_PROPERTIES = { selfIntro: SELF_INTRO_SCHEMA } as const;
 export const FORM_FACTS_REQUIRED = ['selfIntro'] as const;
@@ -126,6 +163,8 @@ export const MOVEMENT_FACTS_SPEC = `ФАКТЫ ДЛЯ ОТЧЁТА РУКОВО�
   показ системы, demo_access — тестовый доступ, offer — КП, invoice — счёт,
   callback — созвон без нового материала, other — иное. nextStep.set = false —
   null.
+- nextStep.startSec — секунда звонка, когда договорились о следующем шаге,
+  по метке [mm:ss] расшифровки; шаг не назначен или меток нет — null.
 - objections[].topic — тема возражения для отчёта, рядом с category:
   no_time — нет времени, отчётный период, «позвоните позже»;
   not_decision_maker — решает руководитель, «я не решаю»; budget_procurement —
@@ -137,20 +176,25 @@ export const MOVEMENT_FACTS_SPEC = `ФАКТЫ ДЛЯ ОТЧЁТА РУКОВО�
   call_fatigue — раздражение частыми звонками («вы уже звонили», «сколько
   можно»); price — дорого; other — не подходит ни одна тема.
 - issues — сбои НЕ по вине этого разговора, каждый с дословной цитатой:
-  crm_duplicate — клиенту уже звонили коллеги, он уже клиент или уже
-  отказывал, а звоним как новому; wrong_contact — не тот номер, не та
+  crm_duplicate — клиенту уже звонил другой наш менеджер или он в работе у
+  коллеги, а звоним как новому; crm_repeat_refused — клиент уже отказывал,
+  а ему звонят снова с тем же предложением; crm_existing_client — он уже наш
+  клиент (договор действует), а звоним как новому; wrong_contact — не тот номер, не та
   организация, человек уволился; telephony — обрыв, помехи, не дозвонились в
   договорённое время; demo_access — тестовый доступ истёк или не работает,
   письмо с доступом не дошло, исчерпан лимит; promise_broken — обещанное в
   прошлый раз (КП, счёт, показ, звонок) не сделано; brand_competition —
   клиент получает предложения того же бренда от другого поставщика. note —
-  одна фраза, что именно произошло, или null. Сбоев нет — пустой массив.
+  одна фраза, что именно произошло, или null. startSec / endSec — секунды
+  начала и конца цитаты по меткам [mm:ss] расшифровки; меток нет — null.
+  Сбоев нет — пустой массив.
 - prices — все цены, которые прозвучали, по одной записи на цену: amount —
   сумма в рублях числом; periodMonths — за сколько месяцев (12 — год, 3 —
   квартал, 1 — месяц; срок не назван — null); product — за что (комплект,
   доступ, название продукта) или null; kind — list (обычная цена) или promo
-  (со скидкой, по акции, «в подарок»); quote — фраза, где цена прозвучала.
-  Цен не было — пустой массив.
+  (со скидкой, по акции, «в подарок»); quote — фраза, где цена прозвучала;
+  startSec — секунда, когда она прозвучала, по метке [mm:ss]; меток нет —
+  null. Цен не было — пустой массив.
 - upsell — предлагал ли менеджер больше, чем просил клиент: attempted
   true/false; kind — bundle (комплект, больше продуктов), period (срок
   длиннее), seats (больше доступов или рабочих мест), other; what — что

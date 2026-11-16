@@ -16,7 +16,12 @@ import { CreateSmartDto } from '../dto/create-smart.dto';
 import { UpdateSmartDto } from '../dto/update-smart.dto';
 import { SmartResponseDto } from '../dto/smart-response.dto';
 import { SmartDetailsResponseDto } from '../dto/smart-details-response.dto';
-import { InstallCallReportSmartUseCase } from '@lib/call-lib';
+import {
+    CallReportSmartCheckDto,
+    CallReportSmartCheckQueryDto,
+    CheckCallReportSmartUseCase,
+    InstallCallReportSmartUseCase,
+} from '@lib/call-lib';
 import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 import {
     InstallAicallDto,
@@ -33,6 +38,7 @@ export class SmartController {
         private readonly smartService: SmartService,
         private readonly smartDetailsService: SmartDetailsService,
         private readonly installAicallUseCase: InstallCallReportSmartUseCase,
+        private readonly checkAicallUseCase: CheckCallReportSmartUseCase,
         private readonly constSmartInstallerResolver: ConstSmartInstallerResolver,
     ) {}
 
@@ -63,6 +69,28 @@ export class SmartController {
                 description: descriptor.description,
             })),
         };
+    }
+
+    @ApiOperation({
+        summary: 'Проверить поля смарта «AI-анализ звонков»',
+        description:
+            'Сравнивает поля смарта на портале с конфигом: каких полей нет ' +
+            '(отдельно — поля сводки методики продаж), в каких списках не ' +
+            'хватает значений и какие поля лишние и занимают место в лимите ' +
+            'полей. Только чтение: ничего не создаёт и не правит — в отличие ' +
+            'от установки, безопасна на портале с исчерпанным лимитом полей.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Что должно быть и что есть на портале.',
+        type: CallReportSmartCheckDto,
+    })
+    // ВАЖНО: объявлен ДО @Get(':id') — иначе 'aicall-check' уйдёт в ParseIntPipe.
+    @Get('aicall-check')
+    async checkAicall(
+        @Query() query: CallReportSmartCheckQueryDto,
+    ): Promise<CallReportSmartCheckDto> {
+        return this.checkAicallUseCase.execute(query.domain.trim());
     }
 
     @ApiOperation({
