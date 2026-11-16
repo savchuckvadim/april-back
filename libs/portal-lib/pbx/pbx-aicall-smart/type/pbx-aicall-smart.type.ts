@@ -703,6 +703,20 @@ export const CALL_REPORT_COMPLIANCE_SEVERITY_ITEMS = [
     { CODE: 'high', VALUE: 'Риск для компании', SORT: 400 },
 ] as const;
 
+/**
+ * Поля сводки методики продаж и ограничителей в карточке разбора. Без них
+ * разбор по методике в карточке не виден (полные пункты остаются в
+ * таймлайне и в ais) — проверка полей смарта показывает их отдельно.
+ */
+export const CALL_REPORT_METHODOLOGY_FIELD_CODES = [
+    'METHODOLOGY',
+    'CHECKPOINTS_DONE',
+    'CHECKPOINTS_TOTAL',
+    'SPIRALS_FULL',
+    'DEAL_PROGRESS',
+    'CAPS_APPLIED',
+] as const;
+
 export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     // — Идентификация звонка —
     { code: 'ACTIVITY_ID', name: 'ID активности звонка', type: 'string' },
