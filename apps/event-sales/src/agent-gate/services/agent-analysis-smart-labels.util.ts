@@ -1,4 +1,5 @@
 import {
+    CALL_REPORT_OBJECTION_REACTION_TITLES,
     CALL_REPORT_OBJECTION_REACTIONS,
     type CallReportObjectionReaction,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
@@ -11,14 +12,8 @@ import {
  * только то, что видит человек в Битриксе.
  */
 
-/** Реакция менеджера на возражение — как в описании поля DTO. */
-export const OBJECTION_REACTION_TITLES: Readonly<
-    Record<CallReportObjectionReaction, string>
-> = {
-    answer: 'ответил по существу',
-    clarify: 'уточнил вопросом',
-    other: 'иное или не отреагировал',
-};
+/** Реакция менеджера на возражение — общий справочник подписей. */
+export const OBJECTION_REACTION_TITLES = CALL_REPORT_OBJECTION_REACTION_TITLES;
 
 const isReaction = (value: string): value is CallReportObjectionReaction =>
     (CALL_REPORT_OBJECTION_REACTIONS as readonly string[]).includes(value);

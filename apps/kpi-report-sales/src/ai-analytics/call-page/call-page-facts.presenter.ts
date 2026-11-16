@@ -1,0 +1,183 @@
+/**
+ * «Итоги разговора» страницы звонка: строки «показатель — значение» из
+ * разбора. Показателя нет в разборе — строки нет. Чистые функции.
+ */
+import type { CallPageTone } from './call-page.const';
+import {
+    callPageTitleOf,
+    callPageTitlesOf,
+    rubTitle,
+} from './call-page-titles.util';
+import type {
+    CallPageAnalysisView,
+    CallPageNextStepView,
+    CallPagePriceView,
+} from './call-page.types';
+import type { CallPageFactDto } from './dto/call-page-parts.dto';
+
+type Fact = CallPageFactDto | null;
+
+const fact = (
+    label: string,
+    value: string | null,
+    tone: CallPageTone = 'neutral',
+): Fact => (value === null || value === '' ? null : { label, value, tone });
+
+const joined = (parts: readonly (string | null)[], glue: string): string =>
+    parts.filter((part): part is string => Boolean(part)).join(glue);
+
+/** «2026-11-19» → «19.11.2026»; другой формат — как есть. */
+function dateTitle(date: string): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return match ? `${match[3]}.${match[2]}.${match[1]}` : date;
+}
+
+const OUTCOME_TONES: Readonly<Record<string, CallPageTone>> = {
+    advanced: 'good',
+    refused: 'bad',
+};
+
+const SENTIMENT_TONES: Readonly<Record<string, CallPageTone>> = {
+    positive: 'good',
+    negative: 'bad',
+};
+
+function needsFact(view: CallPageAnalysisView): Fact {
+    if (view.needsFound === null) return null;
+    return view.needsFound
+        ? fact('Потребности', view.needs.join('; ') || 'выявлены', 'good')
+        : fact('Потребности', 'не выявлены', 'bad');
+}
+
+function priceTitle(price: CallPagePriceView): string {
+    const period = price.periodMonths ? ` за ${price.periodMonths} мес.` : '';
+    const promo = price.kind === 'promo' ? ', по акции' : '';
+    const product = price.product ? ` — ${price.product}` : '';
+    return `${rubTitle(price.amount)}${period}${promo}${product}`;
+}
+
+function priceFact(view: CallPageAnalysisView): Fact {
+    if (view.prices.length > 0) {
+        return fact('Цена', view.prices.map(priceTitle).join('; '));
+    }
+    if (view.priceDiscussed === null) return null;
+    return fact('Цена', view.priceDiscussed ? 'обсуждалась' : 'не обсуждалась');
+}
+
+function nextStepFact(step: CallPageNextStepView | null): Fact {
+    if (step === null) return null;
+    if (!step.set) return fact('Следующий шаг', 'не назначен', 'warn');
+    const when = joined(
+        [step.date ? dateTitle(step.date) : null, step.time],
+        ' в ',
+    );
+    const what = joined(
+        [callPageTitleOf('nextStepKind', step.kind), step.description],
+        ': ',
+    );
+    return fact(
+        'Следующий шаг',
+        joined([what, when], ', ') || 'назначен',
+        'good',
+    );
+}
+
+function upsellFact(view: CallPageAnalysisView): Fact {
+    if (!view.upsell?.attempted) return null;
+    return fact(
+        'Допродажа',
+        joined(
+            [callPageTitleOf('upsell', view.upsell.kind), view.upsell.what],
+            ': ',
+        ) || 'предложена',
+        'good',
+    );
+}
+
+function dealProgressFact(view: CallPageAnalysisView): Fact {
+    const progress = view.dealProgress;
+    if (progress === null) return null;
+    const moved = joined([progress.before, progress.after], ' → ');
+    const tone: CallPageTone =
+        progress.score >= 4 ? 'good' : progress.score <= 2 ? 'bad' : 'neutral';
+    return fact(
+        'Продвижение сделки',
+        joined([`${progress.score} из 5`, moved, progress.why], '. '),
+        tone,
+    );
+}
+
+function checklistFact(
+    label: string,
+    done: boolean | null,
+    analysis: string | null,
+): Fact {
+    if (done === null) return null;
+    return fact(
+        label,
+        joined([done ? 'выполнен' : 'не выполнен', analysis], '. '),
+        done ? 'good' : 'bad',
+    );
+}
+
+export function buildCallPageFacts(
+    view: CallPageAnalysisView,
+): CallPageFactDto[] {
+    const facts: Fact[] = [
+        fact(
+            'Результат звонка',
+            callPageTitleOf('outcome', view.outcome),
+            OUTCOME_TONES[view.outcome ?? ''] ?? 'neutral',
+        ),
+        fact(
+            'Собеседник',
+            joined(
+                [
+                    callPageTitleOf('interlocutor', view.interlocutorRole),
+                    callPageTitleOf('specialist', view.specialist),
+                ],
+                ', ',
+            ),
+        ),
+        fact(
+            'Настрой клиента',
+            callPageTitleOf('sentiment', view.sentiment),
+            SENTIMENT_TONES[view.sentiment ?? ''] ?? 'neutral',
+        ),
+        needsFact(view),
+        view.presentationDone === null
+            ? null
+            : fact('Показ', view.presentationDone ? 'был' : 'не было'),
+        fact('Что предлагали', view.productsOffered.join(', ')),
+        priceFact(view),
+        fact(
+            'Конкуренты',
+            callPageTitlesOf('competitor', view.competitors).join(', '),
+        ),
+        nextStepFact(view.nextStep),
+        upsellFact(view),
+        fact(
+            'Отказ',
+            joined(
+                [
+                    callPageTitleOf('refusal', view.refusalCategory),
+                    view.refusalReason,
+                ],
+                '. ',
+            ),
+            'bad',
+        ),
+        dealProgressFact(view),
+        view.talkRatioPct === null
+            ? null
+            : fact('Доля речи менеджера', `${Math.round(view.talkRatioPct)} %`),
+        view.questionsCount === null
+            ? null
+            : fact('Вопросов менеджера', String(view.questionsCount)),
+        checklistFact('Чек-лист ХВОСТ', view.hvostDone, view.hvostAnalysis),
+        checklistFact('Чек-лист 5К', view.fiveKDone, view.fiveKAnalysis),
+        fact('Сверка с отчётом менеджера', view.reportComparison),
+        fact('Речь менеджера', view.speechAnalysis),
+    ];
+    return facts.filter((item): item is CallPageFactDto => item !== null);
+}

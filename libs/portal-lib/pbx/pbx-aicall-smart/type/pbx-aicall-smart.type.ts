@@ -494,6 +494,14 @@ export const CALL_REPORT_OBJECTION_REACTIONS = [
 ] as const;
 export type CallReportObjectionReaction =
     (typeof CALL_REPORT_OBJECTION_REACTIONS)[number];
+/** Подписи реакции для людей: карточка разбора в Битриксе и страница звонка. */
+export const CALL_REPORT_OBJECTION_REACTION_TITLES: Readonly<
+    Record<CallReportObjectionReaction, string>
+> = {
+    answer: 'ответил по существу',
+    clarify: 'уточнил вопросом',
+    other: 'иное или не отреагировал',
+};
 export const CALL_REPORT_OBJECTION_ITEMS = [
     { CODE: 'price', VALUE: 'Цена', SORT: 100 },
     { CODE: 'timing', VALUE: 'Сроки / не сейчас', SORT: 200 },
