@@ -51,6 +51,7 @@ export class OfferPdfDocumentModelService {
 
         return {
             templateCode: dto.templateCode ?? OFFER_PDF_DEFAULT_TEMPLATE_CODE,
+            palette: cleanText(dto.palette),
             settings: resolveOfferPdfSettings(dto.settings),
             data,
             letter: {

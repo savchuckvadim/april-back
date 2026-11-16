@@ -5,6 +5,7 @@ import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferPdfController } from './controllers/offer-pdf.controller';
+import { OfferPdfAssetStore } from './lib/offer-pdf-asset-store';
 import { OfferPdfDocumentModelService } from './services/offer-pdf-document-model.service';
 import { OfferPdfGenerateService } from './services/offer-pdf-generate.service';
 import { OfferPdfRenderService } from './services/offer-pdf-render.service';
@@ -24,6 +25,11 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
     ],
     controllers: [OfferPdfController],
     providers: [
+        // картинки и логотипы стилей из storage/app — один кэш на процесс
+        {
+            provide: OfferPdfAssetStore,
+            useFactory: () => new OfferPdfAssetStore(),
+        },
         OfferPdfDocumentModelService,
         OfferPdfRenderService,
         OfferPdfGenerateService,

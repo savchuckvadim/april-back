@@ -9,6 +9,7 @@ export const createOfferPdfModelFixture = (
     overrides: Partial<OfferPdfDocumentModel> = {},
 ): OfferPdfDocumentModel => ({
     templateCode: OfferPdfTemplateCode.CLASSIC,
+    palette: null,
     settings: { ...OFFER_PDF_DEFAULT_SETTINGS },
     data: createOfferRenderDataFixture(),
     letter: { appeal: null, text: null },

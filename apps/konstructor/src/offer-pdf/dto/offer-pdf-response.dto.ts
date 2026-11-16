@@ -3,6 +3,24 @@ import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfSettingsDto } from './offer-pdf-generate.dto';
 import { OfferPdfGenerateResult } from '../services/offer-pdf-generate.service';
 import { OfferPdfTemplateInfo } from '../templates/offer-pdf-template.interface';
+import { OfferPdfPaletteInfo } from '../templates/kit/theme/offer-pdf-palette';
+
+export class OfferPdfPaletteItemDto implements OfferPdfPaletteInfo {
+    @ApiProperty({
+        description: 'Код гаммы — передаётся в preview/generate как palette.',
+        example: 'garant',
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название гаммы для выбора.',
+        example: 'Синий Гаранта',
+    })
+    name: string;
+
+    @ApiProperty({ description: 'Цвет кружка в выборе.', example: '#1F4E9C' })
+    swatch: string;
+}
 
 export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
     @ApiProperty({
@@ -35,10 +53,24 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
 
     @ApiProperty({
         description:
+            'Есть ли у стиля промо-страница (о системе, о сервисе): только у таких стилей работает настройка withPromo.',
+        example: false,
+    })
+    hasPromo: boolean;
+
+    @ApiProperty({
+        description:
             'Настройки, которые стиль задаёт сам: в конструкторе их переключатели неактивны, при генерации они ставятся поверх выбора менеджера.',
         type: () => OfferPdfSettingsDto,
     })
     lockedSettings: OfferPdfSettingsDto;
+
+    @ApiProperty({
+        description:
+            'Гаммы стиля; первая — по умолчанию. Пусто — у стиля одна гамма.',
+        type: () => [OfferPdfPaletteItemDto],
+    })
+    palettes: OfferPdfPaletteItemDto[];
 }
 
 export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {

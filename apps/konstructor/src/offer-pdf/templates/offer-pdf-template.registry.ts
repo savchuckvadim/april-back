@@ -1,5 +1,6 @@
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
+import { paletteInfo } from './kit/theme/offer-pdf-palette';
 import { classicTemplate } from './classic/classic.template';
 import { prismTemplate } from './prism/prism.template';
 import { monochromeTemplate } from './monochrome/monochrome.template';
@@ -22,12 +23,22 @@ export const findOfferPdfTemplate = (
 
 export const listOfferPdfTemplates = (): OfferPdfTemplateInfo[] =>
     OFFER_PDF_TEMPLATES.map(
-        ({ code, name, description, hasCover, lockedSettings }) => ({
+        ({
             code,
             name,
             description,
             hasCover,
+            hasPromo,
+            lockedSettings,
+            palettes,
+        }) => ({
+            code,
+            name,
+            description,
+            hasCover,
+            hasPromo,
             lockedSettings: lockedSettings ?? {},
+            palettes: (palettes ?? []).map(paletteInfo),
         }),
     );
 

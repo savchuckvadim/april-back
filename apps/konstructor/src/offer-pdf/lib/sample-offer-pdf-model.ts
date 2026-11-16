@@ -13,8 +13,10 @@ export const STYLE_PREVIEW_SAMPLE_VERSION = 'garant-office-1';
  */
 export const sampleOfferPdfModel = (
     templateCode: OfferPdfTemplateCode,
+    palette: string | null = null,
 ): OfferPdfDocumentModel => ({
     templateCode,
+    palette,
     settings: resolveOfferPdfSettings(),
     data: createOfferRenderDataFixture({
         GeneralProductName: 'Гарант-Офис',

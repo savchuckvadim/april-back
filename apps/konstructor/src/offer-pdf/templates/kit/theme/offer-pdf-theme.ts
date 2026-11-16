@@ -16,6 +16,13 @@ export interface OfferPdfTheme {
         readonly tableBorder: string;
         /** Цвет листа; не задан — белый */
         readonly paper?: string;
+        /** Светлый оттенок акцента — плашки, подложки */
+        readonly accentSoft?: string;
+        /** Насыщенный оттенок акцента — грани, заливки */
+        readonly accentStrong?: string;
+        /** Тёмный титульник: цвет листа и текста на нём */
+        readonly coverPaper?: string;
+        readonly coverText?: string;
     };
     readonly sizes: {
         readonly xs: number;
@@ -41,6 +48,20 @@ export interface OfferPdfTheme {
         readonly headingWeight?: number;
     };
     readonly lineHeight: number;
+    /**
+     * Карточки под письмом и разделами — чтобы текст и таблицы читались
+     * поверх фона во весь лист. Не заданы — разделы лежат прямо на листе.
+     */
+    readonly surface?: {
+        readonly background: string;
+        readonly radius: number;
+        readonly padding: number;
+        readonly borderColor?: string;
+    };
+    /** Наполнение без описаний: названия в две колонки (как во вордовских шаблонах) */
+    readonly infoblocks?: {
+        readonly namesColumns: 1 | 2;
+    };
 }
 
 /** Лист A4 в пунктах */

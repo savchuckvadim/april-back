@@ -22,6 +22,7 @@ export const prismTemplate: OfferPdfTemplate = {
     description:
         'Титульный лист с полосами «рифлёного стекла» и малиновым акцентом, лёгкие полосы у края каждой страницы, минималистичные шапка и подвал.',
     hasCover: true,
+    hasPromo: false,
     render: (model, frame) => (
         <OfferPdfDocument
             model={model}

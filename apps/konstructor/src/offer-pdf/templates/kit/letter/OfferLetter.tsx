@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { RichText } from '../../shared/RichText';
+import { surfaceOnly } from '../document/surface.styles';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { buildDefaultAppeal, buildDefaultLetterText } from './letter-default';
 import { letterStyles } from './letter.styles';
@@ -20,7 +21,7 @@ export const OfferLetter: FC<OfferLetterProps> = ({ model, theme }) => {
     const text = letter.text ?? buildDefaultLetterText(data);
 
     return (
-        <View>
+        <View style={surfaceOnly(theme)}>
             <View style={styles.rqRow}>
                 <View style={styles.rqLeft}>
                     <Text style={styles.rqLine}>{letterDateLine(meta)}</Text>

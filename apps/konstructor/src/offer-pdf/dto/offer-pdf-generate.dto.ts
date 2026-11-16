@@ -88,6 +88,17 @@ export class OfferPdfSettingsDto implements OfferPdfSettingsInput {
     @IsOptional()
     @IsBoolean()
     withCover?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Промо-страница после титульника (о системе, о сервисе). Действует у стилей, где она есть (hasPromo); у остальных игнорируется.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    withPromo?: boolean;
 }
 
 /** Сопроводительное письмо; пустые поля шаблон заполняет сам. */
@@ -140,6 +151,17 @@ export class OfferPdfGenerateDto extends OmitType(
     @IsOptional()
     @IsEnum(OfferPdfTemplateCode)
     templateCode?: OfferPdfTemplateCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Гамма стиля (коды — в palettes списка стилей). Не задана или неизвестна — первая гамма стиля.',
+        type: String,
+        example: 'garant',
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(40)
+    palette?: string;
 
     @ApiPropertyOptional({
         description: 'Настройки документа.',

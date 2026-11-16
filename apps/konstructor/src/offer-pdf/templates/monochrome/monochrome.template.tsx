@@ -22,6 +22,7 @@ export const monochromeTemplate: OfferPdfTemplate = {
     description:
         'Строгий чёрно-серый стиль: тёплый серый лист, тонкие крупные заголовки, на титульнике комплект крупно и клиент с ИНН, чёрная вкладка у края каждой страницы.',
     hasCover: true,
+    hasPromo: false,
     render: (model, frame) => (
         <OfferPdfDocument
             model={model}

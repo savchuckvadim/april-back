@@ -19,6 +19,7 @@ export const createReactPdfMock = () => ({
     Stop: 'STOP',
     Rect: 'RECT',
     Circle: 'CIRCLE',
+    G: 'G',
     Path: 'PATH',
     StyleSheet: { create: <T>(styles: T): T => styles },
     Font: {

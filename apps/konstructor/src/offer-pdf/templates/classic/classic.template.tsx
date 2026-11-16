@@ -23,6 +23,7 @@ export const classicTemplate: OfferPdfTemplate = {
     description:
         'Как в прежней версии: письмо, таблица цен, наполнение списком или таблицей, подпись и печать, контакты менеджера.',
     hasCover: false,
+    hasPromo: false,
     render: (model, frame) => (
         <OfferPdfDocument
             model={model}

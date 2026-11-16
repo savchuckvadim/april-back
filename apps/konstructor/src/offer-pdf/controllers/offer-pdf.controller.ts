@@ -6,6 +6,7 @@ import {
     Param,
     ParseEnumPipe,
     Post,
+    Query,
     Res,
 } from '@nestjs/common';
 import {
@@ -13,6 +14,7 @@ import {
     ApiOperation,
     ApiParam,
     ApiProduces,
+    ApiQuery,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
@@ -42,7 +44,7 @@ export class OfferPdfController {
     @ApiOperation({
         summary: 'Список PDF-шаблонов КП',
         description:
-            'Встроенные стили: код, название, описание, есть ли титульник и какие настройки стиль задаёт сам.',
+            'Встроенные стили: код, название, описание, есть ли титульник, гаммы и какие настройки стиль задаёт сам.',
     })
     @ApiOkResponse({ type: [OfferPdfTemplateItemDto] })
     @Get('templates')
@@ -61,6 +63,13 @@ export class OfferPdfController {
         enum: OfferPdfTemplateCode,
         description: 'Код стиля',
     })
+    @ApiQuery({
+        name: 'palette',
+        required: false,
+        type: String,
+        description:
+            'Код гаммы (palettes в списке стилей); не задан или неизвестен — первая гамма',
+    })
     @ApiProduces('application/pdf')
     @ApiResponse({
         status: 200,
@@ -72,8 +81,9 @@ export class OfferPdfController {
         @Param('code', new ParseEnumPipe(OfferPdfTemplateCode))
         code: OfferPdfTemplateCode,
         @Res() res: Response,
+        @Query('palette') palette?: string,
     ): Promise<void> {
-        const pdf = await this.stylePreviewService.preview(code);
+        const pdf = await this.stylePreviewService.preview(code, palette);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader(
             'Content-Disposition',

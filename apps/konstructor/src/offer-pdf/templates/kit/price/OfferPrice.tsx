@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
+import { onSurface } from '../document/surface.styles';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { hasDiscount, priceColumns } from './price-columns.util';
 import { SMALL_TABLE_ROWS, TOTALS_PRESENCE } from './price.layout';
@@ -30,7 +31,7 @@ export const OfferPrice: FC<OfferPriceProps> = ({ model, theme }) => {
     const isLast = (index: number): boolean => index === rows.length - 1;
 
     return (
-        <View style={base.section}>
+        <View style={onSurface(theme, base.section)}>
             <Text style={base.h2} minPresenceAhead={80}>
                 Стоимость
             </Text>

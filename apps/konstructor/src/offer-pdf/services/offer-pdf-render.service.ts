@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { registerOfferPdfFonts } from '../fonts/offer-pdf-fonts';
+import { OfferPdfAssetStore } from '../lib/offer-pdf-asset-store';
 import {
     fitPageFrame,
     renderPdfWithLayout,
@@ -35,6 +36,11 @@ export interface OfferPdfRenderResult {
 export class OfferPdfRenderService {
     private readonly logger = new Logger(OfferPdfRenderService.name);
 
+    /** Хранилище по умолчанию — для тестов и аудита, где сервис создаётся руками */
+    constructor(
+        private readonly assetStore: OfferPdfAssetStore = new OfferPdfAssetStore(),
+    ) {}
+
     async render(input: OfferPdfDocumentModel): Promise<OfferPdfRenderResult> {
         const template = findOfferPdfTemplate(input.templateCode);
         if (!template) {
@@ -42,8 +48,13 @@ export class OfferPdfRenderService {
                 `PDF-шаблон КП «${input.templateCode}» не найден`,
             );
         }
+        // картинки и логотипы стиля — из storage, до рендера
+        const assets = await this.assetStore.load({
+            images: template.assets,
+            logos: template.logos,
+        });
         // настройки, которые стиль задаёт сам, — поверх выбора менеджера
-        const model = withLockedSettings(input, template);
+        const model = { ...withLockedSettings(input, template), assets };
         registerOfferPdfFonts();
 
         const started = performance.now();
