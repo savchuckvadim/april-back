@@ -68,7 +68,10 @@ export interface MatrixCellCore {
     sections: MatrixSectionAggregate[];
     checklists: MatrixChecklists;
     evidenceCallIds: EvidenceCallIds;
-    /** В сравнимых строках ячейки больше одной сигнатуры versions. */
+    /**
+     * В строках ячейки больше одной СЕРИИ версий (`versionsSeriesKey`;
+     * строки без versions — отдельная серия); минорные правки не смешивают.
+     */
     versionsMixed: boolean;
     /**
      * Среднее продвижение сделки по звонку, шкала 1–5 (разборы focus-v3.0 и

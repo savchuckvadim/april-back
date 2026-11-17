@@ -2,7 +2,8 @@
  * Недельный снапшот менеджера (`ai-analytics-manager-week`, план §3.1,
  * поток 14b): из разборов недели собираются объём, оценки по корзинам и
  * типам, разделы рубрики, чек-листы, возражения, версии разбора и следы
- * правил портала.
+ * правил портала. Смешанность версий недели — по СЕРИЯМ
+ * (`week-versions.util.ts`), а не по точной строке версии.
  *
  * Что нельзя ломать:
  * - неделя БЕЗ разборов записи не создаёт — пустая строка в ряду хуже,
@@ -30,7 +31,6 @@ import {
     buildManagerTypeMatrix,
     buildObjectionsSlice,
     type AiScoringSettings,
-    type AnalysisVersions,
     type ManagerTypeMatrixOptions,
     type MinDurationSecByType,
     type ObjectionCategoryStat,
@@ -42,17 +42,17 @@ import {
 } from '../../constants/ai-manager-snapshot.const';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { toMatrixRow } from './manager-type-matrix.assembler';
-import {
-    versionsKey,
-    type AiSnapshotMeta,
-    type ManagerSnapshotRow,
-    type ManagerWeekPayload,
+import type {
+    AiSnapshotMeta,
+    ManagerSnapshotRow,
+    ManagerWeekPayload,
 } from './manager-snapshot.types';
 import { applyPeriodScoring, traceOf } from './period-scoring.util';
 import {
     applicabilityTraceOf,
     applySectionApplicability,
 } from './section-applicability.util';
+import { weekVersionsOf } from './week-versions.util';
 
 export interface ManagerWeekInput {
     /** ISO-неделя снапшота 'YYYY-Www'. */
@@ -136,34 +136,6 @@ export interface ManagerWeekAssembly {
     analyzed: number;
 }
 
-/** Сравнимая строка менеджера с известными версиями разбора. */
-function comparableVersions(
-    rows: readonly DatedLiteRow[],
-    managerId: string,
-): { versions: AnalysisVersions | null; mixed: boolean } {
-    const signatures = new Map<string, AnalysisVersions>();
-    for (const row of rows) {
-        if (row.managerId !== managerId || !row.analysisPresent) continue;
-        const versions = toAnalysisVersions(row.versions);
-        if (versions === null) continue;
-        signatures.set(versionsKey(versions), versions);
-    }
-    const found = [...signatures.values()];
-    return { versions: found[0] ?? null, mixed: found.length > 1 };
-}
-
-/** Карта версий разбора → контракт AnalysisVersions; неполная — null. */
-export function toAnalysisVersions(
-    versions: Record<string, string> | null,
-): AnalysisVersions | null {
-    if (versions === null) return null;
-    const { prompt, rubric, registry, attribution, classifier } = versions;
-    const values = [prompt, rubric, registry, attribution, classifier];
-    return values.every(value => typeof value === 'string' && value !== '')
-        ? { prompt, rubric, registry, attribution, classifier }
-        : null;
-}
-
 /** Возражения менеджера за неделю по категориям; нет — пустой список. */
 function objectionsOf(
     slices: readonly {
@@ -197,7 +169,8 @@ export function buildManagerWeekPayload(
     const objections = buildObjectionsSlice(scoring.rows, matrixOptions);
     const rows = matrix.managers.map(manager => {
         const trace = traceOf(scoring, manager.managerId);
-        const versions = comparableVersions(scoring.rows, manager.managerId);
+        // Смешанность — по сериям версий: 3.2 и 3.3 в одной неделе не смесь.
+        const versions = weekVersionsOf(scoring.rows, manager.managerId);
         const payload: ManagerWeekPayload = {
             n: manager.n,
             nBeforeComparable: manager.nBeforeComparable,

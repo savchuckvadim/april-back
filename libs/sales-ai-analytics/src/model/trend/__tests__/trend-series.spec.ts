@@ -4,6 +4,10 @@ import {
     personalSigma,
     versionBreakIndex,
 } from '../trend-series';
+import {
+    versionsSeriesKey,
+    type AnalysisVersions,
+} from '../../../contracts/versions.types';
 import type { TrendPoint } from '../trend.types';
 import { toPoints, weekKeys } from './trend.fixture';
 
@@ -92,6 +96,52 @@ describe('versionBreakIndex', () => {
                 point(keys[3], 1, 'v3'),
             ]),
         ).toBe(3);
+    });
+});
+
+/**
+ * Сигнатура точки — серия версий (`versionsSeriesKey`): минорные правки
+ * задания модели ряд не рвут, правка по существу — рвёт.
+ */
+describe('versionBreakIndex — серии версий разбора', () => {
+    const V31: AnalysisVersions = {
+        prompt: 'focus-v3.1-2026-11-06',
+        rubric: 'sections-7-v2',
+        registry: 'a1b2c3d4e5f6',
+        attribution: '2026-08-24',
+        classifier: '2026-10-21',
+    };
+    const keys = weekKeys(4);
+    const seriesPoint = (key: string, versions: AnalysisVersions) =>
+        point(key, 6, versionsSeriesKey(versions));
+
+    it('недели на 3.1 → 3.2 → 3.3 подряд — ряд не рвётся', () => {
+        expect(
+            versionBreakIndex([
+                seriesPoint(keys[0], V31),
+                seriesPoint(keys[1], {
+                    ...V31,
+                    prompt: 'focus-v3.2-2026-11-16',
+                }),
+                seriesPoint(keys[2], {
+                    ...V31,
+                    prompt: 'focus-v3.3-2026-11-17',
+                }),
+            ]),
+        ).toBe(0);
+    });
+
+    it('версия промпта без записи в таблице серий — ряд рвётся на ней', () => {
+        expect(
+            versionBreakIndex([
+                seriesPoint(keys[0], V31),
+                seriesPoint(keys[1], V31),
+                seriesPoint(keys[2], {
+                    ...V31,
+                    prompt: 'focus-v4.0-2026-11-24',
+                }),
+            ]),
+        ).toBe(2);
     });
 });
 

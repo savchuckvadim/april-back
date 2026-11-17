@@ -4,8 +4,8 @@ import {
     buildManagerWeekPayload,
     emptyWeekPayload,
     periodMatrixOptions,
-    toAnalysisVersions,
 } from '../domain/assembler/manager-week.assembler';
+import { toAnalysisVersions } from '../domain/assembler/week-versions.util';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
 import { liteRow } from './fixtures/lite-row.fixture';
 
@@ -143,7 +143,18 @@ describe('Граница сравнимой истории', () => {
         expect(assembly.rows[0].payload.versionsMixed).toBe(false);
     });
 
-    it('две сигнатуры версий в неделе — versionsMixed', () => {
+    it('две серии версий в неделе (правка промпта по существу) — versionsMixed', () => {
+        const assembly = input([
+            callRow('t-1', { versions: VERSIONS }),
+            callRow('t-2', {
+                versions: { ...VERSIONS, prompt: 'focus-v2.2-2026-06-01' },
+            }),
+        ]);
+
+        expect(assembly.rows[0].payload.versionsMixed).toBe(true);
+    });
+
+    it('смена только рубрики серию не меняет — неделя не смешанная', () => {
         const assembly = input([
             callRow('t-1', { versions: VERSIONS }),
             callRow('t-2', {
@@ -151,12 +162,66 @@ describe('Граница сравнимой истории', () => {
             }),
         ]);
 
-        expect(assembly.rows[0].payload.versionsMixed).toBe(true);
+        expect(assembly.rows[0].payload.versionsMixed).toBe(false);
     });
 
     it('неполная карта версий разбора версиями не считается', () => {
         expect(toAnalysisVersions({ prompt: 'p' })).toBeNull();
         expect(toAnalysisVersions(null)).toBeNull();
+    });
+});
+
+/**
+ * Минорные правки задания модели (политика владельца, октябрь 2026) —
+ * одна серия: неделя со звонками 3.2 и 3.3 не смешанная, в снимок едет
+ * набор с наибольшей датой промпта независимо от порядка разборов.
+ */
+describe('Версии недели по сериям', () => {
+    const V32 = {
+        prompt: 'focus-v3.2-2026-11-16',
+        rubric: 'sections-7-v2',
+        registry: 'a1b2c3d4e5f6',
+        attribution: '2026-08-24',
+        classifier: '2026-10-21',
+    };
+    const V33 = { ...V32, prompt: 'focus-v3.3-2026-11-17' };
+
+    it('звонки 3.2 и 3.3 в одной неделе — не смешанная, версии — 3.3 при любом порядке', () => {
+        for (const order of [
+            [V32, V33],
+            [V33, V32],
+        ]) {
+            const payload = input(
+                order.map((versions, index) =>
+                    callRow(`t-${index}`, { versions }),
+                ),
+            ).rows[0].payload;
+
+            expect(payload.versionsMixed).toBe(false);
+            expect(payload.versions).toEqual(V33);
+        }
+    });
+
+    it('правка по существу (промпт без записи в таблице серий) рядом с 3.3 — смешанная, версии — поздней серии', () => {
+        const essential = { ...V33, prompt: 'focus-v4.0-2026-11-24' };
+        const payload = input([
+            callRow('t-1', { versions: essential }),
+            callRow('t-2', { versions: V33 }),
+        ]).rows[0].payload;
+
+        expect(payload.versionsMixed).toBe(true);
+        expect(payload.versions).toEqual(essential);
+    });
+
+    it('методика у части звонков смешанность не создаёт', () => {
+        const payload = input([
+            callRow('t-1', { versions: V33 }),
+            callRow('t-2', {
+                versions: { ...V33, methodology: 'polyansky@1.2' },
+            }),
+        ]).rows[0].payload;
+
+        expect(payload.versionsMixed).toBe(false);
     });
 });
 
