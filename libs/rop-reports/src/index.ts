@@ -8,6 +8,7 @@
  * (ai/tasks/ai-polyansky-method/2026-11-01-periodic-manager-digests.md).
  * Библиотека не импортирует ничего из apps/*.
  */
+export * from './rop-reports.module';
 export * from './period/rop-period';
 export * from './period/rop-schedule';
 export * from './recipients/department-heads.util';
@@ -28,3 +29,8 @@ export * from './state/rop-task-memory.service';
 export * from './delivery/rop-delivery.types';
 export * from './delivery/rop-disk.uploader';
 export * from './delivery/rop-task.channel';
+export * from './engine/rop-report.definition';
+export * from './engine/rop-tick-report';
+export * from './engine/rop-period.runner';
+export * from './engine/rop-run-now';
+export * from './engine/rop-report.ticker';
