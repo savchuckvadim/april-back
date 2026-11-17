@@ -5,11 +5,7 @@
  * ссылки), приходит готовым.
  */
 import type { TranscriptSegment } from '@lib/call-lib';
-import {
-    callTypeTitleOf,
-    objectionTitleOf,
-    sectionTitleOf,
-} from '@lib/sales-ai-analytics';
+import { callTypeTitleOf, objectionTitleOf } from '@lib/sales-ai-analytics';
 import {
     CALL_PAGE_CHECKPOINT_STATUS_TITLES,
     CALL_PAGE_CHECKPOINT_STATUSES,
@@ -17,6 +13,10 @@ import {
 } from './call-page.const';
 import { buildCallPageFacts } from './call-page-facts.presenter';
 import { buildCallPageHighlights } from './call-page-highlights.presenter';
+import {
+    buildCallPageSectionHighlights,
+    presentCallPageSections,
+} from './call-page-sections.presenter';
 import {
     callPageTitleOf,
     objectionHandlingOf,
@@ -31,7 +31,6 @@ import type {
     CallPageCheckpointDto,
     CallPageMethodologyDto,
     CallPageObjectionDto,
-    CallPageSectionDto,
 } from './dto/call-page-parts.dto';
 import type { CallPageDto, CallPageScoreDto } from './dto/call-page.dto';
 
@@ -85,27 +84,6 @@ function scoreOf(view: CallPageAnalysisView): CallPageScoreDto {
         incompleteNote:
             view.incompleteParts.length > 0 ? INCOMPLETE_NOTE : null,
     };
-}
-
-/** Разделы, которые относятся к этому типу звонка и хоть чем-то заполнены. */
-function sectionsOf(view: CallPageAnalysisView): CallPageSectionDto[] {
-    return view.sections
-        .filter(
-            section =>
-                section.relevance > 0 &&
-                (section.score !== null ||
-                    section.analysis !== null ||
-                    section.advice !== null),
-        )
-        .map(section => ({
-            title: sectionTitleOf(section.section),
-            score: section.score,
-            analysis: section.analysis,
-            asWas: section.asWas,
-            weaknesses: section.weaknesses,
-            advice: section.advice,
-            alternatives: section.alternatives,
-        }));
 }
 
 function objectionsOf(
@@ -170,8 +148,10 @@ function methodologyOf(
 export function presentCallPage(source: CallPageSource): CallPageDto {
     const { view } = source;
     const transcript = buildCallPageTranscript(source.call, view.dialog);
-    const { highlights, objectionIds, checkpointIds } = buildCallPageHighlights(
-        view,
+    const { highlights, objectionIds, checkpointIds, factIds } =
+        buildCallPageHighlights(view, transcript.segments);
+    const sectionMarks = buildCallPageSectionHighlights(
+        view.sections,
         transcript.segments,
     );
     return {
@@ -189,12 +169,16 @@ export function presentCallPage(source: CallPageSource): CallPageDto {
         summary: view.summary,
         recommendations: view.recommendations,
         employeeRecommendations: view.employeeRecommendations,
-        facts: buildCallPageFacts(view),
-        sections: sectionsOf(view),
+        facts: buildCallPageFacts(view, factIds),
+        sections: presentCallPageSections(
+            view.sections,
+            sectionMarks.sectionIds,
+        ),
         objections: objectionsOf(view, objectionIds),
         methodology: methodologyOf(view.methodology, checkpointIds),
         transcript: transcript.segments,
         transcriptTimed: transcript.timed,
         highlights,
+        sectionHighlights: sectionMarks.highlights,
     };
 }

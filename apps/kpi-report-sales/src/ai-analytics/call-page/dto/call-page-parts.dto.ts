@@ -33,6 +33,17 @@ export class CallPageFactDto {
         example: 'good',
     })
     tone: CallPageTone;
+
+    @ApiProperty({
+        description:
+            'Подсветка этого показателя в расшифровке (id из `highlights`): ' +
+            'у потребностей, показа и следующего шага — момент разговора, ' +
+            'у цены — первая названная цена; null — подсветки нет.',
+        example: 'moment-3',
+        type: String,
+        nullable: true,
+    })
+    highlightId: string | null;
 }
 
 export class CallPageSectionDto {
@@ -90,6 +101,17 @@ export class CallPageSectionDto {
         type: [String],
     })
     alternatives: string[];
+
+    @ApiProperty({
+        description:
+            'Подсветка цитаты «как было» в расшифровке (id из ' +
+            '`sectionHighlights`); null — цитаты нет или она не нашлась в ' +
+            'тексте разговора.',
+        example: 'section-1',
+        type: String,
+        nullable: true,
+    })
+    highlightId: string | null;
 }
 
 export class CallPageObjectionDto {
@@ -299,7 +321,8 @@ export class CallPageHighlightDto {
             'возражение, risk — сигнал риска, methodology — пункт методики, ' +
             'issue — сбой не по вине разговора, price — названная цена, ' +
             'moment — момент разговора: начало выяснения потребностей, ' +
-            'презентации, договорённость о следующем шаге.',
+            'презентации, договорённость о следующем шаге; section — цитата ' +
+            '«как было» раздела разбора (только в `sectionHighlights`).',
         enum: CALL_PAGE_HIGHLIGHT_KINDS,
         example: 'objection',
     })

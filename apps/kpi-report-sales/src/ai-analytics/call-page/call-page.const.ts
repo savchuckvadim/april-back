@@ -25,6 +25,9 @@ export const CALL_PAGE_HIGHLIGHT_KINDS = [
     // Ход разговора: начало выяснения потребностей, показа и договорённость
     // о следующем шаге (время из разбора focus-v3.2).
     'moment',
+    // Цитата «как было» раздела разбора. Бейджем над расшифровкой не
+    // выводится: отдаётся отдельным списком `sectionHighlights`.
+    'section',
 ] as const;
 export type CallPageHighlightKind = (typeof CALL_PAGE_HIGHLIGHT_KINDS)[number];
 
@@ -39,7 +42,12 @@ export const CALL_PAGE_HIGHLIGHT_KIND_TITLES: Readonly<
     issue: 'Сбои',
     price: 'Цены',
     moment: 'Ход разговора',
+    section: 'Разделы разговора',
 };
+
+/** С какой оценки раздела (1–10) он «хороший» и «средний» — как на сайте. */
+export const CALL_PAGE_SECTION_SCORE_GOOD = 7;
+export const CALL_PAGE_SECTION_SCORE_FAIR = 5;
 
 /** Подписи моментов разговора. */
 export const CALL_PAGE_MOMENT_TITLES = {

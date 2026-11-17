@@ -14,17 +14,12 @@ import {
     riskTitleOf,
     upperFirst,
 } from '@lib/sales-ai-analytics';
+import { CALL_PAGE_MOMENT_TITLES, type CallPageTone } from './call-page.const';
 import {
-    CALL_PAGE_HIGHLIGHT_KIND_TITLES,
-    CALL_PAGE_MOMENT_TITLES,
-    type CallPageHighlightKind,
-    type CallPageTone,
-} from './call-page.const';
-import {
-    indexTranscript,
-    matchAnchor,
-    type CallPageTranscriptIndex,
-} from './call-page-highlights.util';
+    CallPageHighlightCollector,
+    type CallPageHighlightDraft,
+} from './call-page-highlight.collector';
+import { indexTranscript } from './call-page-highlights.util';
 import {
     callPageTitleOf,
     objectionHandlingOf,
@@ -34,10 +29,23 @@ import {
 } from './call-page-titles.util';
 import type {
     CallPageAnalysisView,
-    CallPageAnchor,
     CallPageSegmentView,
 } from './call-page.types';
 import type { CallPageHighlightDto } from './dto/call-page-parts.dto';
+
+/** Момент разговора по времени из разбора. */
+type CallPageMomentKey = keyof typeof CALL_PAGE_MOMENT_TITLES;
+
+/**
+ * Подсветки строк «Итогов разговора»: потребности, показ и следующий шаг —
+ * моменты разговора, цена — первая названная цена. null — не привязано.
+ */
+export interface CallPageFactHighlightIds {
+    needs: string | null;
+    presentation: string | null;
+    nextStep: string | null;
+    price: string | null;
+}
 
 export interface CallPageHighlights {
     highlights: CallPageHighlightDto[];
@@ -45,49 +53,13 @@ export interface CallPageHighlights {
     objectionIds: (string | null)[];
     /** Подсветка пункта методики по его номеру; null — не привязано. */
     checkpointIds: (string | null)[];
-}
-
-interface HighlightDraft {
-    kind: CallPageHighlightKind;
-    label: string;
-    tone: CallPageTone;
-    note: string | null;
-    anchor: CallPageAnchor;
-}
-
-/** Собирает подсветки по порядку и раздаёт им идентификаторы. */
-class HighlightCollector {
-    readonly highlights: CallPageHighlightDto[] = [];
-    private readonly counters = new Map<CallPageHighlightKind, number>();
-
-    constructor(private readonly index: CallPageTranscriptIndex) {}
-
-    /** Идентификатор подсветки; места нет ни в тексте, ни по времени — null. */
-    add(draft: HighlightDraft): string | null {
-        const match = matchAnchor(this.index, draft.anchor);
-        if (match.segmentIndexes.length === 0 && match.startSec === null) {
-            return null;
-        }
-        const number = (this.counters.get(draft.kind) ?? 0) + 1;
-        this.counters.set(draft.kind, number);
-        const id = `${draft.kind}-${number}`;
-        this.highlights.push({
-            id,
-            kind: draft.kind,
-            kindTitle: CALL_PAGE_HIGHLIGHT_KIND_TITLES[draft.kind],
-            label: draft.label,
-            tone: draft.tone,
-            quote: draft.anchor.quote,
-            note: draft.note,
-            segmentIndexes: match.segmentIndexes,
-            startSec: match.startSec,
-        });
-        return id;
-    }
+    factIds: CallPageFactHighlightIds;
 }
 
 /** Ошибка менеджера в показе: без потребностей или без «свойство — выгода». */
-function signalDraft(view: CallPageAnalysisView): HighlightDraft | null {
+function signalDraft(
+    view: CallPageAnalysisView,
+): CallPageHighlightDraft | null {
     const signal = resolveManagerSignal(
         {
             riskFlags: [],
@@ -120,26 +92,29 @@ function priceLabel(price: CallPageAnalysisView['prices'][number]): string {
     return `${rubTitle(price.amount)}${period}${promo}`;
 }
 
+interface CallPageMoment {
+    key: CallPageMomentKey;
+    note: string | null;
+    startSec: number;
+}
+
 /**
  * Моменты разговора по времени из разбора: с чего началось выяснение
  * потребностей, показ и где договорились о следующем шаге. Времени нет
  * (старый разбор, расшифровка без меток) — момента нет.
  */
-function momentsOf(
-    view: CallPageAnalysisView,
-): { label: string; note: string | null; startSec: number }[] {
-    const moments: { label: string; note: string | null; startSec: number }[] =
-        [];
+function momentsOf(view: CallPageAnalysisView): CallPageMoment[] {
+    const moments: CallPageMoment[] = [];
     if (view.needsStartSec !== null) {
         moments.push({
-            label: CALL_PAGE_MOMENT_TITLES.needs,
+            key: 'needs',
             note: null,
             startSec: view.needsStartSec,
         });
     }
     if (view.presentationStartSec !== null) {
         moments.push({
-            label: CALL_PAGE_MOMENT_TITLES.presentation,
+            key: 'presentation',
             note: null,
             startSec: view.presentationStartSec,
         });
@@ -147,7 +122,7 @@ function momentsOf(
     const step = view.nextStep;
     if (step !== null && step.set && step.startSec !== null) {
         moments.push({
-            label: CALL_PAGE_MOMENT_TITLES.nextStep,
+            key: 'nextStep',
             note: step.description,
             startSec: step.startSec,
         });
@@ -159,7 +134,7 @@ export function buildCallPageHighlights(
     view: CallPageAnalysisView,
     segments: readonly CallPageSegmentView[],
 ): CallPageHighlights {
-    const collector = new HighlightCollector(indexTranscript(segments));
+    const collector = new CallPageHighlightCollector(indexTranscript(segments));
 
     const signal = signalDraft(view);
     if (signal !== null) collector.add(signal);
@@ -220,7 +195,7 @@ export function buildCallPageHighlights(
         });
     }
 
-    for (const price of view.prices) {
+    const priceIds = view.prices.map(price =>
         collector.add({
             kind: 'price',
             label: priceLabel(price),
@@ -231,18 +206,36 @@ export function buildCallPageHighlights(
                 startSec: price.startSec,
                 endSec: null,
             },
-        });
-    }
+        }),
+    );
 
+    const momentIds = new Map<CallPageMomentKey, string | null>();
     for (const moment of momentsOf(view)) {
-        collector.add({
-            kind: 'moment',
-            label: moment.label,
-            tone: 'neutral',
-            note: moment.note,
-            anchor: { quote: null, startSec: moment.startSec, endSec: null },
-        });
+        momentIds.set(
+            moment.key,
+            collector.add({
+                kind: 'moment',
+                label: CALL_PAGE_MOMENT_TITLES[moment.key],
+                tone: 'neutral',
+                note: moment.note,
+                anchor: {
+                    quote: null,
+                    startSec: moment.startSec,
+                    endSec: null,
+                },
+            }),
+        );
     }
 
-    return { highlights: collector.highlights, objectionIds, checkpointIds };
+    return {
+        highlights: collector.highlights,
+        objectionIds,
+        checkpointIds,
+        factIds: {
+            needs: momentIds.get('needs') ?? null,
+            presentation: momentIds.get('presentation') ?? null,
+            nextStep: momentIds.get('nextStep') ?? null,
+            price: priceIds.find(id => id !== null) ?? null,
+        },
+    };
 }

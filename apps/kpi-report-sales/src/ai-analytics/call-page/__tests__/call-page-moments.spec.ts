@@ -1,4 +1,5 @@
 import { readCallPageAnalysis } from '../call-page-analysis.reader';
+import { buildCallPageFacts } from '../call-page-facts.presenter';
 import { buildCallPageHighlights } from '../call-page-highlights.presenter';
 import type {
     CallPageAnalysisView,
@@ -69,6 +70,78 @@ describe('подсветки страницы звонка: время из ра
             quote: null,
         });
         expect(moments[2]?.note).toBe('Созвон в среду в 11:00');
+    });
+
+    it('строки итогов связаны с подсветками: потребности, показ и шаг — моменты, цена — первая найденная', () => {
+        const view = viewOf({
+            needsFound: true,
+            needs: ['судебная практика'],
+            presentationDone: true,
+            needsStartSec: 12,
+            presentationStartSec: 31,
+            nextStep: {
+                set: true,
+                description: 'Созвон в среду в 11:00',
+                startSec: 52,
+            },
+            prices: [
+                {
+                    amount: 50000,
+                    quote: 'этой цены в разговоре не было вовсе',
+                },
+                {
+                    amount: 90000,
+                    periodMonths: 12,
+                    quote: 'За год выйдет девяносто тысяч рублей.',
+                },
+            ],
+        });
+        const { highlights, factIds } = buildCallPageHighlights(
+            view,
+            SEGMENTS,
+        );
+
+        expect(factIds).toEqual({
+            needs: 'moment-1',
+            presentation: 'moment-2',
+            nextStep: 'moment-3',
+            price: 'price-1',
+        });
+        expect(highlights.find(item => item.id === 'price-1')).toMatchObject({
+            segmentIndexes: [4],
+        });
+
+        const facts = new Map(
+            buildCallPageFacts(view, factIds).map(item => [
+                item.label,
+                item.highlightId,
+            ]),
+        );
+        expect(facts.get('Потребности')).toBe('moment-1');
+        expect(facts.get('Показ')).toBe('moment-2');
+        expect(facts.get('Следующий шаг')).toBe('moment-3');
+        expect(facts.get('Цена')).toBe('price-1');
+        expect(facts.get('Результат звонка') ?? null).toBeNull();
+    });
+
+    it('без времени и цен строки итогов ни на что не ссылаются', () => {
+        const view = viewOf({
+            needsFound: false,
+            nextStep: { set: true, description: 'Созвон в среду' },
+        });
+        const { factIds } = buildCallPageHighlights(view, SEGMENTS);
+
+        expect(factIds).toEqual({
+            needs: null,
+            presentation: null,
+            nextStep: null,
+            price: null,
+        });
+        expect(
+            buildCallPageFacts(view, factIds).every(
+                item => item.highlightId === null,
+            ),
+        ).toBe(true);
     });
 
     it('старый разбор без времени: моментов нет, остальные подсветки как раньше — по цитате', () => {
