@@ -2,3 +2,7 @@ export * from './deal-movement.types';
 export * from './deal-movement.status';
 export * from './deal-movement.texts';
 export * from './deal-movement.state';
+export * from './deal-movement.activity';
+export * from './deal-movement.note';
+export * from './deal-movement.todo';
+export * from './deal-movement.todo.prompt';

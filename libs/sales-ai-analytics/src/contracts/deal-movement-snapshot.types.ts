@@ -8,6 +8,7 @@ import {
     DEAL_MOVEMENT_STATUSES,
     type DealMovementStatus,
 } from '../model/deal-movement/deal-movement.types';
+import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 import {
     DEAL_MOVEMENT_RUN_MODES,
     type DealMovementRunMode,
@@ -26,6 +27,11 @@ export interface DealMovementSnapshotChange {
     to: DealMovementStatus;
     /** Причины нового статуса словами, по-русски. */
     reasons: string[];
+    /**
+     * Записана ли смена в ленту сделки этим прогоном. Нет у снимков до
+     * второй волны (17.11.2026).
+     */
+    notified?: boolean;
 }
 
 export interface DealMovementSnapshotPayload {
@@ -43,6 +49,8 @@ export interface DealMovementSnapshotPayload {
     changes: DealMovementSnapshotChange[];
     /** Всего смен за ночь (в `changes` — не больше лимита). */
     changesTotal: number;
+    /** Записи в ленту сделок за прогон; нет у снимков до второй волны. */
+    notes?: DealMovementNotesSummary;
     warnings: string[];
 }
 
