@@ -40,9 +40,7 @@ function unquote(raw: string): string {
         value = value.slice(1);
         if (value.endsWith(quote)) value = value.slice(0, -1);
     }
-    return value
-        .replace(/\\[nrt]/gu, ' ')
-        .replace(/\\(['"\\])/gu, '$1');
+    return value.replace(/\\[nrt]/gu, ' ').replace(/\\(['"\\])/gu, '$1');
 }
 
 /** Значение записи в духе Python: None/null, True/False, список, строка. */

@@ -43,7 +43,8 @@ describe('страница звонка: чек-листы из сохранён
         const value = checklistValue(
             {
                 hvostDone: true,
-                hvostAnalysis: '{"desire": "понравилось", "offered": "базовый комплект"}',
+                hvostAnalysis:
+                    '{"desire": "понравилось", "offered": "базовый комплект"}',
             },
             'Чек-лист ХВОСТ',
         );
