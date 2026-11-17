@@ -414,3 +414,5 @@ export * from './model/dated-lite-row';
 export * from './model/quality-facts.types';
 export * from './model/quality-facts.assembler';
 export * from './settings/attention-thresholds';
+// Карточка «менеджер × период»: метрики, якоря, сравнения, статусы — см. model/period-digest.
+export * from './model/period-digest';
