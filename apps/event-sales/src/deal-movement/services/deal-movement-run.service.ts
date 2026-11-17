@@ -1,47 +1,81 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-    DEAL_MOVEMENT_NIGHT_DEFAULTS,
-    emptyDealMovementCounts,
+    DEAL_MOVEMENT_REQUESTERS,
     planDealMovementNight,
     type DealMovementNightPlan,
     type DealMovementRunMode,
     type DealMovementRunPhase,
     type DealMovementRunStatus,
+    type DealMovementStateEntry,
 } from '@lib/sales-ai-analytics';
-import { resolveTimezoneByDomain } from '@lib/shared/lib/date';
+import { resolveTimezoneByDomain, type ETimeZone } from '@lib/shared/lib/date';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
-import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
+import {
+    DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES,
+    DEAL_MOVEMENT_NOTES,
+} from '../constants/deal-movement.const';
 import {
     buildDealMovementSnapshot,
     formatDealMovementFailure,
     formatDealMovementRun,
 } from '../lib/deal-movement-report';
 import {
+    applyDealMovementPlan,
+    initialDealMovementStatus,
+    plannedDealMovementNotes,
+} from '../lib/deal-movement-run-status';
+import {
     dealMovementDayKey,
     isDealMovementStateStale,
 } from '../lib/deal-movement-schedule';
-import type { DealMovementRunOutcome } from '../types/deal-movement.types';
+import type {
+    DealMovementOptions,
+    DealMovementRunOutcome,
+} from '../types/deal-movement.types';
 import {
     DealMovementEvaluator,
     type DealMovementEvaluation,
 } from './deal-movement-evaluator.service';
+import { DealMovementNotesService } from './deal-movement-notes.service';
 import { DealMovementRunState } from './deal-movement-run-state';
 import { DealMovementSettingsService } from './deal-movement-settings.service';
 import { DealMovementSnapshotStore } from './deal-movement-snapshot.store';
 import { DealMovementStateStore } from './deal-movement-state.store';
 
+/** Прогон портала изнутри: день, пояс, замок и ход. */
+interface RunContext {
+    readonly domain: string;
+    readonly day: string;
+    readonly timezone: ETimeZone;
+    readonly token: string;
+    readonly now: Date;
+    readonly status: DealMovementRunStatus;
+    /**
+     * Ручной счёт из админки: в ленты не пишет — днём пачка записей у
+     * сотрудников и вызовы модели недопустимы; расхождения ждут ночи.
+     */
+    readonly heldForNight: boolean;
+}
+
 /**
- * Прогон портала: замок, оценка открытых сделок, план ночи, сохранение и
- * итог нам в Telegram. Режимы этой волны (решение 17.11.2026):
- * - «Посчитать» (`dry-run`) — ничего не сохраняет, итог в состоянии прогона;
- * - ночной счёт (`count`) — состояние по сделкам в Redis, дневной снимок в
- *   ais, `notifiedStatus` сдвигается молча; в сделки не пишется ничего.
+ * Прогон портала: замок, прошлое состояние, оценка открытых сделок, план
+ * ночи, запись в ленту, сохранение и итог нам в Telegram (решение
+ * 17.11.2026):
+ * - «Посчитать» (`dry-run`) — ничего не сохраняет и не пишет; итог (и
+ *   сколько записей ушло бы в ленту) — в состоянии прогона;
+ * - счёт (`count`) — состояние по сделкам в Redis целиком, затем записи в
+ *   ленту (если включены; каждая удачная — сразу одним полем хеша), затем
+ *   дневной снимок в ais и метка счёта. Пишет в ленты ТОЛЬКО ночной счёт
+ *   по расписанию: у ручного счёта из админки лимит записей 0, расхождения
+ *   не теряются и уходят ночью.
  *
- * Счёт старше трёх суток (или его нет) — базовая линия заново. Ошибка —
- * итог «не удался», метка последнего счёта не ставится: следующий тик
- * ночного окна попробует снова.
+ * Прошлое состояние читается ДО оценки: последняя активность сделки
+ * считается без нашей записи. Счёт старше трёх суток (или его нет) —
+ * базовая линия заново, она ничего не пишет. Ошибка — итог «не удался»,
+ * метка счёта не ставится: следующий тик ночного окна попробует снова,
+ * а уже записанные сделки помечены и второй раз не получат запись.
  *
- * `@Injectable` без bitrix-состояния: Битрикс — внутри оценщика на вызов.
+ * `@Injectable` без bitrix-состояния: Битрикс — внутри оценщика и записи.
  */
 @Injectable()
 export class DealMovementRunService {
@@ -53,6 +87,7 @@ export class DealMovementRunService {
         private readonly runState: DealMovementRunState,
         private readonly stateStore: DealMovementStateStore,
         private readonly snapshots: DealMovementSnapshotStore,
+        private readonly notes: DealMovementNotesService,
     ) {}
 
     async run(
@@ -63,139 +98,196 @@ export class DealMovementRunService {
     ): Promise<DealMovementRunOutcome> {
         const token = await this.runState.lock(domain);
         if (token === null) return { kind: 'busy', domain };
-        const status = initialStatus(domain, mode, requestedBy, now);
+        const timezone = resolveTimezoneByDomain(domain);
+        const ctx: RunContext = {
+            domain,
+            day: dealMovementDayKey(now, timezone),
+            timezone,
+            token,
+            now,
+            status: initialDealMovementStatus(domain, mode, requestedBy, now),
+            heldForNight:
+                mode === 'count' &&
+                requestedBy !== DEAL_MOVEMENT_REQUESTERS.nightly,
+        };
         try {
-            await this.runState.saveStatus(status);
+            await this.runState.saveStatus(ctx.status);
+            const options = await this.settings.resolve(domain);
+            const { previous, baseline } = await this.previousState(ctx);
             const evaluation = await this.evaluator.evaluate(
                 domain,
-                await this.settings.resolve(domain),
+                options,
                 now,
-                phase => this.progress(status, phase, token),
+                phase => this.progress(ctx, phase),
+                previous,
             );
-            const plan = await this.plan(domain, evaluation, status, now);
-            if (mode === 'count') {
-                await this.persist(domain, evaluation, plan, status, now);
-            }
-            status.phase = 'done';
-            status.finished = true;
-            status.updatedAt = new Date().toISOString();
-            await this.runState.saveStatus(status);
-            this.logger.log(formatDealMovementRun(status), { telegram: true });
-            return { kind: 'ran', status };
-        } catch (error) {
-            const message = getErrorString(error);
-            status.phase = 'failed';
-            status.finished = true;
-            status.error = message;
-            status.updatedAt = new Date().toISOString();
-            await this.runState.saveStatus(status);
-            this.logger.error(formatDealMovementFailure(domain, message), {
-                telegram: true,
-                domain,
+            const plan = await this.plan(ctx, options, evaluation, {
+                previous,
+                baseline,
             });
-            return { kind: 'failed', domain, error: message };
+            if (mode === 'count') {
+                await this.persist(ctx, options, evaluation, plan);
+            }
+            return await this.finish(ctx);
+        } catch (error) {
+            return await this.fail(ctx, getErrorString(error));
         } finally {
             await this.runState.unlock(domain, token);
         }
     }
 
-    /** План ночи по прошлому состоянию (устаревшее — базовая линия). */
+    /** Прошлое состояние; счёт устарел или его нет — базовая линия. */
+    private async previousState(ctx: RunContext): Promise<{
+        previous: Map<string, DealMovementStateEntry> | null;
+        baseline: boolean;
+    }> {
+        const lastRun = await this.runState.lastRun(ctx.domain);
+        if (isDealMovementStateStale(lastRun?.at ?? null, ctx.now)) {
+            return { previous: null, baseline: true };
+        }
+        const previous = await this.stateStore.load(ctx.domain);
+        return { previous, baseline: previous.size === 0 };
+    }
+
+    /** План ночи: запись включена — расхождения в список, иначе молча. */
     private async plan(
-        domain: string,
+        ctx: RunContext,
+        options: DealMovementOptions,
         evaluation: DealMovementEvaluation,
-        status: DealMovementRunStatus,
-        now: Date,
+        prior: {
+            previous: Map<string, DealMovementStateEntry> | null;
+            baseline: boolean;
+        },
     ): Promise<DealMovementNightPlan> {
-        const lastRun = await this.runState.lastRun(domain);
-        const baseline = isDealMovementStateStale(lastRun?.at ?? null, now);
-        const previous = baseline ? null : await this.stateStore.load(domain);
         const plan = planDealMovementNight({
-            previous,
+            previous: prior.previous,
             deals: evaluation.deals,
             carryOver: evaluation.carryOver,
-            // Записи в сделки в этой волне нет: notifiedStatus — молча.
-            mode: 'silent',
+            mode: options.notes.write ? 'notify' : 'silent',
             limits: {
-                ...DEAL_MOVEMENT_NIGHT_DEFAULTS,
+                // Ручной счёт: план с записью, но лимит 0 — всё ждёт ночи.
+                notify: ctx.heldForNight
+                    ? 0
+                    : await this.notes.remaining(
+                          ctx.domain,
+                          ctx.day,
+                          options.notes,
+                      ),
                 minDaysBetween: DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES,
             },
-            now: now.toISOString(),
+            now: ctx.now.toISOString(),
         });
-        Object.assign(status, {
+        applyDealMovementPlan(ctx.status, {
             openTotal: evaluation.openTotal,
             evaluated: evaluation.deals.length,
             capped: evaluation.capped,
-            baseline: baseline || previous?.size === 0,
-            firstSeen: plan.firstSeen,
-            byStatus: plan.byStatus,
-            changed: plan.changes.length,
-            warnings: [...evaluation.warnings],
+            baseline: prior.baseline,
+            warnings: evaluation.warnings,
+            plan,
+            notes: plannedDealMovementNotes(
+                options.notes,
+                plan,
+                ctx.heldForNight,
+            ),
         });
         return plan;
     }
 
-    /** Ночной счёт: состояние, снимок дня, метка последнего счёта. */
+    /** Счёт: состояние целиком → записи в ленту → снимок дня → метка. */
     private async persist(
-        domain: string,
+        ctx: RunContext,
+        options: DealMovementOptions,
         evaluation: DealMovementEvaluation,
         plan: DealMovementNightPlan,
-        status: DealMovementRunStatus,
-        now: Date,
     ): Promise<void> {
-        const day = dealMovementDayKey(now, resolveTimezoneByDomain(domain));
-        await this.stateStore.save(domain, plan.state);
-        status.updatedAt = new Date().toISOString();
+        await this.stateStore.save(ctx.domain, plan.state);
+        const notified = await this.writeNotes(ctx, options, evaluation, plan);
+        ctx.status.updatedAt = new Date().toISOString();
         await this.snapshots.save(
-            domain,
+            ctx.domain,
             buildDealMovementSnapshot({
-                status,
-                day,
+                status: ctx.status,
+                day: ctx.day,
                 changes: plan.changes,
                 verdicts: evaluation.verdicts,
+                notified,
             }),
         );
-        await this.runState.markRun(domain, { day, at: now.toISOString() });
-        status.snapshotDay = day;
-        status.phase = 'saved';
+        await this.runState.markRun(ctx.domain, {
+            day: ctx.day,
+            at: ctx.now.toISOString(),
+        });
+        ctx.status.snapshotDay = ctx.day;
+        ctx.status.phase = 'saved';
+    }
+
+    /** Записи в ленту по плану; ничего в плане — ничего не делаем. */
+    private async writeNotes(
+        ctx: RunContext,
+        options: DealMovementOptions,
+        evaluation: DealMovementEvaluation,
+        plan: DealMovementNightPlan,
+    ): Promise<ReadonlySet<string>> {
+        const summary = ctx.status.notes;
+        if (
+            summary === undefined ||
+            ctx.heldForNight ||
+            plan.toNotify.length === 0
+        ) {
+            return new Set();
+        }
+        await this.progress(ctx, 'notes');
+        const outcome = await this.notes.write({
+            domain: ctx.domain,
+            day: ctx.day,
+            timezone: ctx.timezone,
+            plan,
+            verdicts: evaluation.verdicts,
+            pointers: evaluation.pointers,
+            options: options.notes,
+            summary,
+            // notifiedAt — момент самой записи, а не старт прогона.
+            clock: () => new Date(),
+            pauseMs: DEAL_MOVEMENT_NOTES.pauseMs,
+            onProgress: () => this.progress(ctx, 'notes'),
+        });
+        ctx.status.warnings.push(...outcome.warnings);
+        return outcome.written;
+    }
+
+    private async finish(ctx: RunContext): Promise<DealMovementRunOutcome> {
+        ctx.status.phase = 'done';
+        ctx.status.finished = true;
+        ctx.status.updatedAt = new Date().toISOString();
+        await this.runState.saveStatus(ctx.status);
+        this.logger.log(formatDealMovementRun(ctx.status), { telegram: true });
+        return { kind: 'ran', status: ctx.status };
+    }
+
+    private async fail(
+        ctx: RunContext,
+        message: string,
+    ): Promise<DealMovementRunOutcome> {
+        ctx.status.phase = 'failed';
+        ctx.status.finished = true;
+        ctx.status.error = message;
+        ctx.status.updatedAt = new Date().toISOString();
+        await this.runState.saveStatus(ctx.status);
+        this.logger.error(formatDealMovementFailure(ctx.domain, message), {
+            telegram: true,
+            domain: ctx.domain,
+        });
+        return { kind: 'failed', domain: ctx.domain, error: message };
     }
 
     /** Фаза прогона: ход в Redis и продление замка портала. */
     private async progress(
-        status: DealMovementRunStatus,
+        ctx: RunContext,
         phase: DealMovementRunPhase,
-        token: string,
     ): Promise<void> {
-        status.phase = phase;
-        status.updatedAt = new Date().toISOString();
-        await this.runState.extend(status.domain, token);
-        await this.runState.saveStatus(status);
+        ctx.status.phase = phase;
+        ctx.status.updatedAt = new Date().toISOString();
+        await this.runState.extend(ctx.domain, ctx.token);
+        await this.runState.saveStatus(ctx.status);
     }
-}
-
-function initialStatus(
-    domain: string,
-    mode: DealMovementRunMode,
-    requestedBy: string,
-    now: Date,
-): DealMovementRunStatus {
-    const startedAt = now.toISOString();
-    return {
-        domain,
-        mode,
-        requestedBy,
-        phase: 'started',
-        startedAt,
-        updatedAt: startedAt,
-        finished: false,
-        openTotal: 0,
-        evaluated: 0,
-        capped: false,
-        baseline: false,
-        firstSeen: 0,
-        byStatus: emptyDealMovementCounts(),
-        changed: 0,
-        snapshotDay: null,
-        warnings: [],
-        error: null,
-    };
 }

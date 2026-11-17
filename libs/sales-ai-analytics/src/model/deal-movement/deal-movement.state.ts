@@ -93,6 +93,8 @@ export interface DealMovementNightPlan {
     toNotify: string[];
     /** Расхождения, отложенные защитой от метаний или лимитом ночи. */
     deferred: number;
+    /** Из них — защитой от метаний (писали меньше `minDaysBetween` назад). */
+    deferredQuiet: number;
     /** Сколько сделок увидели впервые (базовая линия). */
     firstSeen: number;
     byStatus: Record<DealMovementStatus, number>;
@@ -195,19 +197,26 @@ export function planDealMovementNight(
         }
     }
 
-    const { toNotify, deferred } = selectToNotify(state, input);
-    return { state, changes, toNotify, deferred, firstSeen, byStatus };
+    return {
+        state,
+        changes,
+        ...selectToNotify(state, input),
+        firstSeen,
+        byStatus,
+    };
 }
 
 /** Расхождения ночи → кому пишем (по важности, в пределах лимита). */
 function selectToNotify(
     state: ReadonlyMap<string, DealMovementStateEntry>,
     input: DealMovementNightInput,
-): { toNotify: string[]; deferred: number } {
+): Pick<DealMovementNightPlan, 'toNotify' | 'deferred' | 'deferredQuiet'> {
+    if (input.mode === 'silent') {
+        return { toNotify: [], deferred: 0, deferredQuiet: 0 };
+    }
     const diverged = [...state.entries()].filter(
         ([, entry]) => entry.status !== entry.notifiedStatus,
     );
-    if (input.mode === 'silent') return { toNotify: [], deferred: 0 };
     const nowMs = timeOf(input.now) ?? 0;
     const allowed = diverged
         .filter(([, entry]) =>
@@ -217,5 +226,9 @@ function selectToNotify(
     const toNotify = allowed
         .slice(0, Math.max(0, input.limits.notify))
         .map(([dealId]) => dealId);
-    return { toNotify, deferred: diverged.length - toNotify.length };
+    return {
+        toNotify,
+        deferred: diverged.length - toNotify.length,
+        deferredQuiet: diverged.length - allowed.length,
+    };
 }

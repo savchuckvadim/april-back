@@ -3,6 +3,7 @@ import {
     EnumPortalAppCode,
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingsService,
+    toDealMovementNoteKind,
     type PortalAppSettingsValues,
 } from '@lib/portal-lib/store/app-settings';
 import { DEAL_MOVEMENT_DEFAULTS } from '@lib/sales-ai-analytics';
@@ -13,6 +14,13 @@ import type { DealMovementOptions } from '../types/deal-movement.types';
 const positiveInt = (raw: unknown, fallback: number): number => {
     const value = Math.floor(Number(raw));
     return Number.isFinite(value) && value >= 1 ? value : fallback;
+};
+
+/** Целое ≥ 0 (ноль — «ни одной»); пусто, отрицательное и мусор — по умолчанию. */
+const nonNegativeInt = (raw: unknown, fallback: number): number => {
+    if (raw === null || raw === undefined || raw === '') return fallback;
+    const value = Math.floor(Number(raw));
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
 };
 
 type EventSalesSettings = PortalAppSettingsValues<EnumPortalAppCode.eventSales>;
@@ -30,6 +38,10 @@ export function toDealMovementOptions(
         | 'dealMovementAgreedStillDays'
         | 'dealMovementCallsLookbackDays'
         | 'dealMovementMaxDeals'
+        | 'dealMovementWriteNotes'
+        | 'dealMovementNoteKind'
+        | 'dealMovementMaxNotes'
+        | 'dealMovementMaxTexts'
     >,
 ): DealMovementOptions {
     const defaults = DEAL_MOVEMENT_SETTING_DEFAULTS;
@@ -58,6 +70,19 @@ export function toDealMovementOptions(
             ),
         ),
         maxDeals: positiveInt(settings.dealMovementMaxDeals, defaults.maxDeals),
+        notes: {
+            // Только явное «да»: всё новое по умолчанию выключено.
+            write: settings.dealMovementWriteNotes === true,
+            kind: toDealMovementNoteKind(settings.dealMovementNoteKind),
+            maxNotes: nonNegativeInt(
+                settings.dealMovementMaxNotes,
+                defaults.maxNotes,
+            ),
+            maxTexts: nonNegativeInt(
+                settings.dealMovementMaxTexts,
+                defaults.maxTexts,
+            ),
+        },
     };
 }
 

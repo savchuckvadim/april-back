@@ -124,9 +124,24 @@ describe('buildEventSalesCronRoster', () => {
         expect(roster.get('event-sales-duplicate-report')?.portals).toEqual([
             { domain: GSR },
         ]);
-        // Движение сделок в первой волне только считает — пометка всегда.
+        // Запись в ленту не включена (дефолт кода false) — только счёт.
         expect(roster.get('event-sales-deal-movement')?.portals).toEqual([
             { domain: GARANT, note: 'только считать' },
+        ]);
+    });
+
+    it('движение сделок с записью в ленту — своя пометка', () => {
+        const writing = buildEventSalesCronRoster(
+            [
+                row(GARANT, {
+                    deal_movement_enabled: true,
+                    deal_movement_write_notes: true,
+                }),
+            ],
+            [],
+        );
+        expect(writing.get('event-sales-deal-movement')?.portals).toEqual([
+            { domain: GARANT, note: 'пишет в ленту сделок' },
         ]);
     });
 

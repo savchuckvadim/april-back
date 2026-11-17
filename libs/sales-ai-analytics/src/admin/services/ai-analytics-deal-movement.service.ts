@@ -8,7 +8,6 @@
  * сборки без Redis) ручка честно отвечает «не подключено».
  */
 import { Injectable, Optional } from '@nestjs/common';
-import { JobStatus } from 'bull';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -30,6 +29,7 @@ import {
 } from '../../contracts/deal-movement-snapshot.types';
 import { AI_ANALYTICS_SNAPSHOT_TYPE } from '../../contracts/snapshot-kinds.const';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
+import { isQueueJobPending } from './queue-job-pending.util';
 
 /** Ответ ручки `POST admin/ai-analytics/deal-movement`. */
 export interface DealMovementRunResult {
@@ -64,13 +64,11 @@ export const DEAL_MOVEMENT_ADMIN_MESSAGES = {
         'состоянии прогона) → включить «Движение сделок» в настройках ' +
         'приложения event-sales → ночной счёт сам, 02:00–05:00 по времени ' +
         'портала. dryRun: false — внеочередной счёт сейчас: сегодняшнюю ночь ' +
-        'крон уже не повторит. В сделки ничего не пишется.',
+        'крон уже не повторит. В ленту сделок пишет только ночной счёт и ' +
+        'только если включена «Движение сделок: писать в ленту сделки»: ' +
+        'ручной счёт записи не делает, а оставляет их до ночи; «Посчитать» ' +
+        'покажет, сколько записей ушло бы.',
 } as const;
-
-/** Состояния джоба, при которых прогон портала ещё впереди или идёт. */
-const PENDING_STATES: ReadonlySet<JobStatus | 'stuck'> = new Set<
-    JobStatus | 'stuck'
->(['waiting', 'delayed', 'active', 'paused']);
 
 @Injectable()
 export class AiAnalyticsDealMovementService {
@@ -96,7 +94,13 @@ export class AiAnalyticsDealMovementService {
             };
         }
         const jobId = dealMovementJobId(input.domain, input.dryRun);
-        if (await this.isPending(this.dispatcher, jobId)) {
+        if (
+            await isQueueJobPending(
+                this.dispatcher,
+                QueueNames.EVENT_SALES_DEAL_MOVEMENT_RUN,
+                jobId,
+            )
+        ) {
             return {
                 ...base,
                 dispatched: false,
@@ -170,23 +174,5 @@ export class AiAnalyticsDealMovementService {
         return latest && isDealMovementSnapshotPayload(latest.payload)
             ? latest.payload
             : null;
-    }
-
-    /**
-     * Джоб портала ещё ждёт или идёт. Завершённый остаток (если Bull не
-     * успел его убрать) снимается — иначе jobId занят и новый не встанет.
-     */
-    private async isPending(
-        dispatcher: QueueDispatcherService,
-        jobId: string,
-    ): Promise<boolean> {
-        const job = await dispatcher.getJob(
-            QueueNames.EVENT_SALES_DEAL_MOVEMENT_RUN,
-            jobId,
-        );
-        if (!job) return false;
-        if (PENDING_STATES.has(await job.getState())) return true;
-        await job.remove().catch(() => undefined);
-        return false;
     }
 }

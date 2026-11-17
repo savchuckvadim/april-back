@@ -39,6 +39,7 @@ import { AiAnalyticsFactsCatchupService } from './services/ai-analytics-facts-ca
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
 import { AiAnalyticsDealMovementService } from './services/ai-analytics-deal-movement.service';
+import { AiAnalyticsDealMovementProbeService } from './services/ai-analytics-deal-movement-probe.service';
 import { AiOwnerReportExportService } from './services/ai-owner-report-export.service';
 
 @Module({
@@ -71,6 +72,8 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiOwnerReportExportService,
         // Движение сделок (этап 7.3): джоба в очередь event-sales + состояние
         AiAnalyticsDealMovementService,
+        // …и проверка записи в ленту на одной сделке (пишет в портал)
+        AiAnalyticsDealMovementProbeService,
     ],
     exports: [
         AiOwnerReportExportService,
@@ -87,6 +90,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsFactsCatchupService,
         AiAnalyticsSmartBackfillService,
         AiAnalyticsDealMovementService,
+        AiAnalyticsDealMovementProbeService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

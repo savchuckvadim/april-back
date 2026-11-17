@@ -409,3 +409,5 @@ export * from './model/owner-report';
 export * from './model/deal-movement';
 export * from './contracts/deal-movement-run.types';
 export * from './contracts/deal-movement-snapshot.types';
+export * from './contracts/deal-movement-notes.types';
+export * from './contracts/deal-movement-probe.types';

@@ -11,12 +11,13 @@ import {
     DEAL_MOVEMENT_STATUSES,
     type DealMovementStatus,
 } from '../model/deal-movement/deal-movement.types';
+import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 
 /**
- * Режим прогона: `dry-run` — «Посчитать», ничего не сохраняется, итог
- * только в состоянии прогона; `count` — ночной счёт: состояние и дневной
- * снимок сохраняются, `notifiedStatus` сдвигается молча. Запись в ленту
- * сделок появится следующим режимом.
+ * Режим прогона: `dry-run` — «Посчитать», ничего не сохраняется и не
+ * пишется, итог (и сколько записей ушло бы в ленту) только в состоянии
+ * прогона; `count` — счёт: состояние и дневной снимок сохраняются, в ленту
+ * сделок пишется, только если это включено настройкой портала.
  */
 export const DEAL_MOVEMENT_RUN_MODES = ['dry-run', 'count'] as const;
 export type DealMovementRunMode = (typeof DEAL_MOVEMENT_RUN_MODES)[number];
@@ -26,7 +27,7 @@ export const DEAL_MOVEMENT_RUN_MODE_TITLES: Readonly<
     Record<DealMovementRunMode, string>
 > = {
     'dry-run': 'подсчёт без сохранения',
-    count: 'ночной счёт без записи в сделки',
+    count: 'счёт с сохранением',
 };
 
 /** Фаза прогона — для «идёт сейчас» в админке. */
@@ -36,6 +37,7 @@ export const DEAL_MOVEMENT_RUN_PHASES = [
     'history',
     'calls',
     'evaluated',
+    'notes',
     'saved',
     'done',
     'failed',
@@ -99,6 +101,11 @@ export interface DealMovementRunStatus {
     changed: number;
     /** День дневного снимка 'YYYY-MM-DD'; null — снимок не писался. */
     snapshotDay: string | null;
+    /**
+     * Записи в ленту сделок за прогон; у «Посчитать» — сколько записали
+     * бы. Нет у прогонов до второй волны (17.11.2026).
+     */
+    notes?: DealMovementNotesSummary;
     warnings: string[];
     error: string | null;
 }
@@ -150,4 +157,13 @@ export const DEAL_MOVEMENT_REDIS_KEYS = {
     /** Последний сохранённый счёт: день портала и момент. */
     lastRun: (domain: string): string =>
         `event-sales:deal-movement:last-run:${domain}`,
+    /** Записей в ленту за день портала — лимит ночи общий для всех прогонов. */
+    nightNotes: (domain: string, day: string): string =>
+        `event-sales:deal-movement:night-notes:${domain}:${day}`,
+    /** Вызовов модели «что сделать» за день портала. */
+    nightTexts: (domain: string, day: string): string =>
+        `event-sales:deal-movement:night-texts:${domain}:${day}`,
+    /** Итог последней проверки записи в ленту (ручка админки). */
+    probe: (domain: string): string =>
+        `event-sales:deal-movement:probe:${domain}`,
 } as const;

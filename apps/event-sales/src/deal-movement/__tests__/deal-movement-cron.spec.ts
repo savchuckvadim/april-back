@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import { Logger } from '@nestjs/common';
+import { JobNames } from '@lib/queue';
 import { DealMovementModule } from '../deal-movement.module';
 import { DealMovementScheduler } from '../deal-movement.scheduler';
 import { DealMovementRunProcessor } from '../queue/deal-movement-run.processor';
@@ -95,9 +97,14 @@ describe('воркер прогона из админки', () => {
             attemptsMade: 1,
         }) as never;
 
+    const probes = { run: jest.fn().mockResolvedValue({ phase: 'done' }) };
+
     it('«Посчитать» — холостой ход, иначе внеочередной счёт', async () => {
         const runs = { run: jest.fn().mockResolvedValue({ kind: 'ran' }) };
-        const processor = new DealMovementRunProcessor(runs as never);
+        const processor = new DealMovementRunProcessor(
+            runs as never,
+            probes as never,
+        );
 
         await processor.handle(job(true));
         await processor.handle(job(false));
@@ -107,19 +114,63 @@ describe('воркер прогона из админки', () => {
     });
 
     it('портал занят — джоб падает, Bull повторит; сбой счёта джоб не роняет', async () => {
-        const busy = new DealMovementRunProcessor({
-            run: jest.fn().mockResolvedValue({ kind: 'busy', domain: DOMAIN }),
-        } as never);
+        const busy = new DealMovementRunProcessor(
+            {
+                run: jest
+                    .fn()
+                    .mockResolvedValue({ kind: 'busy', domain: DOMAIN }),
+            } as never,
+            probes as never,
+        );
         await expect(busy.handle(job(false))).rejects.toThrow('повтор');
 
-        const failed = new DealMovementRunProcessor({
-            run: jest.fn().mockResolvedValue({
-                kind: 'failed',
-                domain: DOMAIN,
-                error: 'x',
-            }),
-        } as never);
+        const failed = new DealMovementRunProcessor(
+            {
+                run: jest.fn().mockResolvedValue({
+                    kind: 'failed',
+                    domain: DOMAIN,
+                    error: 'x',
+                }),
+            } as never,
+            probes as never,
+        );
         await expect(failed.handle(job(false))).resolves.toBeUndefined();
+    });
+
+    it('проверка записи в ленту — своей джобой; её сбой не тревожит как прогон', async () => {
+        const processor = new DealMovementRunProcessor(
+            { run: jest.fn() } as never,
+            probes as never,
+        );
+        const data = { domain: DOMAIN, dealId: 9041, requestedBy: 'admin' };
+
+        await processor.probe({ data } as never);
+        expect(probes.run).toHaveBeenCalledWith(data);
+
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        processor.onFailed(
+            {
+                name: JobNames.EVENT_SALES_DEAL_MOVEMENT_PROBE,
+                data,
+                opts: { attempts: 1 },
+                attemptsMade: 1,
+            } as never,
+            new Error('x'),
+        );
+        expect(warn).not.toHaveBeenCalled();
+        processor.onFailed(
+            {
+                name: JobNames.EVENT_SALES_DEAL_MOVEMENT_RUN,
+                data: { domain: DOMAIN },
+                opts: { attempts: 15 },
+                attemptsMade: 15,
+            } as never,
+            new Error('замок'),
+        );
+        expect(warn).toHaveBeenCalledTimes(1);
+        warn.mockRestore();
     });
 });
 

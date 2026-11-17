@@ -22,6 +22,7 @@ import {
     BxItemSchema,
     BxMeasureSchema,
     TimelineCommentSchema,
+    TimelineLogMessageSchema,
     RequisiteSchema,
     RequisitePresetSchema,
     ActivityTodoSchema,
@@ -84,6 +85,7 @@ export type BXApiSchema = {
         [EBXEntity.MEASURE]: BxMeasureSchema;
         [EBXEntity.ITEM]: BxItemSchema;
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
+        [EBXEntity.TIMELINE_LOG_MESSAGE]: TimelineLogMessageSchema;
         [EBXEntity.STAGE_HISTORY]: BxStageHistorySchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
         [EBXEntity.REQUISITE]: RequisiteSchema;

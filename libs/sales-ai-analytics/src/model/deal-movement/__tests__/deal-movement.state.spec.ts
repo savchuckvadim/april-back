@@ -142,6 +142,8 @@ describe('план ночи движения сделок', () => {
 
         expect(plan.toNotify).toEqual(['4', '2', '1']);
         expect(plan.deferred).toBe(1);
+        // Отложено лимитом, а не защитой от метаний.
+        expect(plan.deferredQuiet).toBe(0);
         // Пока запись не удалась — расхождение остаётся.
         expect(plan.state.get('3')?.notifiedStatus).toBe('at_risk');
     });
@@ -174,6 +176,7 @@ describe('план ночи движения сделок', () => {
 
         expect(plan.toNotify).toEqual(['2']);
         expect(plan.deferred).toBe(1);
+        expect(plan.deferredQuiet).toBe(1);
         expect(plan.state.get('1')?.notifiedStatus).toBe('at_risk');
     });
 

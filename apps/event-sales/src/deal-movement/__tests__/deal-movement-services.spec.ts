@@ -10,6 +10,14 @@ import { dealRow } from './deal-movement.fixture';
 
 const DOMAIN = 'garant.bitrix24.ru';
 
+/** Запись в ленту по умолчанию — выключена, комментарий, 100 и 50. */
+const NOTES_OFF = {
+    dealMovementWriteNotes: false,
+    dealMovementNoteKind: 'comment',
+    dealMovementMaxNotes: 100,
+    dealMovementMaxTexts: 50,
+};
+
 describe('настройки движения сделок', () => {
     it('значения портала → пороги правил; мусор и ноль — по умолчанию', () => {
         expect(
@@ -19,6 +27,7 @@ describe('настройки движения сделок', () => {
                 dealMovementAgreedStillDays: 0,
                 dealMovementCallsLookbackDays: 45,
                 dealMovementMaxDeals: Number.NaN,
+                ...NOTES_OFF,
             }),
         ).toEqual({
             thresholds: {
@@ -30,6 +39,12 @@ describe('настройки движения сделок', () => {
             },
             callsLookbackDays: 45,
             maxDeals: 10_000,
+            notes: {
+                write: false,
+                kind: 'comment',
+                maxNotes: 100,
+                maxTexts: 50,
+            },
         });
     });
 
@@ -41,8 +56,40 @@ describe('настройки движения сделок', () => {
                 dealMovementAgreedStillDays: 12,
                 dealMovementCallsLookbackDays: 7,
                 dealMovementMaxDeals: 500,
+                ...NOTES_OFF,
             }).callsLookbackDays,
         ).toBe(30);
+    });
+
+    it('запись в ленту — только явное «да»; ноль записей можно, мусор — по умолчанию', () => {
+        const base = {
+            dealMovementWindowDays: 14,
+            dealMovementStuckDays: 21,
+            dealMovementAgreedStillDays: 12,
+            dealMovementCallsLookbackDays: 60,
+            dealMovementMaxDeals: 500,
+        };
+        expect(
+            toDealMovementOptions({
+                ...base,
+                dealMovementWriteNotes: true,
+                dealMovementNoteKind: 'log_message',
+                dealMovementMaxNotes: 0,
+                dealMovementMaxTexts: -3,
+            }).notes,
+        ).toEqual({
+            write: true,
+            kind: 'log_message',
+            maxNotes: 0,
+            maxTexts: 50,
+        });
+        expect(
+            toDealMovementOptions({
+                ...base,
+                ...NOTES_OFF,
+                dealMovementNoteKind: 'чат',
+            }).notes.kind,
+        ).toBe('comment');
     });
 
     it('ростер крона — порталы с включённым флагом', async () => {
@@ -135,17 +182,17 @@ describe('разобранные звонки из БД', () => {
             .calls[0] as [string, string, { transcriptionIds: string[] }];
         expect(type).toBe(AGENT_ANALYSIS_TYPE);
         expect(firstKeys.transcriptionIds).toHaveLength(100);
+        // По одному действующему разбору на порцию; id расшифровки остаётся.
         expect(calls.get(100)).toEqual([
-            {
-                at: '2026-11-12T08:00:00.000Z',
-                progress: 2,
-                nextStep: null,
-            },
-            {
-                at: '2026-11-12T08:00:00.000Z',
-                progress: 2,
-                nextStep: null,
-            },
+            expect.objectContaining({
+                transcriptionId: '1',
+                call: {
+                    at: '2026-11-12T08:00:00.000Z',
+                    progress: 2,
+                    nextStep: null,
+                },
+            }),
+            expect.objectContaining({ transcriptionId: '101' }),
         ]);
     });
 });

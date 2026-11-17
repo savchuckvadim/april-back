@@ -125,4 +125,6 @@ export enum JobNames {
 
     /** Движение сделок: прогон портала по кнопке админки (подсчёт или счёт) */
     EVENT_SALES_DEAL_MOVEMENT_RUN = 'event-sales-deal-movement-run',
+    /** Движение сделок: проверка записи в ленту на одной сделке (кнопка админки, пишет в портал) */
+    EVENT_SALES_DEAL_MOVEMENT_PROBE = 'event-sales-deal-movement-probe',
 }

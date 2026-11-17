@@ -3,13 +3,17 @@ import {
     DEAL_MOVEMENT_RUN_MODE_TITLES,
     DEAL_MOVEMENT_SNAPSHOT_CHANGES_LIMIT,
     DEAL_MOVEMENT_STATUS_TITLES,
+    dealMovementDaysText,
     dealMovementReasonTexts,
     type DealMovementNightChange,
+    type DealMovementNotesSummary,
+    type DealMovementRunMode,
     type DealMovementRunStatus,
     type DealMovementSnapshotPayload,
     type DealMovementStatus,
     type DealMovementVerdict,
 } from '@lib/sales-ai-analytics';
+import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
 
 /**
  * Тексты итога ночи (нам в Telegram) и дневной снимок для ais. По-русски,
@@ -30,6 +34,40 @@ const countsLine = (byStatus: Record<DealMovementStatus, number>): string =>
             `${DEAL_MOVEMENT_STATUS_TITLES[status]} — ${byStatus[status]}`,
     ).join(' · ');
 
+const quietText = (notes: DealMovementNotesSummary): string =>
+    `не чаще раза в ${dealMovementDaysText(DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES)} — ${notes.deferredQuiet}`;
+
+const deferredText = (notes: DealMovementNotesSummary): string =>
+    `лимит ночи — ${notes.deferredLimit}, ${quietText(notes)}`;
+
+/**
+ * Записи в ленту словами: выключено; у «Посчитать» — сколько записали бы;
+ * у ручного счёта — сколько ждёт ночи; у ночного — записано, не удалось,
+ * отложено и подсказки модели.
+ */
+export function dealMovementNotesLines(
+    notes: DealMovementNotesSummary,
+    mode: DealMovementRunMode,
+): string[] {
+    if (!notes.enabled) return ['Запись в ленту сделок выключена'];
+    if (mode === 'dry-run') {
+        return [
+            `Записали бы в ленту: ${notes.planned}; отложили бы: ${deferredText(notes)}`,
+        ];
+    }
+    if (notes.heldForNight) {
+        return [
+            `Ручной счёт в ленту не пишет: до ночи отложено записей — ` +
+                `${notes.deferredLimit}; ${quietText(notes)}`,
+        ];
+    }
+    return [
+        `Записи в ленту: записано ${notes.written} из ${notes.planned}, ` +
+            `не удалось ${notes.failed}; отложено: ${deferredText(notes)}`,
+        `Подсказки «что сделать»: ${notes.texts}, без подсказки по вине модели: ${notes.textsFailed}`,
+    ];
+}
+
 /** Итог прогона портала для Telegram. */
 export function formatDealMovementRun(status: DealMovementRunStatus): string {
     const lines = [
@@ -41,6 +79,9 @@ export function formatDealMovementRun(status: DealMovementRunStatus): string {
               `смены статуса не считались. Впервые увидели сделок: ${status.firstSeen}`
             : `Сменили статус за ночь: ${status.changed}, впервые увидели: ${status.firstSeen}`,
     ];
+    if (status.notes !== undefined) {
+        lines.push(...dealMovementNotesLines(status.notes, status.mode));
+    }
     if (status.warnings.length > 0) {
         lines.push(`⚠️ ${status.warnings.join('; ')}`);
     }
@@ -54,16 +95,20 @@ export const formatDealMovementFailure = (
 ): string => `❌ Движение сделок · ${domain}: счёт не удался — ${error}`;
 
 /**
- * Дневной снимок ночного счёта: итог и смены статуса словами. Причины
- * пишутся по вердикту ночи; смен больше лимита — остаток числом.
+ * Дневной снимок счёта: итог, записи в ленту и смены статуса словами с
+ * пометкой «записано в ленту». Причины — по вердикту ночи; смен больше
+ * лимита — остаток числом.
  */
 export function buildDealMovementSnapshot(input: {
     status: DealMovementRunStatus;
     day: string;
     changes: readonly DealMovementNightChange[];
     verdicts: ReadonlyMap<string, DealMovementVerdict>;
+    /** Сделки, которым запись в ленту ушла этим прогоном. */
+    notified?: ReadonlySet<string>;
 }): DealMovementSnapshotPayload {
     const { status, day, changes, verdicts } = input;
+    const notified = input.notified ?? new Set<string>();
     return {
         day,
         mode: status.mode,
@@ -86,9 +131,11 @@ export function buildDealMovementSnapshot(input: {
                     from: change.from,
                     to: change.to,
                     reasons: verdict ? dealMovementReasonTexts(verdict) : [],
+                    notified: notified.has(change.dealId),
                 };
             }),
         changesTotal: changes.length,
+        ...(status.notes === undefined ? {} : { notes: { ...status.notes } }),
         warnings: [...status.warnings],
     };
 }

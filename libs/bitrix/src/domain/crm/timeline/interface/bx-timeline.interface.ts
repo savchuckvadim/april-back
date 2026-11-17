@@ -14,3 +14,31 @@ export interface IBXTimelineComment {
     CREATED?: string;
     FILES?: [string, string][];
 }
+
+/**
+ * Поля служебной лог-записи таймлайна (crm.timeline.logmessage.add, поле
+ * `fields`). Состав — строго по официальной документации метода:
+ * https://apidocs.bitrix24.ru/api-reference/crm/timeline/logmessage/crm-timeline-logmessage-add.html
+ */
+export interface IBXTimelineLogMessage {
+    /** Тип сущности (2 — сделка, 1 — лид, id смарт-процесса). */
+    entityTypeId: number;
+    /** Элемент сущности, в которой создаётся запись. */
+    entityId: number;
+    title: string;
+    text: string;
+    /** Код иконки (crm.timeline.icon.list), например `info`. */
+    iconCode: string;
+}
+
+/** Ответ crm.timeline.logmessage.add: созданная запись. */
+export interface IBXTimelineLogMessageResult {
+    logMessage: {
+        id: number;
+        created: string;
+        authorId: number;
+        title: string;
+        text: string;
+        iconCode: string;
+    };
+}

@@ -44,7 +44,7 @@ describe('итог ночи в Telegram', () => {
 
         expect(text).toBe(
             [
-                '📊 Движение сделок · garant.bitrix24.ru · ночной счёт без записи в сделки',
+                '📊 Движение сделок · garant.bitrix24.ru · счёт с сохранением',
                 'Открытых сделок: 9012, оценено: 9012',
                 'Движется — 7000 · Застряла — 1500 · Откатилась — 12 · Под риском — 500',
                 'Сменили статус за ночь: 123, впервые увидели: 4',
@@ -65,6 +65,60 @@ describe('итог ночи в Telegram', () => {
         expect(text).toContain('подсчёт без сохранения');
         expect(text).toContain('Базовая линия');
         expect(text).toContain('⚠️ открытых сделок 12000 больше потолка 10000');
+    });
+
+    it('записи в ленту: выключено, «записали бы» у подсчёта, итог у счёта', () => {
+        const notes = {
+            enabled: true,
+            kind: 'comment' as const,
+            heldForNight: false,
+            planned: 100,
+            written: 97,
+            failed: 3,
+            deferredLimit: 20,
+            deferredQuiet: 5,
+            texts: 48,
+            textsFailed: 2,
+        };
+
+        expect(
+            formatDealMovementRun(
+                status({ notes: { ...notes, enabled: false, kind: null } }),
+            ),
+        ).toContain('Запись в ленту сделок выключена');
+        expect(
+            formatDealMovementRun(status({ mode: 'dry-run', notes })),
+        ).toContain(
+            'Записали бы в ленту: 100; отложили бы: лимит ночи — 20, не чаще раза в 3 дня — 5',
+        );
+        const text = formatDealMovementRun(status({ notes }));
+        expect(text).toContain(
+            'Записи в ленту: записано 97 из 100, не удалось 3; отложено: лимит ночи — 20, не чаще раза в 3 дня — 5',
+        );
+        expect(text).toContain(
+            'Подсказки «что сделать»: 48, без подсказки по вине модели: 2',
+        );
+        expect(text).not.toMatch(/comment|log_message/);
+
+        // Ручной счёт из админки в ленты не пишет — сколько ждёт ночи.
+        const manual = formatDealMovementRun(
+            status({
+                requestedBy: 'admin',
+                notes: {
+                    ...notes,
+                    heldForNight: true,
+                    planned: 0,
+                    written: 0,
+                    failed: 0,
+                    texts: 0,
+                    textsFailed: 0,
+                },
+            }),
+        );
+        expect(manual).toContain(
+            'Ручной счёт в ленту не пишет: до ночи отложено записей — 20; не чаще раза в 3 дня — 5',
+        );
+        expect(manual).not.toContain('Подсказки');
     });
 
     it('сбой — одной строкой с причиной', () => {
@@ -103,6 +157,7 @@ describe('дневной снимок', () => {
                 },
             ],
             verdicts: new Map([['9041', verdict]]),
+            notified: new Set(['9041']),
         });
 
         expect(snapshot).toMatchObject({
@@ -118,9 +173,12 @@ describe('дневной снимок', () => {
                     from: 'moving',
                     to: 'rolled_back',
                     reasons: ['стадия сделки вернулась назад'],
+                    notified: true,
                 },
             ],
         });
+        // Прогон до второй волны — без итога записей.
+        expect(snapshot.notes).toBeUndefined();
     });
 });
 

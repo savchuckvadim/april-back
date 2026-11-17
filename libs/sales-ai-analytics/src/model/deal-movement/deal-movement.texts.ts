@@ -19,7 +19,7 @@ export const DEAL_MOVEMENT_STATUS_TITLES: Readonly<
 };
 
 /** Число со словом в нужной форме: 1 день, 3 дня, 12 дней. */
-function daysText(days: number): string {
+export function dealMovementDaysText(days: number): string {
     const mod100 = days % 100;
     const mod10 = days % 10;
     const word =
@@ -34,7 +34,7 @@ function daysText(days: number): string {
 }
 
 /** 'YYYY-MM-DD' → 'ДД.ММ'. */
-const shortDate = (date: string): string =>
+export const dealMovementShortDate = (date: string): string =>
     `${date.slice(8, 10)}.${date.slice(5, 7)}`;
 
 const REASON_TEXT: Readonly<
@@ -42,17 +42,17 @@ const REASON_TEXT: Readonly<
 > = {
     stage_back: () => 'стадия сделки вернулась назад',
     stage_overdue: facts =>
-        `в стадии ${daysText(facts.daysInStage)} при сроке ${daysText(facts.stageLimitDays)}, работы по сделке за последнее время нет`,
+        `в стадии ${dealMovementDaysText(facts.daysInStage)} при сроке ${dealMovementDaysText(facts.stageLimitDays)}, работы по сделке за последнее время нет`,
     step_overdue: facts =>
         facts.stepDate
-            ? `договорились на ${shortDate(facts.stepDate)} — контакта после этого не было`
+            ? `договорились на ${dealMovementShortDate(facts.stepDate)} — контакта после этого не было`
             : 'договорённость просрочена — контакта после неё не было',
     progress_low_twice: () =>
         'два последних звонка подряд ничего не изменили по сделке',
     agreed_but_still: facts =>
         facts.daysSinceAgreed === null
             ? 'клиент согласился по звонку, а стадия не меняется'
-            : `клиент согласился по звонку, а стадия не меняется ${daysText(facts.daysSinceAgreed)}`,
+            : `клиент согласился по звонку, а стадия не меняется ${dealMovementDaysText(facts.daysSinceAgreed)}`,
     low_chance_big_sum: () =>
         'крупная сделка на стадии, с которой продажи случаются редко',
     forgotten: () => 'сделка в списке забытых: по ней давно нет работы',
@@ -60,7 +60,7 @@ const REASON_TEXT: Readonly<
     progress_ok: () => 'последний звонок продвинул сделку',
     step_done: facts =>
         facts.stepDate
-            ? `договорённость на ${shortDate(facts.stepDate)} выполнена`
+            ? `договорённость на ${dealMovementShortDate(facts.stepDate)} выполнена`
             : 'договорённость выполнена',
     no_signals: () => 'тревожных признаков нет',
 };
