@@ -265,8 +265,13 @@ describe('версии промпта и классификатора 21.10.2026
         // тоже в серии (решение владельца: оценки должны продолжаться).
         // v3.2 (16.11.2026): три кода сбоев CRM и время в звонке —
         // минорная, в общей серии.
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.2-2026-11-16');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-16');
+        // v3.3 (17.11.2026): проход «движение сделки» разделён на два вызова
+        // — минорная, в общей серии.
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.3-2026-11-17');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-17');
+        expect(PROMPT_SERIES_START['focus-v3.2-2026-11-16']).toBe(
+            SERIES_BOUNDARY,
+        );
         expect(PROMPT_SERIES_START['focus-v3.1-2026-11-06']).toBe(
             SERIES_BOUNDARY,
         );

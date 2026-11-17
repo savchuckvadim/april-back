@@ -29,6 +29,7 @@ import {
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { sumCompletionUsage } from './call-analysis-usage.util';
 import {
+    emptyFocusResults,
     focusIncompleteParts,
     mergeFocusResults,
     ownSectionsOf,
@@ -63,17 +64,15 @@ import {
 } from './call-focus-stored.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
-    CallFocusKey,
-    FOCUS_CONTENT_PROMPT,
-    FOCUS_CONTENT_SCHEMA,
-    FOCUS_FORM_PROMPT,
-    FOCUS_FORM_SCHEMA,
-    FOCUS_MOVEMENT_PROMPT,
-    FOCUS_MOVEMENT_SCHEMA,
     FOCUS_SYNTHESIS_PROMPT,
-    FOCUS_SYNTHESIS_SCHEMA,
     renderFocusDigest,
 } from '../contracts/call-focus-analysis.contract';
+import {
+    FOCUS_PASSES,
+    SYNTHESIS_PASS,
+    focusSchemaName,
+    type FocusPass,
+} from '../contracts/call-focus-passes.contract';
 import {
     MethodologyRegistryService,
     type ResolvedMethodology,
@@ -93,14 +92,6 @@ const FALLBACK_CALL_TYPE = 'other';
  * отдельные поля (запрос владельца 27.08.2026).
  */
 export const BASE_KNOWLEDGE_KIND = 'call-analysis-base';
-
-/** Описание одного фокус-прохода. */
-interface FocusPass {
-    key: CallFocusKey;
-    label: string;
-    prompt: string;
-    schema: Record<string, unknown>;
-}
 
 /** Опции запуска фокус-разбора. */
 export interface CallFocusRunOptions {
@@ -128,41 +119,13 @@ export interface CallMethodologyPassOutcome {
     talkRatioMax: number | null;
 }
 
-/** Синтез итога — в журнале и схеме как отдельный проход. */
-const SYNTHESIS_PASS = {
-    key: 'synthesis',
-    label: 'синтез',
-    title: 'Синтез фокус-разбора',
-    schema: FOCUS_SYNTHESIS_SCHEMA,
-} as const;
-
-const FOCUS_PASSES: FocusPass[] = [
-    {
-        key: 'form',
-        label: 'форма разговора',
-        prompt: FOCUS_FORM_PROMPT,
-        schema: FOCUS_FORM_SCHEMA,
-    },
-    {
-        key: 'content',
-        label: 'содержание продажи',
-        prompt: FOCUS_CONTENT_PROMPT,
-        schema: FOCUS_CONTENT_SCHEMA,
-    },
-    {
-        key: 'movement',
-        label: 'движение сделки',
-        prompt: FOCUS_MOVEMENT_PROMPT,
-        schema: FOCUS_MOVEMENT_SCHEMA,
-    },
-];
-
 /**
- * МНОГОСЛОЙНЫЙ разбор звонка (Фаза 2 плана call-analysis-v2): три
+ * МНОГОСЛОЙНЫЙ разбор звонка (Фаза 2 плана call-analysis-v2): четыре
  * параллельных фокус-вызова с узкими схемами (форма / содержание /
- * движение сделки) + синтез итоговой картины по их выжимкам. Каждый фокус
- * получает паспорт звонка, профиль типа и методички портала — но отвечает
- * только за свои разделы, поэтому меньше галлюцинирует и глубже копает.
+ * возражения и цена / закрытие и следующий шаг — см. FOCUS_PASSES) + синтез
+ * итоговой картины по их выжимкам. Каждый фокус получает паспорт звонка,
+ * профиль типа и методички портала — но отвечает только за свои разделы,
+ * поэтому меньше галлюцинирует и глубже копает.
  *
  * Выход собирается в тот же AgentCallAnalysisDto — intake/writer/таймлайн
  * не отличают его от цельного разбора.
@@ -436,11 +399,7 @@ export class CallFocusAnalysisService {
                     ),
             );
             const responses: (FocusCompletion | null)[] = [];
-            const byKey: FocusResultsByKey = {
-                form: null,
-                content: null,
-                movement: null,
-            };
+            const byKey: FocusResultsByKey = emptyFocusResults();
             for (const pass of FOCUS_PASSES) {
                 const kept = stored?.passes[pass.key];
                 if (kept) {
@@ -467,7 +426,7 @@ export class CallFocusAnalysisService {
             if (survived < 2) {
                 const providerFailure = isFocusProviderFailure(passErrors);
                 this.logger.warn(
-                    `Фокус-разбор (${domain}): выжило ${survived}/3 проходов — результат отброшен` +
+                    `Фокус-разбор (${domain}): выжило ${survived}/${FOCUS_PASSES.length} проходов — результат отброшен` +
                         (providerFailure
                             ? ' (проходы оборвались на поставщике модели)'
                             : ''),
@@ -581,7 +540,7 @@ export class CallFocusAnalysisService {
             }
             const keptKeys = Object.keys(stored?.passes ?? {});
             this.logger.log(
-                `Фокус-разбор (${domain}): проходов ${survived}/3` +
+                `Фокус-разбор (${domain}): проходов ${survived}/${FOCUS_PASSES.length}` +
                     (keptKeys.length > 0
                         ? ` (из сохранённых: ${keptKeys.join(', ')})`
                         : '') +
@@ -697,7 +656,7 @@ export class CallFocusAnalysisService {
         return this.llm.structuredCompletionWithUsage(
             `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
             userContent,
-            `call_focus_${pass.key}`,
+            focusSchemaName(pass.key),
             pass.schema,
             domain,
             { model, deferExhaustedAlert: attempt === 1 },
@@ -706,18 +665,16 @@ export class CallFocusAnalysisService {
 
     /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибку бросает. */
     private callSynthesis(
-        byKey: Record<CallFocusKey, Record<string, unknown> | null>,
+        byKey: Readonly<FocusResultsByKey>,
         sharedContext: string,
         userContent: string,
         domain: string,
         attempt: WaveAttempt,
         model?: string,
     ): Promise<FocusCompletion> {
-        const digests = [
-            renderFocusDigest('ФОРМА РАЗГОВОРА', byKey.form),
-            renderFocusDigest('СОДЕРЖАНИЕ ПРОДАЖИ', byKey.content),
-            renderFocusDigest('ДВИЖЕНИЕ СДЕЛКИ', byKey.movement),
-        ].join('\n\n');
+        const digests = FOCUS_PASSES.map(pass =>
+            renderFocusDigest(pass.digestLabel, byKey[pass.key]),
+        ).join('\n\n');
         return this.callFocus(
             { ...SYNTHESIS_PASS, prompt: FOCUS_SYNTHESIS_PROMPT },
             sharedContext,
@@ -743,7 +700,7 @@ export class CallFocusAnalysisService {
             wave.get(pass.key),
             {
                 title: pass.title ?? `Фокус «${pass.label}»`,
-                schemaName: `call_focus_${pass.key}`,
+                schemaName: focusSchemaName(pass.key),
                 domain,
             },
             {

@@ -26,6 +26,7 @@ import {
     type SpecificationLt,
 } from '../lib/contract-form.util';
 import { getContractIBlocks } from '../lib/contract-iblocks.util';
+import { legacyFreeLt } from '../lib/legacy-free-lt.util';
 
 /** Легаси-аргументы `InitFormService.getSpecification` — ровно то, что присылал старый фронт. */
 export interface LegacySpecificationArgs {
@@ -36,6 +37,10 @@ export interface LegacySpecificationArgs {
     contractCoefficient: number;
     documentInfoblocks: ComplectDto[];
     paymentLtPacketString?: string;
+    /** `complect.lt` — номера LT-сервисов, бесплатных в комплекте. */
+    complectLt?: number[];
+    /** `legalTech` легаси: `packages` по весу и каталог `value`. */
+    legalTech?: unknown;
 }
 
 const HOTLINE_CODE = 'hotline';
@@ -155,16 +160,16 @@ export class ContractSpecificationFormService {
                   comment: text(product.contractConsaltingComment),
               };
 
+        // бесплатный LT — из состава комплекта (порт Laravel); платный — строкой с фронта
+        const freeLt = legacyFreeLt(args.complectLt, args.legalTech);
         const lt: SpecificationLt = args.paymentLtPacketString
             ? {
-                  freePacket: '',
-                  freeServices: [],
+                  ...freeLt,
                   paidPacket: 'Legal Tech',
                   paidServices: [args.paymentLtPacketString],
               }
             : {
-                  freePacket: '',
-                  freeServices: [],
+                  ...freeLt,
                   paidPacket: '',
                   paidServices: [],
               };

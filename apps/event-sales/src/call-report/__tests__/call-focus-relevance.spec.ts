@@ -98,6 +98,7 @@ describe('приоры актуальности разделов из метод
             'call_focus_form',
             'call_focus_content',
             'call_focus_movement',
+            'call_focus_closing',
             'call_focus_synthesis',
             'call_focus_methodology',
         ]) {

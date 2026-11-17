@@ -12,6 +12,10 @@ import {
 const AFTER = new Date(REPAIR_LEGACY_SINCE.getTime() + 19 * 60 * 60 * 1000);
 const BEFORE = new Date(REPAIR_LEGACY_SINCE.getTime() - 60 * 60 * 1000);
 
+/**
+ * По разделу из каждой зоны записи без пометки: «возражения и цена» и
+ * «закрытие» у таких записей — одна зона, как до деления прохода.
+ */
 const FULL_SECTIONS = [
     { section: 'GREETING' },
     { section: 'NEEDS' },
@@ -64,7 +68,52 @@ describe('incompletePartsOf', () => {
                     },
                 }),
             ),
-        ).toEqual(['movement', 'synthesis']);
+        ).toEqual(['movement', 'closing', 'synthesis']);
+    });
+
+    it('без пометки: «возражения и цена» и «закрытие» — одна зона, как до деления прохода', () => {
+        // Любой один раздел из четырёх закрывает обе половины: звонок без
+        // возражений и цены остаётся полным, догон его не переделывает.
+        for (const section of ['OBJECTIONS', 'PRICE', 'CLOSING', 'REFUSAL']) {
+            expect(
+                incompletePartsOf(
+                    record({
+                        user_result: {
+                            score: 70,
+                            sections: [
+                                { section: 'GREETING' },
+                                { section: 'NEEDS' },
+                                { section },
+                            ],
+                        },
+                    }),
+                ),
+            ).toEqual([]);
+        }
+        // Нет ни одного из четырёх — недостают оба прохода.
+        expect(
+            incompletePartsOf(
+                record({
+                    user_result: {
+                        score: 70,
+                        sections: [
+                            { section: 'GREETING' },
+                            { section: 'NEEDS' },
+                        ],
+                    },
+                }),
+            ),
+        ).toEqual(['movement', 'closing']);
+    });
+
+    it('пометка с проходом closing принимается как есть', () => {
+        expect(
+            incompletePartsOf(
+                record({
+                    user_result: { incompleteParts: ['closing'], sections: [] },
+                }),
+            ),
+        ).toEqual(['closing']);
     });
 
     it('без пометки, полная свежая запись — не трогаем', () => {

@@ -5,11 +5,7 @@ import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader'
  * AiOverviewDto.
  */
 import type {
-    AttentionLowScoreCall,
-    AttentionPresentationSpirals,
-    AttentionProgressFacts,
-    AttentionRules,
-    AttentionSectionMean,
+    ManagerQualityFacts,
     MetricValue,
     WorkCalendar,
 } from '@lib/sales-ai-analytics';
@@ -128,54 +124,15 @@ export interface ManagerNextStepRates {
 }
 
 /**
- * Пороги сигналов этапа 2 (реестр `weak_section_score_max`,
- * `weak_section_gap`, `low_score_call_max`, `weak_followup_share_min`, слой
- * портала): по ним собраны факты качества, по ним же правила «Внимания»
- * читают кэш обзора.
+ * Пороги и факты качества этапа 2 переехали в @lib/sales-ai-analytics
+ * (model/quality-facts.types.ts, 17.11.2026) — реэкспорт без изменений.
  */
-export type AttentionThresholds = Pick<
-    AttentionRules,
-    | 'weakSectionScoreMax'
-    | 'weakSectionGap'
-    | 'lowScoreCallMax'
-    | 'weakFollowupShareMin'
-    | 'qualityScoreMin'
-    | 'progressMovingMin'
-    | 'progressNoQualityMinCalls'
->;
-
-/** Презентации менеджера за период: средние разделов и слабые звонки. */
-export interface ManagerPresentationFacts {
-    n: number;
-    sections: AttentionSectionMean[];
-    weakCallIds: string[];
-    /** Спирали презентаций (методика со спиралями); нет разборов со спиралями — поля нет. */
-    spirals?: AttentionPresentationSpirals;
-}
-
-/** Доработка (refine / decision) за период. */
-export interface ManagerFollowupFacts {
-    n: number;
-    objectionsKnown: number;
-    objectionsUnhandled: number;
-    nextStepSet: number;
-    nextStepNoDate: number;
-    sections: AttentionSectionMean[];
-    weakCallIds: string[];
-}
-
-/**
- * Факты качества для сигналов этапа 2 (решение владельца 19.10.2026):
- * слабые презентации, слабая доработка, звонки с низкой оценкой.
- */
-export interface ManagerQualityFacts {
-    thresholds: AttentionThresholds;
-    presentation: ManagerPresentationFacts;
-    followup: ManagerFollowupFacts;
-    lowScoreCalls: AttentionLowScoreCall[];
-    /** Звонки с продвижением сделки без качества («купил бы и без менеджера»); у старого кэша нет. */
-    progress?: AttentionProgressFacts;
-}
+export type {
+    AttentionThresholds,
+    ManagerFollowupFacts,
+    ManagerPresentationFacts,
+    ManagerQualityFacts,
+} from '@lib/sales-ai-analytics';
 
 /** Факты по звонкам менеджера, не входящие в матрицу. */
 export interface ManagerCallFacts {

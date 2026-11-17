@@ -6,7 +6,7 @@
  * Неполный разбор — активная запись `agent-analysis`, в которой не собралась
  * хотя бы одна часть многослойного разбора:
  *  - с 10.11.2026 разбор сам пишет список `incompleteParts` (фокус-проходы,
- *    синтез, методика; цельный разбор-страховка — все три прохода);
+ *    синтез, методика; цельный разбор-страховка — все фокус-проходы);
  *  - записи без этого поля, созданные с REPAIR_LEGACY_SINCE, проверяются по
  *    содержимому: нет итоговой оценки или нет ни одного раздела зоны
  *    фокус-прохода. Так догон подбирает сбои вечера 10.11.2026, случившиеся
@@ -23,6 +23,20 @@ import {
     type CallFocusKey,
 } from '../contracts/call-focus-analysis.contract';
 
+/**
+ * Зоны для записей БЕЗ пометки. «Возражения и цена» и «закрытие» идут одной
+ * зоной — как до деления прохода «движение сделки» (17.11.2026). Наш разбор
+ * пометку ставит всегда, поэтому запись без неё — старая или от внешнего
+ * агента, и судить по её разделам о каждой половине отдельно нельзя: звонок
+ * без возражений и цены остаётся полным, как и раньше, и догон не переделывает
+ * здоровые разборы.
+ */
+const UNMARKED_ZONES: readonly (readonly CallFocusKey[])[] = [
+    ['form'],
+    ['content'],
+    ['movement', 'closing'],
+];
+
 /** С какого момента записи без пометки проверяются по содержимому. */
 export const REPAIR_LEGACY_SINCE = new Date('2026-11-10T00:00:00.000Z');
 
@@ -31,7 +45,7 @@ export const REPAIR_LOOKBACK_HOURS = 72;
 
 /**
  * Сколько НЕПОЛНЫХ разборов портала догон переделывает за один проход:
- * переделка — новый разбор целиком (4–5 вызовов модели) и перезапись
+ * переделка — новый разбор целиком (5–6 вызовов модели) и перезапись
  * карточки, поэтому понемногу.
  */
 export const REPAIR_QUOTA_PER_DOMAIN = 5;
@@ -65,8 +79,6 @@ export interface RepairCandidate<T extends RepairRecordView> {
     record: T;
     parts: CallAnalysisPart[];
 }
-
-const FOCUS_KEYS = Object.keys(FOCUS_SECTION_CODES) as CallFocusKey[];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -106,8 +118,10 @@ export function incompletePartsOf(
     }
     if (record.createdAt.getTime() < REPAIR_LEGACY_SINCE.getTime()) return [];
     const codes = sectionCodesOf(result);
-    const parts: CallAnalysisPart[] = FOCUS_KEYS.filter(
-        key => !FOCUS_SECTION_CODES[key].some(code => codes.has(code)),
+    const parts: CallAnalysisPart[] = UNMARKED_ZONES.flatMap(zone =>
+        zone.some(key => FOCUS_SECTION_CODES[key].some(code => codes.has(code)))
+            ? []
+            : [...zone],
     );
     const score = result.score;
     if (typeof score !== 'number' || !Number.isFinite(score)) {

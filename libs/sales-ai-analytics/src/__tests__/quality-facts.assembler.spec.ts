@@ -1,42 +1,28 @@
-import type { AnalyticsLiteSection } from '@lib/call-lib';
+import type { DatedLiteRow } from '../model/dated-lite-row';
 import {
     assembleQualityFacts,
     emptyQualityFacts,
     sectionMeansOf,
-} from '../domain/assembler/call-quality-facts.assembler';
-import { assembleCallFacts } from '../domain/assembler/call-facts.assembler';
-import { defaultAttentionThresholds } from '../domain/loaders/attention-thresholds.util';
-import {
-    hasCallDate,
-    type DatedLiteRow,
-} from '../domain/loaders/lite-row.mapper';
-import { liteRow } from './fixtures/lite-row.fixture';
+} from '../model/quality-facts.assembler';
+import { defaultAttentionThresholds } from '../settings/attention-thresholds';
+import { datedLiteRow, liteSection } from './dated-lite-row.fixture';
 
 /**
  * Факты качества этапа 2 (решение владельца 19.10.2026): средние разделов
  * презентаций и доработки, доли «не отработано» и «без даты», звонки с
  * низкой оценкой — по lite-строкам слоя качества, в шкале 1–10.
+ *
+ * Переехали из kpi-report-sales вместе с кодом (17.11.2026); проверка
+ * сборки фактов звонков обзора осталась там (call-facts.assembler.spec.ts).
  */
-const section = (
-    code: string,
-    score: number | null,
-    relevance = 1,
-): AnalyticsLiteSection => ({
-    section: code,
-    relevance,
-    score,
-    asWas: null,
-    alternatives: [],
-});
+const section = liteSection;
 
 const row = (
     id: string,
     callType: string | null,
     patch: Partial<DatedLiteRow> = {},
 ): DatedLiteRow =>
-    [liteRow({ transcriptionId: id, managerId: '10', callType, ...patch })]
-        .filter(hasCallDate)
-        .map(item => item)[0];
+    datedLiteRow({ transcriptionId: id, managerId: '10', callType, ...patch });
 
 const THRESHOLDS = defaultAttentionThresholds();
 
@@ -171,33 +157,6 @@ describe('assembleQualityFacts', () => {
             progress: { n: 0, calls: [] },
         });
         expect(sectionMeansOf([], ['NEEDS'])).toEqual([]);
-    });
-
-    it('assembleCallFacts кладёт факты качества по звонкам слоя качества и порогам опций', () => {
-        const facts = assembleCallFacts(
-            [
-                row('p1', 'presentation', {
-                    sections: [section('NEEDS', 4)],
-                    score: 30,
-                }),
-                // Короткий звонок — вне слоя качества.
-                row('short', 'presentation', {
-                    durationSec: 10,
-                    sections: [section('NEEDS', 1)],
-                    score: 10,
-                }),
-            ],
-            {
-                to: '2026-09-06',
-                timeZone: 'Europe/Moscow',
-                thresholds: { ...THRESHOLDS, lowScoreCallMax: 2 },
-            },
-        );
-        const quality = facts.get('10')?.quality;
-        expect(quality?.presentation.n).toBe(1);
-        expect(quality?.presentation.weakCallIds).toEqual(['p1']);
-        expect(quality?.lowScoreCalls).toEqual([]);
-        expect(quality?.thresholds.lowScoreCallMax).toBe(2);
     });
 });
 

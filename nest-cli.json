@@ -394,6 +394,15 @@
         "tsConfigPath": "libs/ru-work-calendar/tsconfig.lib.json"
       }
     },
+    "rop-reports": {
+      "type": "library",
+      "root": "libs/rop-reports",
+      "entryFile": "index",
+      "sourceRoot": "libs/rop-reports/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rop-reports/tsconfig.lib.json"
+      }
+    },
     "renewal-offer": {
       "type": "library",
       "root": "libs/renewal-offer",

@@ -71,7 +71,17 @@ describe('материалы разбора по проходам', () => {
         expect(focusContextFor(materials, 'content')).toContain(
             '[objection-playbook]',
         );
+        // Оба прохода «движения сделки» читают один регламент отдела.
         expect(focusContextFor(materials, 'movement')).toContain(
+            '[sales-regulation]',
+        );
+        expect(focusContextFor(materials, 'closing')).toBe(
+            focusContextFor(materials, 'movement'),
+        );
+        expect(focusContextFor(materials, 'closing')).not.toContain(
+            '[objection-playbook]',
+        );
+        expect(focusContextFor(materials, 'content')).not.toContain(
             '[sales-regulation]',
         );
         expect(synthesisContextOf(materials)).toContain('[call-etalon]');

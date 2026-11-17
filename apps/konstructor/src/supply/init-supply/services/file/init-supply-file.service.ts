@@ -13,10 +13,18 @@ export class InitSupplyFileService {
 
         const fileBuffer = Buffer.from(response.data, 'binary');
 
-        // Получаем имя файла из URL
+        // Имя: явное → Content-Disposition → хвост URL. Ссылки Laravel
+        // кончались именем файла, а у Nest хвост — токен `/api/files/<iv:data>`:
+        // файл уходил в поле RPA с именем-токеном, без расширения и с «:»
+        // (gsr, 17.11.2026 — поле «Текущий отчёт о поставке» пустое).
+        // FileLinkController отдаёт файл через res.download — имя есть в заголовке.
         const urlParts = url.split('/');
         const filename =
-            name || decodeURIComponent(urlParts[urlParts.length - 1]);
+            name ||
+            this.getFilenameFromDisposition(
+                response.headers?.['content-disposition'] as string | undefined,
+            ) ||
+            decodeURIComponent(urlParts[urlParts.length - 1]);
 
         const base64 = fileBuffer.toString('base64');
 

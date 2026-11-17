@@ -257,7 +257,8 @@ export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
     @ApiPropertyOptional({
         description:
             'Части многослойного разбора, которые не собрались (модель не ' +
-            'ответила): form, content, movement — фокус-проходы, synthesis — ' +
+            'ответила): form, content, movement (возражения и цена), closing ' +
+            '(закрытие и следующий шаг) — фокус-проходы, synthesis — ' +
             'итоговая оценка, methodology — проход методики. Пустой список — ' +
             'разбор полный; поле есть — догон переделает разбор, когда ' +
             'поставщик снова ответит.',

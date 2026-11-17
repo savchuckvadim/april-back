@@ -187,7 +187,7 @@ export const KNOWN_KNOWLEDGE_KINDS: readonly KnowledgeKindInfo[] = [
         description:
             'Что запрещено и что обязательно: обещания клиенту, сроки, ' +
             'согласования, запрещённые формулировки.',
-        consumer: 'фокус «движение сделки» + пост-анализ',
+        consumer: 'фокусы «возражения и цена», «закрытие» + пост-анализ',
         clientEditable: true,
     },
     {

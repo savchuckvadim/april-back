@@ -25,7 +25,7 @@ export type KnowledgeUse = (typeof KNOWLEDGE_USES)[keyof typeof KNOWLEDGE_USES];
 export const KNOWLEDGE_USE_TITLES: Record<KnowledgeUse, string> = {
     'focus-shared': 'Разбор звонка: все проходы и итог',
     'focus-content': 'Разбор звонка: проход «Содержание продажи»',
-    'focus-movement': 'Разбор звонка: проход «Движение сделки»',
+    'focus-movement': 'Разбор звонка: проходы «Возражения и цена» и «Закрытие»',
     'focus-synthesis': 'Разбор звонка: итоговая оценка',
     methodology: 'Разбор звонка: проход методики',
     compliance: 'Проверка по регламенту',

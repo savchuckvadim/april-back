@@ -1,0 +1,61 @@
+/**
+ * Чистые проекции lite-строки звонка (call-lib loadLite) в строки модели
+ * @lib/sales-ai-analytics. Строки без времени звонка отбрасываются —
+ * без даты их нельзя положить ни в окно, ни в неделю.
+ *
+ * Переехал из apps/kpi-report-sales (loaders/lite-row.mapper.ts,
+ * 17.11.2026): те же строки нужны итогам периода по менеджерам в
+ * event-sales; старый путь — реэкспорт.
+ */
+import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
+import type { AgendaCallRow } from './agenda.types';
+import type { PulseCallRow } from './pulse.types';
+
+/** Lite-строка с известным временем звонка. */
+export type DatedLiteRow = AnalyticsCallLiteRow & { callStartedAt: Date };
+
+export const hasCallDate = (row: AnalyticsCallLiteRow): row is DatedLiteRow =>
+    row.callStartedAt instanceof Date &&
+    !Number.isNaN(row.callStartedAt.getTime());
+
+export function toPulseRow(row: DatedLiteRow): PulseCallRow {
+    return {
+        transcriptionId: row.transcriptionId,
+        managerId: row.managerId,
+        callStartedAt: row.callStartedAt,
+        durationSec: row.durationSec,
+        // Тип нужен пульсу только для порога длительности по типу (А.1).
+        callType: row.callType,
+        analysisPresent: row.analysisPresent,
+        nextStep: row.nextStep,
+        riskFlags: row.riskFlags,
+        coachingPriority: row.coachingPriority,
+        // Для звонка-образца «С кем поработать»: лучшая оценка, не свежесть.
+        score: row.score,
+    };
+}
+
+/**
+ * Текст транскрипта lite-выборка не грузит → text = null, charOffset = null.
+ * Доказательства флагов и следующий шаг — для пунктов «риск с цитатой» и
+ * «слабая доработка» (этап 2); у старых строк без доказательств риск-пункта
+ * не будет.
+ */
+export function toAgendaRow(row: DatedLiteRow): AgendaCallRow {
+    return {
+        transcriptionId: row.transcriptionId,
+        managerId: row.managerId,
+        callType: row.callType,
+        callStartedAt: row.callStartedAt,
+        score: row.score,
+        sections: row.sections,
+        objections: row.objections,
+        riskFlags: row.riskFlags,
+        riskEvidence: (row.riskEvidence ?? []).map(item => ({
+            flag: item.flag,
+            quote: item.quote,
+        })),
+        nextStep: row.nextStep,
+        text: null,
+    };
+}
