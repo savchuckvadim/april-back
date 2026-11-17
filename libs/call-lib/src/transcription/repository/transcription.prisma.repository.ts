@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
     TRANSCRIPTION_PIPELINE_LITE_SELECT,
+    TRANSCRIPTION_PIPELINE_STATE_SELECT,
     TranscriptionPipelineLiteRow,
+    TranscriptionPipelineStateRow,
     TranscriptionRepository,
 } from './transcription.repository';
 import { PrismaService } from '@lib/core';
@@ -365,6 +367,16 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         return this.prisma.transcription.findMany({
             where: { domain, id: { in: numeric.map(id => BigInt(id)) } },
             select: TRANSCRIPTION_PIPELINE_LITE_SELECT,
+        });
+    }
+
+    async findPipelineStatesByDedupKeys(
+        dedupKeys: readonly string[],
+    ): Promise<TranscriptionPipelineStateRow[]> {
+        if (dedupKeys.length === 0) return [];
+        return this.prisma.transcription.findMany({
+            where: { dedup_key: { in: [...dedupKeys] } },
+            select: TRANSCRIPTION_PIPELINE_STATE_SELECT,
         });
     }
 

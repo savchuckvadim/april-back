@@ -4,12 +4,16 @@ import { PortalSessionProtected } from '@lib/auth';
 import { BxRecordsByCompanyRequestDto } from '../dto/bx-records.dto';
 import { BxCallingRecordDto } from '../dto/bx-record-response.dto';
 import { RecordsByCompanyUseCase } from '../use-cases/records-by-company.use-case';
+import { CLIENT_CALLS_ROUTE } from '../client-calls/client-calls.const';
+import { ClientCallsUseCase } from '../client-calls/client-calls.use-case';
+import { ClientCallsDto } from '../dto/client-calls.dto';
 
 @ApiTags('Event Sales Bx Records')
 @Controller('event-sales-bx-records')
 export class BxRecordsController {
     constructor(
         private readonly recordsByCompanyUseCase: RecordsByCompanyUseCase,
+        private readonly clientCallsUseCase: ClientCallsUseCase,
     ) {}
 
     @ApiOperation({
@@ -32,6 +36,27 @@ export class BxRecordsController {
             dto,
         )) as BxCallingRecordDto[];
     }
+    @ApiOperation({
+        summary: 'Звонки клиента с состоянием разбора',
+        description:
+            'Последние звонки клиента с записью по всем его связям (компания, ' +
+            'её контакты, сделки и лиды), свежие первыми. У каждого звонка — ' +
+            'состояние разбора, а у разобранного — краткое резюме, следующий ' +
+            'шаг и адрес страницы полного разбора. Адреса файлов записей в ' +
+            'Битрикс24 не отдаются. Проверяется сессия портала: домен запроса ' +
+            'должен совпадать с доменом сессии.',
+    })
+    @PortalSessionProtected()
+    @ApiBody({ type: BxRecordsByCompanyRequestDto })
+    @ApiOkResponse({ type: ClientCallsDto })
+    @Post(CLIENT_CALLS_ROUTE)
+    @HttpCode(200)
+    async getClientCalls(
+        @Body() dto: BxRecordsByCompanyRequestDto,
+    ): Promise<ClientCallsDto> {
+        return this.clientCallsUseCase.list(dto);
+    }
+
     /**
      * TODO: get records by lead делается где-то в другом месте
      * перенести сюда
