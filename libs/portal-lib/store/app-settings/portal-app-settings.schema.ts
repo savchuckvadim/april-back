@@ -10,6 +10,10 @@ import {
     DEAL_MOVEMENT_DEFAULT_NOTE_KIND,
     DEAL_MOVEMENT_NOTE_KIND_OPTIONS,
 } from './lib/deal-movement-note-kinds.const';
+import {
+    DEAL_MOVEMENT_DEFAULT_DIGEST_MODE,
+    DEAL_MOVEMENT_DIGEST_MODE_OPTIONS,
+} from './lib/deal-movement-digest-modes.const';
 
 /**
  * Перехват клиента: с какой стадии «ОП Основная» сделку коллеги НЕ забирать
@@ -2072,6 +2076,40 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'этого запись уходит без подсказки.',
             type: 'number',
             default: 50,
+        }),
+        dealMovementDigestEnabled: setting({
+            code: 'deal_movement_digest_enabled',
+            name: 'Движение сделок: сводка руководителям',
+            description:
+                'После ночного счёта руководители получают сводку: сколько ' +
+                'сделок движется, застряло, откатилось и под риском, какие ' +
+                'сделки стали проблемными за ночь и крупнейшие сделки под ' +
+                'риском. Кому и как доставлять — те же получатели и каналы, ' +
+                'что у сводки аудита сделок. По умолчанию выключено.',
+            type: 'boolean',
+            default: false,
+        }),
+        dealMovementDigestMode: setting({
+            code: 'deal_movement_digest_mode',
+            name: 'Движение сделок: когда слать сводку',
+            description:
+                'Только когда появились новые проблемные сделки — сводка ' +
+                'уходит руководителю, если этой ночью среди его сделок есть ' +
+                'ставшие «застряла», «откатилась» или «под риском». Каждое ' +
+                'утро — если среди его сделок есть хоть одна не в статусе ' +
+                '«движется». По умолчанию — только новые.',
+            type: 'string',
+            default: DEAL_MOVEMENT_DEFAULT_DIGEST_MODE,
+            options: DEAL_MOVEMENT_DIGEST_MODE_OPTIONS,
+        }),
+        dealMovementDigestTop: setting({
+            code: 'deal_movement_digest_top',
+            name: 'Движение сделок: сделок под риском в сводке',
+            description:
+                'Сколько сделок под риском показывать в сводке — самые ' +
+                'крупные по сумме.',
+            type: 'number',
+            default: 15,
         }),
         // === Отчёт по дублям сделок (duplicate-report) =====================
         // Раз в неделю: клиенты с несколькими открытыми сделками воронки ОП —
