@@ -116,9 +116,10 @@ describe('разложение прогноза отдела: чтение со�
         expect(toDepartmentBreakdown('2026-11', 'мусор')).toBeNull();
     });
 
-    it('менеджер: слагаемые, входы расчёта и сделки с наибольшим вкладом', () => {
+    it('менеджер, старый расчёт: слагаемые, входы расчёта и сделки с наибольшим вкладом', () => {
         expect(toManagerBreakdown('15', managerPayload())).toEqual({
             managerId: '15',
+            method: 'calls-v1',
             p50: 5.4,
             done: 2,
             pipeline: 1.1,
@@ -133,7 +134,81 @@ describe('разложение прогноза отдела: чтение со�
             topEpisodes: [
                 { id: 'deal:1', ageDays: 34, theta: 0.42, expected: 0.18 },
             ],
+            deals: null,
+            flow: null,
         });
+    });
+
+    it('менеджер, от презентаций: строка в сумме — середина, сделки справочно', () => {
+        const view = toManagerBreakdown(
+            '15',
+            managerPayload({
+                method: 'presentations-v2',
+                p50: 2.3,
+                pipelineExpected: 0.4,
+                newFlowExpected: 0.08,
+                flow: {
+                    source: 'presentations',
+                    backlogExpected: 0.22,
+                    freshExpected: 0.08,
+                    presentationsDone: 10,
+                    presentationsRate: 1,
+                    salesPerPresentation: 0.03,
+                    sameMonthShare: 0.5,
+                    remainingShare: 0.5,
+                    pastPresentationsEffective: 9.9,
+                    salesMean: 0.6,
+                },
+            }),
+        );
+        expect(view).toMatchObject({
+            method: 'presentations-v2',
+            pipeline: 0.22,
+            newFlow: 0.08,
+            deals: 0.4,
+            flow: {
+                source: 'presentations',
+                presentationsDone: 10,
+                pastPresentations: 9.9,
+                salesMean: 0.6,
+            },
+        });
+        const parts =
+            (view?.done ?? 0) + (view?.pipeline ?? 0) + (view?.newFlow ?? 0);
+        expect(parts).toBeCloseTo(view?.p50 ?? 0, 12);
+    });
+
+    it('отдел, от презентаций: метод и подбор — подобран ли сдвиг', () => {
+        const view = toDepartmentBreakdown('2026-11', {
+            days: [
+                logDay('2026-11-16', {
+                    descriptive: 30.5,
+                    method: 'presentations-v2',
+                    entry: 'presentation-uniq',
+                    flow: {
+                        status: 'default-lag',
+                        reason: 'lag-not-identified',
+                        q: 0.03,
+                        rho: 0.5,
+                        salesHistoryManagers: 1,
+                    },
+                }),
+            ],
+        });
+        expect(view).toMatchObject({
+            method: 'presentations-v2',
+            flow: {
+                status: 'default-lag',
+                entry: 'presentation-uniq',
+                q: 0.03,
+                lagEstimated: false,
+                salesHistoryManagers: 1,
+            },
+        });
+        const old = toDepartmentBreakdown('2026-11', {
+            days: [logDay('2026-11-10')],
+        });
+        expect(old).toMatchObject({ method: 'calls-v1', flow: null });
     });
 
     it('менеджер: старая запись без входов, пустая цель, нет истории стадий', () => {

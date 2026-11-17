@@ -22,6 +22,7 @@ import {
     AI_POOL_STATUSES,
     type PoolPortalVerdict,
 } from '../../model/pool.types';
+import { forecastMethodOf } from '../../model/presentation-flow.types';
 import type {
     EdgeBeforeAfter,
     ShareWithInterval,
@@ -176,6 +177,8 @@ export function toBacktestView(
         shadowMonths: snapshot.shadowMonths ?? 0,
         shadowMinMonths: snapshot.shadowMinMonths ?? 0,
         replayedMonths: snapshot.replayedMonths ?? 0,
+        method: forecastMethodOf(snapshot.method),
+        otherMethodMonths: snapshot.otherMethodMonths ?? 0,
         months: result?.months.length ?? 0,
         days: result?.days ?? 0,
         coverageShare: result?.coverage.share ?? null,
