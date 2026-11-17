@@ -28,6 +28,7 @@ import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.
 import { EventSalesBadgesModule } from './badges/badges.module';
 import { DealAuditModule } from './deal-audit/deal-audit.module';
 import { DuplicateReportModule } from './duplicate-report/duplicate-report.module';
+import { DealMovementModule } from './deal-movement/deal-movement.module';
 import { InnModule } from './inn/inn.module';
 import { ClientTypeModule } from './client-type/client-type.module';
 import { DealOwnerModule } from './deal-owner/deal-owner.module';
@@ -98,6 +99,9 @@ import { EventSalesCronRosterModule } from './cron-roster/event-sales-cron-roste
         // Отчёт по дублям сделок: раз в неделю руководителям задача с
         // Excel по клиентам с несколькими открытыми сделками. Выключен.
         DuplicateReportModule,
+        // Движение сделок (этап 7.3): ночной счёт статусов открытых сделок
+        // ОП, без записи в сделки. Выключен на всех порталах.
+        DealMovementModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

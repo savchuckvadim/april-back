@@ -148,6 +148,9 @@ export class PortalAppSettingsController {
                     description: item.description,
                     links: item.links.map(entry => ({ ...entry })),
                     ...(item.theory ? { theory: item.theory } : {}),
+                    ...(item.highlight
+                        ? { highlight: { ...item.highlight } }
+                        : {}),
                     ...relationsPayload(
                         groupRelations.get(item.code)?.result() ?? {
                             hooks: [],

@@ -22,6 +22,7 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '@lib/call-lib';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
+import { RedisModule } from '@lib/core/redis/redis.module';
 import { QueueModule } from '@lib/queue';
 import { OwnerReportExportStoreModule } from '../owner-report-export/owner-report-export-store.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
@@ -37,6 +38,7 @@ import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.s
 import { AiAnalyticsFactsCatchupService } from './services/ai-analytics-facts-catchup.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
+import { AiAnalyticsDealMovementService } from './services/ai-analytics-deal-movement.service';
 import { AiOwnerReportExportService } from './services/ai-owner-report-export.service';
 
 @Module({
@@ -46,6 +48,8 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         QueueModule,
         PortalAppSettingsModule,
         OwnerReportExportStoreModule,
+        // Ход прогона движения сделок пишет event-sales в Redis
+        RedisModule,
     ],
     providers: [
         AiAnalyticsAdminSnapshotStore,
@@ -65,6 +69,8 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsSmartBackfillService,
         // Выгрузка PDF отчёта собственнику: джоба в SALES_KPI_REPORT + Redis
         AiOwnerReportExportService,
+        // Движение сделок (этап 7.3): джоба в очередь event-sales + состояние
+        AiAnalyticsDealMovementService,
     ],
     exports: [
         AiOwnerReportExportService,
@@ -80,6 +86,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsReanalyzeService,
         AiAnalyticsFactsCatchupService,
         AiAnalyticsSmartBackfillService,
+        AiAnalyticsDealMovementService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

@@ -228,6 +228,18 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             'звонкам, телефонии и CRM, шаблонный текст и что принято от ' +
             'модели, ссылки на разборы-примеры; пересборка — forceRefresh.',
     },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.dealMovement]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.dealMovement,
+        grain: 'portal-day',
+        keyFormat: KEY_FORMAT.day,
+        retention: { unit: 'days', value: 90 },
+        description:
+            'Движение сделок (этап 7.3): итог ночного счёта по открытым ' +
+            'сделкам «ОП Основная» — сколько оценено, счёт по статусам, ' +
+            'смены статуса за ночь словами. Пишет event-sales; состояние ' +
+            'по сделкам — в Redis, не здесь. Повтор за тот же день ' +
+            'обновляет запись на месте.',
+    },
 } as const satisfies Record<
     AiAnalyticsSnapshotType,
     AiAnalyticsSnapshotDescriptor

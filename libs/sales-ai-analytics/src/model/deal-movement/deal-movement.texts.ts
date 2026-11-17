@@ -42,7 +42,7 @@ const REASON_TEXT: Readonly<
 > = {
     stage_back: () => 'стадия сделки вернулась назад',
     stage_overdue: facts =>
-        `в стадии ${daysText(facts.daysInStage)} при обычных ${facts.stageLimitDays}, звонков за последнее время нет`,
+        `в стадии ${daysText(facts.daysInStage)} при сроке ${daysText(facts.stageLimitDays)}, работы по сделке за последнее время нет`,
     step_overdue: facts =>
         facts.stepDate
             ? `договорились на ${shortDate(facts.stepDate)} — контакта после этого не было`
