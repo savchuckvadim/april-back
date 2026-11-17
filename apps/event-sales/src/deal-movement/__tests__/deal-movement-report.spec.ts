@@ -136,6 +136,23 @@ describe('итог ночи в Telegram', () => {
         expect(sent).toContain(
             'Сводка руководителям: получателей 6, ушло 5, не доставлено 1',
         );
+        expect(sent).not.toContain('по аудиту');
+        expect(
+            formatDealMovementRun(
+                status({
+                    digest: {
+                        enabled: true,
+                        skipped: null,
+                        recipients: 6,
+                        sent: 6,
+                        failed: 0,
+                        auditForgotten: 4,
+                    },
+                }),
+            ),
+        ).toContain(
+            'Сводка руководителям: получателей 6, ушло 6, не доставлено 0; забыты по аудиту: 4',
+        );
         const manual = formatDealMovementRun(
             status({
                 digest: {

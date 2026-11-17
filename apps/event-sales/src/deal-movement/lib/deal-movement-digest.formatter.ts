@@ -25,6 +25,7 @@ import {
 export const DEAL_MOVEMENT_DIGEST_TEXTS = {
     noOwner: 'ответственный не указан',
     noNew: 'Новых проблемных сделок за ночь нет.',
+    auditCount: 'Из них забыты по аудиту',
     closing:
         'Статус считает программа по стадиям сделки и разобранным звонкам.',
 } as const;
@@ -99,8 +100,21 @@ function dealLines(
     const why = [transition, bbSafe(deal.reasons)]
         .filter((part): part is string => !!part)
         .join(': ');
-    return [`>> ${head}`, `   ${why}`];
+    // Находка аудита — пометкой под причинами; статус она не меняет.
+    return deal.audit === null
+        ? [`>> ${head}`, `   ${why}`]
+        : [`>> ${head}`, `   ${why}`, `   [i]${bbSafe(deal.audit)}[/i]`];
 }
+
+/** «Из них забыты по аудиту: N» — только если такие есть. */
+const auditCountLine = (
+    deals: readonly DealMovementDigestDeal[],
+): string | null => {
+    const count = deals.filter(deal => deal.audit !== null).length;
+    return count > 0
+        ? `${DEAL_MOVEMENT_DIGEST_TEXTS.auditCount}: ${count}`
+        : null;
+};
 
 const transitionOf = (deal: DealMovementDigestDeal): string | null =>
     deal.newFrom === null
@@ -116,9 +130,11 @@ function sections(input: DealMovementDigestInput): string[][] {
         input.top,
         new Set(shown.map(deal => deal.dealId)),
     );
+    const auditCount = auditCountLine(input.deals);
     const head = [
         bbBold(`Движение сделок за ${dealMovementShortDate(input.day)}`),
         countsLine(input.deals),
+        ...(auditCount === null ? [] : [auditCount]),
         '',
     ];
     if (shown.length === 0) {

@@ -20,6 +20,8 @@ export interface DealMovementPublishInput {
     readonly domain: string;
     /** День портала 'YYYY-MM-DD'. */
     readonly day: string;
+    /** Момент прогона: от него меряется свежесть находок аудита. */
+    readonly now: Date;
     readonly timezone: ETimeZone;
     /**
      * Ночной счёт по расписанию: только он пишет в ленты и шлёт сводку
@@ -114,6 +116,7 @@ export class DealMovementPublishService {
                 {
                     domain: input.domain,
                     day: input.day,
+                    now: input.now,
                     options: input.options.digest,
                     deals: buildDealMovementDigestDeals(
                         input.evaluation.deals,

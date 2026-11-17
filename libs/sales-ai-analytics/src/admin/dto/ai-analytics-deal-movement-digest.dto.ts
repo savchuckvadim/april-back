@@ -3,7 +3,7 @@
  * часть Б, 17.11.2026) — часть состояния прогона и дневного снимка.
  * Оформление — ai/rules/dto-conventions.md.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     DEAL_MOVEMENT_DIGEST_SKIP,
     type DealMovementDigestSkip,
@@ -53,4 +53,13 @@ export class AiAnalyticsDealMovementDigestDto
         type: Number,
     })
     failed: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько сделок ночи со свежей находкой аудита сделок («забыта»); ' +
+            'нет у сводок до 18.11.2026 и у пропущенных.',
+        example: 4,
+        type: Number,
+    })
+    auditForgotten?: number;
 }

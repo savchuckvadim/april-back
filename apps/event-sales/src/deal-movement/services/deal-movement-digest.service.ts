@@ -16,11 +16,16 @@ import {
     skippedDealMovementDigest,
     type DealMovementDigestSummary,
 } from '@lib/sales-ai-analytics';
+import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
+import type { DealAuditFrequency } from '../../deal-audit/lib/deal-audit-schedule';
 import { DealAuditDigestDelivery } from '../../deal-audit/services/deal-audit-digest-delivery';
 import type { DealAuditDigestOptions } from '../../deal-audit/services/deal-audit-digest.service';
+import { DealAuditFindingsStore } from '../../deal-audit/services/deal-audit-findings.store';
 import { DealAuditSettingsService } from '../../deal-audit/services/deal-audit-settings.service';
 import { ActiveStaffService } from '../../shared/active-staff/active-staff.service';
 import { DEAL_MOVEMENT_DIGEST } from '../constants/deal-movement.const';
+import { dealAuditNotesOf } from '../lib/deal-movement-audit-note';
+import { withDealAuditNotes } from '../lib/deal-movement-digest-deals';
 import {
     buildDealMovementDigest,
     shouldSendDealMovementDigest,
@@ -35,6 +40,8 @@ export interface DealMovementDigestRequest {
     readonly domain: string;
     /** День портала 'YYYY-MM-DD': заголовок сводки и отметка «уже слали». */
     readonly day: string;
+    /** Момент прогона — от него меряется свежесть находок аудита. */
+    readonly now: Date;
     readonly options: DealMovementDigestOptions;
     /** Оценённые сделки ночи (все статусы — для счёта в шапке). */
     readonly deals: readonly DealMovementDigestDeal[];
@@ -60,7 +67,9 @@ const recipientSettingsOf = (
  * побеждает», сироты не рассылаются), неработающим не уходит. Доставка —
  * классом аудита со своими тегом уведомления и меткой задачи. Один раз за
  * день портала (отметка в Redis ставится ДО рассылки: лучше потерять
- * сводку при сбое, чем прислать её дважды).
+ * сводку при сбое, чем прислать её дважды). Свежие находки аудита сделок
+ * (`DealAuditFindingsStore`) — пометкой у сделки и числом в шапке; статус
+ * они не меняют (решение 18.11.2026).
  *
  * `@Injectable`, но инстанс Битрикса живёт только внутри вызова (CLAUDE.md).
  */
@@ -74,6 +83,7 @@ export class DealMovementDigestService {
         private readonly staff: ActiveStaffService,
         private readonly auditSettings: DealAuditSettingsService,
         private readonly counters: DealMovementNightCounters,
+        private readonly findings: DealAuditFindingsStore,
     ) {}
 
     async send(
@@ -87,7 +97,8 @@ export class DealMovementDigestService {
                 DEAL_MOVEMENT_DIGEST_SKIP.disabled,
             );
         }
-        const audit = (await this.auditSettings.resolveOptions(domain)).digest;
+        const auditOptions = await this.auditSettings.resolveOptions(domain);
+        const audit = auditOptions.digest;
         const settings = recipientSettingsOf(audit);
         if (!hasRopRecipients(settings)) {
             return skippedDealMovementDigest(
@@ -101,6 +112,16 @@ export class DealMovementDigestService {
                 DEAL_MOVEMENT_DIGEST_SKIP.alreadySent,
             );
         }
+        const deals = withDealAuditNotes(
+            request.deals,
+            await this.auditNotes(
+                domain,
+                request.now,
+                auditOptions.frequency,
+                warnings,
+            ),
+        );
+        const auditForgotten = deals.filter(deal => deal.audit !== null).length;
         const excluded = new Set(audit.excludeUserIds);
         const departments = await loadSalesDepartments(
             this.departments,
@@ -109,7 +130,7 @@ export class DealMovementDigestService {
         );
         const due = routeRecipients(
             {
-                items: request.deals.filter(
+                items: deals.filter(
                     deal =>
                         deal.assignedById === null ||
                         !excluded.has(deal.assignedById),
@@ -134,6 +155,7 @@ export class DealMovementDigestService {
                 recipients: 0,
                 sent: 0,
                 failed: 0,
+                auditForgotten,
             };
         }
 
@@ -180,6 +202,31 @@ export class DealMovementDigestService {
             recipients: working.length,
             sent,
             failed: working.length - sent,
+            auditForgotten,
         };
+    }
+
+    /**
+     * Свежие находки аудита сделок пометками по id сделки. Не прочиталось —
+     * сводка уходит без пометок, причина — в предупреждениях.
+     */
+    private async auditNotes(
+        domain: string,
+        now: Date,
+        frequency: DealAuditFrequency,
+        warnings: string[],
+    ): Promise<Map<string, string>> {
+        try {
+            return dealAuditNotesOf(
+                await this.findings.load(domain),
+                now,
+                frequency,
+            );
+        } catch (error) {
+            warnings.push(
+                `находки аудита сделок не прочитаны — сводка без пометок: ${getErrorString(error)}`,
+            );
+            return new Map();
+        }
     }
 }
