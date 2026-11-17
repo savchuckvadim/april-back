@@ -1,4 +1,10 @@
+import { Logger } from '@nestjs/common';
 import {
+    normalizeFiveKAnalysisText,
+    normalizeHvostAnalysisText,
+} from '@lib/call-lib/call-report/checklist-text';
+import {
+    AgentCallAnalysisDto,
     AgentFiveKItemsDto,
     AgentHvostStepsDto,
 } from '../dto/agent-analysis-request.dto';
@@ -32,6 +38,49 @@ export function hvostChecklistLines(
         `${checklistMark(steps?.decisionProcess)} ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ`,
         `${checklistMark(steps?.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
     ];
+}
+
+/**
+ * Тексты разборов «Хвоста» и «5К» читаемыми строками (17.11.2026): модель
+ * иногда кладёт в текстовое поле запись словаря ({'client': '…;', …}), и она
+ * уходила в карточку, ленту и на страницу звонка как есть. Запись становится
+ * строками «Клиент: …» по блокам анкеты, обычный текст не меняется.
+ */
+export function tidyChecklistTexts(
+    dto: AgentCallAnalysisDto,
+    logger: Logger,
+): AgentCallAnalysisDto {
+    // Значение типизировано строкой, но ответ модели мог прийти объектом:
+    // проверяем то, что пришло на самом деле.
+    const tidy = (
+        value: unknown,
+        normalize: (raw: unknown) => string | null,
+        label: string,
+    ): string | null | undefined => {
+        if (value === null || value === undefined) return value;
+        const text = normalize(value);
+        const before = typeof value === 'string' ? value.trim() : null;
+        if (text !== before) {
+            logger.log(`Разбор ${label}: запись словаря переведена в строки`);
+        }
+        return text;
+    };
+    const fixed = { ...dto };
+    if (fixed.hvostAnalysis !== undefined) {
+        fixed.hvostAnalysis = tidy(
+            fixed.hvostAnalysis,
+            normalizeHvostAnalysisText,
+            'хвоста',
+        );
+    }
+    if (fixed.fiveKAnalysis !== undefined) {
+        fixed.fiveKAnalysis = tidy(
+            fixed.fiveKAnalysis,
+            normalizeFiveKAnalysisText,
+            '5К',
+        );
+    }
+    return fixed;
 }
 
 /** Пять пунктов «5К» в порядке анкеты менеджера. */
