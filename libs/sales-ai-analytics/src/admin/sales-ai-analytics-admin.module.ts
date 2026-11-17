@@ -9,6 +9,7 @@ import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.adm
 import { AiAnalyticsFactsCatchupAdminController } from './controllers/facts-catchup.admin.controller';
 import { AiAnalyticsOwnerReportExportAdminController } from './controllers/owner-report-export.admin.controller';
 import { AiAnalyticsRefreshAdminController } from './controllers/refresh.admin.controller';
+import { AiAnalyticsDealMovementAdminController } from './controllers/deal-movement.admin.controller';
 import { SalesAiAnalyticsRefreshModule } from './refresh/sales-ai-analytics-refresh.module';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
 import { AiAnalyticsSmartBackfillAdminController } from './controllers/smart-backfill.admin.controller';
@@ -75,6 +76,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsOwnerReportExportAdminController,
         // Обновить всё по порядку: портал, все порталы, сводка
         AiAnalyticsRefreshAdminController,
+        // Движение сделок (этап 7.3): «Посчитать», внеочередной счёт, состояние
+        AiAnalyticsDealMovementAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}
