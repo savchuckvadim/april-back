@@ -12,4 +12,8 @@ export * from './period/rop-schedule';
 export * from './recipients/department-heads.util';
 export * from './recipients/department-scope.util';
 export * from './recipients/sales-departments.loader';
+export * from './recipients/rop-recipients.types';
+export * from './recipients/rop-recipients';
+export * from './recipients/rop-user-names';
+export * from './render/bb-code.util';
 export * from './render/excel-table';
