@@ -1,3 +1,4 @@
+import { versionsSeriesKey } from '../contracts/versions.types';
 import { MetricValue, scoreMetric } from './metric';
 import { ratePctMetric } from './metric-pct.util';
 import {
@@ -175,7 +176,10 @@ export function dealProgressMetric(
     return values.length > 0 ? scoreMetric(values) : undefined;
 }
 
-/** Сигнатура версий разбора строки: канонический JSON по ключам. */
+/**
+ * Сигнатура ТОЧНЫХ версий разбора строки: канонический JSON по ключам —
+ * для счёта разных наборов версий; смешанность ячейки — по сериям.
+ */
 export function versionsSignature(row: MatrixCallRow): string {
     if (row.versions === null) {
         return 'none';
@@ -185,8 +189,21 @@ export function versionsSignature(row: MatrixCallRow): string {
 }
 
 /**
+ * Серия сравнимости версий строки (`versionsSeriesKey`): минорные правки
+ * её не меняют. Строка без versions — 'none', набор без дат — 'undated':
+ * их серия неизвестна, и с датированными строками они дают смешанность.
+ */
+export function versionsSeriesSignature(row: MatrixCallRow): string {
+    if (row.versions === null) {
+        return 'none';
+    }
+    return versionsSeriesKey(row.versions) ?? 'undated';
+}
+
+/**
  * Ядро ячейки по сравнимым разобранным строкам: оценка (среднее S/10 при
- * n ≥ 8), разделы, чек-листы, опорные звонки и признак смешанных версий.
+ * n ≥ 8), разделы, чек-листы, опорные звонки и признак смешанных серий
+ * версий (минорная правка промпта ячейку смешанной не делает).
  */
 export function buildCellCore(
     rows: readonly MatrixCallRow[],
@@ -203,7 +220,7 @@ export function buildCellCore(
         sections: aggregateSections(rows),
         checklists: buildChecklists(rows),
         evidenceCallIds: pickEvidence(rows),
-        versionsMixed: new Set(rows.map(versionsSignature)).size > 1,
+        versionsMixed: new Set(rows.map(versionsSeriesSignature)).size > 1,
         ...(dealProgress ? { dealProgress } : {}),
     };
 }

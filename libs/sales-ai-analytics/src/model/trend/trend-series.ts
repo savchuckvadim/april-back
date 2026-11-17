@@ -37,7 +37,9 @@ function sortedUnique(points: readonly TrendPoint[]): TrendPoint[] {
 
 /**
  * Индекс, с которого сигнатура версий не менялась: точки без сигнатуры
- * ряд не рвут, последняя известная сигнатура считается текущей.
+ * ряд не рвут, последняя известная сигнатура считается текущей. Сигнатура
+ * точки — серия версий (`versionsSeriesKey`), а не точная строка: иначе
+ * ряд рвала бы каждая минорная правка задания модели.
  */
 export function versionBreakIndex(points: readonly TrendPoint[]): number {
     let current: string | null = null;

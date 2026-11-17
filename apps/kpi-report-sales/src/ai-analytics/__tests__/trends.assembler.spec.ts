@@ -206,12 +206,12 @@ describe('buildTrendsPayload — сигналы', () => {
         expect(row?.payload.reason).toBe('series-break');
     });
 
-    it('смена версий разбора рвёт ряд: считается только хвост текущей версии', () => {
+    /** Первые 20 недель — с версиями `previous`, последние 6 — текущие. */
+    const qualityAfter = (previous: Record<string, string>) => {
         const scores = weekScores('m10', SHIFT_AT, DELTA);
-        // Первые 20 недель — прежняя рубрика, последние 6 — текущая.
         const weeks = [
             ...weekRecords('10', scores.slice(0, 20), {
-                versions: { ...VERSIONS, rubric: 'rubric-v2' },
+                versions: previous,
             }).map((record, index) => ({
                 ...record,
                 periodKey: TRENDS_WEEK_KEYS[index],
@@ -219,12 +219,28 @@ describe('buildTrendsPayload — сигналы', () => {
             ...weekRecords('10', scores.slice(20)),
         ];
         const row = rowOf('10', { weeks, managerIds: ['10'] });
-        const quality = row?.payload.metrics.find(
-            metric => metric.metric === 'quality',
-        );
+
+        return row?.payload.metrics.find(metric => metric.metric === 'quality');
+    };
+
+    it('смена серии версий (промпт по существу) рвёт ряд: считается только хвост текущей серии', () => {
+        const quality = qualityAfter({
+            ...VERSIONS,
+            prompt: 'focus-v2.0-2026-04-01',
+        });
         expect(quality?.cut.versionBreak).toBe(20);
         expect(quality?.points).toBe(6);
         expect(quality?.reason).toBe('series-break');
+    });
+
+    it('смена рубрики и реестра серию не меняет — ряд целый', () => {
+        const quality = qualityAfter({
+            ...VERSIONS,
+            rubric: 'rubric-v2',
+            registry: 'reg-0',
+        });
+        expect(quality?.cut.versionBreak).toBe(0);
+        expect(quality?.points).toBe(26);
     });
 
     it('месячные рёбра: скачок доли ребра даёт shift по зерну month с неделей первого дня месяца', () => {

@@ -10,7 +10,11 @@
  * - объём недели — `n` всегда число, ноль разборов записи не создаёт,
  *   поэтому нулевых точек в ряду нет;
  * - доля ребра месяца — s / n при n ≥ `n_min_none`, иначе null;
- * - сигнатура версий недели рвёт ряд при смене (`versionsKey`).
+ * - ряд рвёт смена СЕРИИ версий разбора недели (`seriesSignatureOf` по
+ *   `payload.versions`): минорные правки (3.1 → 3.2 → 3.3, атрибуция и
+ *   классификатор из таблиц серий, рубрика, реестр) ряд не рвут, правка
+ *   по существу — рвёт. Сигнатура считается при чтении, поэтому старые
+ *   снимки недель лечатся без пересчёта; `versionsMixed` ряды не читают.
  *
  * Чистые функции.
  */
@@ -24,8 +28,7 @@ import {
     type AiTrendGrain,
     type AiTrendMetric,
 } from '../../constants/ai-trend.const';
-import { toAnalysisVersions } from './manager-week.assembler';
-import { versionsKey } from './manager-snapshot.types';
+import { seriesSignatureOf } from './week-versions.util';
 
 /** Запись снапшота менеджера в объёме, нужном рядам. */
 export interface TrendSnapshotRecord {
@@ -55,22 +58,6 @@ function metricOf(value: unknown): { value: number | null; n: number } {
     if (!isObject(value)) return { value: null, n: 0 };
 
     return { value: numberOf(value.value), n: numberOf(value.n) ?? 0 };
-}
-
-/** Сигнатура версий разбора недели; неполная или чужая → null. */
-function signatureOf(payload: Unknown): string | null {
-    const raw = payload.versions;
-    if (!isObject(raw)) return null;
-    const versions = toAnalysisVersions(
-        Object.fromEntries(
-            Object.entries(raw).filter(
-                (entry): entry is [string, string] =>
-                    typeof entry[1] === 'string',
-            ),
-        ),
-    );
-
-    return versions === null ? null : versionsKey(versions);
 }
 
 /** Оценка корзины недели по коду корзины. */
@@ -126,7 +113,7 @@ export function weekSeriesOf(
     for (const record of weeks) {
         if (!isObject(record.payload)) continue;
         const payload = record.payload;
-        const signature = signatureOf(payload);
+        const signature = seriesSignatureOf(payload.versions);
         const n = numberOf(payload.n) ?? 0;
         const score = metricOf(payload.score);
         quality.push({

@@ -5,7 +5,13 @@ import {
     minDurationMapOf,
 } from '../model/manager-type-matrix';
 import { MatrixCallRow } from '../model/matrix.types';
-import { liteRow, liteRows, section, shuffle } from './lite-row.fixture';
+import {
+    FIXTURE_VERSIONS,
+    liteRow,
+    liteRows,
+    section,
+    shuffle,
+} from './lite-row.fixture';
 
 /** m1: 10 презентаций с оценками 50…95 и разделами, 3 холодных 1 сентября. */
 const presentations: MatrixCallRow[] = Array.from({ length: 10 }, (_, i) =>
@@ -232,7 +238,37 @@ describe('buildManagerTypeMatrix', () => {
         ]);
     });
 
-    it('versionsMixed: разные сигнатуры versions или отсутствие versions у части строк', () => {
+    it('versionsMixed по сериям: минорные версии промпта, рубрика и методика смесью не считаются', () => {
+        const minor = buildManagerTypeMatrix([
+            ...liteRows('s', 4, {
+                versions: {
+                    ...FIXTURE_VERSIONS,
+                    prompt: 'focus-v3.2-2026-11-16',
+                },
+            }),
+            ...liteRows('t', 4, {
+                versions: {
+                    ...FIXTURE_VERSIONS,
+                    prompt: 'focus-v3.3-2026-11-17',
+                    rubric: 'sections-7-v2',
+                    methodology: 'polyansky@1.2',
+                },
+            }),
+        ]);
+        expect(minor.managers[0].byType[0].versionsMixed).toBe(false);
+        const essential = buildManagerTypeMatrix([
+            ...liteRows('u', 4),
+            ...liteRows('w', 4, {
+                versions: {
+                    ...FIXTURE_VERSIONS,
+                    prompt: 'focus-v4.0-2026-11-24',
+                },
+            }),
+        ]);
+        expect(essential.managers[0].byType[0].versionsMixed).toBe(true);
+    });
+
+    it('versionsMixed: разные серии versions или отсутствие versions у части строк', () => {
         expect(presentation?.versionsMixed).toBe(false);
         const mixed = buildManagerTypeMatrix([
             ...liteRows('v', 8),

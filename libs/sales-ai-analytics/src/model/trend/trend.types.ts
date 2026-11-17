@@ -34,7 +34,8 @@ export type TrendConfidenceReason =
 /**
  * Сырая точка ряда: ключ периода (сортируемая строка 'YYYY-Www' либо
  * 'YYYY-MM'), значение (null — «мало данных», точка выпадает из ряда),
- * объём и сигнатура версий разбора (null — неизвестна, ряд не рвёт).
+ * объём и сигнатура версий разбора — серия, `versionsSeriesKey` (null —
+ * неизвестна, ряд не рвёт).
  */
 export interface TrendPoint {
     key: string;
