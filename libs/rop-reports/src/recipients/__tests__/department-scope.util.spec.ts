@@ -13,7 +13,7 @@ const STRUCTURE: DepartmentLike[] = [
 
 const sorted = (set: Set<number>) => [...set].sort((a, b) => a - b);
 
-describe('departmentScopeOf — «свой отдел» в shared/department-heads', () => {
+describe('departmentScopeOf — «свой отдел» получателя отчёта', () => {
     it('отдел получателя и все подотделы, без него самого', () => {
         expect(sorted(departmentScopeOf(STRUCTURE, 309))).toEqual([
             11, 69, 323,

@@ -1,9 +1,8 @@
+import { topHeadsOf } from '@lib/rop-reports';
 import {
     buildHeadsByUser,
     DepartmentLike,
-    headsOf,
     headsOfUsers,
-    toId,
 } from '../../shared/department-heads/department-heads.util';
 import { departmentScopeOf } from '../../shared/department-heads/department-scope.util';
 import {
@@ -40,21 +39,10 @@ const ROLE_ORDER: readonly DuplicateRecipientRole[] = [
 ];
 
 /**
- * Руководители верхних отделов снимка (родителя нет в снимке): им уходят
- * клиенты, которых «Отчёт РОПу» никому не отдал.
+ * Руководители верхних отделов снимка переехали в @lib/rop-reports
+ * (17.11.2026) — реэкспорт, чтобы импорты отчёта по дублям не менялись.
  */
-export const topHeadsOf = (
-    departments: readonly DepartmentLike[],
-): number[] => {
-    const ids = new Set(departments.map(department => toId(department.ID)));
-    const result = new Set<number>();
-    for (const department of departments) {
-        const parent = toId(department.PARENT);
-        if (parent !== null && ids.has(parent)) continue;
-        for (const headId of headsOf(department)) result.add(headId);
-    }
-    return [...result].sort((a, b) => a - b);
-};
+export { topHeadsOf };
 
 /** Задан ли хоть один адресат: одно правило для отчёта и для Telegram. */
 export const hasDuplicateRecipients = (
