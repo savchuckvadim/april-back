@@ -40,6 +40,7 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
 import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
 import { AiAnalyticsDealMovementService } from './services/ai-analytics-deal-movement.service';
 import { AiAnalyticsDealMovementProbeService } from './services/ai-analytics-deal-movement-probe.service';
+import { AiAnalyticsPeriodDigestService } from './services/ai-analytics-period-digest.service';
 import { AiOwnerReportExportService } from './services/ai-owner-report-export.service';
 
 @Module({
@@ -74,6 +75,9 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsDealMovementService,
         // …и проверка записи в ленту на одной сделке (пишет в портал)
         AiAnalyticsDealMovementProbeService,
+        // Итоги периода по менеджерам (этап 7.4): джоба в очередь
+        // event-sales + итоги прогонов из Redis каркаса отчётов РОПу
+        AiAnalyticsPeriodDigestService,
     ],
     exports: [
         AiOwnerReportExportService,
@@ -91,6 +95,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsSmartBackfillService,
         AiAnalyticsDealMovementService,
         AiAnalyticsDealMovementProbeService,
+        AiAnalyticsPeriodDigestService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

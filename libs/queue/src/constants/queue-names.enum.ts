@@ -59,6 +59,12 @@ export enum QueueNames {
      * отчёт в Telegram); своя очередь по той же причине, что у аудита.
      */
     EVENT_SALES_DEAL_MOVEMENT_RUN = 'event-sales-deal-movement-run',
+    /**
+     * Итоги периода по менеджерам (этап 7.4): подсчёт недели или месяца из
+     * админки. Воркер — ТОЛЬКО в event-sales (там структура, звонки, замок
+     * портала и Telegram); своя очередь по той же причине, что у аудита.
+     */
+    EVENT_SALES_PERIOD_DIGEST_RUN = 'event-sales-period-digest-run',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',
