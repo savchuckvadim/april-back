@@ -24,7 +24,19 @@ export const PERIOD_DIGEST_MAX_ATTEMPTS = 5;
  * прогон — только подсчёт, что бы ни стояло в «только считать» и что бы
  * ни пришло из админки: задачи руководителям не ставятся.
  */
-export const PERIOD_DIGEST_DELIVERY_READY = false;
+export const PERIOD_DIGEST_DELIVERY_READY: boolean = false;
+
+/** Строка итога, когда задачи разрешены настройкой, а доставки ещё нет. */
+export const PERIOD_DIGEST_DELIVERY_PENDING_LINE =
+    'Доставка ещё не подключена: задачи руководителям не ставятся, итоги только посчитаны';
 
 /** Неделю выпуска — только в рабочие дни портала (праздничный понедельник — во вторник). */
 export const PERIOD_DIGEST_WEEK_WORKDAYS_ONLY = true;
+
+/**
+ * Крон итогов периода: тик каждый час в :13 — сам выпуск по дню и часу
+ * портала решают политики каркаса (неделя — день и час настройки, месяц —
+ * первый рабочий день), догон — до конца периода.
+ */
+export const PERIOD_DIGEST_CRON = '13 * * * *';
+export const PERIOD_DIGEST_CRON_NAME = 'event-sales-period-digest';

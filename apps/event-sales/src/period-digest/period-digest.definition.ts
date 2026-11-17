@@ -7,6 +7,8 @@ import type {
 import { PeriodDigestCalendarAdapter } from './adapters/period-digest-calendar.adapter';
 import {
     PERIOD_DIGEST_CODE,
+    PERIOD_DIGEST_DELIVERY_PENDING_LINE,
+    PERIOD_DIGEST_DELIVERY_READY,
     PERIOD_DIGEST_KEYS,
     PERIOD_DIGEST_MAX_ATTEMPTS,
     PERIOD_DIGEST_TITLE,
@@ -23,7 +25,8 @@ import type { PeriodDigestOptions } from './types/period-digest.types';
  * Telegram — делает движок.
  *
  * Пока доставки нет (Э7), прогон — только подсчёт: задач и получателей
- * нет, итог «только считать».
+ * нет, итог «только считать»; если задачи разрешены настройкой — в итоге
+ * строка «доставка ещё не подключена».
  *
  * `@Injectable` без Битрикса в полях.
  */
@@ -79,7 +82,13 @@ export class PeriodDigestDefinition
             tasksCreated: 0,
             tasksAlreadyDone: 0,
             tasksClosed: 0,
-            summary: periodDigestSummaryLines(report),
+            summary: [
+                ...periodDigestSummaryLines(report),
+                ...(context.options.deliveryRequested &&
+                !PERIOD_DIGEST_DELIVERY_READY
+                    ? [PERIOD_DIGEST_DELIVERY_PENDING_LINE]
+                    : []),
+            ],
             warnings,
         };
     }

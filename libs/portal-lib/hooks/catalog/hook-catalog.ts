@@ -3,6 +3,7 @@ import { LEAD_TO_WORK_ENTRY } from './entries/lead-to-work.entry';
 import { LEAD_REQUEST_FAMILY_ENTRIES } from './entries/lead-request.family';
 import { COLD_CALL_FAMILY_ENTRIES } from './entries/cold-call.family';
 import { DUPLICATES_FAMILY_ENTRIES } from './entries/duplicates.family';
+import { PERIOD_DIGEST_ENTRY } from './entries/period-digest.entry';
 
 /** Порядок показа семейств в админке. */
 export const HOOK_FAMILY_ORDER: readonly HookFamily[] = [
@@ -25,6 +26,8 @@ export const HOOK_CATALOG: readonly HookCatalogEntry[] = [
     ...LEAD_REQUEST_FAMILY_ENTRIES,
     ...COLD_CALL_FAMILY_ENTRIES,
     ...DUPLICATES_FAMILY_ENTRIES,
+    // Отчёты РОПу на каркасе @lib/rop-reports (этап 7.4)
+    PERIOD_DIGEST_ENTRY,
 ];
 
 export const HOOK_CODES: readonly string[] = HOOK_CATALOG.map(

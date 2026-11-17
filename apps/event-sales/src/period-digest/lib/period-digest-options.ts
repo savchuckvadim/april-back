@@ -116,6 +116,7 @@ export function periodDigestOptionsOf(
         overrides.countOnly ?? values.periodDigestCountOnly !== false;
     return {
         countOnly: !PERIOD_DIGEST_DELIVERY_READY || countOnlySetting,
+        deliveryRequested: !countOnlySetting,
         policies: kinds.map(kind => policyOf(kind, weekday, hour)),
         kinds,
         recipients: {

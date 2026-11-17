@@ -17,7 +17,10 @@ import {
 } from '@lib/sales-ai-analytics';
 import { ETimeZone } from '@lib/shared/lib/date';
 import { digestManagersOf } from '../lib/period-digest-managers';
-import { periodDigestReportOf } from '../lib/period-digest-summary';
+import {
+    periodDigestReportOf,
+    periodDigestTimezoneWarning,
+} from '../lib/period-digest-summary';
 import type {
     PeriodDigestOptions,
     PeriodDigestRunReport,
@@ -83,6 +86,11 @@ export class PeriodDigestCardsService {
             );
         }
         const analytics = await this.settings.resolveAnalytics(domain);
+        const timezoneWarning = periodDigestTimezoneWarning(
+            timezone,
+            analytics.calendar.timeZone,
+        );
+        if (timezoneWarning) warnings.push(timezoneWarning);
         const previous = ropPeriodWindow(previousRopPeriod(period), timezone);
         const yearAgoPeriod =
             kind === DIGEST_PERIOD_KIND.month

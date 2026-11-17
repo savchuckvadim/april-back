@@ -43,6 +43,22 @@ describe('настройки итогов периода → параметры 
         ).toBe(true);
     });
 
+    it('задачи разрешены, только когда «только считать» снято (или запрос просил задачи)', () => {
+        expect(periodDigestOptionsOf(DEFAULTS).deliveryRequested).toBe(false);
+        expect(
+            periodDigestOptionsOf({
+                ...DEFAULTS,
+                periodDigestCountOnly: false,
+            }).deliveryRequested,
+        ).toBe(true);
+        expect(
+            periodDigestOptionsOf(
+                { ...DEFAULTS, periodDigestCountOnly: false },
+                { countOnly: true },
+            ).deliveryRequested,
+        ).toBe(false);
+    });
+
     it('виды, получатели и пороги из настроек портала', () => {
         const options = periodDigestOptionsOf({
             ...DEFAULTS,

@@ -54,10 +54,16 @@ const windowOf = (kind: RopPeriodKind, key: string) => {
     return ropPeriodWindow(period, TZ);
 };
 
-const build = (setup: { structureFails?: boolean } = {}) => {
+const build = (
+    setup: { structureFails?: boolean; calendarTimeZone?: string } = {},
+) => {
     const settings = {
         resolveAnalytics: jest.fn().mockResolvedValue({
-            calendar: DEFAULT_WORK_CALENDAR,
+            calendar: {
+                ...DEFAULT_WORK_CALENDAR,
+                timeZone:
+                    setup.calendarTimeZone ?? DEFAULT_WORK_CALENDAR.timeZone,
+            },
             thresholds: defaultAttentionThresholds(),
             minDurationByType: minDurationMapOf(60),
         }),
@@ -87,6 +93,7 @@ const build = (setup: { structureFails?: boolean } = {}) => {
         store as never,
     );
     const heartbeat = jest.fn().mockResolvedValue(undefined);
+    const warnings: string[] = [];
     const run = (kind: RopPeriodKind, key: string) =>
         service.run(
             {
@@ -99,12 +106,25 @@ const build = (setup: { structureFails?: boolean } = {}) => {
                 now: new Date('2026-11-17T10:00:00Z'),
                 heartbeat,
             },
-            [],
+            warnings,
         );
-    return { source, store, heartbeat, run };
+    return { source, store, heartbeat, run, warnings };
 };
 
 describe('расчёт карточек итогов периода портала', () => {
+    it('пояс календаря AI-аналитики разошёлся с поясом портала — одна строка предупреждения', async () => {
+        const same = build();
+        await same.run('month', '2026-10');
+        expect(same.warnings).toEqual([]);
+
+        const different = build({ calendarTimeZone: 'Asia/Novosibirsk' });
+        await different.run('month', '2026-10');
+        expect(different.warnings).toHaveLength(1);
+        expect(different.warnings[0]).toContain(
+            'пояс календаря AI-аналитики (Asia/Novosibirsk) не совпадает с поясом портала (Europe/Moscow)',
+        );
+    });
+
     it('месяц: звонки прошлого и текущего месяца одним окном, год назад — отдельно, прошлые карточки по ключу', async () => {
         const { source, store, heartbeat, run } = build();
 

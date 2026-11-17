@@ -3,7 +3,24 @@ import {
     PeriodDigestCardTally,
     periodDigestReportOf,
     periodDigestSummaryLines,
+    periodDigestTimezoneWarning,
 } from '../lib/period-digest-summary';
+
+describe('пояса двух настроек портала', () => {
+    it('совпали — без предупреждения, разошлись — одна строка с обоими поясами', () => {
+        expect(
+            periodDigestTimezoneWarning('Europe/Moscow', 'Europe/Moscow'),
+        ).toBeNull();
+        expect(
+            periodDigestTimezoneWarning('Europe/Moscow', 'Asia/Novosibirsk'),
+        ).toBe(
+            'пояс календаря AI-аналитики (Asia/Novosibirsk) не совпадает с ' +
+                'поясом портала (Europe/Moscow): границы периода — по поясу ' +
+                'портала, «дни без записанных звонков» — по календарю ' +
+                'AI-аналитики',
+        );
+    });
+});
 
 type Tally = PeriodDigestCardTally['recommendations'][number];
 

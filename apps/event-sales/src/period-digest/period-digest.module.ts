@@ -8,6 +8,7 @@ import { RopReportsModule } from '@lib/rop-reports';
 import { PortalWorkingHoursService } from '../shared/working-hours/portal-working-hours.service';
 import { PeriodDigestCalendarAdapter } from './adapters/period-digest-calendar.adapter';
 import { PeriodDigestDefinition } from './period-digest.definition';
+import { PeriodDigestScheduler } from './period-digest.scheduler';
 import { PeriodDigestRunProcessor } from './queue/period-digest-run.processor';
 import { PeriodDigestCardStore } from './services/period-digest-card.store';
 import { PeriodDigestCardsService } from './services/period-digest-cards.service';
@@ -21,7 +22,8 @@ import { PeriodDigestSourceService } from './services/period-digest-source.servi
  *
  * Контроллеров нет: «Посчитать» и «состояние» живут в админке
  * (`SalesAiAnalyticsAdminModule`, ai/rules/app-api-surface.md), сюда
- * приходят только джобы очереди EVENT_SALES_PERIOD_DIGEST_RUN.
+ * приходят только джобы очереди EVENT_SALES_PERIOD_DIGEST_RUN и тик крона
+ * `event-sales-period-digest` (ScheduleModule поднят корнем приложения).
  *
  * Импорты: PBX (график портала для календаря), каркас отчётов РОПу
  * (замки, метки, итог прогона, движок), настройки приложений (свои и
@@ -47,6 +49,8 @@ import { PeriodDigestSourceService } from './services/period-digest-source.servi
         PeriodDigestCardsService,
         PeriodDigestDefinition,
         PeriodDigestRunProcessor,
+        // Крон: тик раз в час, выпуск по политикам видов периода
+        PeriodDigestScheduler,
     ],
 })
 export class PeriodDigestModule {}

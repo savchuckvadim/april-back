@@ -71,3 +71,20 @@ export function periodDigestSummaryLines(
             `${saved.unchanged}`,
     ];
 }
+
+/**
+ * Пояса двух настроек портала разошлись: границы периода и «пора ли» — по
+ * поясу портала, «дни без записанных звонков» — по календарю AI-аналитики
+ * (решение 17.11.2026: оставить, но предупредить). Совпали — null.
+ */
+export function periodDigestTimezoneWarning(
+    portalTimezone: string,
+    analyticsTimezone: string,
+): string | null {
+    return portalTimezone === analyticsTimezone
+        ? null
+        : `пояс календаря AI-аналитики (${analyticsTimezone}) не совпадает ` +
+              `с поясом портала (${portalTimezone}): границы периода — по ` +
+              `поясу портала, «дни без записанных звонков» — по календарю ` +
+              `AI-аналитики`;
+}
