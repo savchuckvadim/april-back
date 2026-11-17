@@ -75,6 +75,24 @@ describe('реестр настроек вендора', () => {
     });
 });
 
+/**
+ * Страницы «Отчёта» по ссылке (17.11.2026): ссылки на разбор звонка вели на
+ * адрес виджета — будущий домен, который ещё не открывается.
+ */
+describe('реестр: сайт «Отчёта» для страниц по ссылке', () => {
+    it('по умолчанию — домен, где фронты стоят сейчас; адрес виджета — другой', () => {
+        const setting = vendorSettingOf('REPORT_SALES_PUBLIC_URL');
+        expect(setting.defaultValue).toBe('https://next.april-app.ru');
+        expect(setting.example).toBe(setting.defaultValue);
+        expect(setting.secret).toBe(false);
+        expect(setting.validate?.('https://next.april-app.ru')).toBeNull();
+        expect(setting.validate?.('next.april-app.ru')).toContain('https://');
+        expect(
+            vendorSettingOf('MARKETPLACE_WIDGET_URL_REPORT_SALES').example,
+        ).not.toContain('next.april-app.ru');
+    });
+});
+
 /** Настройки шлюза модели переехали из env в админку (11.11.2026). */
 describe('реестр: шлюз модели разборов', () => {
     it('своя группа сразу после ключей AI; свой запасной поставщик — среди ключей AI', () => {

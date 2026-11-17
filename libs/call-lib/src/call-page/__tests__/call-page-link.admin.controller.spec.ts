@@ -5,7 +5,7 @@ import { CallPageLinkService } from '../call-page-link.service';
 
 function build(row: { id: string; domain: string | null } | null) {
     const urlFor = jest.fn((id: string) =>
-        Promise.resolve(`https://kpi-sales.april-app.ru/call/token-${id}`),
+        Promise.resolve(`https://next.april-app.ru/call/token-${id}`),
     );
     const revoke = jest.fn(() => Promise.resolve('new-token'));
     const findPipelineById = jest.fn(() =>
@@ -27,7 +27,7 @@ describe('AdminCallPageLinkController', () => {
             domain: 'portal.bitrix24.ru',
         });
         expect(await controller.link('42')).toEqual({
-            url: 'https://kpi-sales.april-app.ru/call/token-42',
+            url: 'https://next.april-app.ru/call/token-42',
         });
         expect(revoke).not.toHaveBeenCalled();
     });

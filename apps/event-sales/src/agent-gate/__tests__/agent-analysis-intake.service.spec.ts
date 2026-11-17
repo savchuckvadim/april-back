@@ -684,7 +684,7 @@ describe('AgentAnalysisIntakeService', () => {
     });
 
     it('ссылка на страницу разбора: верхней записью в карточке разбора и строкой в дубле у сделки', async () => {
-        const pageUrl = 'https://kpi-sales.april-app.ru/call/abc-token';
+        const pageUrl = 'https://next.april-app.ru/call/abc-token';
         const { service, timeline } = makeDeps({ pageUrl });
         await service.intake('42', 'claw-main', DTO);
 

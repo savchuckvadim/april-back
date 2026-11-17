@@ -42,7 +42,7 @@ export class CallPageLinkItemDto implements CallPageLinkItem {
             'без входа — по подписи в самой ссылке.',
         type: String,
         example:
-            'https://kpi-sales.april-app.ru/call/7wl-3q2x8Yk0mXo1p7cT5vB9nW4sZ6aQeR',
+            'https://next.april-app.ru/call/7wl-3q2x8Yk0mXo1p7cT5vB9nW4sZ6aQeR',
     })
     url: string;
 }

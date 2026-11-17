@@ -23,9 +23,12 @@ import {
     type CallPageLinkRecordView,
 } from './call-page-link.util';
 
-/** Настройка адреса сайта «Отчёта»: на нём живёт страница разбора звонка. */
-const REPORT_SITE_SETTING: VendorSettingKey =
-    'MARKETPLACE_WIDGET_URL_REPORT_SALES';
+/**
+ * Настройка адреса сайта «Отчёта»: на нём живёт страница разбора звонка.
+ * Адрес виджета «Отчёта» сюда не годится — это будущий отдельный домен, по
+ * нему страница не открывается (ссылки 16–17.11.2026 вели в никуда).
+ */
+const REPORT_SITE_SETTING: VendorSettingKey = 'REPORT_SALES_PUBLIC_URL';
 
 /**
  * С какого момента искать отзывы ссылок: страница разбора появилась в
@@ -75,9 +78,9 @@ export class CallPageLinkService {
 
     /**
      * Полный адрес страницы разбора звонка на сайте «Отчёта». Сайт — из
-     * настройки адреса виджета «Отчёт ОП KPI» («Настройки приложения»),
-     * не задана — адрес по умолчанию. Нет секрета или адрес сайта битый —
-     * null: ссылку не пишем.
+     * настройки «Сайт „Отчёта“: адрес страниц по ссылке» («Настройки
+     * приложения»), не задана — адрес по умолчанию. Нет секрета или адрес
+     * сайта битый — null: ссылку не пишем.
      */
     async urlFor(transcriptionId: string): Promise<string | null> {
         const token = await this.issue(transcriptionId);
@@ -132,7 +135,7 @@ export class CallPageLinkService {
             .catch(() => null);
         return (
             callPageSiteOf(configured) ??
-            callPageSiteOf(vendorSettingOf(REPORT_SITE_SETTING).example)
+            callPageSiteOf(vendorSettingOf(REPORT_SITE_SETTING).defaultValue)
         );
     }
 

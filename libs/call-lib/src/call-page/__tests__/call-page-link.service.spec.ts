@@ -90,34 +90,44 @@ describe('CallPageLinkService', () => {
         expect(await service.issue('42')).toBe(after);
     });
 
-    it('адрес страницы: сайт «Отчёта» по умолчанию и путь /call/', async () => {
+    it('адрес страницы: по умолчанию — сайт, где «Отчёт» открывается сейчас', async () => {
         const { service } = harness({ AUTH_JWT_SECRET: 'secret' });
         const token = await service.issue('42');
         expect(await service.urlFor('42')).toBe(
-            `https://kpi-sales.april-app.ru/call/${token}`,
+            `https://next.april-app.ru/call/${token}`,
         );
     });
 
-    it('адрес страницы: сайт из настройки адреса виджета, путь виджета отбрасывается', async () => {
+    it('адрес виджета «Отчёта» на адрес страницы не влияет: это будущий домен', async () => {
         const { service } = harness(
             { AUTH_JWT_SECRET: 'secret' },
             {
                 MARKETPLACE_WIDGET_URL_REPORT_SALES:
-                    'https://report.example.ru/frame/?x=1',
+                    'https://kpi-sales.april-app.ru/',
             },
         );
         expect(await service.urlFor('42')).toMatch(
-            /^https:\/\/report\.example\.ru\/call\/[0-9a-z]+-[\w-]{32}$/,
+            /^https:\/\/next\.april-app\.ru\/call\//,
+        );
+    });
+
+    it('адрес страницы: сайт из настройки, путь сайта сохраняется', async () => {
+        const { service } = harness(
+            { AUTH_JWT_SECRET: 'secret' },
+            { REPORT_SALES_PUBLIC_URL: 'https://report.example.ru/kpi/?x=1' },
+        );
+        expect(await service.urlFor('42')).toMatch(
+            /^https:\/\/report\.example\.ru\/kpi\/call\/[0-9a-z]+-[\w-]{32}$/,
         );
     });
 
     it('адрес страницы: битая настройка сайта — адрес по умолчанию; нет секрета — ссылки нет', async () => {
         const broken = harness(
             { AUTH_JWT_SECRET: 'secret' },
-            { MARKETPLACE_WIDGET_URL_REPORT_SALES: 'не адрес' },
+            { REPORT_SALES_PUBLIC_URL: 'не адрес' },
         );
         expect(await broken.service.urlFor('42')).toMatch(
-            /^https:\/\/kpi-sales\.april-app\.ru\/call\//,
+            /^https:\/\/next\.april-app\.ru\/call\//,
         );
         expect(await harness({}).service.urlFor('42')).toBeNull();
     });

@@ -40,7 +40,7 @@ describe('CallPageLinkService.urlsFor', () => {
         expect([...urls.keys()]).toEqual(['10245', '10301']);
         expect(urls.get('10245')).toBe(await service.urlFor('10245'));
         expect(urls.get('10245')).toMatch(
-            /^https:\/\/kpi-sales\.april-app\.ru\/call\//,
+            /^https:\/\/next\.april-app\.ru\/call\//,
         );
         expect(urls.get('10245')).not.toBe(urls.get('10301'));
     });

@@ -104,12 +104,13 @@ describe('ссылка-пропуск на страницу разбора зв�
         ).toBe('b');
     });
 
-    it('сайт из адреса виджета: только схема и домен; пустой или битый — нет', () => {
-        expect(callPageSiteOf('https://kpi-sales.april-app.ru/')).toBe(
-            'https://kpi-sales.april-app.ru',
+    it('адрес сайта: схема, домен и путь без хвостового «/»; пустой или битый — нет', () => {
+        expect(callPageSiteOf('https://next.april-app.ru/')).toBe(
+            'https://next.april-app.ru',
         );
-        expect(callPageSiteOf(' https://site.ru/frame/page?x=1 ')).toBe(
-            'https://site.ru',
+        // «Отчёт» под префиксом: путь сохраняется, параметры и якорь — нет.
+        expect(callPageSiteOf(' https://site.ru/kpi-sales/?x=1#top ')).toBe(
+            'https://site.ru/kpi-sales',
         );
         expect(callPageSiteOf('http://localhost:5000/')).toBe(
             'http://localhost:5000',
@@ -121,8 +122,11 @@ describe('ссылка-пропуск на страницу разбора зв�
     });
 
     it('адрес страницы: сайт без хвостового «/» и путь /call/', () => {
-        expect(callPageUrl('https://kpi-sales.april-app.ru/', 'abc')).toBe(
-            'https://kpi-sales.april-app.ru/call/abc',
+        expect(callPageUrl('https://next.april-app.ru/', 'abc')).toBe(
+            'https://next.april-app.ru/call/abc',
+        );
+        expect(callPageUrl('https://site.ru/kpi-sales', 'abc')).toBe(
+            'https://site.ru/kpi-sales/call/abc',
         );
         expect(callPageUrl(' https://site.ru ', 'abc')).toBe(
             'https://site.ru/call/abc',

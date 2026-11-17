@@ -134,18 +134,17 @@ export function callPageMarkOf(
 export const callPagePath = (token: string): string => `/call/${token}`;
 
 /**
- * Сайт из адреса страницы виджета: только схема и домен. Настройка хранит
- * полный адрес страницы во фрейме (у него может быть путь), а страница
- * звонка лежит в корне сайта. Адрес пустой или битый — null.
+ * Адрес сайта «Отчёта» из настройки: схема, домен и путь без хвостового «/»
+ * (путь нужен, если «Отчёт» стоит под префиксом). Параметры и якорь
+ * отбрасываются. Адрес пустой или битый — null.
  */
 export function callPageSiteOf(
-    widgetUrl: string | null | undefined,
+    siteUrl: string | null | undefined,
 ): string | null {
     try {
-        const url = new URL((widgetUrl ?? '').trim());
-        return url.protocol === 'https:' || url.protocol === 'http:'
-            ? url.origin
-            : null;
+        const url = new URL((siteUrl ?? '').trim());
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+        return `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
     } catch {
         return null;
     }

@@ -52,6 +52,13 @@ export function widgetUrlSettingKey(widgetCode: string): string {
     return `MARKETPLACE_WIDGET_URL_${widgetCode.toUpperCase().replace(/-/g, '_')}`;
 }
 
+/**
+ * Где «Отчёт» открывается в браузере напрямую. Все клиентские фронты стоят
+ * на одном домене, «Отчёт» — в его корне; адреса виджетов выше — это будущие
+ * отдельные домены, на них страницы по ссылке не открываются.
+ */
+export const REPORT_SALES_PUBLIC_URL_DEFAULT = 'https://next.april-app.ru';
+
 export const VENDOR_SETTING_KEYS = [
     'EGRESS_PROXY_URL',
     'EGRESS_PROXY_TOKEN',
@@ -64,6 +71,7 @@ export const VENDOR_SETTING_KEYS = [
     ...TRANSCRIPTION_SPEND_SETTING_KEYS,
     ...TELEGRAM_BOT_SETTING_KEYS,
     ...WIDGET_URL_SETTING_KEYS,
+    'REPORT_SALES_PUBLIC_URL',
 ] as const;
 export type VendorSettingKey = (typeof VENDOR_SETTING_KEYS)[number];
 
@@ -228,6 +236,17 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
         'Отчёт КЦ KPI',
         'https://kpi-service.april-app.ru/',
     ),
+    {
+        key: 'REPORT_SALES_PUBLIC_URL',
+        group: 'widgets',
+        label: 'Сайт «Отчёта»: адрес страниц по ссылке',
+        description: `Адрес сайта, на котором страницы «Отчёта» открываются по ссылке без входа — страница разбора звонка. От него строятся ссылки «Открыть разбор звонка» в ленте Битрикс24 и «Страница разбора» в «Отчёте». Пусто — ${REPORT_SALES_PUBLIC_URL_DEFAULT}. Действует в течение минуты.`,
+        howTo: 'Адрес, по которому «Отчёт» открывается в браузере напрямую, без пути страницы. Сейчас все фронты стоят на next.april-app.ru, «Отчёт» — в корне. Менять только при переезде «Отчёта» на другой адрес; после замены откройте любую ссылку «Страница разбора» и убедитесь, что она работает.',
+        secret: false,
+        example: REPORT_SALES_PUBLIC_URL_DEFAULT,
+        defaultValue: REPORT_SALES_PUBLIC_URL_DEFAULT,
+        validate: validateUrl,
+    },
 ];
 
 /**
