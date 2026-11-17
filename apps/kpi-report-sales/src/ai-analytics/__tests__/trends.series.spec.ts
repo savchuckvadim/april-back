@@ -37,13 +37,11 @@ const weekPayload = (score: number, versions: Record<string, string> | null) =>
 
 /** Недели подряд с заданными нагрузками → индекс разрыва ряда качества. */
 function qualityBreak(payloads: readonly Record<string, unknown>[]): number {
-    const records: TrendSnapshotRecord[] = payloads.map(
-        (payload, index) => ({
-            periodKey: TRENDS_WEEK_KEYS[index],
-            managerId: '10',
-            payload,
-        }),
-    );
+    const records: TrendSnapshotRecord[] = payloads.map((payload, index) => ({
+        periodKey: TRENDS_WEEK_KEYS[index],
+        managerId: '10',
+        payload,
+    }));
     const quality = weekSeriesOf(records).find(
         series => series.metric === 'quality',
     );
