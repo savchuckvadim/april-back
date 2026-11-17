@@ -10,5 +10,7 @@ export interface IBXTimelineComment {
      * без AUTHOR_ID комментарий пишется от имени пользователя вебхука/токена.
      */
     AUTHOR_ID?: string;
+    /** Когда комментарий создан (только в ответе списка), ISO 8601. */
+    CREATED?: string;
     FILES?: [string, string][];
 }

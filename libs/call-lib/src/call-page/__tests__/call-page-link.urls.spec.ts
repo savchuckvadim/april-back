@@ -91,3 +91,26 @@ describe('CallPageLinkService.urlsFor', () => {
         expect(empty.findByDomainTypesInPeriod).not.toHaveBeenCalled();
     });
 });
+
+/**
+ * Адрес сайта без кода ссылки — для починки комментариев, записанных с
+ * неверным адресом: в них меняется только сайт.
+ */
+describe('CallPageLinkService.siteUrl', () => {
+    it('настройка не задана — действующий сайт «Отчёта», без «/» на конце', async () => {
+        const { service } = harness({ AUTH_JWT_SECRET: 'secret' });
+
+        expect(await service.siteUrl()).toBe('https://next.april-app.ru');
+    });
+
+    it('сайт из настройки — путь сохраняется, хвостовой «/» убирается', async () => {
+        const { service } = harness({
+            AUTH_JWT_SECRET: 'secret',
+            REPORT_SALES_PUBLIC_URL: 'https://next.april-app.ru/report/',
+        });
+
+        expect(await service.siteUrl()).toBe(
+            'https://next.april-app.ru/report',
+        );
+    });
+});
