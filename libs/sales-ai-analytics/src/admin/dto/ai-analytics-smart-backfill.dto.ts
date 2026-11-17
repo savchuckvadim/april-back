@@ -5,8 +5,8 @@
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { IsBooleanFlag } from '@lib/core/decorators/dto/boolean-flag.decorator';
 import {
-    IsBoolean,
     IsIn,
     IsInt,
     IsNotEmpty,
@@ -31,9 +31,6 @@ import type {
 
 const trimLower = ({ value }: { value: unknown }): unknown =>
     typeof value === 'string' ? value.trim().toLowerCase() : value;
-
-const toBoolean = ({ value }: { value: unknown }): unknown =>
-    value === 'true' ? true : value === 'false' ? false : value;
 
 /** Дата портала YYYY-MM-DD. */
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -114,7 +111,7 @@ export class AiAnalyticsSmartBackfillRunDto extends AiAnalyticsSmartBackfillKeyD
         type: Boolean,
     })
     @IsOptional()
-    @IsBoolean()
+    @IsBooleanFlag()
     dryRun?: boolean;
 }
 
@@ -127,8 +124,7 @@ export class AiAnalyticsSmartBackfillStatusQueryDto extends AiAnalyticsSmartBack
         type: Boolean,
     })
     @IsOptional()
-    @Transform(toBoolean)
-    @IsBoolean()
+    @IsBooleanFlag()
     dryRun?: boolean;
 }
 

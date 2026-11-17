@@ -3,9 +3,9 @@ import {
     ApiPropertyOptional,
     IntersectionType,
 } from '@nestjs/swagger';
-import { Transform, Type, type TransformFnParams } from 'class-transformer';
+import { Type } from 'class-transformer';
+import { IsBooleanFlag } from '@lib/core/decorators/dto/boolean-flag.decorator';
 import {
-    IsBoolean,
     IsIn,
     IsInt,
     IsNotEmpty,
@@ -28,18 +28,6 @@ import {
 } from './site-media-texts.dto';
 
 const LIMITS = SITE_MEDIA_LIBRARY_LIMITS;
-
-/**
- * Строки запроса 'true' / 'false' → boolean. Берём исходное значение из
- * `obj`: при enableImplicitConversion class-transformer сначала приводит
- * значение к Boolean ('false' → true) и только потом зовёт @Transform.
- */
-const toBoolean = ({ obj, key }: TransformFnParams): unknown => {
-    const raw: unknown = (obj as Record<string, unknown>)[key];
-    if (raw === 'true' || raw === true) return true;
-    if (raw === 'false' || raw === false) return false;
-    return raw;
-};
 
 export class SiteMediaLibraryIdParamsDto {
     @ApiProperty({
@@ -72,8 +60,7 @@ export class SiteMediaLibraryListQueryDto {
         example: false,
     })
     @IsOptional()
-    @Transform(toBoolean)
-    @IsBoolean()
+    @IsBooleanFlag()
     unused?: boolean;
 
     @ApiPropertyOptional({
