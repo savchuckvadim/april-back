@@ -7,6 +7,8 @@
  * (ai/tasks/ai-polyansky-method/2026-11-01-periodic-manager-digests.md).
  * Библиотека не импортирует ничего из apps/*.
  */
+export * from './period/rop-period';
+export * from './period/rop-schedule';
 export * from './recipients/department-heads.util';
 export * from './recipients/department-scope.util';
 export * from './recipients/sales-departments.loader';
