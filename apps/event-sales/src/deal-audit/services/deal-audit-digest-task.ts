@@ -37,9 +37,14 @@ const toId = (raw: unknown): number | null => {
  * не должна мешать остальным.
  */
 export class DealAuditDigestTask {
+    /**
+     * `mark` — хвост названия задачи, по которому закрывается прошлая;
+     * по умолчанию — аудит сделок (у другой сводки — своя метка).
+     */
     constructor(
         private readonly bitrix: BitrixService,
         private readonly timezone: ETimeZone,
+        private readonly mark: string = DEAL_AUDIT_TASK_MARK,
     ) {}
 
     async replace(
@@ -50,7 +55,7 @@ export class DealAuditDigestTask {
         await this.closePrevious(userId, warnings);
         try {
             const response = await this.bitrix.task.add({
-                TITLE: `${digest.heading} — ${digest.count} · ${DEAL_AUDIT_TASK_MARK}`,
+                TITLE: `${digest.heading} — ${digest.count} · ${this.mark}`,
                 DESCRIPTION: digest.text,
                 DESCRIPTION_IN_BBCODE: 'Y',
                 RESPONSIBLE_ID: userId,
@@ -84,7 +89,7 @@ export class DealAuditDigestTask {
             const response = await this.bitrix.task.getList(
                 {
                     RESPONSIBLE_ID: userId,
-                    '%TITLE': DEAL_AUDIT_TASK_MARK,
+                    '%TITLE': this.mark,
                 } as never,
                 ['ID', 'STATUS', 'TITLE'],
             );
