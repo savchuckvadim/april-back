@@ -7,6 +7,7 @@ import {
     DIGEST_LIFECYCLE,
     DIGEST_STATUS,
     DIGEST_UNIT,
+    DigestLifecycle,
     DigestRecommendationCode,
     DigestStatus,
     DigestTextSource,
@@ -31,7 +32,8 @@ import type {
  *    «стало лучше / без изменений / стало хуже», мало данных — `no_data`;
  *  - цель достигнута две оценки подряд — «закрепить»;
  *  - живёт три оценки после выдачи: на третьей цель достигнута — «закрепить»
- *    с пометкой «держать», не достигнута — «обсудить с РОПом»;
+ *    с пометкой «держать», не достигнута — «обсудить с РОПом», а если ни
+ *    одна оценка не была с данными — «снята: данных не было»;
  *  - закрытые не переносятся; активных у менеджера не больше трёх,
  *    перенесённые первыми.
  * Чистые функции.
@@ -151,8 +153,25 @@ export function newDigestRecommendation(input: {
 }
 
 /** Последнее значение истории с данными — опора для статуса. */
-const lastKnownValue = (history: readonly DigestPoint[]): number | null =>
+export const digestLastKnownValue = (
+    history: readonly DigestPoint[],
+): number | null =>
     [...history].reverse().find(point => point.value !== null)?.value ?? null;
+
+/**
+ * Исход после последней оценки: цель достигнута — «закрепить» («держать»);
+ * нет — «обсудить с РОПом», если хоть одна оценка была с данными, иначе
+ * «снята: данных не было» (решение 17.11.2026).
+ */
+function finalLifecycle(
+    achieved: boolean,
+    evaluated: readonly DigestPoint[],
+): DigestLifecycle {
+    if (achieved) return DIGEST_LIFECYCLE.fixed;
+    return evaluated.some(point => point.value !== null)
+        ? DIGEST_LIFECYCLE.escalated
+        : DIGEST_LIFECYCLE.dropped;
+}
 
 /**
  * Оценка активной рекомендации в новом периоде. Повтор того же периода
@@ -171,7 +190,7 @@ export function evaluateDigestRecommendation(
     if (last?.periodKey === periodKey) return recommendation;
     const status = digestStatusOf(
         recommendation.anchor,
-        lastKnownValue(recommendation.history),
+        digestLastKnownValue(recommendation.history),
         current,
         options,
     );
@@ -182,6 +201,13 @@ export function evaluateDigestRecommendation(
         recommendation.target,
     );
     const evaluations = recommendation.evaluations + 1;
+    const point: DigestPoint = {
+        periodKey,
+        value,
+        n: current.n,
+        status,
+        achieved,
+    };
     // Выдача не считается оценкой: две оценки подряд — после выдачи.
     const previousAchieved =
         recommendation.evaluations > 0 && last ? last.achieved : false;
@@ -190,16 +216,14 @@ export function evaluateDigestRecommendation(
     const lifecycle = fixed
         ? DIGEST_LIFECYCLE.fixed
         : final
-          ? achieved
-              ? DIGEST_LIFECYCLE.fixed
-              : DIGEST_LIFECYCLE.escalated
+          ? finalLifecycle(achieved, [
+                ...recommendation.history.slice(1),
+                point,
+            ])
           : DIGEST_LIFECYCLE.active;
     return {
         ...recommendation,
-        history: [
-            ...recommendation.history,
-            { periodKey, value, n: current.n, status, achieved },
-        ],
+        history: [...recommendation.history, point],
         status,
         evaluations,
         lifecycle,

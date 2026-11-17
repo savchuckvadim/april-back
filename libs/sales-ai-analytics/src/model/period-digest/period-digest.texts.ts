@@ -1,4 +1,8 @@
-import { callTypeTitleOf, sectionTitleOf } from '../dictionary-titles.util';
+import {
+    callTypeTitleOf,
+    sectionTitleOf,
+    upperFirst,
+} from '../dictionary-titles.util';
 import { ruDecimal } from '../ru-text.util';
 import { digestAnchorUnit } from './period-digest.anchors';
 import {
@@ -55,6 +59,7 @@ export const DIGEST_LIFECYCLE_TITLE: Readonly<Record<DigestLifecycle, string>> =
         [DIGEST_LIFECYCLE.active]: 'в работе',
         [DIGEST_LIFECYCLE.fixed]: 'закрепить',
         [DIGEST_LIFECYCLE.escalated]: 'обсудить с РОПом',
+        [DIGEST_LIFECYCLE.dropped]: 'снята: данных не было',
     };
 
 /** Пометка к «закрепить», когда цель достигнута только на третьей оценке. */
@@ -94,6 +99,16 @@ export const digestLifecycleTitle = (
     recommendation.hold
         ? `${DIGEST_LIFECYCLE_TITLE[recommendation.lifecycle]} — ${DIGEST_HOLD_NOTE}`
         : DIGEST_LIFECYCLE_TITLE[recommendation.lifecycle];
+
+/**
+ * Снятая рекомендация показывается один раз одной строкой:
+ * «Доля звонков с низкой оценкой — снята: данных не было».
+ */
+export const digestDroppedLine = (
+    recommendation: Pick<DigestRecommendation, 'anchor'>,
+): string =>
+    `${upperFirst(digestAnchorTitle(recommendation.anchor))} — ` +
+    DIGEST_LIFECYCLE_TITLE[DIGEST_LIFECYCLE.dropped];
 
 /** Число в единицах: «4,2 из 10», «41 %», «1,3». */
 export function formatDigestValue(unit: DigestUnit, value: number): string {

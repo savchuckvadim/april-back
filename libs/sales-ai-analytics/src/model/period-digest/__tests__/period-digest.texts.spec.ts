@@ -8,6 +8,7 @@ import {
 import {
     DIGEST_SILENT_DAYS_TITLE,
     digestAnchorTitle,
+    digestDroppedLine,
     digestLifecycleTitle,
     digestStandingTitle,
     formatAnchorValue,
@@ -62,6 +63,20 @@ describe('подписи карточки периода', () => {
                 hold: false,
             }),
         ).toBe('обсудить с РОПом');
+        expect(
+            digestLifecycleTitle({
+                lifecycle: DIGEST_LIFECYCLE.dropped,
+                hold: false,
+            }),
+        ).toBe('снята: данных не было');
+    });
+
+    it('снятая рекомендация — одной строкой', () => {
+        expect(
+            digestDroppedLine({
+                anchor: { metric: DIGEST_ANCHOR_METRIC.lowScoreShare },
+            }),
+        ).toBe('Доля звонков с низкой оценкой — снята: данных не было');
     });
 
     it('название якоря — названия раздела и типов звонков, без кодов', () => {

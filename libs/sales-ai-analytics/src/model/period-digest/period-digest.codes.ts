@@ -33,8 +33,10 @@ export const DIGEST_LIFECYCLE = {
     active: 'active',
     /** Цель достигнута — «закрепить» (с пометкой «держать», если только на третьей оценке). */
     fixed: 'fixed',
-    /** Три оценки без закрепления — «обсудить с РОПом». */
+    /** Три оценки без закрепления, хотя бы одна с данными, — «обсудить с РОПом». */
     escalated: 'escalated',
+    /** Три оценки подряд без данных — «снята: данных не было» (решение 17.11.2026). */
+    dropped: 'dropped',
 } as const;
 export type DigestLifecycle =
     (typeof DIGEST_LIFECYCLE)[keyof typeof DIGEST_LIFECYCLE];
