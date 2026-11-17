@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+    DEAL_MOVEMENT_REQUESTERS,
     planDealMovementNight,
     type DealMovementNightPlan,
     type DealMovementRunMode,
@@ -49,6 +50,11 @@ interface RunContext {
     readonly token: string;
     readonly now: Date;
     readonly status: DealMovementRunStatus;
+    /**
+     * Ручной счёт из админки: в ленты не пишет — днём пачка записей у
+     * сотрудников и вызовы модели недопустимы; расхождения ждут ночи.
+     */
+    readonly heldForNight: boolean;
 }
 
 /**
@@ -59,7 +65,9 @@ interface RunContext {
  *   сколько записей ушло бы в ленту) — в состоянии прогона;
  * - счёт (`count`) — состояние по сделкам в Redis целиком, затем записи в
  *   ленту (если включены; каждая удачная — сразу одним полем хеша), затем
- *   дневной снимок в ais и метка счёта.
+ *   дневной снимок в ais и метка счёта. Пишет в ленты ТОЛЬКО ночной счёт
+ *   по расписанию: у ручного счёта из админки лимит записей 0, расхождения
+ *   не теряются и уходят ночью.
  *
  * Прошлое состояние читается ДО оценки: последняя активность сделки
  * считается без нашей записи. Счёт старше трёх суток (или его нет) —
@@ -98,6 +106,9 @@ export class DealMovementRunService {
             token,
             now,
             status: initialDealMovementStatus(domain, mode, requestedBy, now),
+            heldForNight:
+                mode === 'count' &&
+                requestedBy !== DEAL_MOVEMENT_REQUESTERS.nightly,
         };
         try {
             await this.runState.saveStatus(ctx.status);
@@ -154,11 +165,14 @@ export class DealMovementRunService {
             carryOver: evaluation.carryOver,
             mode: options.notes.write ? 'notify' : 'silent',
             limits: {
-                notify: await this.notes.remaining(
-                    ctx.domain,
-                    ctx.day,
-                    options.notes,
-                ),
+                // Ручной счёт: план с записью, но лимит 0 — всё ждёт ночи.
+                notify: ctx.heldForNight
+                    ? 0
+                    : await this.notes.remaining(
+                          ctx.domain,
+                          ctx.day,
+                          options.notes,
+                      ),
                 minDaysBetween: DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES,
             },
             now: ctx.now.toISOString(),
@@ -170,7 +184,11 @@ export class DealMovementRunService {
             baseline: prior.baseline,
             warnings: evaluation.warnings,
             plan,
-            notes: plannedDealMovementNotes(options.notes, plan),
+            notes: plannedDealMovementNotes(
+                options.notes,
+                plan,
+                ctx.heldForNight,
+            ),
         });
         return plan;
     }
@@ -211,7 +229,11 @@ export class DealMovementRunService {
         plan: DealMovementNightPlan,
     ): Promise<ReadonlySet<string>> {
         const summary = ctx.status.notes;
-        if (summary === undefined || plan.toNotify.length === 0) {
+        if (
+            summary === undefined ||
+            ctx.heldForNight ||
+            plan.toNotify.length === 0
+        ) {
             return new Set();
         }
         await this.progress(ctx, 'notes');
@@ -224,7 +246,8 @@ export class DealMovementRunService {
             pointers: evaluation.pointers,
             options: options.notes,
             summary,
-            now: ctx.now.toISOString(),
+            // notifiedAt — момент самой записи, а не старт прогона.
+            clock: () => new Date(),
             pauseMs: DEAL_MOVEMENT_NOTES.pauseMs,
             onProgress: () => this.progress(ctx, 'notes'),
         });

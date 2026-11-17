@@ -10,12 +10,17 @@ export interface DealMovementNotesSummary {
     enabled: boolean;
     /** Вид записи; null — запись выключена. */
     kind: DealMovementNoteKind | null;
+    /**
+     * Ручной счёт из админки: в ленты не пишет (днём нельзя), расхождения
+     * ждут ночи и считаются в `deferredLimit` (решение 17.11.2026).
+     */
+    heldForNight: boolean;
     /** Записей в плане прогона (в пределах лимита ночи). */
     planned: number;
     written: number;
     /** Не удалось записать: расхождение остаётся до следующей ночи. */
     failed: number;
-    /** Отложено лимитом записей за ночь. */
+    /** Отложено лимитом записей за ночь (у ручного счёта — до ночи). */
     deferredLimit: number;
     /** Отложено защитой от метаний: по сделке писали меньше трёх суток назад. */
     deferredQuiet: number;
@@ -30,6 +35,7 @@ export const emptyDealMovementNotesSummary = (
 ): DealMovementNotesSummary => ({
     enabled: kind !== null,
     kind,
+    heldForNight: false,
     planned: 0,
     written: 0,
     failed: 0,

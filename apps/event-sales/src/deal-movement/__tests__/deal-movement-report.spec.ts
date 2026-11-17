@@ -71,6 +71,7 @@ describe('итог ночи в Telegram', () => {
         const notes = {
             enabled: true,
             kind: 'comment' as const,
+            heldForNight: false,
             planned: 100,
             written: 97,
             failed: 3,
@@ -98,6 +99,26 @@ describe('итог ночи в Telegram', () => {
             'Подсказки «что сделать»: 48, без подсказки по вине модели: 2',
         );
         expect(text).not.toMatch(/comment|log_message/);
+
+        // Ручной счёт из админки в ленты не пишет — сколько ждёт ночи.
+        const manual = formatDealMovementRun(
+            status({
+                requestedBy: 'admin',
+                notes: {
+                    ...notes,
+                    heldForNight: true,
+                    planned: 0,
+                    written: 0,
+                    failed: 0,
+                    texts: 0,
+                    textsFailed: 0,
+                },
+            }),
+        );
+        expect(manual).toContain(
+            'Ручной счёт в ленту не пишет: до ночи отложено записей — 20; не чаще раза в 3 дня — 5',
+        );
+        expect(manual).not.toContain('Подсказки');
     });
 
     it('сбой — одной строкой с причиной', () => {

@@ -34,13 +34,16 @@ const countsLine = (byStatus: Record<DealMovementStatus, number>): string =>
             `${DEAL_MOVEMENT_STATUS_TITLES[status]} — ${byStatus[status]}`,
     ).join(' · ');
 
+const quietText = (notes: DealMovementNotesSummary): string =>
+    `не чаще раза в ${dealMovementDaysText(DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES)} — ${notes.deferredQuiet}`;
+
 const deferredText = (notes: DealMovementNotesSummary): string =>
-    `лимит ночи — ${notes.deferredLimit}, не чаще раза в ` +
-    `${dealMovementDaysText(DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES)} — ${notes.deferredQuiet}`;
+    `лимит ночи — ${notes.deferredLimit}, ${quietText(notes)}`;
 
 /**
  * Записи в ленту словами: выключено; у «Посчитать» — сколько записали бы;
- * у счёта — записано, не удалось, отложено и подсказки модели.
+ * у ручного счёта — сколько ждёт ночи; у ночного — записано, не удалось,
+ * отложено и подсказки модели.
  */
 export function dealMovementNotesLines(
     notes: DealMovementNotesSummary,
@@ -50,6 +53,12 @@ export function dealMovementNotesLines(
     if (mode === 'dry-run') {
         return [
             `Записали бы в ленту: ${notes.planned}; отложили бы: ${deferredText(notes)}`,
+        ];
+    }
+    if (notes.heldForNight) {
+        return [
+            `Ручной счёт в ленту не пишет: до ночи отложено записей — ` +
+                `${notes.deferredLimit}; ${quietText(notes)}`,
         ];
     }
     return [

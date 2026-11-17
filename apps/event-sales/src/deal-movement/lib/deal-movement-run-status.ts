@@ -44,7 +44,8 @@ export function initialDealMovementStatus(
 /**
  * Итог записей по плану: сколько записей в плане и сколько отложено
  * лимитом ночи и защитой от метаний. Запись выключена — пустой итог с
- * пометкой «выключено». Сделанное считает уже запись в ленту.
+ * пометкой «выключено». `heldForNight` — ручной счёт: лимит записей 0,
+ * отложенное ждёт ночи. Сделанное считает уже запись в ленту.
  */
 export function plannedDealMovementNotes(
     options: DealMovementNotesOptions,
@@ -52,10 +53,12 @@ export function plannedDealMovementNotes(
         DealMovementNightPlan,
         'toNotify' | 'deferred' | 'deferredQuiet'
     >,
+    heldForNight: boolean,
 ): DealMovementNotesSummary {
     if (!options.write) return emptyDealMovementNotesSummary(null);
     return {
         ...emptyDealMovementNotesSummary(options.kind),
+        heldForNight,
         planned: plan.toNotify.length,
         deferredLimit: plan.deferred - plan.deferredQuiet,
         deferredQuiet: plan.deferredQuiet,

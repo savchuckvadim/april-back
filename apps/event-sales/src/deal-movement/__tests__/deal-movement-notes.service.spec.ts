@@ -1,4 +1,5 @@
 import {
+    effectiveDealLastActivityAt,
     emptyDealMovementNotesSummary,
     type DealMovementStateEntry,
     type DealMovementVerdict,
@@ -13,6 +14,8 @@ import { NOTES_ON } from './deal-movement-run.fixture';
 const DOMAIN = 'garant.bitrix24.ru';
 const DAY = '2026-11-18';
 const NOW = '2026-11-17T23:30:00.000Z';
+/** Запись ушла через 40 минут после старта прогона (чтение воронки, модель). */
+const WRITTEN_AT = '2026-11-18T00:10:00.000Z';
 
 const verdict = (
     dealId: string,
@@ -113,10 +116,19 @@ const input = (
         ['11', verdict('11', 'stuck')],
         ['12', verdict('12', 'moving')],
     ]),
-    pointers: new Map(),
+    // У «застрявшей» есть разобранный звонок — модели есть на что опереться.
+    pointers: new Map([
+        [
+            '11',
+            {
+                lastCall: { id: 't1', at: '2026-10-25T10:00:00.000Z' },
+                lastAgreement: null,
+            },
+        ],
+    ]),
     options: NOTES_ON,
     summary: emptyDealMovementNotesSummary('comment'),
-    now: NOW,
+    clock: () => new Date(WRITTEN_AT),
     pauseMs: 0,
     onProgress: jest.fn().mockResolvedValue(undefined),
     ...over,
@@ -147,13 +159,57 @@ describe('запись движения сделок в ленту', () => {
             expect.objectContaining({
                 status: 'stuck',
                 notifiedStatus: 'stuck',
-                notifiedAt: NOW,
+                notifiedAt: WRITTEN_AT,
             }),
         );
         expect(run.plan.state.get('11')?.notifiedStatus).toBe('stuck');
         expect(used.notes).toBe(2);
         expect(run.summary).toMatchObject({ written: 2, failed: 0, texts: 1 });
         expect(run.onProgress).toHaveBeenCalledTimes(2);
+    });
+
+    it('notifiedAt — момент самой записи: через 40 минут после старта активность через минуту — своя', async () => {
+        const { service } = build();
+        const before = '2026-10-20T09:00:00.000Z';
+        const run = input({
+            plan: {
+                state: new Map([
+                    ['11', { ...entry('stuck'), lastActivityAt: before }],
+                ]),
+                toNotify: ['11'],
+            },
+        });
+
+        await service.write(run);
+
+        const marked = run.plan.state.get('11') ?? null;
+        expect(marked?.notifiedAt).toBe(WRITTEN_AT);
+        // Битрикс сдвинул «последнюю активность» на минуту позже записи —
+        // это наша запись: остаётся прошлая активность.
+        expect(
+            effectiveDealLastActivityAt('2026-11-18T00:11:00.000Z', marked),
+        ).toBe(before);
+        // Со стартом прогона вместо момента записи сдвиг выпал бы из окна.
+        expect(
+            effectiveDealLastActivityAt('2026-11-18T00:11:00.000Z', {
+                lastActivityAt: before,
+                notifiedAt: NOW,
+            }),
+        ).toBe('2026-11-18T00:11:00.000Z');
+    });
+
+    it('нет ни разобранного звонка, ни договорённости — модель не зовём, лимит подсказок цел', async () => {
+        const { service, todo, used, addTimelineComment } = build();
+
+        await service.write(input({ pointers: new Map() }));
+
+        expect(todo.actionsFor).not.toHaveBeenCalled();
+        expect(used.texts).toBe(0);
+        const [first] = addTimelineComment.mock.calls[0] as unknown as [
+            { COMMENT: string },
+        ];
+        expect(first.COMMENT).not.toContain('Что сделать');
+        expect(first.COMMENT).toContain('Почему:');
     });
 
     it('«что сделать» — только у тревожных статусов и моделью портала', async () => {
@@ -166,7 +222,9 @@ describe('запись движения сделок в ленту', () => {
             expect.objectContaining({
                 domain: DOMAIN,
                 model: 'bitrixgpt-5',
-                pointers: null,
+                pointers: expect.objectContaining({
+                    lastCall: expect.objectContaining({ id: 't1' }) as unknown,
+                }) as unknown,
             }),
         );
     });

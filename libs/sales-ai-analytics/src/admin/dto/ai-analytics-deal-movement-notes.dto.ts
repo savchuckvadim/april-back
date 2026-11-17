@@ -33,6 +33,15 @@ export class AiAnalyticsDealMovementNotesDto
 
     @ApiProperty({
         description:
+            'Ручной счёт из админки: в ленты не пишет, расхождения ждут ночи ' +
+            '(их число — в deferredLimit).',
+        example: false,
+        type: Boolean,
+    })
+    heldForNight: boolean;
+
+    @ApiProperty({
+        description:
             'Записей в плане прогона (в пределах лимита ночи); у подсчёта — ' +
             'сколько записали бы.',
         example: 100,

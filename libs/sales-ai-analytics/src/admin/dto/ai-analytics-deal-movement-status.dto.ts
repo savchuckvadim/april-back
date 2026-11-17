@@ -57,7 +57,8 @@ export class AiAnalyticsDealMovementRunStatusDto
     @ApiProperty({
         description:
             'Режим: dry-run — подсчёт без сохранения и без записи, count — ' +
-            'счёт с сохранением (в ленту сделок — если запись включена).',
+            'счёт с сохранением (в ленту сделок пишет только ночной счёт и ' +
+            'только если запись включена).',
         enum: DEAL_MOVEMENT_RUN_MODES,
         example: 'count',
         type: String,

@@ -87,6 +87,46 @@ describe('прогон движения сделок: запись в ленту
         });
     });
 
+    it('ручной счёт из админки в ленты не пишет: лимит 0, расхождение ждёт ночи', async () => {
+        const { service, notes, stateStore, snapshots } = buildRun({
+            ...lastNight(),
+            notes: NOTES_ON,
+            remaining: 100,
+        });
+
+        const outcome = await service.run(DOMAIN, 'count', 'admin', NOW);
+
+        expect(notes.remaining).not.toHaveBeenCalled();
+        expect(notes.write).not.toHaveBeenCalled();
+        expect(outcome).toMatchObject({
+            status: {
+                notes: {
+                    enabled: true,
+                    heldForNight: true,
+                    planned: 0,
+                    deferredLimit: 1,
+                },
+            },
+        });
+        // Состояние сохранено с расхождением: ночью запись уйдёт.
+        const [, saved] = stateStore.save.mock.calls[0] as unknown as [
+            string,
+            Map<string, { status: string; notifiedStatus: string }>,
+        ];
+        expect(saved.get('1')).toMatchObject({
+            status: 'rolled_back',
+            notifiedStatus: 'moving',
+        });
+        expect(snapshots.save).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                changes: [
+                    expect.objectContaining({ dealId: '1', notified: false }),
+                ],
+            }),
+        );
+    });
+
     it('«Посчитать» с включённой записью — сколько записали бы, без записи', async () => {
         const { service, notes, stateStore } = buildRun({
             ...lastNight(),

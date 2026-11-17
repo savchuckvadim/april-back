@@ -33,8 +33,12 @@ export interface DealMovementNotesInput {
     readonly options: DealMovementNotesOptions;
     /** Итог записей прогона: счётчики растут по ходу (видно в админке). */
     readonly summary: DealMovementNotesSummary;
-    /** Момент прогона, ISO — `notifiedAt` записанных сделок. */
-    readonly now: string;
+    /**
+     * Часы: `notifiedAt` — момент сразу после ответа Битрикса, а не старт
+     * прогона. Между ними — чтение воронки и вызовы модели, десятки минут:
+     * со стартом прогона наша запись выпала бы из окна «своей записи».
+     */
+    readonly clock: () => Date;
     /** Пауза между записями, мс. */
     readonly pauseMs: number;
     /** После каждой записи: продлить замок и сохранить ход прогона. */
@@ -47,6 +51,13 @@ export interface DealMovementNotesOutcome {
     /** Сбои записи и модели словами (не больше трёх). */
     readonly warnings: string[];
 }
+
+/** Есть ли модели на что опереться: разобранный звонок или договорённость. */
+const hasTodoGround = (
+    pointers: DealMovementCallPointers | null,
+): pointers is DealMovementCallPointers =>
+    pointers !== null &&
+    (pointers.lastCall !== null || pointers.lastAgreement !== null);
 
 /**
  * Запись движения сделок в ленты сделок (решение 17.11.2026): по одной,
@@ -122,14 +133,21 @@ export class DealMovementNotesService {
         dealId: string,
         entry: DealMovementStateEntry,
     ): Promise<void> {
-        const marked = markDealMovementNotified(entry, input.now);
+        const marked = markDealMovementNotified(
+            entry,
+            input.clock().toISOString(),
+        );
         input.plan.state.set(dealId, marked);
         input.summary.written += 1;
         await this.counters.increment(input.domain, input.day, 'notes');
         await this.stateStore.saveEntry(input.domain, dealId, marked);
     }
 
-    /** «Что сделать» в пределах лимита ночи; null — запись без блока. */
+    /**
+     * «Что сделать» в пределах лимита ночи; null — запись без блока. Нет
+     * ни разобранного звонка, ни договорённости — модель не зовём и лимит
+     * не тратим: опереться ей не на что, причины статуса в записи уже есть.
+     */
     private async actionsFor(
         input: DealMovementNotesInput,
         verdict: DealMovementVerdict,
@@ -137,6 +155,8 @@ export class DealMovementNotesService {
         warnings: string[],
     ): Promise<string[] | null> {
         if (!needsDealMovementTodo(verdict.status)) return null;
+        const pointers = input.pointers.get(verdict.dealId) ?? null;
+        if (!hasTodoGround(pointers)) return null;
         const used = await this.counters.used(input.domain, input.day, 'texts');
         if (used >= input.options.maxTexts) return null;
         await this.counters.increment(input.domain, input.day, 'texts');
@@ -145,7 +165,7 @@ export class DealMovementNotesService {
             model,
             timezone: input.timezone,
             verdict,
-            pointers: input.pointers.get(verdict.dealId) ?? null,
+            pointers,
         });
         if (outcome.actions === null) {
             input.summary.textsFailed += 1;
