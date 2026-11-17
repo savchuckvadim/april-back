@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
     SiteMediaItem,
     SiteMediaPutInput,
+    SiteMediaStaged,
 } from '../media/domain/site-media.types';
 import { SiteMediaService } from '../media/site-media.service';
 import { KeyedQueue } from '../shared/keyed-queue';
@@ -19,8 +20,12 @@ const darkSlot = (id: string): string => `${id}${SITE_MEDIA_DARK_SUFFIX}`;
  * `<id>.poster.…`, тёмный вариант — место `<id>-dark`. Запись через
  * временный файл, проверка формата по первым байтам и потолки — там.
  *
- * Здесь же очередь по id медиа: замена файла и правка строки идут одной
- * задачей, иначе две быстрые замены оставят строку с именем удалённого файла.
+ * Новое медиа пишется `put` (прежних файлов нет). Замена у существующего —
+ * `stage…`: новый файл ложится рядом с прежним, а что убрать (прежний или
+ * новый) решает сервис после правки строки (`discardFiles`).
+ *
+ * Здесь же очередь по id медиа: запись файла и правка строки идут одной
+ * задачей, иначе две быстрые замены перемешаются.
  */
 @Injectable()
 export class SiteMediaLibraryDisk {
@@ -40,16 +45,28 @@ export class SiteMediaLibraryDisk {
         return this.media.put(SITE_MEDIA_LIBRARY_DIR, darkSlot(id), { file });
     }
 
-    async removePoster(id: string): Promise<void> {
-        await this.media.removePoster(SITE_MEDIA_LIBRARY_DIR, id);
+    /** Новый файл или постер рядом с прежним — без уборки. */
+    stageMain(id: string, input: SiteMediaPutInput): Promise<SiteMediaStaged> {
+        return this.media.stage(SITE_MEDIA_LIBRARY_DIR, id, input);
     }
 
-    async removeDark(id: string): Promise<void> {
-        await this.media.remove(SITE_MEDIA_LIBRARY_DIR, darkSlot(id));
+    /** Новый тёмный вариант рядом с прежним — без уборки. */
+    stageDark(
+        id: string,
+        file: SiteMediaLibraryUpload,
+    ): Promise<SiteMediaStaged> {
+        return this.media.stage(SITE_MEDIA_LIBRARY_DIR, darkSlot(id), {
+            file,
+        });
+    }
+
+    /** Убрать файлы медиатеки по именам (прежние после замены или новые после сбоя). */
+    discardFiles(names: readonly string[]): Promise<void> {
+        return this.media.discard(SITE_MEDIA_LIBRARY_DIR, names);
     }
 
     /** Всё, что лежит у медиа: файл, постер, тёмный вариант. Пустое место — не ошибка. */
-    async discard(id: string): Promise<void> {
+    async discardAll(id: string): Promise<void> {
         for (const slot of [id, darkSlot(id)]) {
             try {
                 await this.media.remove(SITE_MEDIA_LIBRARY_DIR, slot);

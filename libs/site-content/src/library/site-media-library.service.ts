@@ -273,7 +273,7 @@ export class SiteMediaLibraryService {
     /** Откат файлов: сбой уборки не должен заслонить исходную ошибку. */
     private async discardQuietly(id: string): Promise<void> {
         try {
-            await this.disk.discard(id);
+            await this.disk.discardAll(id);
         } catch (error) {
             this.logger.warn(
                 `Медиатека: файлы ${id} не убраны (${(error as Error).message})`,

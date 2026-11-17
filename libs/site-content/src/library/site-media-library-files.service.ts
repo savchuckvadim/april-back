@@ -4,9 +4,11 @@ import {
     Logger,
     NotFoundException,
 } from '@nestjs/common';
+import type { SiteMediaStaged } from '../media/domain/site-media.types';
 import { SITE_MEDIA_LIBRARY_MESSAGES } from './domain/site-media-library.messages';
 import type {
     SiteMediaLibraryUpload,
+    SiteMediaPatch,
     SiteMediaRecord,
     SiteMediaVideoMeta,
 } from './domain/site-media-library.types';
@@ -25,10 +27,16 @@ const badRequest = (message: string): never => {
 
 /**
  * Файлы уже загруженного медиа: замена самого файла, постер ролика и тёмный
- * вариант картинки. Каждая операция — под очередью id медиа: файл на диск,
- * затем строка. Новое имя файла (с отпечатком содержимого) — новый адрес,
- * поэтому кэш сайта и браузеров замене не мешает; прежний файл убирает
- * SiteMediaService после записи нового.
+ * вариант картинки. Каждая операция — под очередью id медиа.
+ *
+ * Порядок замены: новый файл ложится рядом с прежним → правится строка →
+ * только потом убирается прежний файл. Правка строки сорвалась — убирается
+ * новый, прежний остаётся действующим: строка не указывает на удалённый
+ * файл ни в какой момент. Снятие постера и тёмного варианта — наоборот:
+ * сначала строка, потом файл.
+ *
+ * Новое имя файла (с отпечатком содержимого) — новый адрес, поэтому кэш
+ * сайта и браузеров замене не мешает.
  */
 @Injectable()
 export class SiteMediaLibraryFilesService {
@@ -56,12 +64,13 @@ export class SiteMediaLibraryFilesService {
                 badRequest(SITE_MEDIA_LIBRARY_MESSAGES.kindChanged);
             }
             const fields = await fileFieldsOf(upload, info, video);
-            const item = await this.disk.putMain(id, { file: upload });
+            const record = await this.swap(
+                id,
+                () => this.disk.stageMain(id, { file: upload }),
+                staged => ({ ...fields, fileName: staged.file }),
+            );
             this.logger.log(`Медиатека: заменён файл ${id}`);
-            return this.repository.update(id, {
-                ...fields,
-                fileName: item.file,
-            });
+            return record;
         });
     }
 
@@ -71,10 +80,11 @@ export class SiteMediaLibraryFilesService {
     ): Promise<SiteMediaRecord> {
         return this.disk.exclusive(id, async () => {
             await this.requireKind(id, 'video');
-            const item = await this.disk.putMain(id, { poster });
-            return this.repository.update(id, {
-                posterFileName: item.poster ?? null,
-            });
+            return this.swap(
+                id,
+                () => this.disk.stageMain(id, { poster }),
+                staged => ({ posterFileName: staged.poster ?? null }),
+            );
         });
     }
 
@@ -86,8 +96,11 @@ export class SiteMediaLibraryFilesService {
                     SITE_MEDIA_LIBRARY_MESSAGES.posterMissing,
                 );
             }
-            await ignoreMissing(this.disk.removePoster(id));
-            return this.repository.update(id, { posterFileName: null });
+            const record = await this.repository.update(id, {
+                posterFileName: null,
+            });
+            await this.discardQuietly(id, [current.posterFileName]);
+            return record;
         });
     }
 
@@ -98,8 +111,11 @@ export class SiteMediaLibraryFilesService {
         return this.disk.exclusive(id, async () => {
             await this.requireKind(id, 'image');
             await requireDarkImage(dark);
-            const item = await this.disk.putDark(id, dark);
-            return this.repository.update(id, { darkFileName: item.file });
+            return this.swap(
+                id,
+                () => this.disk.stageDark(id, dark),
+                staged => ({ darkFileName: staged.file ?? null }),
+            );
         });
     }
 
@@ -111,9 +127,48 @@ export class SiteMediaLibraryFilesService {
                     SITE_MEDIA_LIBRARY_MESSAGES.darkMissing,
                 );
             }
-            await ignoreMissing(this.disk.removeDark(id));
-            return this.repository.update(id, { darkFileName: null });
+            const record = await this.repository.update(id, {
+                darkFileName: null,
+            });
+            await this.discardQuietly(id, [current.darkFileName]);
+            return record;
         });
+    }
+
+    /**
+     * Новый файл рядом с прежним → строка → уборка прежнего. Сорвалась
+     * правка строки — убираем только то, чего до записи не было.
+     */
+    private async swap(
+        id: string,
+        stage: () => Promise<SiteMediaStaged>,
+        patchOf: (staged: SiteMediaStaged) => SiteMediaPatch,
+    ): Promise<SiteMediaRecord> {
+        const staged = await stage();
+        let record: SiteMediaRecord;
+        try {
+            record = await this.repository.update(id, patchOf(staged));
+        } catch (error) {
+            await this.discardQuietly(id, staged.created);
+            throw error;
+        }
+        await this.discardQuietly(id, staged.outdated);
+        return record;
+    }
+
+    /** Уборка файлов: сбой не должен заслонить исходную ошибку или удачную правку. */
+    private async discardQuietly(
+        id: string,
+        names: readonly string[],
+    ): Promise<void> {
+        if (names.length === 0) return;
+        try {
+            await this.disk.discardFiles(names);
+        } catch (error) {
+            this.logger.warn(
+                `Медиатека: файлы ${id} не убраны (${(error as Error).message})`,
+            );
+        }
     }
 
     private async requireKind(
@@ -129,14 +184,5 @@ export class SiteMediaLibraryFilesService {
             );
         }
         return record;
-    }
-}
-
-/** Файла уже нет на диске — строку всё равно приводим в порядок. */
-async function ignoreMissing(work: Promise<void>): Promise<void> {
-    try {
-        await work;
-    } catch (error) {
-        if (!(error instanceof NotFoundException)) throw error;
     }
 }
