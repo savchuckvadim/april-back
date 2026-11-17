@@ -1,10 +1,14 @@
 import type {
     DealMovementCall,
     DealMovementRunStatus,
+    DealMovementStatus,
     DealMovementThresholds,
 } from '@lib/sales-ai-analytics';
 import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
-import type { DealMovementNoteKind } from '@lib/portal-lib/store/app-settings';
+import type {
+    DealMovementDigestMode,
+    DealMovementNoteKind,
+} from '@lib/portal-lib/store/app-settings';
 
 /** Запись в ленту сделок: включена ли, каким видом и лимиты ночи. */
 export interface DealMovementNotesOptions {
@@ -16,6 +20,14 @@ export interface DealMovementNotesOptions {
     readonly maxTexts: number;
 }
 
+/** Сводка руководителям: включена ли, когда слать и сколько «под риском». */
+export interface DealMovementDigestOptions {
+    readonly enabled: boolean;
+    readonly mode: DealMovementDigestMode;
+    /** Сделок под риском в сводке — самые крупные по сумме. */
+    readonly top: number;
+}
+
 /** Настройки портала → параметры счёта (реестр «Настроек приложений»). */
 export interface DealMovementOptions {
     readonly thresholds: DealMovementThresholds;
@@ -24,6 +36,24 @@ export interface DealMovementOptions {
     /** Потолок оцениваемых сделок за ночь. */
     readonly maxDeals: number;
     readonly notes: DealMovementNotesOptions;
+    readonly digest: DealMovementDigestOptions;
+}
+
+/** Сделка в сводке руководителям: всё, что нужно строке сводки. */
+export interface DealMovementDigestDeal {
+    readonly dealId: string;
+    readonly title: string;
+    readonly assignedById: number | null;
+    readonly amount: number | null;
+    readonly status: DealMovementStatus;
+    /**
+     * Статус до смены этой ночью, если сделка СТАЛА тревожной («новые за
+     * ночь»); null — не новая.
+     */
+    readonly newFrom: DealMovementStatus | null;
+    /** Причины статуса словами, одной строкой. */
+    readonly reasons: string;
+    readonly daysInStage: number;
 }
 
 /** Расшифровки, по которым «что сделать» перечитывает разборы. */

@@ -8,6 +8,7 @@ import {
     DEAL_MOVEMENT_STATUSES,
     type DealMovementStatus,
 } from '../model/deal-movement/deal-movement.types';
+import type { DealMovementDigestSummary } from './deal-movement-digest.types';
 import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 import {
     DEAL_MOVEMENT_RUN_MODES,
@@ -51,6 +52,8 @@ export interface DealMovementSnapshotPayload {
     changesTotal: number;
     /** Записи в ленту сделок за прогон; нет у снимков до второй волны. */
     notes?: DealMovementNotesSummary;
+    /** Сводка руководителям за прогон; нет у снимков до части Б. */
+    digest?: DealMovementDigestSummary;
     warnings: string[];
 }
 

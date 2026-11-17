@@ -54,6 +54,19 @@ export const DEAL_MOVEMENT_NOTES = {
 export const DEAL_MOVEMENT_PROBE_WAIT_MS = 5_000;
 
 /**
+ * Сводка руководителям (вторая волна, часть Б, 17.11.2026): сколько новых
+ * за ночь показывать, длина одного сообщения серии, свои тег уведомления
+ * и метка задачи — сводка аудита сделок не замещается.
+ */
+export const DEAL_MOVEMENT_DIGEST = {
+    newLimit: 15,
+    /** Сообщение Битрикса — не длиннее 20 000 символов; берём с запасом. */
+    messageMax: 18_000,
+    notifyTag: 'event-sales-deal-movement',
+    taskMark: 'сводка движения сделок',
+} as const;
+
+/**
  * Состояние старше стольких суток — базовая линия заново: после простоя
  * нельзя выдать накопленные смены статуса разом (решение 17.11.2026).
  */
@@ -95,4 +108,5 @@ export const DEAL_MOVEMENT_SETTING_DEFAULTS = {
     maxDeals: 10_000,
     maxNotes: 100,
     maxTexts: 50,
+    digestTop: 15,
 } as const;

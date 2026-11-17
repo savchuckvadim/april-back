@@ -11,6 +11,7 @@ import {
     DEAL_MOVEMENT_STATUSES,
     type DealMovementStatus,
 } from '../model/deal-movement/deal-movement.types';
+import type { DealMovementDigestSummary } from './deal-movement-digest.types';
 import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 
 /**
@@ -38,6 +39,7 @@ export const DEAL_MOVEMENT_RUN_PHASES = [
     'calls',
     'evaluated',
     'notes',
+    'digest',
     'saved',
     'done',
     'failed',
@@ -106,6 +108,8 @@ export interface DealMovementRunStatus {
      * бы. Нет у прогонов до второй волны (17.11.2026).
      */
     notes?: DealMovementNotesSummary;
+    /** Сводка руководителям за прогон; нет у «Посчитать» и старых прогонов. */
+    digest?: DealMovementDigestSummary;
     warnings: string[];
     error: string | null;
 }
@@ -163,6 +167,9 @@ export const DEAL_MOVEMENT_REDIS_KEYS = {
     /** Вызовов модели «что сделать» за день портала. */
     nightTexts: (domain: string, day: string): string =>
         `event-sales:deal-movement:night-texts:${domain}:${day}`,
+    /** Сводка руководителям за день портала уже уходила (один раз в день). */
+    digestDay: (domain: string, day: string): string =>
+        `event-sales:deal-movement:digest-day:${domain}:${day}`,
     /** Итог последней проверки записи в ленту (ручка админки). */
     probe: (domain: string): string =>
         `event-sales:deal-movement:probe:${domain}`,

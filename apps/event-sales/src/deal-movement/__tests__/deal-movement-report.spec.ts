@@ -121,6 +121,38 @@ describe('итог ночи в Telegram', () => {
         expect(manual).not.toContain('Подсказки');
     });
 
+    it('сводка руководителям: сколько получателей, ушло и не доставлено; пропуск — причиной', () => {
+        const sent = formatDealMovementRun(
+            status({
+                digest: {
+                    enabled: true,
+                    skipped: null,
+                    recipients: 6,
+                    sent: 5,
+                    failed: 1,
+                },
+            }),
+        );
+        expect(sent).toContain(
+            'Сводка руководителям: получателей 6, ушло 5, не доставлено 1',
+        );
+        const manual = formatDealMovementRun(
+            status({
+                digest: {
+                    enabled: true,
+                    skipped: 'manual',
+                    recipients: 0,
+                    sent: 0,
+                    failed: 0,
+                },
+            }),
+        );
+        expect(manual).toContain(
+            'Сводка руководителям: уходит только после ночного счёта',
+        );
+        expect(manual).not.toMatch(/manual|already_sent/);
+    });
+
     it('сбой — одной строкой с причиной', () => {
         expect(
             formatDealMovementFailure('gsr.bitrix24.ru', 'нет воронки'),

@@ -3,6 +3,7 @@ export * from './lib/parse-user-ids';
 export * from './lib/app-widgets.registry';
 export * from './lib/deal-audit-digest-channels.const';
 export * from './lib/deal-movement-note-kinds.const';
+export * from './lib/deal-movement-digest-modes.const';
 export * from './portal-app-settings.repository';
 export { PortalAppSettingsService } from './portal-app-settings.service';
 export type { PortalAppSettingsResolved } from './portal-app-settings.service';

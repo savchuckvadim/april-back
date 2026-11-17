@@ -143,6 +143,23 @@ describe('buildEventSalesCronRoster', () => {
         expect(writing.get('event-sales-deal-movement')?.portals).toEqual([
             { domain: GARANT, note: 'пишет в ленту сделок' },
         ]);
+
+        const both = buildEventSalesCronRoster(
+            [
+                row(GARANT, {
+                    deal_movement_enabled: true,
+                    deal_movement_write_notes: true,
+                    deal_movement_digest_enabled: true,
+                }),
+            ],
+            [],
+        );
+        expect(both.get('event-sales-deal-movement')?.portals).toEqual([
+            {
+                domain: GARANT,
+                note: 'пишет в ленту сделок, сводка руководителям',
+            },
+        ]);
     });
 
     it('кроны AI-конвейера: все включённые порталы, свои тумблеры у недельного отчёта и ревизора', () => {

@@ -139,6 +139,28 @@ describe('счётчики ночи', () => {
         expect(redis.incr).toHaveBeenCalledWith(key);
         expect(redis.expire).toHaveBeenCalledWith(key, 2 * 24 * 60 * 60);
     });
+
+    it('отметка сводки руководителям: первый раз за день — да, повтор — нет', async () => {
+        const redis = redisWith({
+            set: jest
+                .fn()
+                .mockResolvedValueOnce('OK')
+                .mockResolvedValueOnce(null),
+        });
+        const counters = new DealMovementNightCounters({
+            getClient: () => redis,
+        } as never);
+
+        expect(await counters.claimDigest(DOMAIN, '2026-11-18')).toBe(true);
+        expect(await counters.claimDigest(DOMAIN, '2026-11-18')).toBe(false);
+        expect(redis.set).toHaveBeenCalledWith(
+            DEAL_MOVEMENT_REDIS_KEYS.digestDay(DOMAIN, '2026-11-18'),
+            expect.any(String),
+            'EX',
+            2 * 24 * 60 * 60,
+            'NX',
+        );
+    });
 });
 
 describe('служебное состояние прогонов', () => {

@@ -1,10 +1,12 @@
 import {
     DEAL_MOVEMENT_CALC_VERSION,
+    DEAL_MOVEMENT_DIGEST_SKIP_TITLES,
     DEAL_MOVEMENT_RUN_MODE_TITLES,
     DEAL_MOVEMENT_SNAPSHOT_CHANGES_LIMIT,
     DEAL_MOVEMENT_STATUS_TITLES,
     dealMovementDaysText,
     dealMovementReasonTexts,
+    type DealMovementDigestSummary,
     type DealMovementNightChange,
     type DealMovementNotesSummary,
     type DealMovementRunMode,
@@ -68,6 +70,19 @@ export function dealMovementNotesLines(
     ];
 }
 
+/** Сводка руководителям словами: пропуск с причиной или сколько ушло. */
+export function dealMovementDigestLine(
+    digest: DealMovementDigestSummary,
+): string {
+    if (digest.skipped !== null) {
+        return `Сводка руководителям: ${DEAL_MOVEMENT_DIGEST_SKIP_TITLES[digest.skipped]}`;
+    }
+    return (
+        `Сводка руководителям: получателей ${digest.recipients}, ` +
+        `ушло ${digest.sent}, не доставлено ${digest.failed}`
+    );
+}
+
 /** Итог прогона портала для Telegram. */
 export function formatDealMovementRun(status: DealMovementRunStatus): string {
     const lines = [
@@ -81,6 +96,9 @@ export function formatDealMovementRun(status: DealMovementRunStatus): string {
     ];
     if (status.notes !== undefined) {
         lines.push(...dealMovementNotesLines(status.notes, status.mode));
+    }
+    if (status.digest !== undefined) {
+        lines.push(dealMovementDigestLine(status.digest));
     }
     if (status.warnings.length > 0) {
         lines.push(`⚠️ ${status.warnings.join('; ')}`);
@@ -136,6 +154,9 @@ export function buildDealMovementSnapshot(input: {
             }),
         changesTotal: changes.length,
         ...(status.notes === undefined ? {} : { notes: { ...status.notes } }),
+        ...(status.digest === undefined
+            ? {}
+            : { digest: { ...status.digest } }),
         warnings: [...status.warnings],
     };
 }

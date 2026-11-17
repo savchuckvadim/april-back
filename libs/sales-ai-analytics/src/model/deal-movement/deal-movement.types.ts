@@ -14,6 +14,22 @@ export const DEAL_MOVEMENT_STATUSES = [
 ] as const;
 export type DealMovementStatus = (typeof DEAL_MOVEMENT_STATUSES)[number];
 
+/**
+ * Тревожные статусы — всё, кроме «движется»; порядок — важность (как
+ * порядок правил). По ним — «что сделать» в записи и «новые за ночь» в
+ * сводке руководителям.
+ */
+export const DEAL_MOVEMENT_ALARM_STATUSES = [
+    'rolled_back',
+    'stuck',
+    'at_risk',
+] as const satisfies readonly DealMovementStatus[];
+
+export const isDealMovementAlarm = (status: DealMovementStatus): boolean =>
+    (DEAL_MOVEMENT_ALARM_STATUSES as readonly DealMovementStatus[]).includes(
+        status,
+    );
+
 /** Почему сделка получила статус. */
 export const DEAL_MOVEMENT_REASONS = [
     // откатилась

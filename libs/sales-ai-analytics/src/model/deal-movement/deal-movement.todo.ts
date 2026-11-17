@@ -22,17 +22,18 @@ import {
     dealMovementDaysText,
 } from './deal-movement.texts';
 import { DEAL_MOVEMENT_TODO_LIMITS } from './deal-movement.todo.prompt';
-import type { DealMovementStatus } from './deal-movement.types';
+import {
+    DEAL_MOVEMENT_ALARM_STATUSES,
+    isDealMovementAlarm,
+    type DealMovementStatus,
+} from './deal-movement.types';
 
-/** Статусы, для которых просим «что сделать»: у «Движется» блока нет. */
-export const DEAL_MOVEMENT_TODO_STATUSES: readonly DealMovementStatus[] = [
-    'rolled_back',
-    'stuck',
-    'at_risk',
-];
+/** Статусы, для которых просим «что сделать»: тревожные, у «Движется» нет. */
+export const DEAL_MOVEMENT_TODO_STATUSES: readonly DealMovementStatus[] =
+    DEAL_MOVEMENT_ALARM_STATUSES;
 
 export const needsDealMovementTodo = (status: DealMovementStatus): boolean =>
-    DEAL_MOVEMENT_TODO_STATUSES.includes(status);
+    isDealMovementAlarm(status);
 
 /** Почему строка модели не прошла проверку. */
 export const DEAL_MOVEMENT_TODO_DROP = {

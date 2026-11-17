@@ -2,10 +2,29 @@ import { BitrixService } from '@/modules/bitrix';
 import { ETimeZone } from '@lib/shared/lib/date';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
 import { DealAuditDigestChannels } from '../lib/deal-audit-digest-channels';
-import { DealAuditDigestTask } from './deal-audit-digest-task';
+import {
+    DEAL_AUDIT_TASK_MARK,
+    DealAuditDigestTask,
+} from './deal-audit-digest-task';
 
 /** Тег уведомления: новая сводка ЗАМЕЩАЕТ вчерашнюю, а не копится. */
 const DIGEST_TAG = 'event-sales-deal-audit';
+
+/**
+ * Чем сводка одного отчёта отличается от сводки другого в каналах: тег
+ * уведомления (новое замещает прошлое того же тега) и метка в названии
+ * задачи (по ней закрывается прошлая задача). По умолчанию — аудит сделок;
+ * сводка «Движение сделок» передаёт свои, чтобы не замещать чужое.
+ */
+export interface DealAuditDigestLabels {
+    readonly notifyTag: string;
+    readonly taskMark: string;
+}
+
+export const DEAL_AUDIT_DIGEST_LABELS: DealAuditDigestLabels = {
+    notifyTag: DIGEST_TAG,
+    taskMark: DEAL_AUDIT_TASK_MARK,
+};
 
 /** Собранная сводка одного получателя — в виде для каждого канала. */
 export interface DealAuditDigest {
@@ -32,9 +51,10 @@ export class DealAuditDigestDelivery {
         private readonly bitrix: BitrixService,
         private readonly channels: DealAuditDigestChannels,
         timezone: ETimeZone,
+        private readonly labels: DealAuditDigestLabels = DEAL_AUDIT_DIGEST_LABELS,
     ) {
         this.tasks = channels.task
-            ? new DealAuditDigestTask(bitrix, timezone)
+            ? new DealAuditDigestTask(bitrix, timezone, labels.taskMark)
             : null;
     }
 
@@ -69,7 +89,7 @@ export class DealAuditDigestDelivery {
             await this.bitrix.imNotify.systemAdd({
                 USER_ID: userId,
                 MESSAGE: digest.text,
-                TAG: DIGEST_TAG,
+                TAG: this.labels.notifyTag,
             });
             return true;
         } catch (error) {

@@ -21,6 +21,7 @@ import {
 } from '../../model/deal-movement/deal-movement.types';
 import type { DealMovementStatusResult } from '../services/ai-analytics-deal-movement.service';
 import { AiAnalyticsDealMovementDomainDto } from './ai-analytics-deal-movement.dto';
+import { AiAnalyticsDealMovementDigestDto } from './ai-analytics-deal-movement-digest.dto';
 import { AiAnalyticsDealMovementNotesDto } from './ai-analytics-deal-movement-notes.dto';
 
 /** Запрос состояния — домен портала. */
@@ -167,6 +168,14 @@ export class AiAnalyticsDealMovementRunStatusDto
         type: AiAnalyticsDealMovementNotesDto,
     })
     notes?: AiAnalyticsDealMovementNotesDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Сводка руководителям за прогон; нет у подсчёта и прогонов до ' +
+            '17.11.2026.',
+        type: AiAnalyticsDealMovementDigestDto,
+    })
+    digest?: AiAnalyticsDealMovementDigestDto;
 
     @ApiProperty({
         description:
@@ -337,6 +346,13 @@ export class AiAnalyticsDealMovementSnapshotDto
         type: AiAnalyticsDealMovementNotesDto,
     })
     notes?: AiAnalyticsDealMovementNotesDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Сводка руководителям за прогон; нет у снимков до 17.11.2026.',
+        type: AiAnalyticsDealMovementDigestDto,
+    })
+    digest?: AiAnalyticsDealMovementDigestDto;
 
     @ApiProperty({
         description: 'Предупреждения счёта по-русски.',
