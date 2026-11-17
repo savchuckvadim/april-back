@@ -59,6 +59,10 @@ export function buildDealMovementNote(
     };
 }
 
-/** Комментарий ленты одним текстом: заголовок первой строкой. */
+/**
+ * Комментарий ленты одним текстом: заголовок первой строкой жирным —
+ * лента понимает BB-код, так оформлены остальные наши записи. У служебной
+ * записи журнала заголовок идёт отдельным полем.
+ */
 export const dealMovementCommentText = (note: DealMovementNote): string =>
-    `${note.title}\n\n${note.text}`;
+    `[b]${note.title}[/b]\n\n${note.text}`;

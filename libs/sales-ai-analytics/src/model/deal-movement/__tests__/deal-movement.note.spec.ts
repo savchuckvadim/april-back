@@ -111,8 +111,13 @@ describe('запись в ленту сделки', () => {
         expect(note.text).not.toContain('Что сделать');
     });
 
-    it('комментарий — заголовок первой строкой', () => {
-        const text = dealMovementCommentText({ title: 'З', text: 'Т' });
-        expect(text).toBe('З\n\nТ');
+    it('комментарий — заголовок первой строкой жирным (BB-код ленты)', () => {
+        const text = dealMovementCommentText({
+            title: 'Движение сделки: Застряла',
+            text: 'Статус: Застряла (было: Движется).',
+        });
+        expect(text).toBe(
+            '[b]Движение сделки: Застряла[/b]\n\nСтатус: Застряла (было: Движется).',
+        );
     });
 });

@@ -18,7 +18,7 @@ const timelineMock = (result: unknown = { logMessage: { id: 1 } }) => ({
 describe('запись в ленту одной сделки', () => {
     const note = { title: 'Движение сделки: Застряла', text: 'Текст' };
 
-    it('комментарий — заголовок и текст одним полем, без автоповтора', async () => {
+    it('комментарий — жирный заголовок и текст одним полем, без автоповтора', async () => {
         const timeline = timelineMock();
         await new DealMovementNoteWriter({ timeline } as never).write(
             9041,
@@ -29,7 +29,7 @@ describe('запись в ленту одной сделки', () => {
             {
                 ENTITY_ID: 9041,
                 ENTITY_TYPE: 'deal',
-                COMMENT: 'Движение сделки: Застряла\n\nТекст',
+                COMMENT: '[b]Движение сделки: Застряла[/b]\n\nТекст',
             },
             { retries: 0 },
         );
