@@ -72,7 +72,10 @@ import { HooksAdminModule } from '@lib/portal-lib/hooks';
 import { SupportMonitorAdminModule } from '@lib/support';
 import { LogsAdminModule } from '@lib/logger/query';
 import { CabinetAdminModule } from '@lib/cabinet';
-import { SiteMediaAdminModule } from '@lib/site-content';
+import {
+    SiteMediaAdminModule,
+    SiteMediaLibraryAdminModule,
+} from '@lib/site-content';
 
 @Module({
     imports: [
@@ -204,6 +207,10 @@ import { SiteMediaAdminModule } from '@lib/site-content';
         // Картинки и видео сайта по местам кадров (09.11.2026): файлы в
         // storage/public/site-media, сайт читает их через apps/bot.
         SiteMediaAdminModule,
+        // Медиатека сайта (17.11.2026): картинки, ролики и внешние видео
+        // для статей всех разделов — строки site_media, файлы в разделе
+        // library того же хранилища; только суперпользователь.
+        SiteMediaLibraryAdminModule,
     ],
 })
 export class AdminAddModule {}
