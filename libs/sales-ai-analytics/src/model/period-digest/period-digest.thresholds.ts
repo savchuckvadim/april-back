@@ -54,5 +54,15 @@ export const DIGEST_MIN_PEERS = 3;
 /** Активных рекомендаций у менеджера не больше. */
 export const DIGEST_MAX_ACTIVE = 3;
 
+/** Своих недельных рекомендаций (только шаблон) не больше. */
+export const DIGEST_MAX_ACTIVE_WEEK = 2;
+
 /** Оценок рекомендации после выдачи — не больше (дальше закрепить или обсудить). */
 export const DIGEST_MAX_EVALUATIONS = 3;
+
+/** Звонков-примеров у рекомендации не больше. */
+export const DIGEST_EVIDENCE_MAX = 5;
+
+/** Блок «Для РОПа»: пунктов «обсудить» и звонков «послушать» не больше. */
+export const DIGEST_ROP_DISCUSS_MAX = 3;
+export const DIGEST_ROP_LISTEN_MAX = 3;

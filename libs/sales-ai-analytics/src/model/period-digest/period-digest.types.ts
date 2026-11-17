@@ -92,6 +92,14 @@ export interface DigestRecommendation {
 export interface DigestStanding {
     readonly position: DigestPosition;
     readonly scope: DigestCompareScope;
+    /** Середина (медиана) сравнения — норма для цели; в тексты не выводится. */
+    readonly middle: number;
+}
+
+/** Положение менеджера по сводным метрикам (null — сравнения нет). */
+export interface DigestManagerStandings {
+    readonly score: DigestStanding | null;
+    readonly nextStepDated: DigestStanding | null;
 }
 
 /** Средняя оценка раздела (1–10) и положение в отделе (null — сравнения нет). */
@@ -204,6 +212,8 @@ export interface ManagerDigestCard {
     readonly departmentName: string | null;
     readonly readiness: DigestReadiness;
     readonly metrics: DigestMetrics;
+    /** Положение в отделе словами: средняя оценка и шаг с датой. */
+    readonly standings: DigestManagerStandings;
     readonly previous: DigestCompare | null;
     /** Тот же период год назад — только месяц и только при данных. */
     readonly yearAgo: DigestCompare | null;

@@ -83,6 +83,29 @@ describe('жизненный цикл рекомендации', () => {
             lifecycle: DIGEST_LIFECYCLE.escalated,
             hold: false,
         });
+        // Данные были хотя бы в одной оценке — тоже «обсудить».
+        expect(evaluate(issue(), [null, 4.2, null]).lifecycle).toBe(
+            DIGEST_LIFECYCLE.escalated,
+        );
+    });
+
+    it('три оценки без данных — «снята: данных не было», дальше не переносится', () => {
+        const dropped = evaluate(issue(), [null, null, null]);
+        expect(dropped).toMatchObject({
+            evaluations: 3,
+            status: DIGEST_STATUS.noData,
+            lifecycle: DIGEST_LIFECYCLE.dropped,
+            hold: false,
+        });
+
+        expect(
+            carryDigestRecommendations(
+                [dropped],
+                () => ({ value: 9, n: 6 }),
+                '2027-02',
+                OPTIONS,
+            ),
+        ).toEqual([]);
     });
 
     it('период без данных — оценка «данных мало», опора — последнее известное значение', () => {

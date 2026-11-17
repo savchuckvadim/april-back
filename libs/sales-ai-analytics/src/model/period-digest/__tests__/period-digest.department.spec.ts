@@ -57,10 +57,12 @@ describe('сравнение с отделом словами', () => {
         expect(standings.get('1')).toEqual({
             position: DIGEST_POSITION.below,
             scope: DIGEST_COMPARE_SCOPE.department,
+            middle: 6,
         });
         expect(standings.get('2')).toEqual({
             position: DIGEST_POSITION.middle,
             scope: DIGEST_COMPARE_SCOPE.department,
+            middle: 6,
         });
     });
 
@@ -80,10 +82,12 @@ describe('сравнение с отделом словами', () => {
         expect(standings.get('4')).toEqual({
             position: DIGEST_POSITION.above,
             scope: DIGEST_COMPARE_SCOPE.structure,
+            middle: 6,
         });
         expect(standings.get('5')).toEqual({
             position: DIGEST_POSITION.below,
             scope: DIGEST_COMPARE_SCOPE.structure,
+            middle: 6,
         });
     });
 
@@ -149,6 +153,7 @@ describe('сравнение с отделом словами', () => {
                 standing: {
                     position: DIGEST_POSITION.below,
                     scope: DIGEST_COMPARE_SCOPE.department,
+                    middle: 6,
                 },
             },
             // CLOSING оценён у двоих — сравнения нет.
@@ -157,6 +162,7 @@ describe('сравнение с отделом словами', () => {
         expect(result.get('3')?.[0].standing).toEqual({
             position: DIGEST_POSITION.above,
             scope: DIGEST_COMPARE_SCOPE.department,
+            middle: 6,
         });
     });
 });
