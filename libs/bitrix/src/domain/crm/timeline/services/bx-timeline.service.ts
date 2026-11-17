@@ -1,6 +1,10 @@
 import { BxTimelineRepository } from '../repository/bx-timeline.repository';
-import { IBXTimelineComment } from '../interface/bx-timeline.interface';
+import {
+    IBXTimelineComment,
+    IBXTimelineLogMessage,
+} from '../interface/bx-timeline.interface';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import type { BitrixCallOptions } from 'src/modules/bitrix/core/base/call-api.service';
 
 export class BxTimelineService {
     private repo: BxTimelineRepository;
@@ -15,8 +19,20 @@ export class BxTimelineService {
         this.repo = new BxTimelineRepository(api);
     }
 
-    async addTimelineComment(data: IBXTimelineComment) {
-        return await this.repo.addTimelineComment(data);
+    /** options.retries = 0 — без автоповтора (запись не идемпотентна). */
+    async addTimelineComment(
+        data: IBXTimelineComment,
+        options?: BitrixCallOptions,
+    ) {
+        return await this.repo.addTimelineComment(data, options);
+    }
+
+    /** Служебная лог-запись таймлайна (crm.timeline.logmessage.add). */
+    async addLogMessage(
+        data: IBXTimelineLogMessage,
+        options?: BitrixCallOptions,
+    ) {
+        return await this.repo.addLogMessage(data, options);
     }
 
     /** Комментарии таймлайна сущности — например, для проверки «уже писали». */

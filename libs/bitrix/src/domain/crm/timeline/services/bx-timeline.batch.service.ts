@@ -1,5 +1,8 @@
 import { BxTimelineRepository } from '../repository/bx-timeline.repository';
-import { IBXTimelineComment } from '../interface/bx-timeline.interface';
+import {
+    IBXTimelineComment,
+    IBXTimelineLogMessage,
+} from '../interface/bx-timeline.interface';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 
 export class BxTimelineBatchService {
@@ -16,6 +19,10 @@ export class BxTimelineBatchService {
     }
     addTimelineComment(cmd: string, data: IBXTimelineComment) {
         return this.repo.addTimelineCommentBtch(cmd, data);
+    }
+
+    addLogMessage(cmd: string, data: IBXTimelineLogMessage) {
+        return this.repo.addLogMessageBtch(cmd, data);
     }
 
     getTimelineComments(

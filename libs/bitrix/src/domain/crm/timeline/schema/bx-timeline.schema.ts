@@ -3,7 +3,19 @@ import {
     CrmAddRequestType,
     CrmListRequestType,
 } from '../../type/crm-request.type';
-import { IBXTimelineComment } from '../interface/bx-timeline.interface';
+import {
+    IBXTimelineComment,
+    IBXTimelineLogMessage,
+    IBXTimelineLogMessageResult,
+} from '../interface/bx-timeline.interface';
+
+/** crm.timeline.logmessage.* — служебные лог-записи таймлайна. */
+export type TimelineLogMessageSchema = {
+    [EBxMethod.ADD]: {
+        request: { fields: IBXTimelineLogMessage };
+        response: IBXTimelineLogMessageResult;
+    };
+};
 
 export type TimelineCommentSchema = {
     [EBxMethod.ADD]: {

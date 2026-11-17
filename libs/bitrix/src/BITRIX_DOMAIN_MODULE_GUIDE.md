@@ -162,6 +162,14 @@ export class SomeRepository {
   + `start: -1`, как `BxItemRepository.listAll`. Фильтр типизирован `CrmFilterType<T>`
   (`domain/crm/type/crm-request.type.ts`) — ключи с модификаторами без magic strings.
 
+Движение сделок (2026-11):
+
+- `crm.timeline.logmessage.add` — служебная лог-запись таймлайна
+  (`bitrix.timeline.addLogMessage`, `bitrix.batch.timeline.addLogMessage`), тот же
+  домен `timeline`, entity `TIMELINE_LOG_MESSAGE` (`'timeline.logmessage'`). Поля
+  (`entityTypeId`, `entityId`, `title`, `text`, `iconCode`) внутри `fields` — строго по
+  официальной документации (MCP b24-dev-mcp).
+
 Домены поддержки клиентов (2026-10, `@lib/support`):
 
 - `imopenlines.v2.Session.list` — `BxImOpenlinesV2SessionService` / `BxImOpenlinesV2SessionBatchService`
