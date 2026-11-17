@@ -653,6 +653,43 @@ export type SupplyReportTemplate = $Result.DefaultSelection<Prisma.$SupplyReport
  * целиком (новые услуги кладутся туда без миграции).
  */
 export type RenewalOfferLink = $Result.DefaultSelection<Prisma.$RenewalOfferLinkPayload>
+/**
+ * Model SiteMedia
+ * МЕДИАТЕКА САЙТА (миграция online/database/migrations/2026_11_18_100000_create_site_media_table.php):
+ * картинки, ролики MP4 на нашем сервере и внешние видео для статей всех
+ * разделов. Файл — storage/public/site-media/library/<id>.<отпечаток>.<расш>,
+ * постер — <id>.poster.<…>, тёмный вариант — <id>-dark.<…>.
+ * kind: 'image' | 'video' | 'embed'; embedProvider: 'youtube' | 'rutube' | 'vk'
+ * — перечни в коде (@lib/site-content). Кадры /platform таблицей не описываются.
+ * Медиа, стоящее в статье, не удаляется (restrict в SiteArticleMedia).
+ */
+export type SiteMedia = $Result.DefaultSelection<Prisma.$SiteMediaPayload>
+/**
+ * Model SiteArticle
+ * СТАТЬЯ САЙТА (миграция online/database/migrations/2026_11_18_100100_create_site_articles_tables.php),
+ * общая для всех разделов. section: 'ai' | 'process-sales' | 'articles' | …;
+ * type: 'chapter' | 'article' | 'guide' | 'news' | 'case'; status: 'draft' |
+ * 'published' | 'unpublished' | 'archived' — перечни в коде (@lib/site-content).
+ * Глава из кода (type = 'chapter') без опубликованной версии — сайт показывает
+ * текст из кода. Черновик — последняя версия с номером больше опубликованной.
+ * Мягкого удаления нет: архив статусом, адрес остаётся занятым.
+ */
+export type SiteArticle = $Result.DefaultSelection<Prisma.$SiteArticlePayload>
+/**
+ * Model SiteArticleRevision
+ * Версия текста статьи — неизменна. source: 'admin' | 'code' | 'restore';
+ * contentFormat: 'theory-v1' | 'how-v1'. Блоки проверяет Nest по формату.
+ * Миграция 2026_11_18_100100.
+ */
+export type SiteArticleRevision = $Result.DefaultSelection<Prisma.$SiteArticleRevisionPayload>
+/**
+ * Model SiteArticleMedia
+ * Где в статье стоит медиа: role 'cover' (slot = 'cover') | 'inline' (slot —
+ * id блока-скрина) | 'gallery' (slot NULL, порядок sort). Связь не
+ * версионируется: замена кадра видна на сайте без публикации текста.
+ * Миграция 2026_11_18_100100.
+ */
+export type SiteArticleMedia = $Result.DefaultSelection<Prisma.$SiteArticleMediaPayload>
 
 /**
  * Enums
@@ -2003,6 +2040,46 @@ export class PrismaClient<
     * ```
     */
   get renewalOfferLink(): Prisma.RenewalOfferLinkDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.siteMedia`: Exposes CRUD operations for the **SiteMedia** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SiteMedias
+    * const siteMedias = await prisma.siteMedia.findMany()
+    * ```
+    */
+  get siteMedia(): Prisma.SiteMediaDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.siteArticle`: Exposes CRUD operations for the **SiteArticle** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SiteArticles
+    * const siteArticles = await prisma.siteArticle.findMany()
+    * ```
+    */
+  get siteArticle(): Prisma.SiteArticleDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.siteArticleRevision`: Exposes CRUD operations for the **SiteArticleRevision** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SiteArticleRevisions
+    * const siteArticleRevisions = await prisma.siteArticleRevision.findMany()
+    * ```
+    */
+  get siteArticleRevision(): Prisma.SiteArticleRevisionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.siteArticleMedia`: Exposes CRUD operations for the **SiteArticleMedia** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SiteArticleMedias
+    * const siteArticleMedias = await prisma.siteArticleMedia.findMany()
+    * ```
+    */
+  get siteArticleMedia(): Prisma.SiteArticleMediaDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -2551,7 +2628,11 @@ export namespace Prisma {
     OfferLetter: 'OfferLetter',
     ContractTemplate: 'ContractTemplate',
     SupplyReportTemplate: 'SupplyReportTemplate',
-    RenewalOfferLink: 'RenewalOfferLink'
+    RenewalOfferLink: 'RenewalOfferLink',
+    SiteMedia: 'SiteMedia',
+    SiteArticle: 'SiteArticle',
+    SiteArticleRevision: 'SiteArticleRevision',
+    SiteArticleMedia: 'SiteArticleMedia'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2570,7 +2651,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "offerLetter" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "offerLetter" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink" | "siteMedia" | "siteArticle" | "siteArticleRevision" | "siteArticleMedia"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -9768,6 +9849,270 @@ export namespace Prisma {
           }
         }
       }
+      SiteMedia: {
+        payload: Prisma.$SiteMediaPayload<ExtArgs>
+        fields: Prisma.SiteMediaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SiteMediaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SiteMediaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          findFirst: {
+            args: Prisma.SiteMediaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SiteMediaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          findMany: {
+            args: Prisma.SiteMediaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>[]
+          }
+          create: {
+            args: Prisma.SiteMediaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          createMany: {
+            args: Prisma.SiteMediaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SiteMediaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          update: {
+            args: Prisma.SiteMediaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          deleteMany: {
+            args: Prisma.SiteMediaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SiteMediaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SiteMediaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteMediaPayload>
+          }
+          aggregate: {
+            args: Prisma.SiteMediaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSiteMedia>
+          }
+          groupBy: {
+            args: Prisma.SiteMediaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SiteMediaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SiteMediaCountArgs<ExtArgs>
+            result: $Utils.Optional<SiteMediaCountAggregateOutputType> | number
+          }
+        }
+      }
+      SiteArticle: {
+        payload: Prisma.$SiteArticlePayload<ExtArgs>
+        fields: Prisma.SiteArticleFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SiteArticleFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SiteArticleFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          findFirst: {
+            args: Prisma.SiteArticleFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SiteArticleFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          findMany: {
+            args: Prisma.SiteArticleFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>[]
+          }
+          create: {
+            args: Prisma.SiteArticleCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          createMany: {
+            args: Prisma.SiteArticleCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SiteArticleDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          update: {
+            args: Prisma.SiteArticleUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          deleteMany: {
+            args: Prisma.SiteArticleDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SiteArticleUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SiteArticleUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticlePayload>
+          }
+          aggregate: {
+            args: Prisma.SiteArticleAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSiteArticle>
+          }
+          groupBy: {
+            args: Prisma.SiteArticleGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SiteArticleCountArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleCountAggregateOutputType> | number
+          }
+        }
+      }
+      SiteArticleRevision: {
+        payload: Prisma.$SiteArticleRevisionPayload<ExtArgs>
+        fields: Prisma.SiteArticleRevisionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SiteArticleRevisionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SiteArticleRevisionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          findFirst: {
+            args: Prisma.SiteArticleRevisionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SiteArticleRevisionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          findMany: {
+            args: Prisma.SiteArticleRevisionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>[]
+          }
+          create: {
+            args: Prisma.SiteArticleRevisionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          createMany: {
+            args: Prisma.SiteArticleRevisionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SiteArticleRevisionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          update: {
+            args: Prisma.SiteArticleRevisionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SiteArticleRevisionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SiteArticleRevisionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SiteArticleRevisionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleRevisionPayload>
+          }
+          aggregate: {
+            args: Prisma.SiteArticleRevisionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSiteArticleRevision>
+          }
+          groupBy: {
+            args: Prisma.SiteArticleRevisionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleRevisionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SiteArticleRevisionCountArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleRevisionCountAggregateOutputType> | number
+          }
+        }
+      }
+      SiteArticleMedia: {
+        payload: Prisma.$SiteArticleMediaPayload<ExtArgs>
+        fields: Prisma.SiteArticleMediaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SiteArticleMediaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SiteArticleMediaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          findFirst: {
+            args: Prisma.SiteArticleMediaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SiteArticleMediaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          findMany: {
+            args: Prisma.SiteArticleMediaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>[]
+          }
+          create: {
+            args: Prisma.SiteArticleMediaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          createMany: {
+            args: Prisma.SiteArticleMediaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SiteArticleMediaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          update: {
+            args: Prisma.SiteArticleMediaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          deleteMany: {
+            args: Prisma.SiteArticleMediaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SiteArticleMediaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SiteArticleMediaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SiteArticleMediaPayload>
+          }
+          aggregate: {
+            args: Prisma.SiteArticleMediaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSiteArticleMedia>
+          }
+          groupBy: {
+            args: Prisma.SiteArticleMediaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleMediaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SiteArticleMediaCountArgs<ExtArgs>
+            result: $Utils.Optional<SiteArticleMediaCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -9973,6 +10318,10 @@ export namespace Prisma {
     contractTemplate?: ContractTemplateOmit
     supplyReportTemplate?: SupplyReportTemplateOmit
     renewalOfferLink?: RenewalOfferLinkOmit
+    siteMedia?: SiteMediaOmit
+    siteArticle?: SiteArticleOmit
+    siteArticleRevision?: SiteArticleRevisionOmit
+    siteArticleMedia?: SiteArticleMediaOmit
   }
 
   /* Types for Logging */
@@ -11596,6 +11945,108 @@ export namespace Prisma {
    */
   export type Marketplace_installsCountOutputTypeCountMarketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: marketplace_install_componentsWhereInput
+  }
+
+
+  /**
+   * Count Type SiteMediaCountOutputType
+   */
+
+  export type SiteMediaCountOutputType = {
+    usages: number
+  }
+
+  export type SiteMediaCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    usages?: boolean | SiteMediaCountOutputTypeCountUsagesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SiteMediaCountOutputType without action
+   */
+  export type SiteMediaCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMediaCountOutputType
+     */
+    select?: SiteMediaCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SiteMediaCountOutputType without action
+   */
+  export type SiteMediaCountOutputTypeCountUsagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleMediaWhereInput
+  }
+
+
+  /**
+   * Count Type SiteArticleCountOutputType
+   */
+
+  export type SiteArticleCountOutputType = {
+    revisions: number
+    media: number
+  }
+
+  export type SiteArticleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    revisions?: boolean | SiteArticleCountOutputTypeCountRevisionsArgs
+    media?: boolean | SiteArticleCountOutputTypeCountMediaArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SiteArticleCountOutputType without action
+   */
+  export type SiteArticleCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleCountOutputType
+     */
+    select?: SiteArticleCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SiteArticleCountOutputType without action
+   */
+  export type SiteArticleCountOutputTypeCountRevisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleRevisionWhereInput
+  }
+
+  /**
+   * SiteArticleCountOutputType without action
+   */
+  export type SiteArticleCountOutputTypeCountMediaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleMediaWhereInput
+  }
+
+
+  /**
+   * Count Type SiteArticleRevisionCountOutputType
+   */
+
+  export type SiteArticleRevisionCountOutputType = {
+    publishedIn: number
+  }
+
+  export type SiteArticleRevisionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    publishedIn?: boolean | SiteArticleRevisionCountOutputTypeCountPublishedInArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SiteArticleRevisionCountOutputType without action
+   */
+  export type SiteArticleRevisionCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevisionCountOutputType
+     */
+    select?: SiteArticleRevisionCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SiteArticleRevisionCountOutputType without action
+   */
+  export type SiteArticleRevisionCountOutputTypeCountPublishedInArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleWhereInput
   }
 
 
@@ -130114,6 +130565,4447 @@ export namespace Prisma {
 
 
   /**
+   * Model SiteMedia
+   */
+
+  export type AggregateSiteMedia = {
+    _count: SiteMediaCountAggregateOutputType | null
+    _avg: SiteMediaAvgAggregateOutputType | null
+    _sum: SiteMediaSumAggregateOutputType | null
+    _min: SiteMediaMinAggregateOutputType | null
+    _max: SiteMediaMaxAggregateOutputType | null
+  }
+
+  export type SiteMediaAvgAggregateOutputType = {
+    sizeBytes: number | null
+    width: number | null
+    height: number | null
+    durationSec: number | null
+  }
+
+  export type SiteMediaSumAggregateOutputType = {
+    sizeBytes: number | null
+    width: number | null
+    height: number | null
+    durationSec: number | null
+  }
+
+  export type SiteMediaMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    kind: string | null
+    title: string | null
+    caption: string | null
+    alt: string | null
+    fileName: string | null
+    darkFileName: string | null
+    posterFileName: string | null
+    mime: string | null
+    sizeBytes: number | null
+    width: number | null
+    height: number | null
+    durationSec: number | null
+    embedProvider: string | null
+    embedUrl: string | null
+    embedId: string | null
+    uploadedBy: string | null
+  }
+
+  export type SiteMediaMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    kind: string | null
+    title: string | null
+    caption: string | null
+    alt: string | null
+    fileName: string | null
+    darkFileName: string | null
+    posterFileName: string | null
+    mime: string | null
+    sizeBytes: number | null
+    width: number | null
+    height: number | null
+    durationSec: number | null
+    embedProvider: string | null
+    embedUrl: string | null
+    embedId: string | null
+    uploadedBy: string | null
+  }
+
+  export type SiteMediaCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    kind: number
+    title: number
+    caption: number
+    alt: number
+    fileName: number
+    darkFileName: number
+    posterFileName: number
+    mime: number
+    sizeBytes: number
+    width: number
+    height: number
+    durationSec: number
+    embedProvider: number
+    embedUrl: number
+    embedId: number
+    uploadedBy: number
+    _all: number
+  }
+
+
+  export type SiteMediaAvgAggregateInputType = {
+    sizeBytes?: true
+    width?: true
+    height?: true
+    durationSec?: true
+  }
+
+  export type SiteMediaSumAggregateInputType = {
+    sizeBytes?: true
+    width?: true
+    height?: true
+    durationSec?: true
+  }
+
+  export type SiteMediaMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    kind?: true
+    title?: true
+    caption?: true
+    alt?: true
+    fileName?: true
+    darkFileName?: true
+    posterFileName?: true
+    mime?: true
+    sizeBytes?: true
+    width?: true
+    height?: true
+    durationSec?: true
+    embedProvider?: true
+    embedUrl?: true
+    embedId?: true
+    uploadedBy?: true
+  }
+
+  export type SiteMediaMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    kind?: true
+    title?: true
+    caption?: true
+    alt?: true
+    fileName?: true
+    darkFileName?: true
+    posterFileName?: true
+    mime?: true
+    sizeBytes?: true
+    width?: true
+    height?: true
+    durationSec?: true
+    embedProvider?: true
+    embedUrl?: true
+    embedId?: true
+    uploadedBy?: true
+  }
+
+  export type SiteMediaCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    kind?: true
+    title?: true
+    caption?: true
+    alt?: true
+    fileName?: true
+    darkFileName?: true
+    posterFileName?: true
+    mime?: true
+    sizeBytes?: true
+    width?: true
+    height?: true
+    durationSec?: true
+    embedProvider?: true
+    embedUrl?: true
+    embedId?: true
+    uploadedBy?: true
+    _all?: true
+  }
+
+  export type SiteMediaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteMedia to aggregate.
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteMedias to fetch.
+     */
+    orderBy?: SiteMediaOrderByWithRelationInput | SiteMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SiteMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SiteMedias
+    **/
+    _count?: true | SiteMediaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SiteMediaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SiteMediaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SiteMediaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SiteMediaMaxAggregateInputType
+  }
+
+  export type GetSiteMediaAggregateType<T extends SiteMediaAggregateArgs> = {
+        [P in keyof T & keyof AggregateSiteMedia]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSiteMedia[P]>
+      : GetScalarType<T[P], AggregateSiteMedia[P]>
+  }
+
+
+
+
+  export type SiteMediaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteMediaWhereInput
+    orderBy?: SiteMediaOrderByWithAggregationInput | SiteMediaOrderByWithAggregationInput[]
+    by: SiteMediaScalarFieldEnum[] | SiteMediaScalarFieldEnum
+    having?: SiteMediaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SiteMediaCountAggregateInputType | true
+    _avg?: SiteMediaAvgAggregateInputType
+    _sum?: SiteMediaSumAggregateInputType
+    _min?: SiteMediaMinAggregateInputType
+    _max?: SiteMediaMaxAggregateInputType
+  }
+
+  export type SiteMediaGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    kind: string
+    title: string | null
+    caption: string | null
+    alt: string | null
+    fileName: string | null
+    darkFileName: string | null
+    posterFileName: string | null
+    mime: string | null
+    sizeBytes: number | null
+    width: number | null
+    height: number | null
+    durationSec: number | null
+    embedProvider: string | null
+    embedUrl: string | null
+    embedId: string | null
+    uploadedBy: string | null
+    _count: SiteMediaCountAggregateOutputType | null
+    _avg: SiteMediaAvgAggregateOutputType | null
+    _sum: SiteMediaSumAggregateOutputType | null
+    _min: SiteMediaMinAggregateOutputType | null
+    _max: SiteMediaMaxAggregateOutputType | null
+  }
+
+  type GetSiteMediaGroupByPayload<T extends SiteMediaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SiteMediaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SiteMediaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SiteMediaGroupByOutputType[P]>
+            : GetScalarType<T[P], SiteMediaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SiteMediaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    kind?: boolean
+    title?: boolean
+    caption?: boolean
+    alt?: boolean
+    fileName?: boolean
+    darkFileName?: boolean
+    posterFileName?: boolean
+    mime?: boolean
+    sizeBytes?: boolean
+    width?: boolean
+    height?: boolean
+    durationSec?: boolean
+    embedProvider?: boolean
+    embedUrl?: boolean
+    embedId?: boolean
+    uploadedBy?: boolean
+    usages?: boolean | SiteMedia$usagesArgs<ExtArgs>
+    _count?: boolean | SiteMediaCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["siteMedia"]>
+
+
+
+  export type SiteMediaSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    kind?: boolean
+    title?: boolean
+    caption?: boolean
+    alt?: boolean
+    fileName?: boolean
+    darkFileName?: boolean
+    posterFileName?: boolean
+    mime?: boolean
+    sizeBytes?: boolean
+    width?: boolean
+    height?: boolean
+    durationSec?: boolean
+    embedProvider?: boolean
+    embedUrl?: boolean
+    embedId?: boolean
+    uploadedBy?: boolean
+  }
+
+  export type SiteMediaOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "kind" | "title" | "caption" | "alt" | "fileName" | "darkFileName" | "posterFileName" | "mime" | "sizeBytes" | "width" | "height" | "durationSec" | "embedProvider" | "embedUrl" | "embedId" | "uploadedBy", ExtArgs["result"]["siteMedia"]>
+  export type SiteMediaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    usages?: boolean | SiteMedia$usagesArgs<ExtArgs>
+    _count?: boolean | SiteMediaCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SiteMediaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SiteMedia"
+    objects: {
+      usages: Prisma.$SiteArticleMediaPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      /**
+       * 'image' | 'video' | 'embed'
+       */
+      kind: string
+      /**
+       * Служебное название в медиатеке; клиент его не видит
+       */
+      title: string | null
+      /**
+       * Подпись по умолчанию; статья может поставить свою
+       */
+      caption: string | null
+      alt: string | null
+      fileName: string | null
+      /**
+       * Вариант картинки для тёмной темы; NULL — один на обе темы
+       */
+      darkFileName: string | null
+      posterFileName: string | null
+      mime: string | null
+      sizeBytes: number | null
+      width: number | null
+      height: number | null
+      durationSec: number | null
+      /**
+       * 'youtube' | 'rutube' | 'vk'; адрес встраивания сайт собирает сам по embedId
+       */
+      embedProvider: string | null
+      embedUrl: string | null
+      embedId: string | null
+      uploadedBy: string | null
+    }, ExtArgs["result"]["siteMedia"]>
+    composites: {}
+  }
+
+  type SiteMediaGetPayload<S extends boolean | null | undefined | SiteMediaDefaultArgs> = $Result.GetResult<Prisma.$SiteMediaPayload, S>
+
+  type SiteMediaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SiteMediaFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SiteMediaCountAggregateInputType | true
+    }
+
+  export interface SiteMediaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SiteMedia'], meta: { name: 'SiteMedia' } }
+    /**
+     * Find zero or one SiteMedia that matches the filter.
+     * @param {SiteMediaFindUniqueArgs} args - Arguments to find a SiteMedia
+     * @example
+     * // Get one SiteMedia
+     * const siteMedia = await prisma.siteMedia.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SiteMediaFindUniqueArgs>(args: SelectSubset<T, SiteMediaFindUniqueArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SiteMedia that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SiteMediaFindUniqueOrThrowArgs} args - Arguments to find a SiteMedia
+     * @example
+     * // Get one SiteMedia
+     * const siteMedia = await prisma.siteMedia.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SiteMediaFindUniqueOrThrowArgs>(args: SelectSubset<T, SiteMediaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteMedia that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaFindFirstArgs} args - Arguments to find a SiteMedia
+     * @example
+     * // Get one SiteMedia
+     * const siteMedia = await prisma.siteMedia.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SiteMediaFindFirstArgs>(args?: SelectSubset<T, SiteMediaFindFirstArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteMedia that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaFindFirstOrThrowArgs} args - Arguments to find a SiteMedia
+     * @example
+     * // Get one SiteMedia
+     * const siteMedia = await prisma.siteMedia.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SiteMediaFindFirstOrThrowArgs>(args?: SelectSubset<T, SiteMediaFindFirstOrThrowArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SiteMedias that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SiteMedias
+     * const siteMedias = await prisma.siteMedia.findMany()
+     * 
+     * // Get first 10 SiteMedias
+     * const siteMedias = await prisma.siteMedia.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const siteMediaWithIdOnly = await prisma.siteMedia.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SiteMediaFindManyArgs>(args?: SelectSubset<T, SiteMediaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SiteMedia.
+     * @param {SiteMediaCreateArgs} args - Arguments to create a SiteMedia.
+     * @example
+     * // Create one SiteMedia
+     * const SiteMedia = await prisma.siteMedia.create({
+     *   data: {
+     *     // ... data to create a SiteMedia
+     *   }
+     * })
+     * 
+     */
+    create<T extends SiteMediaCreateArgs>(args: SelectSubset<T, SiteMediaCreateArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SiteMedias.
+     * @param {SiteMediaCreateManyArgs} args - Arguments to create many SiteMedias.
+     * @example
+     * // Create many SiteMedias
+     * const siteMedia = await prisma.siteMedia.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SiteMediaCreateManyArgs>(args?: SelectSubset<T, SiteMediaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SiteMedia.
+     * @param {SiteMediaDeleteArgs} args - Arguments to delete one SiteMedia.
+     * @example
+     * // Delete one SiteMedia
+     * const SiteMedia = await prisma.siteMedia.delete({
+     *   where: {
+     *     // ... filter to delete one SiteMedia
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SiteMediaDeleteArgs>(args: SelectSubset<T, SiteMediaDeleteArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SiteMedia.
+     * @param {SiteMediaUpdateArgs} args - Arguments to update one SiteMedia.
+     * @example
+     * // Update one SiteMedia
+     * const siteMedia = await prisma.siteMedia.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SiteMediaUpdateArgs>(args: SelectSubset<T, SiteMediaUpdateArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SiteMedias.
+     * @param {SiteMediaDeleteManyArgs} args - Arguments to filter SiteMedias to delete.
+     * @example
+     * // Delete a few SiteMedias
+     * const { count } = await prisma.siteMedia.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SiteMediaDeleteManyArgs>(args?: SelectSubset<T, SiteMediaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SiteMedias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SiteMedias
+     * const siteMedia = await prisma.siteMedia.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SiteMediaUpdateManyArgs>(args: SelectSubset<T, SiteMediaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SiteMedia.
+     * @param {SiteMediaUpsertArgs} args - Arguments to update or create a SiteMedia.
+     * @example
+     * // Update or create a SiteMedia
+     * const siteMedia = await prisma.siteMedia.upsert({
+     *   create: {
+     *     // ... data to create a SiteMedia
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SiteMedia we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SiteMediaUpsertArgs>(args: SelectSubset<T, SiteMediaUpsertArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SiteMedias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaCountArgs} args - Arguments to filter SiteMedias to count.
+     * @example
+     * // Count the number of SiteMedias
+     * const count = await prisma.siteMedia.count({
+     *   where: {
+     *     // ... the filter for the SiteMedias we want to count
+     *   }
+     * })
+    **/
+    count<T extends SiteMediaCountArgs>(
+      args?: Subset<T, SiteMediaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SiteMediaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SiteMedia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SiteMediaAggregateArgs>(args: Subset<T, SiteMediaAggregateArgs>): Prisma.PrismaPromise<GetSiteMediaAggregateType<T>>
+
+    /**
+     * Group by SiteMedia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteMediaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SiteMediaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SiteMediaGroupByArgs['orderBy'] }
+        : { orderBy?: SiteMediaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SiteMediaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSiteMediaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SiteMedia model
+   */
+  readonly fields: SiteMediaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SiteMedia.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SiteMediaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    usages<T extends SiteMedia$usagesArgs<ExtArgs> = {}>(args?: Subset<T, SiteMedia$usagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SiteMedia model
+   */
+  interface SiteMediaFieldRefs {
+    readonly id: FieldRef<"SiteMedia", 'String'>
+    readonly createdAt: FieldRef<"SiteMedia", 'DateTime'>
+    readonly updatedAt: FieldRef<"SiteMedia", 'DateTime'>
+    readonly kind: FieldRef<"SiteMedia", 'String'>
+    readonly title: FieldRef<"SiteMedia", 'String'>
+    readonly caption: FieldRef<"SiteMedia", 'String'>
+    readonly alt: FieldRef<"SiteMedia", 'String'>
+    readonly fileName: FieldRef<"SiteMedia", 'String'>
+    readonly darkFileName: FieldRef<"SiteMedia", 'String'>
+    readonly posterFileName: FieldRef<"SiteMedia", 'String'>
+    readonly mime: FieldRef<"SiteMedia", 'String'>
+    readonly sizeBytes: FieldRef<"SiteMedia", 'Int'>
+    readonly width: FieldRef<"SiteMedia", 'Int'>
+    readonly height: FieldRef<"SiteMedia", 'Int'>
+    readonly durationSec: FieldRef<"SiteMedia", 'Int'>
+    readonly embedProvider: FieldRef<"SiteMedia", 'String'>
+    readonly embedUrl: FieldRef<"SiteMedia", 'String'>
+    readonly embedId: FieldRef<"SiteMedia", 'String'>
+    readonly uploadedBy: FieldRef<"SiteMedia", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SiteMedia findUnique
+   */
+  export type SiteMediaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteMedia to fetch.
+     */
+    where: SiteMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteMedia findUniqueOrThrow
+   */
+  export type SiteMediaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteMedia to fetch.
+     */
+    where: SiteMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteMedia findFirst
+   */
+  export type SiteMediaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteMedia to fetch.
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteMedias to fetch.
+     */
+    orderBy?: SiteMediaOrderByWithRelationInput | SiteMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteMedias.
+     */
+    cursor?: SiteMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteMedias.
+     */
+    distinct?: SiteMediaScalarFieldEnum | SiteMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteMedia findFirstOrThrow
+   */
+  export type SiteMediaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteMedia to fetch.
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteMedias to fetch.
+     */
+    orderBy?: SiteMediaOrderByWithRelationInput | SiteMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteMedias.
+     */
+    cursor?: SiteMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteMedias.
+     */
+    distinct?: SiteMediaScalarFieldEnum | SiteMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteMedia findMany
+   */
+  export type SiteMediaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteMedias to fetch.
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteMedias to fetch.
+     */
+    orderBy?: SiteMediaOrderByWithRelationInput | SiteMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SiteMedias.
+     */
+    cursor?: SiteMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteMedias.
+     */
+    skip?: number
+    distinct?: SiteMediaScalarFieldEnum | SiteMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteMedia create
+   */
+  export type SiteMediaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SiteMedia.
+     */
+    data: XOR<SiteMediaCreateInput, SiteMediaUncheckedCreateInput>
+  }
+
+  /**
+   * SiteMedia createMany
+   */
+  export type SiteMediaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SiteMedias.
+     */
+    data: SiteMediaCreateManyInput | SiteMediaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SiteMedia update
+   */
+  export type SiteMediaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SiteMedia.
+     */
+    data: XOR<SiteMediaUpdateInput, SiteMediaUncheckedUpdateInput>
+    /**
+     * Choose, which SiteMedia to update.
+     */
+    where: SiteMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteMedia updateMany
+   */
+  export type SiteMediaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SiteMedias.
+     */
+    data: XOR<SiteMediaUpdateManyMutationInput, SiteMediaUncheckedUpdateManyInput>
+    /**
+     * Filter which SiteMedias to update
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * Limit how many SiteMedias to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteMedia upsert
+   */
+  export type SiteMediaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SiteMedia to update in case it exists.
+     */
+    where: SiteMediaWhereUniqueInput
+    /**
+     * In case the SiteMedia found by the `where` argument doesn't exist, create a new SiteMedia with this data.
+     */
+    create: XOR<SiteMediaCreateInput, SiteMediaUncheckedCreateInput>
+    /**
+     * In case the SiteMedia was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SiteMediaUpdateInput, SiteMediaUncheckedUpdateInput>
+  }
+
+  /**
+   * SiteMedia delete
+   */
+  export type SiteMediaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+    /**
+     * Filter which SiteMedia to delete.
+     */
+    where: SiteMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteMedia deleteMany
+   */
+  export type SiteMediaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteMedias to delete
+     */
+    where?: SiteMediaWhereInput
+    /**
+     * Limit how many SiteMedias to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteMedia.usages
+   */
+  export type SiteMedia$usagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    where?: SiteArticleMediaWhereInput
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    cursor?: SiteArticleMediaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SiteArticleMediaScalarFieldEnum | SiteArticleMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteMedia without action
+   */
+  export type SiteMediaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteMedia
+     */
+    select?: SiteMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteMedia
+     */
+    omit?: SiteMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteMediaInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SiteArticle
+   */
+
+  export type AggregateSiteArticle = {
+    _count: SiteArticleCountAggregateOutputType | null
+    _avg: SiteArticleAvgAggregateOutputType | null
+    _sum: SiteArticleSumAggregateOutputType | null
+    _min: SiteArticleMinAggregateOutputType | null
+    _max: SiteArticleMaxAggregateOutputType | null
+  }
+
+  export type SiteArticleAvgAggregateOutputType = {
+    sort: number | null
+  }
+
+  export type SiteArticleSumAggregateOutputType = {
+    sort: number | null
+  }
+
+  export type SiteArticleMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    section: string | null
+    type: string | null
+    slug: string | null
+    status: string | null
+    sort: number | null
+    publishedRevisionId: string | null
+    publishedAt: Date | null
+    publishedBy: string | null
+    createdBy: string | null
+    updatedBy: string | null
+  }
+
+  export type SiteArticleMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    section: string | null
+    type: string | null
+    slug: string | null
+    status: string | null
+    sort: number | null
+    publishedRevisionId: string | null
+    publishedAt: Date | null
+    publishedBy: string | null
+    createdBy: string | null
+    updatedBy: string | null
+  }
+
+  export type SiteArticleCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    section: number
+    type: number
+    slug: number
+    status: number
+    sort: number
+    publishedRevisionId: number
+    publishedAt: number
+    publishedBy: number
+    meta: number
+    createdBy: number
+    updatedBy: number
+    _all: number
+  }
+
+
+  export type SiteArticleAvgAggregateInputType = {
+    sort?: true
+  }
+
+  export type SiteArticleSumAggregateInputType = {
+    sort?: true
+  }
+
+  export type SiteArticleMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    section?: true
+    type?: true
+    slug?: true
+    status?: true
+    sort?: true
+    publishedRevisionId?: true
+    publishedAt?: true
+    publishedBy?: true
+    createdBy?: true
+    updatedBy?: true
+  }
+
+  export type SiteArticleMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    section?: true
+    type?: true
+    slug?: true
+    status?: true
+    sort?: true
+    publishedRevisionId?: true
+    publishedAt?: true
+    publishedBy?: true
+    createdBy?: true
+    updatedBy?: true
+  }
+
+  export type SiteArticleCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    section?: true
+    type?: true
+    slug?: true
+    status?: true
+    sort?: true
+    publishedRevisionId?: true
+    publishedAt?: true
+    publishedBy?: true
+    meta?: true
+    createdBy?: true
+    updatedBy?: true
+    _all?: true
+  }
+
+  export type SiteArticleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticle to aggregate.
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticles to fetch.
+     */
+    orderBy?: SiteArticleOrderByWithRelationInput | SiteArticleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SiteArticleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SiteArticles
+    **/
+    _count?: true | SiteArticleCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SiteArticleAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SiteArticleSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SiteArticleMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SiteArticleMaxAggregateInputType
+  }
+
+  export type GetSiteArticleAggregateType<T extends SiteArticleAggregateArgs> = {
+        [P in keyof T & keyof AggregateSiteArticle]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSiteArticle[P]>
+      : GetScalarType<T[P], AggregateSiteArticle[P]>
+  }
+
+
+
+
+  export type SiteArticleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleWhereInput
+    orderBy?: SiteArticleOrderByWithAggregationInput | SiteArticleOrderByWithAggregationInput[]
+    by: SiteArticleScalarFieldEnum[] | SiteArticleScalarFieldEnum
+    having?: SiteArticleScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SiteArticleCountAggregateInputType | true
+    _avg?: SiteArticleAvgAggregateInputType
+    _sum?: SiteArticleSumAggregateInputType
+    _min?: SiteArticleMinAggregateInputType
+    _max?: SiteArticleMaxAggregateInputType
+  }
+
+  export type SiteArticleGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    section: string
+    type: string
+    slug: string
+    status: string
+    sort: number
+    publishedRevisionId: string | null
+    publishedAt: Date | null
+    publishedBy: string | null
+    meta: JsonValue | null
+    createdBy: string | null
+    updatedBy: string | null
+    _count: SiteArticleCountAggregateOutputType | null
+    _avg: SiteArticleAvgAggregateOutputType | null
+    _sum: SiteArticleSumAggregateOutputType | null
+    _min: SiteArticleMinAggregateOutputType | null
+    _max: SiteArticleMaxAggregateOutputType | null
+  }
+
+  type GetSiteArticleGroupByPayload<T extends SiteArticleGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SiteArticleGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SiteArticleGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SiteArticleGroupByOutputType[P]>
+            : GetScalarType<T[P], SiteArticleGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SiteArticleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    section?: boolean
+    type?: boolean
+    slug?: boolean
+    status?: boolean
+    sort?: boolean
+    publishedRevisionId?: boolean
+    publishedAt?: boolean
+    publishedBy?: boolean
+    meta?: boolean
+    createdBy?: boolean
+    updatedBy?: boolean
+    publishedRevision?: boolean | SiteArticle$publishedRevisionArgs<ExtArgs>
+    revisions?: boolean | SiteArticle$revisionsArgs<ExtArgs>
+    media?: boolean | SiteArticle$mediaArgs<ExtArgs>
+    _count?: boolean | SiteArticleCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["siteArticle"]>
+
+
+
+  export type SiteArticleSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    section?: boolean
+    type?: boolean
+    slug?: boolean
+    status?: boolean
+    sort?: boolean
+    publishedRevisionId?: boolean
+    publishedAt?: boolean
+    publishedBy?: boolean
+    meta?: boolean
+    createdBy?: boolean
+    updatedBy?: boolean
+  }
+
+  export type SiteArticleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "section" | "type" | "slug" | "status" | "sort" | "publishedRevisionId" | "publishedAt" | "publishedBy" | "meta" | "createdBy" | "updatedBy", ExtArgs["result"]["siteArticle"]>
+  export type SiteArticleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    publishedRevision?: boolean | SiteArticle$publishedRevisionArgs<ExtArgs>
+    revisions?: boolean | SiteArticle$revisionsArgs<ExtArgs>
+    media?: boolean | SiteArticle$mediaArgs<ExtArgs>
+    _count?: boolean | SiteArticleCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SiteArticlePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SiteArticle"
+    objects: {
+      publishedRevision: Prisma.$SiteArticleRevisionPayload<ExtArgs> | null
+      revisions: Prisma.$SiteArticleRevisionPayload<ExtArgs>[]
+      media: Prisma.$SiteArticleMediaPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      section: string
+      type: string
+      /**
+       * Путь внутри раздела: 'theory/call-analysis'; обзор раздела — 'index'
+       */
+      slug: string
+      status: string
+      sort: number
+      publishedRevisionId: string | null
+      publishedAt: Date | null
+      publishedBy: string | null
+      /**
+       * Дополнительные свойства без своей колонки (метки, для кого статья): состав — в коде
+       */
+      meta: Prisma.JsonValue | null
+      createdBy: string | null
+      updatedBy: string | null
+    }, ExtArgs["result"]["siteArticle"]>
+    composites: {}
+  }
+
+  type SiteArticleGetPayload<S extends boolean | null | undefined | SiteArticleDefaultArgs> = $Result.GetResult<Prisma.$SiteArticlePayload, S>
+
+  type SiteArticleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SiteArticleFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SiteArticleCountAggregateInputType | true
+    }
+
+  export interface SiteArticleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SiteArticle'], meta: { name: 'SiteArticle' } }
+    /**
+     * Find zero or one SiteArticle that matches the filter.
+     * @param {SiteArticleFindUniqueArgs} args - Arguments to find a SiteArticle
+     * @example
+     * // Get one SiteArticle
+     * const siteArticle = await prisma.siteArticle.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SiteArticleFindUniqueArgs>(args: SelectSubset<T, SiteArticleFindUniqueArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SiteArticle that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SiteArticleFindUniqueOrThrowArgs} args - Arguments to find a SiteArticle
+     * @example
+     * // Get one SiteArticle
+     * const siteArticle = await prisma.siteArticle.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SiteArticleFindUniqueOrThrowArgs>(args: SelectSubset<T, SiteArticleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticle that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleFindFirstArgs} args - Arguments to find a SiteArticle
+     * @example
+     * // Get one SiteArticle
+     * const siteArticle = await prisma.siteArticle.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SiteArticleFindFirstArgs>(args?: SelectSubset<T, SiteArticleFindFirstArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticle that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleFindFirstOrThrowArgs} args - Arguments to find a SiteArticle
+     * @example
+     * // Get one SiteArticle
+     * const siteArticle = await prisma.siteArticle.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SiteArticleFindFirstOrThrowArgs>(args?: SelectSubset<T, SiteArticleFindFirstOrThrowArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SiteArticles that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SiteArticles
+     * const siteArticles = await prisma.siteArticle.findMany()
+     * 
+     * // Get first 10 SiteArticles
+     * const siteArticles = await prisma.siteArticle.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const siteArticleWithIdOnly = await prisma.siteArticle.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SiteArticleFindManyArgs>(args?: SelectSubset<T, SiteArticleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SiteArticle.
+     * @param {SiteArticleCreateArgs} args - Arguments to create a SiteArticle.
+     * @example
+     * // Create one SiteArticle
+     * const SiteArticle = await prisma.siteArticle.create({
+     *   data: {
+     *     // ... data to create a SiteArticle
+     *   }
+     * })
+     * 
+     */
+    create<T extends SiteArticleCreateArgs>(args: SelectSubset<T, SiteArticleCreateArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SiteArticles.
+     * @param {SiteArticleCreateManyArgs} args - Arguments to create many SiteArticles.
+     * @example
+     * // Create many SiteArticles
+     * const siteArticle = await prisma.siteArticle.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SiteArticleCreateManyArgs>(args?: SelectSubset<T, SiteArticleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SiteArticle.
+     * @param {SiteArticleDeleteArgs} args - Arguments to delete one SiteArticle.
+     * @example
+     * // Delete one SiteArticle
+     * const SiteArticle = await prisma.siteArticle.delete({
+     *   where: {
+     *     // ... filter to delete one SiteArticle
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SiteArticleDeleteArgs>(args: SelectSubset<T, SiteArticleDeleteArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SiteArticle.
+     * @param {SiteArticleUpdateArgs} args - Arguments to update one SiteArticle.
+     * @example
+     * // Update one SiteArticle
+     * const siteArticle = await prisma.siteArticle.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SiteArticleUpdateArgs>(args: SelectSubset<T, SiteArticleUpdateArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SiteArticles.
+     * @param {SiteArticleDeleteManyArgs} args - Arguments to filter SiteArticles to delete.
+     * @example
+     * // Delete a few SiteArticles
+     * const { count } = await prisma.siteArticle.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SiteArticleDeleteManyArgs>(args?: SelectSubset<T, SiteArticleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SiteArticles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SiteArticles
+     * const siteArticle = await prisma.siteArticle.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SiteArticleUpdateManyArgs>(args: SelectSubset<T, SiteArticleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SiteArticle.
+     * @param {SiteArticleUpsertArgs} args - Arguments to update or create a SiteArticle.
+     * @example
+     * // Update or create a SiteArticle
+     * const siteArticle = await prisma.siteArticle.upsert({
+     *   create: {
+     *     // ... data to create a SiteArticle
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SiteArticle we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SiteArticleUpsertArgs>(args: SelectSubset<T, SiteArticleUpsertArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SiteArticles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleCountArgs} args - Arguments to filter SiteArticles to count.
+     * @example
+     * // Count the number of SiteArticles
+     * const count = await prisma.siteArticle.count({
+     *   where: {
+     *     // ... the filter for the SiteArticles we want to count
+     *   }
+     * })
+    **/
+    count<T extends SiteArticleCountArgs>(
+      args?: Subset<T, SiteArticleCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SiteArticleCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SiteArticle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SiteArticleAggregateArgs>(args: Subset<T, SiteArticleAggregateArgs>): Prisma.PrismaPromise<GetSiteArticleAggregateType<T>>
+
+    /**
+     * Group by SiteArticle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SiteArticleGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SiteArticleGroupByArgs['orderBy'] }
+        : { orderBy?: SiteArticleGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SiteArticleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSiteArticleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SiteArticle model
+   */
+  readonly fields: SiteArticleFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SiteArticle.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SiteArticleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    publishedRevision<T extends SiteArticle$publishedRevisionArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticle$publishedRevisionArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    revisions<T extends SiteArticle$revisionsArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticle$revisionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    media<T extends SiteArticle$mediaArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticle$mediaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SiteArticle model
+   */
+  interface SiteArticleFieldRefs {
+    readonly id: FieldRef<"SiteArticle", 'String'>
+    readonly createdAt: FieldRef<"SiteArticle", 'DateTime'>
+    readonly updatedAt: FieldRef<"SiteArticle", 'DateTime'>
+    readonly section: FieldRef<"SiteArticle", 'String'>
+    readonly type: FieldRef<"SiteArticle", 'String'>
+    readonly slug: FieldRef<"SiteArticle", 'String'>
+    readonly status: FieldRef<"SiteArticle", 'String'>
+    readonly sort: FieldRef<"SiteArticle", 'Int'>
+    readonly publishedRevisionId: FieldRef<"SiteArticle", 'String'>
+    readonly publishedAt: FieldRef<"SiteArticle", 'DateTime'>
+    readonly publishedBy: FieldRef<"SiteArticle", 'String'>
+    readonly meta: FieldRef<"SiteArticle", 'Json'>
+    readonly createdBy: FieldRef<"SiteArticle", 'String'>
+    readonly updatedBy: FieldRef<"SiteArticle", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SiteArticle findUnique
+   */
+  export type SiteArticleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticle to fetch.
+     */
+    where: SiteArticleWhereUniqueInput
+  }
+
+  /**
+   * SiteArticle findUniqueOrThrow
+   */
+  export type SiteArticleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticle to fetch.
+     */
+    where: SiteArticleWhereUniqueInput
+  }
+
+  /**
+   * SiteArticle findFirst
+   */
+  export type SiteArticleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticle to fetch.
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticles to fetch.
+     */
+    orderBy?: SiteArticleOrderByWithRelationInput | SiteArticleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticles.
+     */
+    cursor?: SiteArticleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticles.
+     */
+    distinct?: SiteArticleScalarFieldEnum | SiteArticleScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticle findFirstOrThrow
+   */
+  export type SiteArticleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticle to fetch.
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticles to fetch.
+     */
+    orderBy?: SiteArticleOrderByWithRelationInput | SiteArticleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticles.
+     */
+    cursor?: SiteArticleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticles.
+     */
+    distinct?: SiteArticleScalarFieldEnum | SiteArticleScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticle findMany
+   */
+  export type SiteArticleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticles to fetch.
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticles to fetch.
+     */
+    orderBy?: SiteArticleOrderByWithRelationInput | SiteArticleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SiteArticles.
+     */
+    cursor?: SiteArticleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticles.
+     */
+    skip?: number
+    distinct?: SiteArticleScalarFieldEnum | SiteArticleScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticle create
+   */
+  export type SiteArticleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SiteArticle.
+     */
+    data: XOR<SiteArticleCreateInput, SiteArticleUncheckedCreateInput>
+  }
+
+  /**
+   * SiteArticle createMany
+   */
+  export type SiteArticleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SiteArticles.
+     */
+    data: SiteArticleCreateManyInput | SiteArticleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SiteArticle update
+   */
+  export type SiteArticleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SiteArticle.
+     */
+    data: XOR<SiteArticleUpdateInput, SiteArticleUncheckedUpdateInput>
+    /**
+     * Choose, which SiteArticle to update.
+     */
+    where: SiteArticleWhereUniqueInput
+  }
+
+  /**
+   * SiteArticle updateMany
+   */
+  export type SiteArticleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SiteArticles.
+     */
+    data: XOR<SiteArticleUpdateManyMutationInput, SiteArticleUncheckedUpdateManyInput>
+    /**
+     * Filter which SiteArticles to update
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * Limit how many SiteArticles to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticle upsert
+   */
+  export type SiteArticleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SiteArticle to update in case it exists.
+     */
+    where: SiteArticleWhereUniqueInput
+    /**
+     * In case the SiteArticle found by the `where` argument doesn't exist, create a new SiteArticle with this data.
+     */
+    create: XOR<SiteArticleCreateInput, SiteArticleUncheckedCreateInput>
+    /**
+     * In case the SiteArticle was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SiteArticleUpdateInput, SiteArticleUncheckedUpdateInput>
+  }
+
+  /**
+   * SiteArticle delete
+   */
+  export type SiteArticleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    /**
+     * Filter which SiteArticle to delete.
+     */
+    where: SiteArticleWhereUniqueInput
+  }
+
+  /**
+   * SiteArticle deleteMany
+   */
+  export type SiteArticleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticles to delete
+     */
+    where?: SiteArticleWhereInput
+    /**
+     * Limit how many SiteArticles to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticle.publishedRevision
+   */
+  export type SiteArticle$publishedRevisionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    where?: SiteArticleRevisionWhereInput
+  }
+
+  /**
+   * SiteArticle.revisions
+   */
+  export type SiteArticle$revisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    where?: SiteArticleRevisionWhereInput
+    orderBy?: SiteArticleRevisionOrderByWithRelationInput | SiteArticleRevisionOrderByWithRelationInput[]
+    cursor?: SiteArticleRevisionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SiteArticleRevisionScalarFieldEnum | SiteArticleRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticle.media
+   */
+  export type SiteArticle$mediaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    where?: SiteArticleMediaWhereInput
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    cursor?: SiteArticleMediaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SiteArticleMediaScalarFieldEnum | SiteArticleMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticle without action
+   */
+  export type SiteArticleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SiteArticleRevision
+   */
+
+  export type AggregateSiteArticleRevision = {
+    _count: SiteArticleRevisionCountAggregateOutputType | null
+    _avg: SiteArticleRevisionAvgAggregateOutputType | null
+    _sum: SiteArticleRevisionSumAggregateOutputType | null
+    _min: SiteArticleRevisionMinAggregateOutputType | null
+    _max: SiteArticleRevisionMaxAggregateOutputType | null
+  }
+
+  export type SiteArticleRevisionAvgAggregateOutputType = {
+    number: number | null
+  }
+
+  export type SiteArticleRevisionSumAggregateOutputType = {
+    number: number | null
+  }
+
+  export type SiteArticleRevisionMinAggregateOutputType = {
+    id: string | null
+    articleId: string | null
+    number: number | null
+    source: string | null
+    contentFormat: string | null
+    eyebrow: string | null
+    title: string | null
+    description: string | null
+    seoTitle: string | null
+    seoDescription: string | null
+    baseCodeHash: string | null
+    comment: string | null
+    createdBy: string | null
+    createdAt: Date | null
+  }
+
+  export type SiteArticleRevisionMaxAggregateOutputType = {
+    id: string | null
+    articleId: string | null
+    number: number | null
+    source: string | null
+    contentFormat: string | null
+    eyebrow: string | null
+    title: string | null
+    description: string | null
+    seoTitle: string | null
+    seoDescription: string | null
+    baseCodeHash: string | null
+    comment: string | null
+    createdBy: string | null
+    createdAt: Date | null
+  }
+
+  export type SiteArticleRevisionCountAggregateOutputType = {
+    id: number
+    articleId: number
+    number: number
+    source: number
+    contentFormat: number
+    eyebrow: number
+    title: number
+    description: number
+    seoTitle: number
+    seoDescription: number
+    blocks: number
+    baseCodeHash: number
+    comment: number
+    createdBy: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type SiteArticleRevisionAvgAggregateInputType = {
+    number?: true
+  }
+
+  export type SiteArticleRevisionSumAggregateInputType = {
+    number?: true
+  }
+
+  export type SiteArticleRevisionMinAggregateInputType = {
+    id?: true
+    articleId?: true
+    number?: true
+    source?: true
+    contentFormat?: true
+    eyebrow?: true
+    title?: true
+    description?: true
+    seoTitle?: true
+    seoDescription?: true
+    baseCodeHash?: true
+    comment?: true
+    createdBy?: true
+    createdAt?: true
+  }
+
+  export type SiteArticleRevisionMaxAggregateInputType = {
+    id?: true
+    articleId?: true
+    number?: true
+    source?: true
+    contentFormat?: true
+    eyebrow?: true
+    title?: true
+    description?: true
+    seoTitle?: true
+    seoDescription?: true
+    baseCodeHash?: true
+    comment?: true
+    createdBy?: true
+    createdAt?: true
+  }
+
+  export type SiteArticleRevisionCountAggregateInputType = {
+    id?: true
+    articleId?: true
+    number?: true
+    source?: true
+    contentFormat?: true
+    eyebrow?: true
+    title?: true
+    description?: true
+    seoTitle?: true
+    seoDescription?: true
+    blocks?: true
+    baseCodeHash?: true
+    comment?: true
+    createdBy?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type SiteArticleRevisionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticleRevision to aggregate.
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleRevisions to fetch.
+     */
+    orderBy?: SiteArticleRevisionOrderByWithRelationInput | SiteArticleRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SiteArticleRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SiteArticleRevisions
+    **/
+    _count?: true | SiteArticleRevisionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SiteArticleRevisionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SiteArticleRevisionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SiteArticleRevisionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SiteArticleRevisionMaxAggregateInputType
+  }
+
+  export type GetSiteArticleRevisionAggregateType<T extends SiteArticleRevisionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSiteArticleRevision]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSiteArticleRevision[P]>
+      : GetScalarType<T[P], AggregateSiteArticleRevision[P]>
+  }
+
+
+
+
+  export type SiteArticleRevisionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleRevisionWhereInput
+    orderBy?: SiteArticleRevisionOrderByWithAggregationInput | SiteArticleRevisionOrderByWithAggregationInput[]
+    by: SiteArticleRevisionScalarFieldEnum[] | SiteArticleRevisionScalarFieldEnum
+    having?: SiteArticleRevisionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SiteArticleRevisionCountAggregateInputType | true
+    _avg?: SiteArticleRevisionAvgAggregateInputType
+    _sum?: SiteArticleRevisionSumAggregateInputType
+    _min?: SiteArticleRevisionMinAggregateInputType
+    _max?: SiteArticleRevisionMaxAggregateInputType
+  }
+
+  export type SiteArticleRevisionGroupByOutputType = {
+    id: string
+    articleId: string
+    number: number
+    source: string
+    contentFormat: string
+    eyebrow: string | null
+    title: string
+    description: string | null
+    seoTitle: string | null
+    seoDescription: string | null
+    blocks: JsonValue
+    baseCodeHash: string | null
+    comment: string | null
+    createdBy: string | null
+    createdAt: Date | null
+    _count: SiteArticleRevisionCountAggregateOutputType | null
+    _avg: SiteArticleRevisionAvgAggregateOutputType | null
+    _sum: SiteArticleRevisionSumAggregateOutputType | null
+    _min: SiteArticleRevisionMinAggregateOutputType | null
+    _max: SiteArticleRevisionMaxAggregateOutputType | null
+  }
+
+  type GetSiteArticleRevisionGroupByPayload<T extends SiteArticleRevisionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SiteArticleRevisionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SiteArticleRevisionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SiteArticleRevisionGroupByOutputType[P]>
+            : GetScalarType<T[P], SiteArticleRevisionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SiteArticleRevisionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    articleId?: boolean
+    number?: boolean
+    source?: boolean
+    contentFormat?: boolean
+    eyebrow?: boolean
+    title?: boolean
+    description?: boolean
+    seoTitle?: boolean
+    seoDescription?: boolean
+    blocks?: boolean
+    baseCodeHash?: boolean
+    comment?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    article?: boolean | SiteArticleDefaultArgs<ExtArgs>
+    publishedIn?: boolean | SiteArticleRevision$publishedInArgs<ExtArgs>
+    _count?: boolean | SiteArticleRevisionCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["siteArticleRevision"]>
+
+
+
+  export type SiteArticleRevisionSelectScalar = {
+    id?: boolean
+    articleId?: boolean
+    number?: boolean
+    source?: boolean
+    contentFormat?: boolean
+    eyebrow?: boolean
+    title?: boolean
+    description?: boolean
+    seoTitle?: boolean
+    seoDescription?: boolean
+    blocks?: boolean
+    baseCodeHash?: boolean
+    comment?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+  }
+
+  export type SiteArticleRevisionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "articleId" | "number" | "source" | "contentFormat" | "eyebrow" | "title" | "description" | "seoTitle" | "seoDescription" | "blocks" | "baseCodeHash" | "comment" | "createdBy" | "createdAt", ExtArgs["result"]["siteArticleRevision"]>
+  export type SiteArticleRevisionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    article?: boolean | SiteArticleDefaultArgs<ExtArgs>
+    publishedIn?: boolean | SiteArticleRevision$publishedInArgs<ExtArgs>
+    _count?: boolean | SiteArticleRevisionCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SiteArticleRevisionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SiteArticleRevision"
+    objects: {
+      article: Prisma.$SiteArticlePayload<ExtArgs>
+      publishedIn: Prisma.$SiteArticlePayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      articleId: string
+      /**
+       * Номер версии внутри статьи; защита от одновременной правки
+       */
+      number: number
+      source: string
+      contentFormat: string
+      eyebrow: string | null
+      title: string
+      description: string | null
+      seoTitle: string | null
+      seoDescription: string | null
+      blocks: Prisma.JsonValue
+      /**
+       * Отпечаток главы из кода, на которой сделана правка
+       */
+      baseCodeHash: string | null
+      comment: string | null
+      createdBy: string | null
+      createdAt: Date | null
+    }, ExtArgs["result"]["siteArticleRevision"]>
+    composites: {}
+  }
+
+  type SiteArticleRevisionGetPayload<S extends boolean | null | undefined | SiteArticleRevisionDefaultArgs> = $Result.GetResult<Prisma.$SiteArticleRevisionPayload, S>
+
+  type SiteArticleRevisionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SiteArticleRevisionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SiteArticleRevisionCountAggregateInputType | true
+    }
+
+  export interface SiteArticleRevisionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SiteArticleRevision'], meta: { name: 'SiteArticleRevision' } }
+    /**
+     * Find zero or one SiteArticleRevision that matches the filter.
+     * @param {SiteArticleRevisionFindUniqueArgs} args - Arguments to find a SiteArticleRevision
+     * @example
+     * // Get one SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SiteArticleRevisionFindUniqueArgs>(args: SelectSubset<T, SiteArticleRevisionFindUniqueArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SiteArticleRevision that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SiteArticleRevisionFindUniqueOrThrowArgs} args - Arguments to find a SiteArticleRevision
+     * @example
+     * // Get one SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SiteArticleRevisionFindUniqueOrThrowArgs>(args: SelectSubset<T, SiteArticleRevisionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticleRevision that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionFindFirstArgs} args - Arguments to find a SiteArticleRevision
+     * @example
+     * // Get one SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SiteArticleRevisionFindFirstArgs>(args?: SelectSubset<T, SiteArticleRevisionFindFirstArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticleRevision that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionFindFirstOrThrowArgs} args - Arguments to find a SiteArticleRevision
+     * @example
+     * // Get one SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SiteArticleRevisionFindFirstOrThrowArgs>(args?: SelectSubset<T, SiteArticleRevisionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SiteArticleRevisions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SiteArticleRevisions
+     * const siteArticleRevisions = await prisma.siteArticleRevision.findMany()
+     * 
+     * // Get first 10 SiteArticleRevisions
+     * const siteArticleRevisions = await prisma.siteArticleRevision.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const siteArticleRevisionWithIdOnly = await prisma.siteArticleRevision.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SiteArticleRevisionFindManyArgs>(args?: SelectSubset<T, SiteArticleRevisionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SiteArticleRevision.
+     * @param {SiteArticleRevisionCreateArgs} args - Arguments to create a SiteArticleRevision.
+     * @example
+     * // Create one SiteArticleRevision
+     * const SiteArticleRevision = await prisma.siteArticleRevision.create({
+     *   data: {
+     *     // ... data to create a SiteArticleRevision
+     *   }
+     * })
+     * 
+     */
+    create<T extends SiteArticleRevisionCreateArgs>(args: SelectSubset<T, SiteArticleRevisionCreateArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SiteArticleRevisions.
+     * @param {SiteArticleRevisionCreateManyArgs} args - Arguments to create many SiteArticleRevisions.
+     * @example
+     * // Create many SiteArticleRevisions
+     * const siteArticleRevision = await prisma.siteArticleRevision.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SiteArticleRevisionCreateManyArgs>(args?: SelectSubset<T, SiteArticleRevisionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SiteArticleRevision.
+     * @param {SiteArticleRevisionDeleteArgs} args - Arguments to delete one SiteArticleRevision.
+     * @example
+     * // Delete one SiteArticleRevision
+     * const SiteArticleRevision = await prisma.siteArticleRevision.delete({
+     *   where: {
+     *     // ... filter to delete one SiteArticleRevision
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SiteArticleRevisionDeleteArgs>(args: SelectSubset<T, SiteArticleRevisionDeleteArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SiteArticleRevision.
+     * @param {SiteArticleRevisionUpdateArgs} args - Arguments to update one SiteArticleRevision.
+     * @example
+     * // Update one SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SiteArticleRevisionUpdateArgs>(args: SelectSubset<T, SiteArticleRevisionUpdateArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SiteArticleRevisions.
+     * @param {SiteArticleRevisionDeleteManyArgs} args - Arguments to filter SiteArticleRevisions to delete.
+     * @example
+     * // Delete a few SiteArticleRevisions
+     * const { count } = await prisma.siteArticleRevision.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SiteArticleRevisionDeleteManyArgs>(args?: SelectSubset<T, SiteArticleRevisionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SiteArticleRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SiteArticleRevisions
+     * const siteArticleRevision = await prisma.siteArticleRevision.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SiteArticleRevisionUpdateManyArgs>(args: SelectSubset<T, SiteArticleRevisionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SiteArticleRevision.
+     * @param {SiteArticleRevisionUpsertArgs} args - Arguments to update or create a SiteArticleRevision.
+     * @example
+     * // Update or create a SiteArticleRevision
+     * const siteArticleRevision = await prisma.siteArticleRevision.upsert({
+     *   create: {
+     *     // ... data to create a SiteArticleRevision
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SiteArticleRevision we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SiteArticleRevisionUpsertArgs>(args: SelectSubset<T, SiteArticleRevisionUpsertArgs<ExtArgs>>): Prisma__SiteArticleRevisionClient<$Result.GetResult<Prisma.$SiteArticleRevisionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SiteArticleRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionCountArgs} args - Arguments to filter SiteArticleRevisions to count.
+     * @example
+     * // Count the number of SiteArticleRevisions
+     * const count = await prisma.siteArticleRevision.count({
+     *   where: {
+     *     // ... the filter for the SiteArticleRevisions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SiteArticleRevisionCountArgs>(
+      args?: Subset<T, SiteArticleRevisionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SiteArticleRevisionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SiteArticleRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SiteArticleRevisionAggregateArgs>(args: Subset<T, SiteArticleRevisionAggregateArgs>): Prisma.PrismaPromise<GetSiteArticleRevisionAggregateType<T>>
+
+    /**
+     * Group by SiteArticleRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleRevisionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SiteArticleRevisionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SiteArticleRevisionGroupByArgs['orderBy'] }
+        : { orderBy?: SiteArticleRevisionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SiteArticleRevisionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSiteArticleRevisionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SiteArticleRevision model
+   */
+  readonly fields: SiteArticleRevisionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SiteArticleRevision.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SiteArticleRevisionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    article<T extends SiteArticleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticleDefaultArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    publishedIn<T extends SiteArticleRevision$publishedInArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticleRevision$publishedInArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SiteArticleRevision model
+   */
+  interface SiteArticleRevisionFieldRefs {
+    readonly id: FieldRef<"SiteArticleRevision", 'String'>
+    readonly articleId: FieldRef<"SiteArticleRevision", 'String'>
+    readonly number: FieldRef<"SiteArticleRevision", 'Int'>
+    readonly source: FieldRef<"SiteArticleRevision", 'String'>
+    readonly contentFormat: FieldRef<"SiteArticleRevision", 'String'>
+    readonly eyebrow: FieldRef<"SiteArticleRevision", 'String'>
+    readonly title: FieldRef<"SiteArticleRevision", 'String'>
+    readonly description: FieldRef<"SiteArticleRevision", 'String'>
+    readonly seoTitle: FieldRef<"SiteArticleRevision", 'String'>
+    readonly seoDescription: FieldRef<"SiteArticleRevision", 'String'>
+    readonly blocks: FieldRef<"SiteArticleRevision", 'Json'>
+    readonly baseCodeHash: FieldRef<"SiteArticleRevision", 'String'>
+    readonly comment: FieldRef<"SiteArticleRevision", 'String'>
+    readonly createdBy: FieldRef<"SiteArticleRevision", 'String'>
+    readonly createdAt: FieldRef<"SiteArticleRevision", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SiteArticleRevision findUnique
+   */
+  export type SiteArticleRevisionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleRevision to fetch.
+     */
+    where: SiteArticleRevisionWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleRevision findUniqueOrThrow
+   */
+  export type SiteArticleRevisionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleRevision to fetch.
+     */
+    where: SiteArticleRevisionWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleRevision findFirst
+   */
+  export type SiteArticleRevisionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleRevision to fetch.
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleRevisions to fetch.
+     */
+    orderBy?: SiteArticleRevisionOrderByWithRelationInput | SiteArticleRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticleRevisions.
+     */
+    cursor?: SiteArticleRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticleRevisions.
+     */
+    distinct?: SiteArticleRevisionScalarFieldEnum | SiteArticleRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleRevision findFirstOrThrow
+   */
+  export type SiteArticleRevisionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleRevision to fetch.
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleRevisions to fetch.
+     */
+    orderBy?: SiteArticleRevisionOrderByWithRelationInput | SiteArticleRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticleRevisions.
+     */
+    cursor?: SiteArticleRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticleRevisions.
+     */
+    distinct?: SiteArticleRevisionScalarFieldEnum | SiteArticleRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleRevision findMany
+   */
+  export type SiteArticleRevisionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleRevisions to fetch.
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleRevisions to fetch.
+     */
+    orderBy?: SiteArticleRevisionOrderByWithRelationInput | SiteArticleRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SiteArticleRevisions.
+     */
+    cursor?: SiteArticleRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleRevisions.
+     */
+    skip?: number
+    distinct?: SiteArticleRevisionScalarFieldEnum | SiteArticleRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleRevision create
+   */
+  export type SiteArticleRevisionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SiteArticleRevision.
+     */
+    data: XOR<SiteArticleRevisionCreateInput, SiteArticleRevisionUncheckedCreateInput>
+  }
+
+  /**
+   * SiteArticleRevision createMany
+   */
+  export type SiteArticleRevisionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SiteArticleRevisions.
+     */
+    data: SiteArticleRevisionCreateManyInput | SiteArticleRevisionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SiteArticleRevision update
+   */
+  export type SiteArticleRevisionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SiteArticleRevision.
+     */
+    data: XOR<SiteArticleRevisionUpdateInput, SiteArticleRevisionUncheckedUpdateInput>
+    /**
+     * Choose, which SiteArticleRevision to update.
+     */
+    where: SiteArticleRevisionWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleRevision updateMany
+   */
+  export type SiteArticleRevisionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SiteArticleRevisions.
+     */
+    data: XOR<SiteArticleRevisionUpdateManyMutationInput, SiteArticleRevisionUncheckedUpdateManyInput>
+    /**
+     * Filter which SiteArticleRevisions to update
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * Limit how many SiteArticleRevisions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticleRevision upsert
+   */
+  export type SiteArticleRevisionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SiteArticleRevision to update in case it exists.
+     */
+    where: SiteArticleRevisionWhereUniqueInput
+    /**
+     * In case the SiteArticleRevision found by the `where` argument doesn't exist, create a new SiteArticleRevision with this data.
+     */
+    create: XOR<SiteArticleRevisionCreateInput, SiteArticleRevisionUncheckedCreateInput>
+    /**
+     * In case the SiteArticleRevision was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SiteArticleRevisionUpdateInput, SiteArticleRevisionUncheckedUpdateInput>
+  }
+
+  /**
+   * SiteArticleRevision delete
+   */
+  export type SiteArticleRevisionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+    /**
+     * Filter which SiteArticleRevision to delete.
+     */
+    where: SiteArticleRevisionWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleRevision deleteMany
+   */
+  export type SiteArticleRevisionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticleRevisions to delete
+     */
+    where?: SiteArticleRevisionWhereInput
+    /**
+     * Limit how many SiteArticleRevisions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticleRevision.publishedIn
+   */
+  export type SiteArticleRevision$publishedInArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticle
+     */
+    select?: SiteArticleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticle
+     */
+    omit?: SiteArticleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleInclude<ExtArgs> | null
+    where?: SiteArticleWhereInput
+    orderBy?: SiteArticleOrderByWithRelationInput | SiteArticleOrderByWithRelationInput[]
+    cursor?: SiteArticleWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SiteArticleScalarFieldEnum | SiteArticleScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleRevision without action
+   */
+  export type SiteArticleRevisionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleRevision
+     */
+    select?: SiteArticleRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleRevision
+     */
+    omit?: SiteArticleRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleRevisionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SiteArticleMedia
+   */
+
+  export type AggregateSiteArticleMedia = {
+    _count: SiteArticleMediaCountAggregateOutputType | null
+    _avg: SiteArticleMediaAvgAggregateOutputType | null
+    _sum: SiteArticleMediaSumAggregateOutputType | null
+    _min: SiteArticleMediaMinAggregateOutputType | null
+    _max: SiteArticleMediaMaxAggregateOutputType | null
+  }
+
+  export type SiteArticleMediaAvgAggregateOutputType = {
+    sort: number | null
+  }
+
+  export type SiteArticleMediaSumAggregateOutputType = {
+    sort: number | null
+  }
+
+  export type SiteArticleMediaMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    articleId: string | null
+    mediaId: string | null
+    role: string | null
+    slot: string | null
+    sort: number | null
+    caption: string | null
+    createdBy: string | null
+  }
+
+  export type SiteArticleMediaMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    articleId: string | null
+    mediaId: string | null
+    role: string | null
+    slot: string | null
+    sort: number | null
+    caption: string | null
+    createdBy: string | null
+  }
+
+  export type SiteArticleMediaCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    articleId: number
+    mediaId: number
+    role: number
+    slot: number
+    sort: number
+    caption: number
+    createdBy: number
+    _all: number
+  }
+
+
+  export type SiteArticleMediaAvgAggregateInputType = {
+    sort?: true
+  }
+
+  export type SiteArticleMediaSumAggregateInputType = {
+    sort?: true
+  }
+
+  export type SiteArticleMediaMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    articleId?: true
+    mediaId?: true
+    role?: true
+    slot?: true
+    sort?: true
+    caption?: true
+    createdBy?: true
+  }
+
+  export type SiteArticleMediaMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    articleId?: true
+    mediaId?: true
+    role?: true
+    slot?: true
+    sort?: true
+    caption?: true
+    createdBy?: true
+  }
+
+  export type SiteArticleMediaCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    articleId?: true
+    mediaId?: true
+    role?: true
+    slot?: true
+    sort?: true
+    caption?: true
+    createdBy?: true
+    _all?: true
+  }
+
+  export type SiteArticleMediaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticleMedia to aggregate.
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleMedias to fetch.
+     */
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SiteArticleMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SiteArticleMedias
+    **/
+    _count?: true | SiteArticleMediaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SiteArticleMediaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SiteArticleMediaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SiteArticleMediaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SiteArticleMediaMaxAggregateInputType
+  }
+
+  export type GetSiteArticleMediaAggregateType<T extends SiteArticleMediaAggregateArgs> = {
+        [P in keyof T & keyof AggregateSiteArticleMedia]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSiteArticleMedia[P]>
+      : GetScalarType<T[P], AggregateSiteArticleMedia[P]>
+  }
+
+
+
+
+  export type SiteArticleMediaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SiteArticleMediaWhereInput
+    orderBy?: SiteArticleMediaOrderByWithAggregationInput | SiteArticleMediaOrderByWithAggregationInput[]
+    by: SiteArticleMediaScalarFieldEnum[] | SiteArticleMediaScalarFieldEnum
+    having?: SiteArticleMediaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SiteArticleMediaCountAggregateInputType | true
+    _avg?: SiteArticleMediaAvgAggregateInputType
+    _sum?: SiteArticleMediaSumAggregateInputType
+    _min?: SiteArticleMediaMinAggregateInputType
+    _max?: SiteArticleMediaMaxAggregateInputType
+  }
+
+  export type SiteArticleMediaGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    articleId: string
+    mediaId: string
+    role: string
+    slot: string | null
+    sort: number
+    caption: string | null
+    createdBy: string | null
+    _count: SiteArticleMediaCountAggregateOutputType | null
+    _avg: SiteArticleMediaAvgAggregateOutputType | null
+    _sum: SiteArticleMediaSumAggregateOutputType | null
+    _min: SiteArticleMediaMinAggregateOutputType | null
+    _max: SiteArticleMediaMaxAggregateOutputType | null
+  }
+
+  type GetSiteArticleMediaGroupByPayload<T extends SiteArticleMediaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SiteArticleMediaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SiteArticleMediaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SiteArticleMediaGroupByOutputType[P]>
+            : GetScalarType<T[P], SiteArticleMediaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SiteArticleMediaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    articleId?: boolean
+    mediaId?: boolean
+    role?: boolean
+    slot?: boolean
+    sort?: boolean
+    caption?: boolean
+    createdBy?: boolean
+    article?: boolean | SiteArticleDefaultArgs<ExtArgs>
+    media?: boolean | SiteMediaDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["siteArticleMedia"]>
+
+
+
+  export type SiteArticleMediaSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    articleId?: boolean
+    mediaId?: boolean
+    role?: boolean
+    slot?: boolean
+    sort?: boolean
+    caption?: boolean
+    createdBy?: boolean
+  }
+
+  export type SiteArticleMediaOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "articleId" | "mediaId" | "role" | "slot" | "sort" | "caption" | "createdBy", ExtArgs["result"]["siteArticleMedia"]>
+  export type SiteArticleMediaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    article?: boolean | SiteArticleDefaultArgs<ExtArgs>
+    media?: boolean | SiteMediaDefaultArgs<ExtArgs>
+  }
+
+  export type $SiteArticleMediaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SiteArticleMedia"
+    objects: {
+      article: Prisma.$SiteArticlePayload<ExtArgs>
+      media: Prisma.$SiteMediaPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      articleId: string
+      mediaId: string
+      role: string
+      slot: string | null
+      sort: number
+      /**
+       * Подпись в этой статье; NULL — подпись медиа по умолчанию
+       */
+      caption: string | null
+      createdBy: string | null
+    }, ExtArgs["result"]["siteArticleMedia"]>
+    composites: {}
+  }
+
+  type SiteArticleMediaGetPayload<S extends boolean | null | undefined | SiteArticleMediaDefaultArgs> = $Result.GetResult<Prisma.$SiteArticleMediaPayload, S>
+
+  type SiteArticleMediaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SiteArticleMediaFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SiteArticleMediaCountAggregateInputType | true
+    }
+
+  export interface SiteArticleMediaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SiteArticleMedia'], meta: { name: 'SiteArticleMedia' } }
+    /**
+     * Find zero or one SiteArticleMedia that matches the filter.
+     * @param {SiteArticleMediaFindUniqueArgs} args - Arguments to find a SiteArticleMedia
+     * @example
+     * // Get one SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SiteArticleMediaFindUniqueArgs>(args: SelectSubset<T, SiteArticleMediaFindUniqueArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SiteArticleMedia that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SiteArticleMediaFindUniqueOrThrowArgs} args - Arguments to find a SiteArticleMedia
+     * @example
+     * // Get one SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SiteArticleMediaFindUniqueOrThrowArgs>(args: SelectSubset<T, SiteArticleMediaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticleMedia that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaFindFirstArgs} args - Arguments to find a SiteArticleMedia
+     * @example
+     * // Get one SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SiteArticleMediaFindFirstArgs>(args?: SelectSubset<T, SiteArticleMediaFindFirstArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SiteArticleMedia that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaFindFirstOrThrowArgs} args - Arguments to find a SiteArticleMedia
+     * @example
+     * // Get one SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SiteArticleMediaFindFirstOrThrowArgs>(args?: SelectSubset<T, SiteArticleMediaFindFirstOrThrowArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SiteArticleMedias that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SiteArticleMedias
+     * const siteArticleMedias = await prisma.siteArticleMedia.findMany()
+     * 
+     * // Get first 10 SiteArticleMedias
+     * const siteArticleMedias = await prisma.siteArticleMedia.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const siteArticleMediaWithIdOnly = await prisma.siteArticleMedia.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SiteArticleMediaFindManyArgs>(args?: SelectSubset<T, SiteArticleMediaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SiteArticleMedia.
+     * @param {SiteArticleMediaCreateArgs} args - Arguments to create a SiteArticleMedia.
+     * @example
+     * // Create one SiteArticleMedia
+     * const SiteArticleMedia = await prisma.siteArticleMedia.create({
+     *   data: {
+     *     // ... data to create a SiteArticleMedia
+     *   }
+     * })
+     * 
+     */
+    create<T extends SiteArticleMediaCreateArgs>(args: SelectSubset<T, SiteArticleMediaCreateArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SiteArticleMedias.
+     * @param {SiteArticleMediaCreateManyArgs} args - Arguments to create many SiteArticleMedias.
+     * @example
+     * // Create many SiteArticleMedias
+     * const siteArticleMedia = await prisma.siteArticleMedia.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SiteArticleMediaCreateManyArgs>(args?: SelectSubset<T, SiteArticleMediaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SiteArticleMedia.
+     * @param {SiteArticleMediaDeleteArgs} args - Arguments to delete one SiteArticleMedia.
+     * @example
+     * // Delete one SiteArticleMedia
+     * const SiteArticleMedia = await prisma.siteArticleMedia.delete({
+     *   where: {
+     *     // ... filter to delete one SiteArticleMedia
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SiteArticleMediaDeleteArgs>(args: SelectSubset<T, SiteArticleMediaDeleteArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SiteArticleMedia.
+     * @param {SiteArticleMediaUpdateArgs} args - Arguments to update one SiteArticleMedia.
+     * @example
+     * // Update one SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SiteArticleMediaUpdateArgs>(args: SelectSubset<T, SiteArticleMediaUpdateArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SiteArticleMedias.
+     * @param {SiteArticleMediaDeleteManyArgs} args - Arguments to filter SiteArticleMedias to delete.
+     * @example
+     * // Delete a few SiteArticleMedias
+     * const { count } = await prisma.siteArticleMedia.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SiteArticleMediaDeleteManyArgs>(args?: SelectSubset<T, SiteArticleMediaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SiteArticleMedias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SiteArticleMedias
+     * const siteArticleMedia = await prisma.siteArticleMedia.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SiteArticleMediaUpdateManyArgs>(args: SelectSubset<T, SiteArticleMediaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SiteArticleMedia.
+     * @param {SiteArticleMediaUpsertArgs} args - Arguments to update or create a SiteArticleMedia.
+     * @example
+     * // Update or create a SiteArticleMedia
+     * const siteArticleMedia = await prisma.siteArticleMedia.upsert({
+     *   create: {
+     *     // ... data to create a SiteArticleMedia
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SiteArticleMedia we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SiteArticleMediaUpsertArgs>(args: SelectSubset<T, SiteArticleMediaUpsertArgs<ExtArgs>>): Prisma__SiteArticleMediaClient<$Result.GetResult<Prisma.$SiteArticleMediaPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SiteArticleMedias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaCountArgs} args - Arguments to filter SiteArticleMedias to count.
+     * @example
+     * // Count the number of SiteArticleMedias
+     * const count = await prisma.siteArticleMedia.count({
+     *   where: {
+     *     // ... the filter for the SiteArticleMedias we want to count
+     *   }
+     * })
+    **/
+    count<T extends SiteArticleMediaCountArgs>(
+      args?: Subset<T, SiteArticleMediaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SiteArticleMediaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SiteArticleMedia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SiteArticleMediaAggregateArgs>(args: Subset<T, SiteArticleMediaAggregateArgs>): Prisma.PrismaPromise<GetSiteArticleMediaAggregateType<T>>
+
+    /**
+     * Group by SiteArticleMedia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SiteArticleMediaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SiteArticleMediaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SiteArticleMediaGroupByArgs['orderBy'] }
+        : { orderBy?: SiteArticleMediaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SiteArticleMediaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSiteArticleMediaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SiteArticleMedia model
+   */
+  readonly fields: SiteArticleMediaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SiteArticleMedia.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SiteArticleMediaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    article<T extends SiteArticleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SiteArticleDefaultArgs<ExtArgs>>): Prisma__SiteArticleClient<$Result.GetResult<Prisma.$SiteArticlePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    media<T extends SiteMediaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SiteMediaDefaultArgs<ExtArgs>>): Prisma__SiteMediaClient<$Result.GetResult<Prisma.$SiteMediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SiteArticleMedia model
+   */
+  interface SiteArticleMediaFieldRefs {
+    readonly id: FieldRef<"SiteArticleMedia", 'String'>
+    readonly createdAt: FieldRef<"SiteArticleMedia", 'DateTime'>
+    readonly updatedAt: FieldRef<"SiteArticleMedia", 'DateTime'>
+    readonly articleId: FieldRef<"SiteArticleMedia", 'String'>
+    readonly mediaId: FieldRef<"SiteArticleMedia", 'String'>
+    readonly role: FieldRef<"SiteArticleMedia", 'String'>
+    readonly slot: FieldRef<"SiteArticleMedia", 'String'>
+    readonly sort: FieldRef<"SiteArticleMedia", 'Int'>
+    readonly caption: FieldRef<"SiteArticleMedia", 'String'>
+    readonly createdBy: FieldRef<"SiteArticleMedia", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SiteArticleMedia findUnique
+   */
+  export type SiteArticleMediaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleMedia to fetch.
+     */
+    where: SiteArticleMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleMedia findUniqueOrThrow
+   */
+  export type SiteArticleMediaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleMedia to fetch.
+     */
+    where: SiteArticleMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleMedia findFirst
+   */
+  export type SiteArticleMediaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleMedia to fetch.
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleMedias to fetch.
+     */
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticleMedias.
+     */
+    cursor?: SiteArticleMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticleMedias.
+     */
+    distinct?: SiteArticleMediaScalarFieldEnum | SiteArticleMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleMedia findFirstOrThrow
+   */
+  export type SiteArticleMediaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleMedia to fetch.
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleMedias to fetch.
+     */
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SiteArticleMedias.
+     */
+    cursor?: SiteArticleMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleMedias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SiteArticleMedias.
+     */
+    distinct?: SiteArticleMediaScalarFieldEnum | SiteArticleMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleMedia findMany
+   */
+  export type SiteArticleMediaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter, which SiteArticleMedias to fetch.
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SiteArticleMedias to fetch.
+     */
+    orderBy?: SiteArticleMediaOrderByWithRelationInput | SiteArticleMediaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SiteArticleMedias.
+     */
+    cursor?: SiteArticleMediaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SiteArticleMedias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SiteArticleMedias.
+     */
+    skip?: number
+    distinct?: SiteArticleMediaScalarFieldEnum | SiteArticleMediaScalarFieldEnum[]
+  }
+
+  /**
+   * SiteArticleMedia create
+   */
+  export type SiteArticleMediaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SiteArticleMedia.
+     */
+    data: XOR<SiteArticleMediaCreateInput, SiteArticleMediaUncheckedCreateInput>
+  }
+
+  /**
+   * SiteArticleMedia createMany
+   */
+  export type SiteArticleMediaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SiteArticleMedias.
+     */
+    data: SiteArticleMediaCreateManyInput | SiteArticleMediaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SiteArticleMedia update
+   */
+  export type SiteArticleMediaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SiteArticleMedia.
+     */
+    data: XOR<SiteArticleMediaUpdateInput, SiteArticleMediaUncheckedUpdateInput>
+    /**
+     * Choose, which SiteArticleMedia to update.
+     */
+    where: SiteArticleMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleMedia updateMany
+   */
+  export type SiteArticleMediaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SiteArticleMedias.
+     */
+    data: XOR<SiteArticleMediaUpdateManyMutationInput, SiteArticleMediaUncheckedUpdateManyInput>
+    /**
+     * Filter which SiteArticleMedias to update
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * Limit how many SiteArticleMedias to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticleMedia upsert
+   */
+  export type SiteArticleMediaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SiteArticleMedia to update in case it exists.
+     */
+    where: SiteArticleMediaWhereUniqueInput
+    /**
+     * In case the SiteArticleMedia found by the `where` argument doesn't exist, create a new SiteArticleMedia with this data.
+     */
+    create: XOR<SiteArticleMediaCreateInput, SiteArticleMediaUncheckedCreateInput>
+    /**
+     * In case the SiteArticleMedia was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SiteArticleMediaUpdateInput, SiteArticleMediaUncheckedUpdateInput>
+  }
+
+  /**
+   * SiteArticleMedia delete
+   */
+  export type SiteArticleMediaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+    /**
+     * Filter which SiteArticleMedia to delete.
+     */
+    where: SiteArticleMediaWhereUniqueInput
+  }
+
+  /**
+   * SiteArticleMedia deleteMany
+   */
+  export type SiteArticleMediaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SiteArticleMedias to delete
+     */
+    where?: SiteArticleMediaWhereInput
+    /**
+     * Limit how many SiteArticleMedias to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SiteArticleMedia without action
+   */
+  export type SiteArticleMediaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SiteArticleMedia
+     */
+    select?: SiteArticleMediaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SiteArticleMedia
+     */
+    omit?: SiteArticleMediaOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SiteArticleMediaInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -132279,6 +137171,88 @@ export namespace Prisma {
   export type RenewalOfferLinkScalarFieldEnum = (typeof RenewalOfferLinkScalarFieldEnum)[keyof typeof RenewalOfferLinkScalarFieldEnum]
 
 
+  export const SiteMediaScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    kind: 'kind',
+    title: 'title',
+    caption: 'caption',
+    alt: 'alt',
+    fileName: 'fileName',
+    darkFileName: 'darkFileName',
+    posterFileName: 'posterFileName',
+    mime: 'mime',
+    sizeBytes: 'sizeBytes',
+    width: 'width',
+    height: 'height',
+    durationSec: 'durationSec',
+    embedProvider: 'embedProvider',
+    embedUrl: 'embedUrl',
+    embedId: 'embedId',
+    uploadedBy: 'uploadedBy'
+  };
+
+  export type SiteMediaScalarFieldEnum = (typeof SiteMediaScalarFieldEnum)[keyof typeof SiteMediaScalarFieldEnum]
+
+
+  export const SiteArticleScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    section: 'section',
+    type: 'type',
+    slug: 'slug',
+    status: 'status',
+    sort: 'sort',
+    publishedRevisionId: 'publishedRevisionId',
+    publishedAt: 'publishedAt',
+    publishedBy: 'publishedBy',
+    meta: 'meta',
+    createdBy: 'createdBy',
+    updatedBy: 'updatedBy'
+  };
+
+  export type SiteArticleScalarFieldEnum = (typeof SiteArticleScalarFieldEnum)[keyof typeof SiteArticleScalarFieldEnum]
+
+
+  export const SiteArticleRevisionScalarFieldEnum: {
+    id: 'id',
+    articleId: 'articleId',
+    number: 'number',
+    source: 'source',
+    contentFormat: 'contentFormat',
+    eyebrow: 'eyebrow',
+    title: 'title',
+    description: 'description',
+    seoTitle: 'seoTitle',
+    seoDescription: 'seoDescription',
+    blocks: 'blocks',
+    baseCodeHash: 'baseCodeHash',
+    comment: 'comment',
+    createdBy: 'createdBy',
+    createdAt: 'createdAt'
+  };
+
+  export type SiteArticleRevisionScalarFieldEnum = (typeof SiteArticleRevisionScalarFieldEnum)[keyof typeof SiteArticleRevisionScalarFieldEnum]
+
+
+  export const SiteArticleMediaScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    articleId: 'articleId',
+    mediaId: 'mediaId',
+    role: 'role',
+    slot: 'slot',
+    sort: 'sort',
+    caption: 'caption',
+    createdBy: 'createdBy'
+  };
+
+  export type SiteArticleMediaScalarFieldEnum = (typeof SiteArticleMediaScalarFieldEnum)[keyof typeof SiteArticleMediaScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -133703,6 +138677,71 @@ export namespace Prisma {
   };
 
   export type RenewalOfferLinkOrderByRelevanceFieldEnum = (typeof RenewalOfferLinkOrderByRelevanceFieldEnum)[keyof typeof RenewalOfferLinkOrderByRelevanceFieldEnum]
+
+
+  export const SiteMediaOrderByRelevanceFieldEnum: {
+    id: 'id',
+    kind: 'kind',
+    title: 'title',
+    caption: 'caption',
+    alt: 'alt',
+    fileName: 'fileName',
+    darkFileName: 'darkFileName',
+    posterFileName: 'posterFileName',
+    mime: 'mime',
+    embedProvider: 'embedProvider',
+    embedUrl: 'embedUrl',
+    embedId: 'embedId',
+    uploadedBy: 'uploadedBy'
+  };
+
+  export type SiteMediaOrderByRelevanceFieldEnum = (typeof SiteMediaOrderByRelevanceFieldEnum)[keyof typeof SiteMediaOrderByRelevanceFieldEnum]
+
+
+  export const SiteArticleOrderByRelevanceFieldEnum: {
+    id: 'id',
+    section: 'section',
+    type: 'type',
+    slug: 'slug',
+    status: 'status',
+    publishedRevisionId: 'publishedRevisionId',
+    publishedBy: 'publishedBy',
+    createdBy: 'createdBy',
+    updatedBy: 'updatedBy'
+  };
+
+  export type SiteArticleOrderByRelevanceFieldEnum = (typeof SiteArticleOrderByRelevanceFieldEnum)[keyof typeof SiteArticleOrderByRelevanceFieldEnum]
+
+
+  export const SiteArticleRevisionOrderByRelevanceFieldEnum: {
+    id: 'id',
+    articleId: 'articleId',
+    source: 'source',
+    contentFormat: 'contentFormat',
+    eyebrow: 'eyebrow',
+    title: 'title',
+    description: 'description',
+    seoTitle: 'seoTitle',
+    seoDescription: 'seoDescription',
+    baseCodeHash: 'baseCodeHash',
+    comment: 'comment',
+    createdBy: 'createdBy'
+  };
+
+  export type SiteArticleRevisionOrderByRelevanceFieldEnum = (typeof SiteArticleRevisionOrderByRelevanceFieldEnum)[keyof typeof SiteArticleRevisionOrderByRelevanceFieldEnum]
+
+
+  export const SiteArticleMediaOrderByRelevanceFieldEnum: {
+    id: 'id',
+    articleId: 'articleId',
+    mediaId: 'mediaId',
+    role: 'role',
+    slot: 'slot',
+    caption: 'caption',
+    createdBy: 'createdBy'
+  };
+
+  export type SiteArticleMediaOrderByRelevanceFieldEnum = (typeof SiteArticleMediaOrderByRelevanceFieldEnum)[keyof typeof SiteArticleMediaOrderByRelevanceFieldEnum]
 
 
   /**
@@ -145178,6 +150217,443 @@ export namespace Prisma {
     createdBy?: StringNullableWithAggregatesFilter<"RenewalOfferLink"> | string | null
     createdAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+  }
+
+  export type SiteMediaWhereInput = {
+    AND?: SiteMediaWhereInput | SiteMediaWhereInput[]
+    OR?: SiteMediaWhereInput[]
+    NOT?: SiteMediaWhereInput | SiteMediaWhereInput[]
+    id?: StringFilter<"SiteMedia"> | string
+    createdAt?: DateTimeNullableFilter<"SiteMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteMedia"> | Date | string | null
+    kind?: StringFilter<"SiteMedia"> | string
+    title?: StringNullableFilter<"SiteMedia"> | string | null
+    caption?: StringNullableFilter<"SiteMedia"> | string | null
+    alt?: StringNullableFilter<"SiteMedia"> | string | null
+    fileName?: StringNullableFilter<"SiteMedia"> | string | null
+    darkFileName?: StringNullableFilter<"SiteMedia"> | string | null
+    posterFileName?: StringNullableFilter<"SiteMedia"> | string | null
+    mime?: StringNullableFilter<"SiteMedia"> | string | null
+    sizeBytes?: IntNullableFilter<"SiteMedia"> | number | null
+    width?: IntNullableFilter<"SiteMedia"> | number | null
+    height?: IntNullableFilter<"SiteMedia"> | number | null
+    durationSec?: IntNullableFilter<"SiteMedia"> | number | null
+    embedProvider?: StringNullableFilter<"SiteMedia"> | string | null
+    embedUrl?: StringNullableFilter<"SiteMedia"> | string | null
+    embedId?: StringNullableFilter<"SiteMedia"> | string | null
+    uploadedBy?: StringNullableFilter<"SiteMedia"> | string | null
+    usages?: SiteArticleMediaListRelationFilter
+  }
+
+  export type SiteMediaOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    kind?: SortOrder
+    title?: SortOrderInput | SortOrder
+    caption?: SortOrderInput | SortOrder
+    alt?: SortOrderInput | SortOrder
+    fileName?: SortOrderInput | SortOrder
+    darkFileName?: SortOrderInput | SortOrder
+    posterFileName?: SortOrderInput | SortOrder
+    mime?: SortOrderInput | SortOrder
+    sizeBytes?: SortOrderInput | SortOrder
+    width?: SortOrderInput | SortOrder
+    height?: SortOrderInput | SortOrder
+    durationSec?: SortOrderInput | SortOrder
+    embedProvider?: SortOrderInput | SortOrder
+    embedUrl?: SortOrderInput | SortOrder
+    embedId?: SortOrderInput | SortOrder
+    uploadedBy?: SortOrderInput | SortOrder
+    usages?: SiteArticleMediaOrderByRelationAggregateInput
+    _relevance?: SiteMediaOrderByRelevanceInput
+  }
+
+  export type SiteMediaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SiteMediaWhereInput | SiteMediaWhereInput[]
+    OR?: SiteMediaWhereInput[]
+    NOT?: SiteMediaWhereInput | SiteMediaWhereInput[]
+    createdAt?: DateTimeNullableFilter<"SiteMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteMedia"> | Date | string | null
+    kind?: StringFilter<"SiteMedia"> | string
+    title?: StringNullableFilter<"SiteMedia"> | string | null
+    caption?: StringNullableFilter<"SiteMedia"> | string | null
+    alt?: StringNullableFilter<"SiteMedia"> | string | null
+    fileName?: StringNullableFilter<"SiteMedia"> | string | null
+    darkFileName?: StringNullableFilter<"SiteMedia"> | string | null
+    posterFileName?: StringNullableFilter<"SiteMedia"> | string | null
+    mime?: StringNullableFilter<"SiteMedia"> | string | null
+    sizeBytes?: IntNullableFilter<"SiteMedia"> | number | null
+    width?: IntNullableFilter<"SiteMedia"> | number | null
+    height?: IntNullableFilter<"SiteMedia"> | number | null
+    durationSec?: IntNullableFilter<"SiteMedia"> | number | null
+    embedProvider?: StringNullableFilter<"SiteMedia"> | string | null
+    embedUrl?: StringNullableFilter<"SiteMedia"> | string | null
+    embedId?: StringNullableFilter<"SiteMedia"> | string | null
+    uploadedBy?: StringNullableFilter<"SiteMedia"> | string | null
+    usages?: SiteArticleMediaListRelationFilter
+  }, "id">
+
+  export type SiteMediaOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    kind?: SortOrder
+    title?: SortOrderInput | SortOrder
+    caption?: SortOrderInput | SortOrder
+    alt?: SortOrderInput | SortOrder
+    fileName?: SortOrderInput | SortOrder
+    darkFileName?: SortOrderInput | SortOrder
+    posterFileName?: SortOrderInput | SortOrder
+    mime?: SortOrderInput | SortOrder
+    sizeBytes?: SortOrderInput | SortOrder
+    width?: SortOrderInput | SortOrder
+    height?: SortOrderInput | SortOrder
+    durationSec?: SortOrderInput | SortOrder
+    embedProvider?: SortOrderInput | SortOrder
+    embedUrl?: SortOrderInput | SortOrder
+    embedId?: SortOrderInput | SortOrder
+    uploadedBy?: SortOrderInput | SortOrder
+    _count?: SiteMediaCountOrderByAggregateInput
+    _avg?: SiteMediaAvgOrderByAggregateInput
+    _max?: SiteMediaMaxOrderByAggregateInput
+    _min?: SiteMediaMinOrderByAggregateInput
+    _sum?: SiteMediaSumOrderByAggregateInput
+  }
+
+  export type SiteMediaScalarWhereWithAggregatesInput = {
+    AND?: SiteMediaScalarWhereWithAggregatesInput | SiteMediaScalarWhereWithAggregatesInput[]
+    OR?: SiteMediaScalarWhereWithAggregatesInput[]
+    NOT?: SiteMediaScalarWhereWithAggregatesInput | SiteMediaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SiteMedia"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SiteMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SiteMedia"> | Date | string | null
+    kind?: StringWithAggregatesFilter<"SiteMedia"> | string
+    title?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    caption?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    alt?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    fileName?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    darkFileName?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    posterFileName?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    mime?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    sizeBytes?: IntNullableWithAggregatesFilter<"SiteMedia"> | number | null
+    width?: IntNullableWithAggregatesFilter<"SiteMedia"> | number | null
+    height?: IntNullableWithAggregatesFilter<"SiteMedia"> | number | null
+    durationSec?: IntNullableWithAggregatesFilter<"SiteMedia"> | number | null
+    embedProvider?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    embedUrl?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    embedId?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+    uploadedBy?: StringNullableWithAggregatesFilter<"SiteMedia"> | string | null
+  }
+
+  export type SiteArticleWhereInput = {
+    AND?: SiteArticleWhereInput | SiteArticleWhereInput[]
+    OR?: SiteArticleWhereInput[]
+    NOT?: SiteArticleWhereInput | SiteArticleWhereInput[]
+    id?: StringFilter<"SiteArticle"> | string
+    createdAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    section?: StringFilter<"SiteArticle"> | string
+    type?: StringFilter<"SiteArticle"> | string
+    slug?: StringFilter<"SiteArticle"> | string
+    status?: StringFilter<"SiteArticle"> | string
+    sort?: IntFilter<"SiteArticle"> | number
+    publishedRevisionId?: StringNullableFilter<"SiteArticle"> | string | null
+    publishedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    publishedBy?: StringNullableFilter<"SiteArticle"> | string | null
+    meta?: JsonNullableFilter<"SiteArticle">
+    createdBy?: StringNullableFilter<"SiteArticle"> | string | null
+    updatedBy?: StringNullableFilter<"SiteArticle"> | string | null
+    publishedRevision?: XOR<SiteArticleRevisionNullableScalarRelationFilter, SiteArticleRevisionWhereInput> | null
+    revisions?: SiteArticleRevisionListRelationFilter
+    media?: SiteArticleMediaListRelationFilter
+  }
+
+  export type SiteArticleOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    section?: SortOrder
+    type?: SortOrder
+    slug?: SortOrder
+    status?: SortOrder
+    sort?: SortOrder
+    publishedRevisionId?: SortOrderInput | SortOrder
+    publishedAt?: SortOrderInput | SortOrder
+    publishedBy?: SortOrderInput | SortOrder
+    meta?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    publishedRevision?: SiteArticleRevisionOrderByWithRelationInput
+    revisions?: SiteArticleRevisionOrderByRelationAggregateInput
+    media?: SiteArticleMediaOrderByRelationAggregateInput
+    _relevance?: SiteArticleOrderByRelevanceInput
+  }
+
+  export type SiteArticleWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    section_slug?: SiteArticleSectionSlugCompoundUniqueInput
+    AND?: SiteArticleWhereInput | SiteArticleWhereInput[]
+    OR?: SiteArticleWhereInput[]
+    NOT?: SiteArticleWhereInput | SiteArticleWhereInput[]
+    createdAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    section?: StringFilter<"SiteArticle"> | string
+    type?: StringFilter<"SiteArticle"> | string
+    slug?: StringFilter<"SiteArticle"> | string
+    status?: StringFilter<"SiteArticle"> | string
+    sort?: IntFilter<"SiteArticle"> | number
+    publishedRevisionId?: StringNullableFilter<"SiteArticle"> | string | null
+    publishedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    publishedBy?: StringNullableFilter<"SiteArticle"> | string | null
+    meta?: JsonNullableFilter<"SiteArticle">
+    createdBy?: StringNullableFilter<"SiteArticle"> | string | null
+    updatedBy?: StringNullableFilter<"SiteArticle"> | string | null
+    publishedRevision?: XOR<SiteArticleRevisionNullableScalarRelationFilter, SiteArticleRevisionWhereInput> | null
+    revisions?: SiteArticleRevisionListRelationFilter
+    media?: SiteArticleMediaListRelationFilter
+  }, "id" | "section_slug">
+
+  export type SiteArticleOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    section?: SortOrder
+    type?: SortOrder
+    slug?: SortOrder
+    status?: SortOrder
+    sort?: SortOrder
+    publishedRevisionId?: SortOrderInput | SortOrder
+    publishedAt?: SortOrderInput | SortOrder
+    publishedBy?: SortOrderInput | SortOrder
+    meta?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    _count?: SiteArticleCountOrderByAggregateInput
+    _avg?: SiteArticleAvgOrderByAggregateInput
+    _max?: SiteArticleMaxOrderByAggregateInput
+    _min?: SiteArticleMinOrderByAggregateInput
+    _sum?: SiteArticleSumOrderByAggregateInput
+  }
+
+  export type SiteArticleScalarWhereWithAggregatesInput = {
+    AND?: SiteArticleScalarWhereWithAggregatesInput | SiteArticleScalarWhereWithAggregatesInput[]
+    OR?: SiteArticleScalarWhereWithAggregatesInput[]
+    NOT?: SiteArticleScalarWhereWithAggregatesInput | SiteArticleScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SiteArticle"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SiteArticle"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SiteArticle"> | Date | string | null
+    section?: StringWithAggregatesFilter<"SiteArticle"> | string
+    type?: StringWithAggregatesFilter<"SiteArticle"> | string
+    slug?: StringWithAggregatesFilter<"SiteArticle"> | string
+    status?: StringWithAggregatesFilter<"SiteArticle"> | string
+    sort?: IntWithAggregatesFilter<"SiteArticle"> | number
+    publishedRevisionId?: StringNullableWithAggregatesFilter<"SiteArticle"> | string | null
+    publishedAt?: DateTimeNullableWithAggregatesFilter<"SiteArticle"> | Date | string | null
+    publishedBy?: StringNullableWithAggregatesFilter<"SiteArticle"> | string | null
+    meta?: JsonNullableWithAggregatesFilter<"SiteArticle">
+    createdBy?: StringNullableWithAggregatesFilter<"SiteArticle"> | string | null
+    updatedBy?: StringNullableWithAggregatesFilter<"SiteArticle"> | string | null
+  }
+
+  export type SiteArticleRevisionWhereInput = {
+    AND?: SiteArticleRevisionWhereInput | SiteArticleRevisionWhereInput[]
+    OR?: SiteArticleRevisionWhereInput[]
+    NOT?: SiteArticleRevisionWhereInput | SiteArticleRevisionWhereInput[]
+    id?: StringFilter<"SiteArticleRevision"> | string
+    articleId?: StringFilter<"SiteArticleRevision"> | string
+    number?: IntFilter<"SiteArticleRevision"> | number
+    source?: StringFilter<"SiteArticleRevision"> | string
+    contentFormat?: StringFilter<"SiteArticleRevision"> | string
+    eyebrow?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    title?: StringFilter<"SiteArticleRevision"> | string
+    description?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoTitle?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoDescription?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    blocks?: JsonFilter<"SiteArticleRevision">
+    baseCodeHash?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    comment?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdAt?: DateTimeNullableFilter<"SiteArticleRevision"> | Date | string | null
+    article?: XOR<SiteArticleScalarRelationFilter, SiteArticleWhereInput>
+    publishedIn?: SiteArticleListRelationFilter
+  }
+
+  export type SiteArticleRevisionOrderByWithRelationInput = {
+    id?: SortOrder
+    articleId?: SortOrder
+    number?: SortOrder
+    source?: SortOrder
+    contentFormat?: SortOrder
+    eyebrow?: SortOrderInput | SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    seoTitle?: SortOrderInput | SortOrder
+    seoDescription?: SortOrderInput | SortOrder
+    blocks?: SortOrder
+    baseCodeHash?: SortOrderInput | SortOrder
+    comment?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    article?: SiteArticleOrderByWithRelationInput
+    publishedIn?: SiteArticleOrderByRelationAggregateInput
+    _relevance?: SiteArticleRevisionOrderByRelevanceInput
+  }
+
+  export type SiteArticleRevisionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    articleId_number?: SiteArticleRevisionArticleIdNumberCompoundUniqueInput
+    AND?: SiteArticleRevisionWhereInput | SiteArticleRevisionWhereInput[]
+    OR?: SiteArticleRevisionWhereInput[]
+    NOT?: SiteArticleRevisionWhereInput | SiteArticleRevisionWhereInput[]
+    articleId?: StringFilter<"SiteArticleRevision"> | string
+    number?: IntFilter<"SiteArticleRevision"> | number
+    source?: StringFilter<"SiteArticleRevision"> | string
+    contentFormat?: StringFilter<"SiteArticleRevision"> | string
+    eyebrow?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    title?: StringFilter<"SiteArticleRevision"> | string
+    description?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoTitle?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoDescription?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    blocks?: JsonFilter<"SiteArticleRevision">
+    baseCodeHash?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    comment?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdAt?: DateTimeNullableFilter<"SiteArticleRevision"> | Date | string | null
+    article?: XOR<SiteArticleScalarRelationFilter, SiteArticleWhereInput>
+    publishedIn?: SiteArticleListRelationFilter
+  }, "id" | "articleId_number">
+
+  export type SiteArticleRevisionOrderByWithAggregationInput = {
+    id?: SortOrder
+    articleId?: SortOrder
+    number?: SortOrder
+    source?: SortOrder
+    contentFormat?: SortOrder
+    eyebrow?: SortOrderInput | SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    seoTitle?: SortOrderInput | SortOrder
+    seoDescription?: SortOrderInput | SortOrder
+    blocks?: SortOrder
+    baseCodeHash?: SortOrderInput | SortOrder
+    comment?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    _count?: SiteArticleRevisionCountOrderByAggregateInput
+    _avg?: SiteArticleRevisionAvgOrderByAggregateInput
+    _max?: SiteArticleRevisionMaxOrderByAggregateInput
+    _min?: SiteArticleRevisionMinOrderByAggregateInput
+    _sum?: SiteArticleRevisionSumOrderByAggregateInput
+  }
+
+  export type SiteArticleRevisionScalarWhereWithAggregatesInput = {
+    AND?: SiteArticleRevisionScalarWhereWithAggregatesInput | SiteArticleRevisionScalarWhereWithAggregatesInput[]
+    OR?: SiteArticleRevisionScalarWhereWithAggregatesInput[]
+    NOT?: SiteArticleRevisionScalarWhereWithAggregatesInput | SiteArticleRevisionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SiteArticleRevision"> | string
+    articleId?: StringWithAggregatesFilter<"SiteArticleRevision"> | string
+    number?: IntWithAggregatesFilter<"SiteArticleRevision"> | number
+    source?: StringWithAggregatesFilter<"SiteArticleRevision"> | string
+    contentFormat?: StringWithAggregatesFilter<"SiteArticleRevision"> | string
+    eyebrow?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    title?: StringWithAggregatesFilter<"SiteArticleRevision"> | string
+    description?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    seoTitle?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    seoDescription?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    blocks?: JsonWithAggregatesFilter<"SiteArticleRevision">
+    baseCodeHash?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    comment?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    createdBy?: StringNullableWithAggregatesFilter<"SiteArticleRevision"> | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SiteArticleRevision"> | Date | string | null
+  }
+
+  export type SiteArticleMediaWhereInput = {
+    AND?: SiteArticleMediaWhereInput | SiteArticleMediaWhereInput[]
+    OR?: SiteArticleMediaWhereInput[]
+    NOT?: SiteArticleMediaWhereInput | SiteArticleMediaWhereInput[]
+    id?: StringFilter<"SiteArticleMedia"> | string
+    createdAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    articleId?: StringFilter<"SiteArticleMedia"> | string
+    mediaId?: StringFilter<"SiteArticleMedia"> | string
+    role?: StringFilter<"SiteArticleMedia"> | string
+    slot?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    sort?: IntFilter<"SiteArticleMedia"> | number
+    caption?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    article?: XOR<SiteArticleScalarRelationFilter, SiteArticleWhereInput>
+    media?: XOR<SiteMediaScalarRelationFilter, SiteMediaWhereInput>
+  }
+
+  export type SiteArticleMediaOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    articleId?: SortOrder
+    mediaId?: SortOrder
+    role?: SortOrder
+    slot?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    caption?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    article?: SiteArticleOrderByWithRelationInput
+    media?: SiteMediaOrderByWithRelationInput
+    _relevance?: SiteArticleMediaOrderByRelevanceInput
+  }
+
+  export type SiteArticleMediaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    articleId_role_slot?: SiteArticleMediaArticleIdRoleSlotCompoundUniqueInput
+    AND?: SiteArticleMediaWhereInput | SiteArticleMediaWhereInput[]
+    OR?: SiteArticleMediaWhereInput[]
+    NOT?: SiteArticleMediaWhereInput | SiteArticleMediaWhereInput[]
+    createdAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    articleId?: StringFilter<"SiteArticleMedia"> | string
+    mediaId?: StringFilter<"SiteArticleMedia"> | string
+    role?: StringFilter<"SiteArticleMedia"> | string
+    slot?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    sort?: IntFilter<"SiteArticleMedia"> | number
+    caption?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    article?: XOR<SiteArticleScalarRelationFilter, SiteArticleWhereInput>
+    media?: XOR<SiteMediaScalarRelationFilter, SiteMediaWhereInput>
+  }, "id" | "articleId_role_slot">
+
+  export type SiteArticleMediaOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    articleId?: SortOrder
+    mediaId?: SortOrder
+    role?: SortOrder
+    slot?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    caption?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    _count?: SiteArticleMediaCountOrderByAggregateInput
+    _avg?: SiteArticleMediaAvgOrderByAggregateInput
+    _max?: SiteArticleMediaMaxOrderByAggregateInput
+    _min?: SiteArticleMediaMinOrderByAggregateInput
+    _sum?: SiteArticleMediaSumOrderByAggregateInput
+  }
+
+  export type SiteArticleMediaScalarWhereWithAggregatesInput = {
+    AND?: SiteArticleMediaScalarWhereWithAggregatesInput | SiteArticleMediaScalarWhereWithAggregatesInput[]
+    OR?: SiteArticleMediaScalarWhereWithAggregatesInput[]
+    NOT?: SiteArticleMediaScalarWhereWithAggregatesInput | SiteArticleMediaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SiteArticleMedia"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SiteArticleMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SiteArticleMedia"> | Date | string | null
+    articleId?: StringWithAggregatesFilter<"SiteArticleMedia"> | string
+    mediaId?: StringWithAggregatesFilter<"SiteArticleMedia"> | string
+    role?: StringWithAggregatesFilter<"SiteArticleMedia"> | string
+    slot?: StringNullableWithAggregatesFilter<"SiteArticleMedia"> | string | null
+    sort?: IntWithAggregatesFilter<"SiteArticleMedia"> | number
+    caption?: StringNullableWithAggregatesFilter<"SiteArticleMedia"> | string | null
+    createdBy?: StringNullableWithAggregatesFilter<"SiteArticleMedia"> | string | null
   }
 
   export type agentsCreateInput = {
@@ -158254,6 +163730,508 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type SiteMediaCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    kind: string
+    title?: string | null
+    caption?: string | null
+    alt?: string | null
+    fileName?: string | null
+    darkFileName?: string | null
+    posterFileName?: string | null
+    mime?: string | null
+    sizeBytes?: number | null
+    width?: number | null
+    height?: number | null
+    durationSec?: number | null
+    embedProvider?: string | null
+    embedUrl?: string | null
+    embedId?: string | null
+    uploadedBy?: string | null
+    usages?: SiteArticleMediaCreateNestedManyWithoutMediaInput
+  }
+
+  export type SiteMediaUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    kind: string
+    title?: string | null
+    caption?: string | null
+    alt?: string | null
+    fileName?: string | null
+    darkFileName?: string | null
+    posterFileName?: string | null
+    mime?: string | null
+    sizeBytes?: number | null
+    width?: number | null
+    height?: number | null
+    durationSec?: number | null
+    embedProvider?: string | null
+    embedUrl?: string | null
+    embedId?: string | null
+    uploadedBy?: string | null
+    usages?: SiteArticleMediaUncheckedCreateNestedManyWithoutMediaInput
+  }
+
+  export type SiteMediaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    usages?: SiteArticleMediaUpdateManyWithoutMediaNestedInput
+  }
+
+  export type SiteMediaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    usages?: SiteArticleMediaUncheckedUpdateManyWithoutMediaNestedInput
+  }
+
+  export type SiteMediaCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    kind: string
+    title?: string | null
+    caption?: string | null
+    alt?: string | null
+    fileName?: string | null
+    darkFileName?: string | null
+    posterFileName?: string | null
+    mime?: string | null
+    sizeBytes?: number | null
+    width?: number | null
+    height?: number | null
+    durationSec?: number | null
+    embedProvider?: string | null
+    embedUrl?: string | null
+    embedId?: string | null
+    uploadedBy?: string | null
+  }
+
+  export type SiteMediaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteMediaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    publishedRevision?: SiteArticleRevisionCreateNestedOneWithoutPublishedInInput
+    revisions?: SiteArticleRevisionCreateNestedManyWithoutArticleInput
+    media?: SiteArticleMediaCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedRevisionId?: string | null
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    revisions?: SiteArticleRevisionUncheckedCreateNestedManyWithoutArticleInput
+    media?: SiteArticleMediaUncheckedCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedRevision?: SiteArticleRevisionUpdateOneWithoutPublishedInNestedInput
+    revisions?: SiteArticleRevisionUpdateManyWithoutArticleNestedInput
+    media?: SiteArticleMediaUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedRevisionId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revisions?: SiteArticleRevisionUncheckedUpdateManyWithoutArticleNestedInput
+    media?: SiteArticleMediaUncheckedUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedRevisionId?: string | null
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+  }
+
+  export type SiteArticleUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedRevisionId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleRevisionCreateInput = {
+    id: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    article: SiteArticleCreateNestedOneWithoutRevisionsInput
+    publishedIn?: SiteArticleCreateNestedManyWithoutPublishedRevisionInput
+  }
+
+  export type SiteArticleRevisionUncheckedCreateInput = {
+    id: string
+    articleId: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    publishedIn?: SiteArticleUncheckedCreateNestedManyWithoutPublishedRevisionInput
+  }
+
+  export type SiteArticleRevisionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    article?: SiteArticleUpdateOneRequiredWithoutRevisionsNestedInput
+    publishedIn?: SiteArticleUpdateManyWithoutPublishedRevisionNestedInput
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    articleId?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedIn?: SiteArticleUncheckedUpdateManyWithoutPublishedRevisionNestedInput
+  }
+
+  export type SiteArticleRevisionCreateManyInput = {
+    id: string
+    articleId: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+  }
+
+  export type SiteArticleRevisionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    articleId?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SiteArticleMediaCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+    article: SiteArticleCreateNestedOneWithoutMediaInput
+    media: SiteMediaCreateNestedOneWithoutUsagesInput
+  }
+
+  export type SiteArticleMediaUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    articleId: string
+    mediaId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleMediaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    article?: SiteArticleUpdateOneRequiredWithoutMediaNestedInput
+    media?: SiteMediaUpdateOneRequiredWithoutUsagesNestedInput
+  }
+
+  export type SiteArticleMediaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    articleId?: StringFieldUpdateOperationsInput | string
+    mediaId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleMediaCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    articleId: string
+    mediaId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleMediaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleMediaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    articleId?: StringFieldUpdateOperationsInput | string
+    mediaId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -167174,6 +173152,335 @@ export namespace Prisma {
     viewCount?: SortOrder
   }
 
+  export type SiteArticleMediaListRelationFilter = {
+    every?: SiteArticleMediaWhereInput
+    some?: SiteArticleMediaWhereInput
+    none?: SiteArticleMediaWhereInput
+  }
+
+  export type SiteArticleMediaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SiteMediaOrderByRelevanceInput = {
+    fields: SiteMediaOrderByRelevanceFieldEnum | SiteMediaOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SiteMediaCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    kind?: SortOrder
+    title?: SortOrder
+    caption?: SortOrder
+    alt?: SortOrder
+    fileName?: SortOrder
+    darkFileName?: SortOrder
+    posterFileName?: SortOrder
+    mime?: SortOrder
+    sizeBytes?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    durationSec?: SortOrder
+    embedProvider?: SortOrder
+    embedUrl?: SortOrder
+    embedId?: SortOrder
+    uploadedBy?: SortOrder
+  }
+
+  export type SiteMediaAvgOrderByAggregateInput = {
+    sizeBytes?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    durationSec?: SortOrder
+  }
+
+  export type SiteMediaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    kind?: SortOrder
+    title?: SortOrder
+    caption?: SortOrder
+    alt?: SortOrder
+    fileName?: SortOrder
+    darkFileName?: SortOrder
+    posterFileName?: SortOrder
+    mime?: SortOrder
+    sizeBytes?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    durationSec?: SortOrder
+    embedProvider?: SortOrder
+    embedUrl?: SortOrder
+    embedId?: SortOrder
+    uploadedBy?: SortOrder
+  }
+
+  export type SiteMediaMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    kind?: SortOrder
+    title?: SortOrder
+    caption?: SortOrder
+    alt?: SortOrder
+    fileName?: SortOrder
+    darkFileName?: SortOrder
+    posterFileName?: SortOrder
+    mime?: SortOrder
+    sizeBytes?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    durationSec?: SortOrder
+    embedProvider?: SortOrder
+    embedUrl?: SortOrder
+    embedId?: SortOrder
+    uploadedBy?: SortOrder
+  }
+
+  export type SiteMediaSumOrderByAggregateInput = {
+    sizeBytes?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    durationSec?: SortOrder
+  }
+
+  export type SiteArticleRevisionNullableScalarRelationFilter = {
+    is?: SiteArticleRevisionWhereInput | null
+    isNot?: SiteArticleRevisionWhereInput | null
+  }
+
+  export type SiteArticleRevisionListRelationFilter = {
+    every?: SiteArticleRevisionWhereInput
+    some?: SiteArticleRevisionWhereInput
+    none?: SiteArticleRevisionWhereInput
+  }
+
+  export type SiteArticleRevisionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SiteArticleOrderByRelevanceInput = {
+    fields: SiteArticleOrderByRelevanceFieldEnum | SiteArticleOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SiteArticleSectionSlugCompoundUniqueInput = {
+    section: string
+    slug: string
+  }
+
+  export type SiteArticleCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    section?: SortOrder
+    type?: SortOrder
+    slug?: SortOrder
+    status?: SortOrder
+    sort?: SortOrder
+    publishedRevisionId?: SortOrder
+    publishedAt?: SortOrder
+    publishedBy?: SortOrder
+    meta?: SortOrder
+    createdBy?: SortOrder
+    updatedBy?: SortOrder
+  }
+
+  export type SiteArticleAvgOrderByAggregateInput = {
+    sort?: SortOrder
+  }
+
+  export type SiteArticleMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    section?: SortOrder
+    type?: SortOrder
+    slug?: SortOrder
+    status?: SortOrder
+    sort?: SortOrder
+    publishedRevisionId?: SortOrder
+    publishedAt?: SortOrder
+    publishedBy?: SortOrder
+    createdBy?: SortOrder
+    updatedBy?: SortOrder
+  }
+
+  export type SiteArticleMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    section?: SortOrder
+    type?: SortOrder
+    slug?: SortOrder
+    status?: SortOrder
+    sort?: SortOrder
+    publishedRevisionId?: SortOrder
+    publishedAt?: SortOrder
+    publishedBy?: SortOrder
+    createdBy?: SortOrder
+    updatedBy?: SortOrder
+  }
+
+  export type SiteArticleSumOrderByAggregateInput = {
+    sort?: SortOrder
+  }
+
+  export type SiteArticleScalarRelationFilter = {
+    is?: SiteArticleWhereInput
+    isNot?: SiteArticleWhereInput
+  }
+
+  export type SiteArticleListRelationFilter = {
+    every?: SiteArticleWhereInput
+    some?: SiteArticleWhereInput
+    none?: SiteArticleWhereInput
+  }
+
+  export type SiteArticleOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SiteArticleRevisionOrderByRelevanceInput = {
+    fields: SiteArticleRevisionOrderByRelevanceFieldEnum | SiteArticleRevisionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SiteArticleRevisionArticleIdNumberCompoundUniqueInput = {
+    articleId: string
+    number: number
+  }
+
+  export type SiteArticleRevisionCountOrderByAggregateInput = {
+    id?: SortOrder
+    articleId?: SortOrder
+    number?: SortOrder
+    source?: SortOrder
+    contentFormat?: SortOrder
+    eyebrow?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    seoTitle?: SortOrder
+    seoDescription?: SortOrder
+    blocks?: SortOrder
+    baseCodeHash?: SortOrder
+    comment?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SiteArticleRevisionAvgOrderByAggregateInput = {
+    number?: SortOrder
+  }
+
+  export type SiteArticleRevisionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    articleId?: SortOrder
+    number?: SortOrder
+    source?: SortOrder
+    contentFormat?: SortOrder
+    eyebrow?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    seoTitle?: SortOrder
+    seoDescription?: SortOrder
+    baseCodeHash?: SortOrder
+    comment?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SiteArticleRevisionMinOrderByAggregateInput = {
+    id?: SortOrder
+    articleId?: SortOrder
+    number?: SortOrder
+    source?: SortOrder
+    contentFormat?: SortOrder
+    eyebrow?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    seoTitle?: SortOrder
+    seoDescription?: SortOrder
+    baseCodeHash?: SortOrder
+    comment?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SiteArticleRevisionSumOrderByAggregateInput = {
+    number?: SortOrder
+  }
+
+  export type SiteMediaScalarRelationFilter = {
+    is?: SiteMediaWhereInput
+    isNot?: SiteMediaWhereInput
+  }
+
+  export type SiteArticleMediaOrderByRelevanceInput = {
+    fields: SiteArticleMediaOrderByRelevanceFieldEnum | SiteArticleMediaOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SiteArticleMediaArticleIdRoleSlotCompoundUniqueInput = {
+    articleId: string
+    role: string
+    slot: string
+  }
+
+  export type SiteArticleMediaCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    articleId?: SortOrder
+    mediaId?: SortOrder
+    role?: SortOrder
+    slot?: SortOrder
+    sort?: SortOrder
+    caption?: SortOrder
+    createdBy?: SortOrder
+  }
+
+  export type SiteArticleMediaAvgOrderByAggregateInput = {
+    sort?: SortOrder
+  }
+
+  export type SiteArticleMediaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    articleId?: SortOrder
+    mediaId?: SortOrder
+    role?: SortOrder
+    slot?: SortOrder
+    sort?: SortOrder
+    caption?: SortOrder
+    createdBy?: SortOrder
+  }
+
+  export type SiteArticleMediaMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    articleId?: SortOrder
+    mediaId?: SortOrder
+    role?: SortOrder
+    slot?: SortOrder
+    sort?: SortOrder
+    caption?: SortOrder
+    createdBy?: SortOrder
+  }
+
+  export type SiteArticleMediaSumOrderByAggregateInput = {
+    sort?: SortOrder
+  }
+
   export type PortalCreateNestedOneWithoutAgentsInput = {
     create?: XOR<PortalCreateWithoutAgentsInput, PortalUncheckedCreateWithoutAgentsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAgentsInput
@@ -172900,6 +179207,232 @@ export namespace Prisma {
     upsert?: PortalUpsertWithoutOfferLettersInput
     connect?: PortalWhereUniqueInput
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutOfferLettersInput, PortalUpdateWithoutOfferLettersInput>, PortalUncheckedUpdateWithoutOfferLettersInput>
+  }
+
+  export type SiteArticleMediaCreateNestedManyWithoutMediaInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput> | SiteArticleMediaCreateWithoutMediaInput[] | SiteArticleMediaUncheckedCreateWithoutMediaInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutMediaInput | SiteArticleMediaCreateOrConnectWithoutMediaInput[]
+    createMany?: SiteArticleMediaCreateManyMediaInputEnvelope
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+  }
+
+  export type SiteArticleMediaUncheckedCreateNestedManyWithoutMediaInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput> | SiteArticleMediaCreateWithoutMediaInput[] | SiteArticleMediaUncheckedCreateWithoutMediaInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutMediaInput | SiteArticleMediaCreateOrConnectWithoutMediaInput[]
+    createMany?: SiteArticleMediaCreateManyMediaInputEnvelope
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+  }
+
+  export type SiteArticleMediaUpdateManyWithoutMediaNestedInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput> | SiteArticleMediaCreateWithoutMediaInput[] | SiteArticleMediaUncheckedCreateWithoutMediaInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutMediaInput | SiteArticleMediaCreateOrConnectWithoutMediaInput[]
+    upsert?: SiteArticleMediaUpsertWithWhereUniqueWithoutMediaInput | SiteArticleMediaUpsertWithWhereUniqueWithoutMediaInput[]
+    createMany?: SiteArticleMediaCreateManyMediaInputEnvelope
+    set?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    disconnect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    delete?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    update?: SiteArticleMediaUpdateWithWhereUniqueWithoutMediaInput | SiteArticleMediaUpdateWithWhereUniqueWithoutMediaInput[]
+    updateMany?: SiteArticleMediaUpdateManyWithWhereWithoutMediaInput | SiteArticleMediaUpdateManyWithWhereWithoutMediaInput[]
+    deleteMany?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+  }
+
+  export type SiteArticleMediaUncheckedUpdateManyWithoutMediaNestedInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput> | SiteArticleMediaCreateWithoutMediaInput[] | SiteArticleMediaUncheckedCreateWithoutMediaInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutMediaInput | SiteArticleMediaCreateOrConnectWithoutMediaInput[]
+    upsert?: SiteArticleMediaUpsertWithWhereUniqueWithoutMediaInput | SiteArticleMediaUpsertWithWhereUniqueWithoutMediaInput[]
+    createMany?: SiteArticleMediaCreateManyMediaInputEnvelope
+    set?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    disconnect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    delete?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    update?: SiteArticleMediaUpdateWithWhereUniqueWithoutMediaInput | SiteArticleMediaUpdateWithWhereUniqueWithoutMediaInput[]
+    updateMany?: SiteArticleMediaUpdateManyWithWhereWithoutMediaInput | SiteArticleMediaUpdateManyWithWhereWithoutMediaInput[]
+    deleteMany?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+  }
+
+  export type SiteArticleRevisionCreateNestedOneWithoutPublishedInInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutPublishedInInput, SiteArticleRevisionUncheckedCreateWithoutPublishedInInput>
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutPublishedInInput
+    connect?: SiteArticleRevisionWhereUniqueInput
+  }
+
+  export type SiteArticleRevisionCreateNestedManyWithoutArticleInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput> | SiteArticleRevisionCreateWithoutArticleInput[] | SiteArticleRevisionUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutArticleInput | SiteArticleRevisionCreateOrConnectWithoutArticleInput[]
+    createMany?: SiteArticleRevisionCreateManyArticleInputEnvelope
+    connect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+  }
+
+  export type SiteArticleMediaCreateNestedManyWithoutArticleInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput> | SiteArticleMediaCreateWithoutArticleInput[] | SiteArticleMediaUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutArticleInput | SiteArticleMediaCreateOrConnectWithoutArticleInput[]
+    createMany?: SiteArticleMediaCreateManyArticleInputEnvelope
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+  }
+
+  export type SiteArticleRevisionUncheckedCreateNestedManyWithoutArticleInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput> | SiteArticleRevisionCreateWithoutArticleInput[] | SiteArticleRevisionUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutArticleInput | SiteArticleRevisionCreateOrConnectWithoutArticleInput[]
+    createMany?: SiteArticleRevisionCreateManyArticleInputEnvelope
+    connect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+  }
+
+  export type SiteArticleMediaUncheckedCreateNestedManyWithoutArticleInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput> | SiteArticleMediaCreateWithoutArticleInput[] | SiteArticleMediaUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutArticleInput | SiteArticleMediaCreateOrConnectWithoutArticleInput[]
+    createMany?: SiteArticleMediaCreateManyArticleInputEnvelope
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+  }
+
+  export type SiteArticleRevisionUpdateOneWithoutPublishedInNestedInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutPublishedInInput, SiteArticleRevisionUncheckedCreateWithoutPublishedInInput>
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutPublishedInInput
+    upsert?: SiteArticleRevisionUpsertWithoutPublishedInInput
+    disconnect?: SiteArticleRevisionWhereInput | boolean
+    delete?: SiteArticleRevisionWhereInput | boolean
+    connect?: SiteArticleRevisionWhereUniqueInput
+    update?: XOR<XOR<SiteArticleRevisionUpdateToOneWithWhereWithoutPublishedInInput, SiteArticleRevisionUpdateWithoutPublishedInInput>, SiteArticleRevisionUncheckedUpdateWithoutPublishedInInput>
+  }
+
+  export type SiteArticleRevisionUpdateManyWithoutArticleNestedInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput> | SiteArticleRevisionCreateWithoutArticleInput[] | SiteArticleRevisionUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutArticleInput | SiteArticleRevisionCreateOrConnectWithoutArticleInput[]
+    upsert?: SiteArticleRevisionUpsertWithWhereUniqueWithoutArticleInput | SiteArticleRevisionUpsertWithWhereUniqueWithoutArticleInput[]
+    createMany?: SiteArticleRevisionCreateManyArticleInputEnvelope
+    set?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    disconnect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    delete?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    connect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    update?: SiteArticleRevisionUpdateWithWhereUniqueWithoutArticleInput | SiteArticleRevisionUpdateWithWhereUniqueWithoutArticleInput[]
+    updateMany?: SiteArticleRevisionUpdateManyWithWhereWithoutArticleInput | SiteArticleRevisionUpdateManyWithWhereWithoutArticleInput[]
+    deleteMany?: SiteArticleRevisionScalarWhereInput | SiteArticleRevisionScalarWhereInput[]
+  }
+
+  export type SiteArticleMediaUpdateManyWithoutArticleNestedInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput> | SiteArticleMediaCreateWithoutArticleInput[] | SiteArticleMediaUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutArticleInput | SiteArticleMediaCreateOrConnectWithoutArticleInput[]
+    upsert?: SiteArticleMediaUpsertWithWhereUniqueWithoutArticleInput | SiteArticleMediaUpsertWithWhereUniqueWithoutArticleInput[]
+    createMany?: SiteArticleMediaCreateManyArticleInputEnvelope
+    set?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    disconnect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    delete?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    update?: SiteArticleMediaUpdateWithWhereUniqueWithoutArticleInput | SiteArticleMediaUpdateWithWhereUniqueWithoutArticleInput[]
+    updateMany?: SiteArticleMediaUpdateManyWithWhereWithoutArticleInput | SiteArticleMediaUpdateManyWithWhereWithoutArticleInput[]
+    deleteMany?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateManyWithoutArticleNestedInput = {
+    create?: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput> | SiteArticleRevisionCreateWithoutArticleInput[] | SiteArticleRevisionUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleRevisionCreateOrConnectWithoutArticleInput | SiteArticleRevisionCreateOrConnectWithoutArticleInput[]
+    upsert?: SiteArticleRevisionUpsertWithWhereUniqueWithoutArticleInput | SiteArticleRevisionUpsertWithWhereUniqueWithoutArticleInput[]
+    createMany?: SiteArticleRevisionCreateManyArticleInputEnvelope
+    set?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    disconnect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    delete?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    connect?: SiteArticleRevisionWhereUniqueInput | SiteArticleRevisionWhereUniqueInput[]
+    update?: SiteArticleRevisionUpdateWithWhereUniqueWithoutArticleInput | SiteArticleRevisionUpdateWithWhereUniqueWithoutArticleInput[]
+    updateMany?: SiteArticleRevisionUpdateManyWithWhereWithoutArticleInput | SiteArticleRevisionUpdateManyWithWhereWithoutArticleInput[]
+    deleteMany?: SiteArticleRevisionScalarWhereInput | SiteArticleRevisionScalarWhereInput[]
+  }
+
+  export type SiteArticleMediaUncheckedUpdateManyWithoutArticleNestedInput = {
+    create?: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput> | SiteArticleMediaCreateWithoutArticleInput[] | SiteArticleMediaUncheckedCreateWithoutArticleInput[]
+    connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutArticleInput | SiteArticleMediaCreateOrConnectWithoutArticleInput[]
+    upsert?: SiteArticleMediaUpsertWithWhereUniqueWithoutArticleInput | SiteArticleMediaUpsertWithWhereUniqueWithoutArticleInput[]
+    createMany?: SiteArticleMediaCreateManyArticleInputEnvelope
+    set?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    disconnect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    delete?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    connect?: SiteArticleMediaWhereUniqueInput | SiteArticleMediaWhereUniqueInput[]
+    update?: SiteArticleMediaUpdateWithWhereUniqueWithoutArticleInput | SiteArticleMediaUpdateWithWhereUniqueWithoutArticleInput[]
+    updateMany?: SiteArticleMediaUpdateManyWithWhereWithoutArticleInput | SiteArticleMediaUpdateManyWithWhereWithoutArticleInput[]
+    deleteMany?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+  }
+
+  export type SiteArticleCreateNestedOneWithoutRevisionsInput = {
+    create?: XOR<SiteArticleCreateWithoutRevisionsInput, SiteArticleUncheckedCreateWithoutRevisionsInput>
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutRevisionsInput
+    connect?: SiteArticleWhereUniqueInput
+  }
+
+  export type SiteArticleCreateNestedManyWithoutPublishedRevisionInput = {
+    create?: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput> | SiteArticleCreateWithoutPublishedRevisionInput[] | SiteArticleUncheckedCreateWithoutPublishedRevisionInput[]
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutPublishedRevisionInput | SiteArticleCreateOrConnectWithoutPublishedRevisionInput[]
+    createMany?: SiteArticleCreateManyPublishedRevisionInputEnvelope
+    connect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+  }
+
+  export type SiteArticleUncheckedCreateNestedManyWithoutPublishedRevisionInput = {
+    create?: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput> | SiteArticleCreateWithoutPublishedRevisionInput[] | SiteArticleUncheckedCreateWithoutPublishedRevisionInput[]
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutPublishedRevisionInput | SiteArticleCreateOrConnectWithoutPublishedRevisionInput[]
+    createMany?: SiteArticleCreateManyPublishedRevisionInputEnvelope
+    connect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+  }
+
+  export type SiteArticleUpdateOneRequiredWithoutRevisionsNestedInput = {
+    create?: XOR<SiteArticleCreateWithoutRevisionsInput, SiteArticleUncheckedCreateWithoutRevisionsInput>
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutRevisionsInput
+    upsert?: SiteArticleUpsertWithoutRevisionsInput
+    connect?: SiteArticleWhereUniqueInput
+    update?: XOR<XOR<SiteArticleUpdateToOneWithWhereWithoutRevisionsInput, SiteArticleUpdateWithoutRevisionsInput>, SiteArticleUncheckedUpdateWithoutRevisionsInput>
+  }
+
+  export type SiteArticleUpdateManyWithoutPublishedRevisionNestedInput = {
+    create?: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput> | SiteArticleCreateWithoutPublishedRevisionInput[] | SiteArticleUncheckedCreateWithoutPublishedRevisionInput[]
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutPublishedRevisionInput | SiteArticleCreateOrConnectWithoutPublishedRevisionInput[]
+    upsert?: SiteArticleUpsertWithWhereUniqueWithoutPublishedRevisionInput | SiteArticleUpsertWithWhereUniqueWithoutPublishedRevisionInput[]
+    createMany?: SiteArticleCreateManyPublishedRevisionInputEnvelope
+    set?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    disconnect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    delete?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    connect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    update?: SiteArticleUpdateWithWhereUniqueWithoutPublishedRevisionInput | SiteArticleUpdateWithWhereUniqueWithoutPublishedRevisionInput[]
+    updateMany?: SiteArticleUpdateManyWithWhereWithoutPublishedRevisionInput | SiteArticleUpdateManyWithWhereWithoutPublishedRevisionInput[]
+    deleteMany?: SiteArticleScalarWhereInput | SiteArticleScalarWhereInput[]
+  }
+
+  export type SiteArticleUncheckedUpdateManyWithoutPublishedRevisionNestedInput = {
+    create?: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput> | SiteArticleCreateWithoutPublishedRevisionInput[] | SiteArticleUncheckedCreateWithoutPublishedRevisionInput[]
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutPublishedRevisionInput | SiteArticleCreateOrConnectWithoutPublishedRevisionInput[]
+    upsert?: SiteArticleUpsertWithWhereUniqueWithoutPublishedRevisionInput | SiteArticleUpsertWithWhereUniqueWithoutPublishedRevisionInput[]
+    createMany?: SiteArticleCreateManyPublishedRevisionInputEnvelope
+    set?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    disconnect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    delete?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    connect?: SiteArticleWhereUniqueInput | SiteArticleWhereUniqueInput[]
+    update?: SiteArticleUpdateWithWhereUniqueWithoutPublishedRevisionInput | SiteArticleUpdateWithWhereUniqueWithoutPublishedRevisionInput[]
+    updateMany?: SiteArticleUpdateManyWithWhereWithoutPublishedRevisionInput | SiteArticleUpdateManyWithWhereWithoutPublishedRevisionInput[]
+    deleteMany?: SiteArticleScalarWhereInput | SiteArticleScalarWhereInput[]
+  }
+
+  export type SiteArticleCreateNestedOneWithoutMediaInput = {
+    create?: XOR<SiteArticleCreateWithoutMediaInput, SiteArticleUncheckedCreateWithoutMediaInput>
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutMediaInput
+    connect?: SiteArticleWhereUniqueInput
+  }
+
+  export type SiteMediaCreateNestedOneWithoutUsagesInput = {
+    create?: XOR<SiteMediaCreateWithoutUsagesInput, SiteMediaUncheckedCreateWithoutUsagesInput>
+    connectOrCreate?: SiteMediaCreateOrConnectWithoutUsagesInput
+    connect?: SiteMediaWhereUniqueInput
+  }
+
+  export type SiteArticleUpdateOneRequiredWithoutMediaNestedInput = {
+    create?: XOR<SiteArticleCreateWithoutMediaInput, SiteArticleUncheckedCreateWithoutMediaInput>
+    connectOrCreate?: SiteArticleCreateOrConnectWithoutMediaInput
+    upsert?: SiteArticleUpsertWithoutMediaInput
+    connect?: SiteArticleWhereUniqueInput
+    update?: XOR<XOR<SiteArticleUpdateToOneWithWhereWithoutMediaInput, SiteArticleUpdateWithoutMediaInput>, SiteArticleUncheckedUpdateWithoutMediaInput>
+  }
+
+  export type SiteMediaUpdateOneRequiredWithoutUsagesNestedInput = {
+    create?: XOR<SiteMediaCreateWithoutUsagesInput, SiteMediaUncheckedCreateWithoutUsagesInput>
+    connectOrCreate?: SiteMediaCreateOrConnectWithoutUsagesInput
+    upsert?: SiteMediaUpsertWithoutUsagesInput
+    connect?: SiteMediaWhereUniqueInput
+    update?: XOR<XOR<SiteMediaUpdateToOneWithWhereWithoutUsagesInput, SiteMediaUpdateWithoutUsagesInput>, SiteMediaUncheckedUpdateWithoutUsagesInput>
   }
 
   export type NestedBigIntFilter<$PrismaModel = never> = {
@@ -199566,6 +206099,655 @@ export namespace Prisma {
     telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
+  export type SiteArticleMediaCreateWithoutMediaInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+    article: SiteArticleCreateNestedOneWithoutMediaInput
+  }
+
+  export type SiteArticleMediaUncheckedCreateWithoutMediaInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    articleId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleMediaCreateOrConnectWithoutMediaInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    create: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput>
+  }
+
+  export type SiteArticleMediaCreateManyMediaInputEnvelope = {
+    data: SiteArticleMediaCreateManyMediaInput | SiteArticleMediaCreateManyMediaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SiteArticleMediaUpsertWithWhereUniqueWithoutMediaInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    update: XOR<SiteArticleMediaUpdateWithoutMediaInput, SiteArticleMediaUncheckedUpdateWithoutMediaInput>
+    create: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput>
+  }
+
+  export type SiteArticleMediaUpdateWithWhereUniqueWithoutMediaInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    data: XOR<SiteArticleMediaUpdateWithoutMediaInput, SiteArticleMediaUncheckedUpdateWithoutMediaInput>
+  }
+
+  export type SiteArticleMediaUpdateManyWithWhereWithoutMediaInput = {
+    where: SiteArticleMediaScalarWhereInput
+    data: XOR<SiteArticleMediaUpdateManyMutationInput, SiteArticleMediaUncheckedUpdateManyWithoutMediaInput>
+  }
+
+  export type SiteArticleMediaScalarWhereInput = {
+    AND?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+    OR?: SiteArticleMediaScalarWhereInput[]
+    NOT?: SiteArticleMediaScalarWhereInput | SiteArticleMediaScalarWhereInput[]
+    id?: StringFilter<"SiteArticleMedia"> | string
+    createdAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticleMedia"> | Date | string | null
+    articleId?: StringFilter<"SiteArticleMedia"> | string
+    mediaId?: StringFilter<"SiteArticleMedia"> | string
+    role?: StringFilter<"SiteArticleMedia"> | string
+    slot?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    sort?: IntFilter<"SiteArticleMedia"> | number
+    caption?: StringNullableFilter<"SiteArticleMedia"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleMedia"> | string | null
+  }
+
+  export type SiteArticleRevisionCreateWithoutPublishedInInput = {
+    id: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    article: SiteArticleCreateNestedOneWithoutRevisionsInput
+  }
+
+  export type SiteArticleRevisionUncheckedCreateWithoutPublishedInInput = {
+    id: string
+    articleId: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+  }
+
+  export type SiteArticleRevisionCreateOrConnectWithoutPublishedInInput = {
+    where: SiteArticleRevisionWhereUniqueInput
+    create: XOR<SiteArticleRevisionCreateWithoutPublishedInInput, SiteArticleRevisionUncheckedCreateWithoutPublishedInInput>
+  }
+
+  export type SiteArticleRevisionCreateWithoutArticleInput = {
+    id: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    publishedIn?: SiteArticleCreateNestedManyWithoutPublishedRevisionInput
+  }
+
+  export type SiteArticleRevisionUncheckedCreateWithoutArticleInput = {
+    id: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    publishedIn?: SiteArticleUncheckedCreateNestedManyWithoutPublishedRevisionInput
+  }
+
+  export type SiteArticleRevisionCreateOrConnectWithoutArticleInput = {
+    where: SiteArticleRevisionWhereUniqueInput
+    create: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput>
+  }
+
+  export type SiteArticleRevisionCreateManyArticleInputEnvelope = {
+    data: SiteArticleRevisionCreateManyArticleInput | SiteArticleRevisionCreateManyArticleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SiteArticleMediaCreateWithoutArticleInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+    media: SiteMediaCreateNestedOneWithoutUsagesInput
+  }
+
+  export type SiteArticleMediaUncheckedCreateWithoutArticleInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    mediaId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleMediaCreateOrConnectWithoutArticleInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    create: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput>
+  }
+
+  export type SiteArticleMediaCreateManyArticleInputEnvelope = {
+    data: SiteArticleMediaCreateManyArticleInput | SiteArticleMediaCreateManyArticleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SiteArticleRevisionUpsertWithoutPublishedInInput = {
+    update: XOR<SiteArticleRevisionUpdateWithoutPublishedInInput, SiteArticleRevisionUncheckedUpdateWithoutPublishedInInput>
+    create: XOR<SiteArticleRevisionCreateWithoutPublishedInInput, SiteArticleRevisionUncheckedCreateWithoutPublishedInInput>
+    where?: SiteArticleRevisionWhereInput
+  }
+
+  export type SiteArticleRevisionUpdateToOneWithWhereWithoutPublishedInInput = {
+    where?: SiteArticleRevisionWhereInput
+    data: XOR<SiteArticleRevisionUpdateWithoutPublishedInInput, SiteArticleRevisionUncheckedUpdateWithoutPublishedInInput>
+  }
+
+  export type SiteArticleRevisionUpdateWithoutPublishedInInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    article?: SiteArticleUpdateOneRequiredWithoutRevisionsNestedInput
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateWithoutPublishedInInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    articleId?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SiteArticleRevisionUpsertWithWhereUniqueWithoutArticleInput = {
+    where: SiteArticleRevisionWhereUniqueInput
+    update: XOR<SiteArticleRevisionUpdateWithoutArticleInput, SiteArticleRevisionUncheckedUpdateWithoutArticleInput>
+    create: XOR<SiteArticleRevisionCreateWithoutArticleInput, SiteArticleRevisionUncheckedCreateWithoutArticleInput>
+  }
+
+  export type SiteArticleRevisionUpdateWithWhereUniqueWithoutArticleInput = {
+    where: SiteArticleRevisionWhereUniqueInput
+    data: XOR<SiteArticleRevisionUpdateWithoutArticleInput, SiteArticleRevisionUncheckedUpdateWithoutArticleInput>
+  }
+
+  export type SiteArticleRevisionUpdateManyWithWhereWithoutArticleInput = {
+    where: SiteArticleRevisionScalarWhereInput
+    data: XOR<SiteArticleRevisionUpdateManyMutationInput, SiteArticleRevisionUncheckedUpdateManyWithoutArticleInput>
+  }
+
+  export type SiteArticleRevisionScalarWhereInput = {
+    AND?: SiteArticleRevisionScalarWhereInput | SiteArticleRevisionScalarWhereInput[]
+    OR?: SiteArticleRevisionScalarWhereInput[]
+    NOT?: SiteArticleRevisionScalarWhereInput | SiteArticleRevisionScalarWhereInput[]
+    id?: StringFilter<"SiteArticleRevision"> | string
+    articleId?: StringFilter<"SiteArticleRevision"> | string
+    number?: IntFilter<"SiteArticleRevision"> | number
+    source?: StringFilter<"SiteArticleRevision"> | string
+    contentFormat?: StringFilter<"SiteArticleRevision"> | string
+    eyebrow?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    title?: StringFilter<"SiteArticleRevision"> | string
+    description?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoTitle?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    seoDescription?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    blocks?: JsonFilter<"SiteArticleRevision">
+    baseCodeHash?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    comment?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdBy?: StringNullableFilter<"SiteArticleRevision"> | string | null
+    createdAt?: DateTimeNullableFilter<"SiteArticleRevision"> | Date | string | null
+  }
+
+  export type SiteArticleMediaUpsertWithWhereUniqueWithoutArticleInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    update: XOR<SiteArticleMediaUpdateWithoutArticleInput, SiteArticleMediaUncheckedUpdateWithoutArticleInput>
+    create: XOR<SiteArticleMediaCreateWithoutArticleInput, SiteArticleMediaUncheckedCreateWithoutArticleInput>
+  }
+
+  export type SiteArticleMediaUpdateWithWhereUniqueWithoutArticleInput = {
+    where: SiteArticleMediaWhereUniqueInput
+    data: XOR<SiteArticleMediaUpdateWithoutArticleInput, SiteArticleMediaUncheckedUpdateWithoutArticleInput>
+  }
+
+  export type SiteArticleMediaUpdateManyWithWhereWithoutArticleInput = {
+    where: SiteArticleMediaScalarWhereInput
+    data: XOR<SiteArticleMediaUpdateManyMutationInput, SiteArticleMediaUncheckedUpdateManyWithoutArticleInput>
+  }
+
+  export type SiteArticleCreateWithoutRevisionsInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    publishedRevision?: SiteArticleRevisionCreateNestedOneWithoutPublishedInInput
+    media?: SiteArticleMediaCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleUncheckedCreateWithoutRevisionsInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedRevisionId?: string | null
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    media?: SiteArticleMediaUncheckedCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleCreateOrConnectWithoutRevisionsInput = {
+    where: SiteArticleWhereUniqueInput
+    create: XOR<SiteArticleCreateWithoutRevisionsInput, SiteArticleUncheckedCreateWithoutRevisionsInput>
+  }
+
+  export type SiteArticleCreateWithoutPublishedRevisionInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    revisions?: SiteArticleRevisionCreateNestedManyWithoutArticleInput
+    media?: SiteArticleMediaCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleUncheckedCreateWithoutPublishedRevisionInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    revisions?: SiteArticleRevisionUncheckedCreateNestedManyWithoutArticleInput
+    media?: SiteArticleMediaUncheckedCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleCreateOrConnectWithoutPublishedRevisionInput = {
+    where: SiteArticleWhereUniqueInput
+    create: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput>
+  }
+
+  export type SiteArticleCreateManyPublishedRevisionInputEnvelope = {
+    data: SiteArticleCreateManyPublishedRevisionInput | SiteArticleCreateManyPublishedRevisionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SiteArticleUpsertWithoutRevisionsInput = {
+    update: XOR<SiteArticleUpdateWithoutRevisionsInput, SiteArticleUncheckedUpdateWithoutRevisionsInput>
+    create: XOR<SiteArticleCreateWithoutRevisionsInput, SiteArticleUncheckedCreateWithoutRevisionsInput>
+    where?: SiteArticleWhereInput
+  }
+
+  export type SiteArticleUpdateToOneWithWhereWithoutRevisionsInput = {
+    where?: SiteArticleWhereInput
+    data: XOR<SiteArticleUpdateWithoutRevisionsInput, SiteArticleUncheckedUpdateWithoutRevisionsInput>
+  }
+
+  export type SiteArticleUpdateWithoutRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedRevision?: SiteArticleRevisionUpdateOneWithoutPublishedInNestedInput
+    media?: SiteArticleMediaUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUncheckedUpdateWithoutRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedRevisionId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    media?: SiteArticleMediaUncheckedUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUpsertWithWhereUniqueWithoutPublishedRevisionInput = {
+    where: SiteArticleWhereUniqueInput
+    update: XOR<SiteArticleUpdateWithoutPublishedRevisionInput, SiteArticleUncheckedUpdateWithoutPublishedRevisionInput>
+    create: XOR<SiteArticleCreateWithoutPublishedRevisionInput, SiteArticleUncheckedCreateWithoutPublishedRevisionInput>
+  }
+
+  export type SiteArticleUpdateWithWhereUniqueWithoutPublishedRevisionInput = {
+    where: SiteArticleWhereUniqueInput
+    data: XOR<SiteArticleUpdateWithoutPublishedRevisionInput, SiteArticleUncheckedUpdateWithoutPublishedRevisionInput>
+  }
+
+  export type SiteArticleUpdateManyWithWhereWithoutPublishedRevisionInput = {
+    where: SiteArticleScalarWhereInput
+    data: XOR<SiteArticleUpdateManyMutationInput, SiteArticleUncheckedUpdateManyWithoutPublishedRevisionInput>
+  }
+
+  export type SiteArticleScalarWhereInput = {
+    AND?: SiteArticleScalarWhereInput | SiteArticleScalarWhereInput[]
+    OR?: SiteArticleScalarWhereInput[]
+    NOT?: SiteArticleScalarWhereInput | SiteArticleScalarWhereInput[]
+    id?: StringFilter<"SiteArticle"> | string
+    createdAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    section?: StringFilter<"SiteArticle"> | string
+    type?: StringFilter<"SiteArticle"> | string
+    slug?: StringFilter<"SiteArticle"> | string
+    status?: StringFilter<"SiteArticle"> | string
+    sort?: IntFilter<"SiteArticle"> | number
+    publishedRevisionId?: StringNullableFilter<"SiteArticle"> | string | null
+    publishedAt?: DateTimeNullableFilter<"SiteArticle"> | Date | string | null
+    publishedBy?: StringNullableFilter<"SiteArticle"> | string | null
+    meta?: JsonNullableFilter<"SiteArticle">
+    createdBy?: StringNullableFilter<"SiteArticle"> | string | null
+    updatedBy?: StringNullableFilter<"SiteArticle"> | string | null
+  }
+
+  export type SiteArticleCreateWithoutMediaInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    publishedRevision?: SiteArticleRevisionCreateNestedOneWithoutPublishedInInput
+    revisions?: SiteArticleRevisionCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleUncheckedCreateWithoutMediaInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedRevisionId?: string | null
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+    revisions?: SiteArticleRevisionUncheckedCreateNestedManyWithoutArticleInput
+  }
+
+  export type SiteArticleCreateOrConnectWithoutMediaInput = {
+    where: SiteArticleWhereUniqueInput
+    create: XOR<SiteArticleCreateWithoutMediaInput, SiteArticleUncheckedCreateWithoutMediaInput>
+  }
+
+  export type SiteMediaCreateWithoutUsagesInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    kind: string
+    title?: string | null
+    caption?: string | null
+    alt?: string | null
+    fileName?: string | null
+    darkFileName?: string | null
+    posterFileName?: string | null
+    mime?: string | null
+    sizeBytes?: number | null
+    width?: number | null
+    height?: number | null
+    durationSec?: number | null
+    embedProvider?: string | null
+    embedUrl?: string | null
+    embedId?: string | null
+    uploadedBy?: string | null
+  }
+
+  export type SiteMediaUncheckedCreateWithoutUsagesInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    kind: string
+    title?: string | null
+    caption?: string | null
+    alt?: string | null
+    fileName?: string | null
+    darkFileName?: string | null
+    posterFileName?: string | null
+    mime?: string | null
+    sizeBytes?: number | null
+    width?: number | null
+    height?: number | null
+    durationSec?: number | null
+    embedProvider?: string | null
+    embedUrl?: string | null
+    embedId?: string | null
+    uploadedBy?: string | null
+  }
+
+  export type SiteMediaCreateOrConnectWithoutUsagesInput = {
+    where: SiteMediaWhereUniqueInput
+    create: XOR<SiteMediaCreateWithoutUsagesInput, SiteMediaUncheckedCreateWithoutUsagesInput>
+  }
+
+  export type SiteArticleUpsertWithoutMediaInput = {
+    update: XOR<SiteArticleUpdateWithoutMediaInput, SiteArticleUncheckedUpdateWithoutMediaInput>
+    create: XOR<SiteArticleCreateWithoutMediaInput, SiteArticleUncheckedCreateWithoutMediaInput>
+    where?: SiteArticleWhereInput
+  }
+
+  export type SiteArticleUpdateToOneWithWhereWithoutMediaInput = {
+    where?: SiteArticleWhereInput
+    data: XOR<SiteArticleUpdateWithoutMediaInput, SiteArticleUncheckedUpdateWithoutMediaInput>
+  }
+
+  export type SiteArticleUpdateWithoutMediaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedRevision?: SiteArticleRevisionUpdateOneWithoutPublishedInNestedInput
+    revisions?: SiteArticleRevisionUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUncheckedUpdateWithoutMediaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedRevisionId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revisions?: SiteArticleRevisionUncheckedUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteMediaUpsertWithoutUsagesInput = {
+    update: XOR<SiteMediaUpdateWithoutUsagesInput, SiteMediaUncheckedUpdateWithoutUsagesInput>
+    create: XOR<SiteMediaCreateWithoutUsagesInput, SiteMediaUncheckedCreateWithoutUsagesInput>
+    where?: SiteMediaWhereInput
+  }
+
+  export type SiteMediaUpdateToOneWithWhereWithoutUsagesInput = {
+    where?: SiteMediaWhereInput
+    data: XOR<SiteMediaUpdateWithoutUsagesInput, SiteMediaUncheckedUpdateWithoutUsagesInput>
+  }
+
+  export type SiteMediaUpdateWithoutUsagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteMediaUncheckedUpdateWithoutUsagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kind?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    alt?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    darkFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    posterFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    mime?: NullableStringFieldUpdateOperationsInput | string | null
+    sizeBytes?: NullableIntFieldUpdateOperationsInput | number | null
+    width?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    durationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    embedProvider?: NullableStringFieldUpdateOperationsInput | string | null
+    embedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    embedId?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type InvoiceTemplateCreateManyAgentInput = {
     id: string
     created_at?: Date | string | null
@@ -205984,6 +213166,240 @@ export namespace Prisma {
     error_detail?: NullableStringFieldUpdateOperationsInput | string | null
     attempts?: IntFieldUpdateOperationsInput | number
     last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SiteArticleMediaCreateManyMediaInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    articleId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleMediaUpdateWithoutMediaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    article?: SiteArticleUpdateOneRequiredWithoutMediaNestedInput
+  }
+
+  export type SiteArticleMediaUncheckedUpdateWithoutMediaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    articleId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleMediaUncheckedUpdateManyWithoutMediaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    articleId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleRevisionCreateManyArticleInput = {
+    id: string
+    number: number
+    source?: string
+    contentFormat: string
+    eyebrow?: string | null
+    title: string
+    description?: string | null
+    seoTitle?: string | null
+    seoDescription?: string | null
+    blocks: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: string | null
+    comment?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+  }
+
+  export type SiteArticleMediaCreateManyArticleInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    mediaId: string
+    role: string
+    slot?: string | null
+    sort?: number
+    caption?: string | null
+    createdBy?: string | null
+  }
+
+  export type SiteArticleRevisionUpdateWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedIn?: SiteArticleUpdateManyWithoutPublishedRevisionNestedInput
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedIn?: SiteArticleUncheckedUpdateManyWithoutPublishedRevisionNestedInput
+  }
+
+  export type SiteArticleRevisionUncheckedUpdateManyWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    number?: IntFieldUpdateOperationsInput | number
+    source?: StringFieldUpdateOperationsInput | string
+    contentFormat?: StringFieldUpdateOperationsInput | string
+    eyebrow?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    seoTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    seoDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    blocks?: JsonNullValueInput | InputJsonValue
+    baseCodeHash?: NullableStringFieldUpdateOperationsInput | string | null
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SiteArticleMediaUpdateWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    media?: SiteMediaUpdateOneRequiredWithoutUsagesNestedInput
+  }
+
+  export type SiteArticleMediaUncheckedUpdateWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    mediaId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleMediaUncheckedUpdateManyWithoutArticleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    mediaId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    slot?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    caption?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SiteArticleCreateManyPublishedRevisionInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    section: string
+    type: string
+    slug: string
+    status?: string
+    sort?: number
+    publishedAt?: Date | string | null
+    publishedBy?: string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: string | null
+    updatedBy?: string | null
+  }
+
+  export type SiteArticleUpdateWithoutPublishedRevisionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revisions?: SiteArticleRevisionUpdateManyWithoutArticleNestedInput
+    media?: SiteArticleMediaUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUncheckedUpdateWithoutPublishedRevisionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revisions?: SiteArticleRevisionUncheckedUpdateManyWithoutArticleNestedInput
+    media?: SiteArticleMediaUncheckedUpdateManyWithoutArticleNestedInput
+  }
+
+  export type SiteArticleUncheckedUpdateManyWithoutPublishedRevisionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    section?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sort?: IntFieldUpdateOperationsInput | number
+    publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publishedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
 
