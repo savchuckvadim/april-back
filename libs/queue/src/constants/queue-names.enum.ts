@@ -53,6 +53,12 @@ export enum QueueNames {
      * уронил бы джоб с «Missing process handler».
      */
     EVENT_SALES_DEAL_AUDIT_RUN = 'event-sales-deal-audit-run',
+    /**
+     * Движение сделок (этап 7.3): «Посчитать» и внеочередной счёт из
+     * админки. Воркер — ТОЛЬКО в event-sales (там крон, замок портала и
+     * отчёт в Telegram); своя очередь по той же причине, что у аудита.
+     */
+    EVENT_SALES_DEAL_MOVEMENT_RUN = 'event-sales-deal-movement-run',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',

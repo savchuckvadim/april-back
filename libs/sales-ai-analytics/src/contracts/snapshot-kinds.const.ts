@@ -90,6 +90,8 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     recommendationEffect: 'ai-analytics-recommendation-effect',
     /** Отчёт собственнику за период (portal; periodKey — месяц, квартал, полугодие, год). */
     ownerReport: 'ai-analytics-owner-report',
+    /** Движение сделок (этап 7.3): итог ночного счёта по порталу (portal-day). */
+    dealMovement: 'ai-analytics-deal-movement',
 } as const;
 
 /** Порядок — порядок таблицы §3.1 плана (снапшоты Фазы 2, затем 1a/0). */
@@ -115,6 +117,7 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.forecastBacktest,
     AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect,
     AI_ANALYTICS_SNAPSHOT_TYPE.ownerReport,
+    AI_ANALYTICS_SNAPSHOT_TYPE.dealMovement,
 ] as const;
 
 export type AiAnalyticsSnapshotType =
