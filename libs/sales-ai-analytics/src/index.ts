@@ -422,3 +422,5 @@ export * from './model/quality-facts.assembler';
 export * from './settings/attention-thresholds';
 // Карточка «менеджер × период»: метрики, якоря, сравнения, статусы — см. model/period-digest.
 export * from './model/period-digest';
+// Ручной запуск итогов периода: данные джобы и ключи (админка ↔ event-sales).
+export * from './contracts/period-digest-run.types';
