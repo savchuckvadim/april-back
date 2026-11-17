@@ -17,3 +17,7 @@ export * from './period-digest.compare';
 export * from './period-digest.status';
 export * from './period-digest.texts';
 export * from './modules';
+export * from './period-digest.recommend';
+export * from './period-digest.weekly-steps';
+export * from './period-digest.rop';
+export * from './period-digest.card';
