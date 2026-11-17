@@ -228,4 +228,14 @@ export class CallPageDto {
         type: [CallPageHighlightDto],
     })
     highlights: CallPageHighlightDto[];
+
+    @ApiProperty({
+        description:
+            'Подсветки разделов разбора (вид section): цитата «как было», ' +
+            'найденная в расшифровке. Нужны кнопке «Показать в разговоре» у ' +
+            'раздела; бейджами над расшифровкой не выводятся, поэтому лежат ' +
+            'отдельно от `highlights`.',
+        type: [CallPageHighlightDto],
+    })
+    sectionHighlights: CallPageHighlightDto[];
 }
