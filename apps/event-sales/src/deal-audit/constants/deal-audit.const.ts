@@ -113,3 +113,13 @@ export const DEAL_AUDIT_LOCK_TTL_SEC = 25 * 60;
  */
 export const buildDealAuditLastPeriodKey = (domain: string): string =>
     `event-sales:deal-audit:last-period:${domain}`;
+
+/**
+ * Находки последних прогонов аудита по сделкам (Redis-хеш: поле — id
+ * сделки): их читает ночью сводка «Движение сделок», не обходя Битрикс.
+ */
+export const buildDealAuditFindingsKey = (domain: string): string =>
+    `event-sales:deal-audit:findings:${domain}`;
+
+/** Срок хеша находок: 35 суток, продлевается каждым прогоном аудита. */
+export const DEAL_AUDIT_FINDINGS_TTL_SEC = 35 * 24 * 60 * 60;

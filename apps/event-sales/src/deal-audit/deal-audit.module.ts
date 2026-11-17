@@ -8,6 +8,7 @@ import { DealAuditController } from './controllers/deal-audit.controller';
 import { DealAuditScheduler } from './deal-audit.scheduler';
 import { DealAuditRunNowProcessor } from './queue/deal-audit-run-now.processor';
 import { DealAuditDigestService } from './services/deal-audit-digest.service';
+import { DealAuditFindingsStore } from './services/deal-audit-findings.store';
 import { DealAuditSettingsService } from './services/deal-audit-settings.service';
 import { DealAuditService } from './services/deal-audit.service';
 
@@ -39,9 +40,15 @@ import { DealAuditService } from './services/deal-audit.service';
         DealAuditService,
         DealAuditSettingsService,
         DealAuditDigestService,
+        DealAuditFindingsStore,
         DealAuditScheduler,
         DealAuditRunNowProcessor,
     ],
-    exports: [DealAuditService, DealAuditSettingsService],
+    // Находки читает сводка «Движение сделок» (DealMovementModule).
+    exports: [
+        DealAuditService,
+        DealAuditSettingsService,
+        DealAuditFindingsStore,
+    ],
 })
 export class DealAuditModule {}

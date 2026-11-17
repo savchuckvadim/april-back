@@ -21,6 +21,7 @@ import {
     DealAuditDigestService,
 } from './deal-audit-digest.service';
 import { DealAuditFields } from './deal-audit-fields';
+import { DealAuditFindingsStore } from './deal-audit-findings.store';
 import {
     DealAuditTaskTarget,
     DealAuditTasksReader,
@@ -70,6 +71,7 @@ export class DealAuditService {
         private readonly pbx: PBXService,
         private readonly digest: DealAuditDigestService,
         private readonly departments: BxDepartmentService,
+        private readonly findings: DealAuditFindingsStore,
     ) {}
 
     async runForDomain(
@@ -117,6 +119,13 @@ export class DealAuditService {
 
         const byStatus = countByStatus(pairs.map(pair => pair.verdict));
         const forgotten = pairs.map(pair => pair.verdict).filter(isForgotten);
+        // Находки — для ночной сводки «Движение сделок» (без обхода Битрикса).
+        await this.findings.save(
+            domain,
+            pairs.map(pair => pair.verdict),
+            new Date(now).toISOString(),
+            warnings,
+        );
 
         /*
          * Лимит режет ЗАПИСЬ, а не подсчёт: сводка и ответ ручки должны
