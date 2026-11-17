@@ -73,10 +73,14 @@ export interface WeakSection {
 /**
  * Средние разделов по отделу: взвешенное по n среднее средних менеджеров
  * (презентации и доработка вместе — разделы у них разные). Пустой вход —
- * пусто.
+ * пусто. Читает только факты презентаций и доработки — их же дают факты
+ * качества итогов периода (ManagerQualityFacts).
  */
 export function departmentSectionBenchmarks(
-    managers: readonly AttentionManagerInput[],
+    managers: readonly Pick<
+        AttentionManagerInput,
+        'presentation' | 'followup'
+    >[],
 ): AttentionSectionMean[] {
     const acc = new Map<string, { sum: number; n: number }>();
     for (const manager of managers) {

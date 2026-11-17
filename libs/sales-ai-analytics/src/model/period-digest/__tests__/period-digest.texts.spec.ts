@@ -8,6 +8,7 @@ import {
 import {
     DIGEST_SILENT_DAYS_TITLE,
     digestAnchorTitle,
+    digestDroppedLine,
     digestLifecycleTitle,
     digestStandingTitle,
     formatAnchorValue,
@@ -32,12 +33,14 @@ describe('подписи карточки периода', () => {
             digestStandingTitle({
                 position: DIGEST_POSITION.below,
                 scope: DIGEST_COMPARE_SCOPE.department,
+                middle: 6,
             }),
         ).toBe('ниже середины отдела');
         expect(
             digestStandingTitle({
                 position: DIGEST_POSITION.above,
                 scope: DIGEST_COMPARE_SCOPE.structure,
+                middle: 6,
             }),
         ).toBe('выше середины по отделам продаж');
         expect(digestStandingTitle(null)).toBe('');
@@ -62,6 +65,20 @@ describe('подписи карточки периода', () => {
                 hold: false,
             }),
         ).toBe('обсудить с РОПом');
+        expect(
+            digestLifecycleTitle({
+                lifecycle: DIGEST_LIFECYCLE.dropped,
+                hold: false,
+            }),
+        ).toBe('снята: данных не было');
+    });
+
+    it('снятая рекомендация — одной строкой', () => {
+        expect(
+            digestDroppedLine({
+                anchor: { metric: DIGEST_ANCHOR_METRIC.lowScoreShare },
+            }),
+        ).toBe('Доля звонков с низкой оценкой — снята: данных не было');
     });
 
     it('название якоря — названия раздела и типов звонков, без кодов', () => {

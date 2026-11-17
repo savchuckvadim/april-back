@@ -229,6 +229,7 @@ describe('страница разбора звонка: сборка карто�
             label: 'Результат звонка',
             value: 'Отказ',
             tone: 'bad',
+            highlightId: null,
         });
         expect(facts.get('Собеседник')?.value).toBe('ЛПР, Бухгалтер');
         expect(facts.get('Потребности')).toMatchObject({
@@ -257,6 +258,38 @@ describe('страница разбора звонка: сборка карто�
             'Работа с возражениями',
             'Презентация под потребности',
         ]);
+    });
+
+    it('раздел с найденной цитатой «как было» ссылается на свою подсветку, бейджем она не выводится', () => {
+        expect(
+            page.sections.map(section => [section.title, section.highlightId]),
+        ).toEqual([
+            ['Работа с возражениями', 'section-1'],
+            ['Презентация под потребности', 'section-2'],
+        ]);
+        expect(page.sectionHighlights).toEqual([
+            expect.objectContaining({
+                id: 'section-1',
+                kind: 'section',
+                label: 'Работа с возражениями',
+                tone: 'bad',
+                segmentIndexes: [3],
+                startSec: 20,
+            }),
+            expect.objectContaining({ id: 'section-2', segmentIndexes: [1] }),
+        ]);
+        // В группы бейджей (highlights) вид «раздел» не попадает.
+        expect(page.highlights.some(item => item.kind === 'section')).toBe(
+            false,
+        );
+    });
+
+    it('итоги: цена ссылается на подсветку цены, без подсветки — null', () => {
+        const facts = new Map(page.facts.map(item => [item.label, item]));
+        expect(facts.get('Цена')?.highlightId).toBe('price-1');
+        expect(facts.get('Потребности')?.highlightId).toBeNull();
+        expect(facts.get('Следующий шаг')?.highlightId).toBeNull();
+        expect(page.highlights.map(item => item.id)).toContain('price-1');
     });
 
     it('возражение: подписи словами и своя подсветка в расшифровке', () => {
@@ -364,6 +397,7 @@ describe('страница разбора звонка: сборка карто�
         expect(empty.facts).toEqual([]);
         expect(empty.sections).toEqual([]);
         expect(empty.highlights).toEqual([]);
+        expect(empty.sectionHighlights).toEqual([]);
         expect(empty.methodology).toBeNull();
         expect(empty.transcriptTimed).toBe(false);
         expect(empty.transcript.map(segment => segment.text)).toEqual([

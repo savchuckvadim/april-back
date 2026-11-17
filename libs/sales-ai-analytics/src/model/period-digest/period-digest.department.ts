@@ -122,6 +122,7 @@ export function digestStandingsOf(
                           options.direction,
                       ),
                       scope,
+                      middle,
                   },
         );
     }
