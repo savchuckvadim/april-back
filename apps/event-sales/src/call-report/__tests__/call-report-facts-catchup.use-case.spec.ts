@@ -168,7 +168,8 @@ describe('CallReportFactsCatchupUseCase', () => {
             finished: true,
             candidates: 1,
             skippedBy: { hasFacts: 1 },
-            estimate: containing({ avgTokens: 1000, estimatedPrice: 0.5 }),
+            // Полный разбор — пять вызовов (четыре фокуса и синтез): 4000 / 5.
+            estimate: containing({ avgTokens: 800, estimatedPrice: 0.4 }),
         });
     });
 
