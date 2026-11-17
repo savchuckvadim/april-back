@@ -1,9 +1,10 @@
 /**
  * @lib/rop-reports — каркас периодических отчётов РОПу: периоды и
  * расписание выпуска, выбор получателей по структуре отделов продаж,
- * оформление (BB-код задачи, лист-таблица Excel).
+ * оформление (BB-код задачи, лист-таблица Excel), состояние прогонов в
+ * Redis, доставка задачей с файлом на Диске и движок тика.
  *
- * Состояние прогонов, доставка и движок тика появятся следующими этапами
+ * Сам отчёт (источник данных, настройки, `@Cron`) живёт в приложении
  * (ai/tasks/ai-polyansky-method/2026-11-01-periodic-manager-digests.md).
  * Библиотека не импортирует ничего из apps/*.
  */
@@ -17,3 +18,8 @@ export * from './recipients/rop-recipients';
 export * from './recipients/rop-user-names';
 export * from './render/bb-code.util';
 export * from './render/excel-table';
+export * from './state/rop-keys';
+export * from './state/rop-run-summary';
+export * from './state/rop-run-state.service';
+export * from './state/rop-task-memory.service';
+export * from './delivery/rop-delivery.types';
