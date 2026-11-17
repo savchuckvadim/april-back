@@ -411,3 +411,13 @@ export * from './contracts/deal-movement-run.types';
 export * from './contracts/deal-movement-snapshot.types';
 export * from './contracts/deal-movement-notes.types';
 export * from './contracts/deal-movement-probe.types';
+
+// Итоги периода по менеджерам (этап 7.4, 17.11.2026): факты качества,
+// пороги «Внимания» и проекции lite-строк переехали из kpi-report-sales,
+// чтобы их читал и event-sales (там — реэкспорты прежних путей).
+export * from './model/dated-lite-row';
+export * from './model/quality-facts.types';
+export * from './model/quality-facts.assembler';
+export * from './settings/attention-thresholds';
+// Карточка «менеджер × период»: метрики, якоря, сравнения, статусы — см. model/period-digest.
+export * from './model/period-digest';
