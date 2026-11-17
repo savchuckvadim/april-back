@@ -7,6 +7,7 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import { PortalAiSettingsWithDomain } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import { nightlyLimitNote } from '../call-report/cron/call-report-facts-catchup.scheduler';
+import { DEAL_MOVEMENT_CRON_NAME } from '../deal-movement/constants/deal-movement.const';
 
 /**
  * Сведения о кронах event-sales для стартового отчёта: что делает крон и
@@ -101,6 +102,13 @@ const APP_SETTINGS_CRONS: readonly AppSettingsCron[] = [
         purpose: 'отчёт по дублям сделок',
         enabled: SETTINGS.duplicateReportEnabled,
         note: markedWhen(SETTINGS.duplicateReportCountOnly, 'только считать'),
+    },
+    {
+        // Первая волна — только счёт, без записи в сделки: пометка у всех.
+        name: DEAL_MOVEMENT_CRON_NAME,
+        purpose: 'движение сделок: ночной счёт статусов открытых сделок ОП',
+        enabled: SETTINGS.dealMovementEnabled,
+        note: () => 'только считать',
     },
 ];
 

@@ -58,6 +58,7 @@ const EVENT_SALES_CRONS = [
     'call-report-weekly',
     'call-revision',
     'event-sales-deal-audit',
+    'event-sales-deal-movement',
     'event-sales-duplicate-report',
     'lead-intake-rescue',
     'lead-request-sla',
@@ -83,6 +84,7 @@ describe('buildEventSalesCronRoster', () => {
             xo_rescue_enabled: true,
             xo_rescue_orphan_enabled: true,
             deal_audit_enabled: true,
+            deal_movement_enabled: true,
             lead_intake_sla_enabled: false,
         }),
     ];
@@ -121,6 +123,10 @@ describe('buildEventSalesCronRoster', () => {
         ]);
         expect(roster.get('event-sales-duplicate-report')?.portals).toEqual([
             { domain: GSR },
+        ]);
+        // Движение сделок в первой волне только считает — пометка всегда.
+        expect(roster.get('event-sales-deal-movement')?.portals).toEqual([
+            { domain: GARANT, note: 'только считать' },
         ]);
     });
 

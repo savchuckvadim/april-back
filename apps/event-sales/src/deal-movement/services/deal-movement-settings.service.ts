@@ -1,0 +1,94 @@
+import { Injectable } from '@nestjs/common';
+import {
+    EnumPortalAppCode,
+    PORTAL_APP_SETTINGS_SCHEMA,
+    PortalAppSettingsService,
+    type PortalAppSettingsValues,
+} from '@lib/portal-lib/store/app-settings';
+import { DEAL_MOVEMENT_DEFAULTS } from '@lib/sales-ai-analytics';
+import { DEAL_MOVEMENT_SETTING_DEFAULTS } from '../constants/deal-movement.const';
+import type { DealMovementOptions } from '../types/deal-movement.types';
+
+/** Целое ≥ 1; ноль, отрицательное и мусор — значение по умолчанию. */
+const positiveInt = (raw: unknown, fallback: number): number => {
+    const value = Math.floor(Number(raw));
+    return Number.isFinite(value) && value >= 1 ? value : fallback;
+};
+
+type EventSalesSettings = PortalAppSettingsValues<EnumPortalAppCode.eventSales>;
+
+/**
+ * Настройки портала → параметры счёта. Чистая функция: пустое и мусор —
+ * значения по умолчанию; окно звонков не короче окна событий, иначе
+ * «звонков за окно нет» считалось бы по неполным данным.
+ */
+export function toDealMovementOptions(
+    settings: Pick<
+        EventSalesSettings,
+        | 'dealMovementWindowDays'
+        | 'dealMovementStuckDays'
+        | 'dealMovementAgreedStillDays'
+        | 'dealMovementCallsLookbackDays'
+        | 'dealMovementMaxDeals'
+    >,
+): DealMovementOptions {
+    const defaults = DEAL_MOVEMENT_SETTING_DEFAULTS;
+    const windowDays = positiveInt(
+        settings.dealMovementWindowDays,
+        defaults.windowDays,
+    );
+    return {
+        thresholds: {
+            ...DEAL_MOVEMENT_DEFAULTS,
+            windowDays,
+            stuckDefaultDays: positiveInt(
+                settings.dealMovementStuckDays,
+                defaults.stuckDays,
+            ),
+            agreedStillDays: positiveInt(
+                settings.dealMovementAgreedStillDays,
+                defaults.agreedStillDays,
+            ),
+        },
+        callsLookbackDays: Math.max(
+            windowDays,
+            positiveInt(
+                settings.dealMovementCallsLookbackDays,
+                defaults.callsLookbackDays,
+            ),
+        ),
+        maxDeals: positiveInt(settings.dealMovementMaxDeals, defaults.maxDeals),
+    };
+}
+
+/**
+ * Настройки движения сделок из «Настроек приложений» event-sales (группа
+ * «Движение сделок»). Один сервис для крона и ручного прогона — правила
+ * «что пусто, что по умолчанию» одни.
+ */
+@Injectable()
+export class DealMovementSettingsService {
+    constructor(private readonly appSettings: PortalAppSettingsService) {}
+
+    async resolve(domain: string): Promise<DealMovementOptions> {
+        return toDealMovementOptions(
+            await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            ),
+        );
+    }
+
+    /** Порталы с включённым движением сделок (ростер крона). */
+    async enabledDomains(): Promise<string[]> {
+        const rows = await this.appSettings.listByAppCode(
+            EnumPortalAppCode.eventSales,
+        );
+        const enabledKey =
+            PORTAL_APP_SETTINGS_SCHEMA[EnumPortalAppCode.eventSales]
+                .dealMovementEnabled.code;
+        return rows
+            .filter(row => row.settings[enabledKey] === true)
+            .map(row => row.domain);
+    }
+}
