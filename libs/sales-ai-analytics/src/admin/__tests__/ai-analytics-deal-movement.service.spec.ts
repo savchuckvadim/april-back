@@ -217,6 +217,7 @@ describe('движение сделок в админке: ручки', () => {
         };
         const controller = new AiAnalyticsDealMovementAdminController(
             service as never,
+            {} as never,
         );
 
         await controller.run({ domain: DOMAIN, dryRun: false });

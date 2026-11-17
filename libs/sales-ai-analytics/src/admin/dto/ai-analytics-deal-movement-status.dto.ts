@@ -3,7 +3,7 @@
  * ход и итог последнего прогона движения сделок (Redis) и последний
  * дневной снимок ночного счёта (ais). Оформление — ai/rules/dto-conventions.md.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     DEAL_MOVEMENT_RUN_MODES,
     DEAL_MOVEMENT_RUN_PHASES,
@@ -21,6 +21,7 @@ import {
 } from '../../model/deal-movement/deal-movement.types';
 import type { DealMovementStatusResult } from '../services/ai-analytics-deal-movement.service';
 import { AiAnalyticsDealMovementDomainDto } from './ai-analytics-deal-movement.dto';
+import { AiAnalyticsDealMovementNotesDto } from './ai-analytics-deal-movement-notes.dto';
 
 /** Запрос состояния — домен портала. */
 export class AiAnalyticsDealMovementStatusQueryDto extends AiAnalyticsDealMovementDomainDto {}
@@ -55,8 +56,8 @@ export class AiAnalyticsDealMovementRunStatusDto
 
     @ApiProperty({
         description:
-            'Режим: dry-run — подсчёт без сохранения, count — ночной счёт ' +
-            'без записи в сделки.',
+            'Режим: dry-run — подсчёт без сохранения и без записи, count — ' +
+            'счёт с сохранением (в ленту сделок — если запись включена).',
         enum: DEAL_MOVEMENT_RUN_MODES,
         example: 'count',
         type: String,
@@ -158,6 +159,14 @@ export class AiAnalyticsDealMovementRunStatusDto
     })
     snapshotDay: string | null;
 
+    @ApiPropertyOptional({
+        description:
+            'Записи в ленту сделок за прогон (у подсчёта — сколько записали ' +
+            'бы); нет у прогонов до 17.11.2026.',
+        type: AiAnalyticsDealMovementNotesDto,
+    })
+    notes?: AiAnalyticsDealMovementNotesDto;
+
     @ApiProperty({
         description:
             'Предупреждения прогона по-русски (потолок, недочитанная история).',
@@ -231,6 +240,14 @@ export class AiAnalyticsDealMovementChangeDto
         type: [String],
     })
     reasons: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Записана ли смена в ленту сделки этим прогоном; нет у снимков до 17.11.2026.',
+        example: true,
+        type: Boolean,
+    })
+    notified?: boolean;
 }
 
 /** Дневной снимок ночного счёта. */
@@ -312,6 +329,13 @@ export class AiAnalyticsDealMovementSnapshotDto
         type: Number,
     })
     changesTotal: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Записи в ленту сделок за прогон; нет у снимков до 17.11.2026.',
+        type: AiAnalyticsDealMovementNotesDto,
+    })
+    notes?: AiAnalyticsDealMovementNotesDto;
 
     @ApiProperty({
         description: 'Предупреждения счёта по-русски.',
