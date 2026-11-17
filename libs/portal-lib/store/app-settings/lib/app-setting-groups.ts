@@ -327,6 +327,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'Еженедельная задача руководителю с таблицей дублей: когда и кому.',
         links: [LINK.departments, LINK.dealFields],
     },
+    period_digest: {
+        title: 'Отчёты РОПу: итоги периода по менеджерам',
+        description:
+            'Итоги недели и месяца по каждому менеджеру с рекомендациями и ' +
+            'целями — задачей руководителю: когда, кому, с какого объёма ' +
+            'звонков давать рекомендации и что считать заметным изменением.',
+        links: [LINK.departments, LINK.aiSettings],
+    },
     // --- skap ---
     skap_import: {
         title: 'Импорт СКАП',
@@ -452,6 +460,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
         { group: 'deal_audit', prefixes: ['deal_audit_'] },
         { group: 'deal_movement', prefixes: ['deal_movement_'] },
         { group: 'duplicate_report', prefixes: ['duplicate_report_'] },
+        { group: 'period_digest', prefixes: ['period_digest_'] },
     ],
     [EnumPortalAppCode.konstructor]: [
         { group: 'konstructor_features', codes: ['zakupki_enabled'] },
