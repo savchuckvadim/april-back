@@ -1,4 +1,7 @@
-import { BxTimelineRepository } from '../repository/bx-timeline.repository';
+import {
+    BxTimelineRepository,
+    type TimelineCommentOrder,
+} from '../repository/bx-timeline.repository';
 import {
     IBXTimelineComment,
     IBXTimelineLogMessage,
@@ -35,11 +38,20 @@ export class BxTimelineService {
         return await this.repo.addLogMessage(data, options);
     }
 
-    /** Комментарии таймлайна сущности — например, для проверки «уже писали». */
+    /**
+     * Комментарии таймлайна сущности — например, для проверки «уже писали».
+     * Одна страница (до 50); `order: { ID: 'DESC' }` — самые свежие.
+     */
     async getTimelineComments(
         filter: Partial<IBXTimelineComment>,
         select?: string[],
+        order?: TimelineCommentOrder,
     ) {
-        return await this.repo.getTimelineComments(filter, select);
+        return await this.repo.getTimelineComments(filter, select, order);
+    }
+
+    /** Замена текста комментария таймлайна. */
+    async updateTimelineComment(id: number | string, comment: string) {
+        return await this.repo.updateTimelineComment(id, comment);
     }
 }

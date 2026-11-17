@@ -19,6 +19,7 @@ import {
     TranscriptionProviderModule,
     TranscriptionSpendModule,
     AiModule,
+    CallPageLinkModule,
     CallReportAnalyticsModule,
     CallReportSmartModule,
     CallTypeRegistryModule,
@@ -62,6 +63,8 @@ import { MethodologyPreviewStore } from '@lib/call-lib/call-report/methodology';
 import { MethodologyPreviewProcessor } from './queue/methodology-preview.processor';
 import { MethodologyPreviewUseCase } from './use-cases/methodology-preview.use-case';
 import { CallAnalysisRepairUseCase } from './use-cases/call-analysis-repair.use-case';
+import { CallPageLinksRepairStore } from './services/call-page-links-repair.store';
+import { CallPageLinksRepairUseCase } from './use-cases/call-page-links-repair.use-case';
 import { CallReportWeeklyScheduler } from './cron/call-report-weekly.scheduler';
 import { CallRevisionScheduler } from './cron/call-revision.scheduler';
 import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler';
@@ -118,6 +121,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // AgentAnalysisIntakeService. Внешнего агента больше нет: разбор
         // считает CallDeepAnalysisService здесь же, а приём переиспользуем.
         AgentGateModule,
+        // Адрес сайта страниц разбора — для починки старых ссылок в ленте
+        CallPageLinkModule,
     ],
     controllers: [CallReportController],
     providers: [
@@ -166,6 +171,10 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // переделывается, когда он снова отвечает (ежечасно, :41)
         CallAnalysisRepairStore,
         CallAnalysisRepairUseCase,
+        // Разовая починка ссылок на страницу разбора (16–17.11.2026) —
+        // идёт тем же ежечасным проходом, понемногу на портал
+        CallPageLinksRepairStore,
+        CallPageLinksRepairUseCase,
         CallAnalysisRepairScheduler,
         TranscriptionBudgetAlertUseCase,
         TranscriptionBudgetAlertScheduler,

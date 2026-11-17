@@ -2,6 +2,7 @@ import { EBxMethod } from 'src/modules/bitrix/core';
 import {
     CrmAddRequestType,
     CrmListRequestType,
+    CrmUpdateRequestType,
 } from '../../type/crm-request.type';
 import {
     IBXTimelineComment,
@@ -21,6 +22,11 @@ export type TimelineCommentSchema = {
     [EBxMethod.ADD]: {
         request: CrmAddRequestType<IBXTimelineComment>;
         response: { result: number };
+    };
+    /** crm.timeline.comment.update: ответ — идентификатор комментария. */
+    [EBxMethod.UPDATE]: {
+        request: CrmUpdateRequestType<IBXTimelineComment>;
+        response: number;
     };
     [EBxMethod.LIST]: {
         request: CrmListRequestType<IBXTimelineComment>;

@@ -5,6 +5,8 @@ import {
     CallAnalysisRepairUseCase,
     type CallAnalysisRepairResult,
 } from '../use-cases/call-analysis-repair.use-case';
+import { CallPageLinksRepairUseCase } from '../use-cases/call-page-links-repair.use-case';
+import { linksRepairSummaryLine } from '../use-cases/call-page-links-repair.util';
 import { CallReportDomainRosterService } from './call-report-domain-roster.service';
 
 const LOCK_KEY = 'call-report:analysis-repair-lock';
@@ -42,6 +44,10 @@ export function repairSummaryLine(result: CallAnalysisRepairResult): string {
  * Ежечасный догон разборов: что не собралось из-за сбоя поставщика модели,
  * переделывается, когда поставщик снова отвечает (CallAnalysisRepairUseCase).
  * Порталы — те же, что у сканера звонков; итог с изменениями — в Telegram.
+ *
+ * Тем же проходом, под тем же замком, идёт разовая починка ссылок на
+ * страницу разбора (CallPageLinksRepairUseCase): понемногу на портал, чтобы
+ * не нагружать Битрикс24. Её сбой догон разборов не останавливает.
  */
 @Injectable()
 export class CallAnalysisRepairScheduler {
@@ -51,6 +57,7 @@ export class CallAnalysisRepairScheduler {
         private readonly redisService: RedisService,
         private readonly roster: CallReportDomainRosterService,
         private readonly repair: CallAnalysisRepairUseCase,
+        private readonly linksRepair: CallPageLinksRepairUseCase,
     ) {}
 
     @Cron(CALL_ANALYSIS_REPAIR_CRON, { name: CALL_ANALYSIS_REPAIR_CRON_NAME })
@@ -89,6 +96,10 @@ export class CallAnalysisRepairScheduler {
                     );
                 }
             }
+            for (const entry of domains) {
+                const line = await this.repairLinks(entry.domain);
+                if (line) lines.push(line);
+            }
         } finally {
             await redis.del(LOCK_KEY).catch(() => undefined);
         }
@@ -96,6 +107,20 @@ export class CallAnalysisRepairScheduler {
             this.logger.warn(`Догон разборов:\n${lines.join('\n')}`, {
                 telegram: true,
             });
+        }
+    }
+
+    /** Починка ссылок портала; строка итога или пусто. Сбой — только в журнал. */
+    private async repairLinks(domain: string): Promise<string> {
+        try {
+            return linksRepairSummaryLine(
+                await this.linksRepair.repairDomain(domain),
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Починка ссылок на страницу разбора ${domain} упала: ${(error as Error).message}`,
+            );
+            return '';
         }
     }
 }

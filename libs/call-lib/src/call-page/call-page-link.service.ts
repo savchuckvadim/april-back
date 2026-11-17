@@ -129,6 +129,15 @@ export class CallPageLinkService {
         return urls;
     }
 
+    /**
+     * Адрес сайта, на котором открываются страницы разбора, без «/» на конце.
+     * Нужен починке ссылок, записанных с неверным адресом: в них меняется
+     * только сайт, код ссылки остаётся прежним. Адрес битый — null.
+     */
+    siteUrl(): Promise<string | null> {
+        return this.site();
+    }
+
     private async site(): Promise<string | null> {
         const configured = await this.settings
             .get(REPORT_SITE_SETTING)
