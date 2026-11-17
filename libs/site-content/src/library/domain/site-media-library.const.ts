@@ -5,6 +5,8 @@
  * новое значение добавляется без миграции.
  */
 
+import { SITE_MEDIA_LIBRARY_SECTION } from '../../media/domain/site-media.sections';
+
 /**
  * Вид медиа:
  * - image — картинка (скрин), файл обязателен;
@@ -29,8 +31,11 @@ export const SITE_MEDIA_EMBED_PROVIDERS = ['youtube', 'rutube', 'vk'] as const;
 export type SiteMediaEmbedProvider =
     (typeof SITE_MEDIA_EMBED_PROVIDERS)[number];
 
-/** Раздел хранилища картинок сайта: storage/public/site-media/library/. */
-export const SITE_MEDIA_LIBRARY_DIR = 'library';
+/**
+ * Раздел хранилища картинок сайта: storage/public/site-media/library/.
+ * Один источник с перечнем разделов, закрытых для старых ручек кадров.
+ */
+export const SITE_MEDIA_LIBRARY_DIR = SITE_MEDIA_LIBRARY_SECTION;
 
 /** Место тёмного варианта картинки: `<id>-dark` рядом с `<id>`. */
 export const SITE_MEDIA_DARK_SUFFIX = '-dark';

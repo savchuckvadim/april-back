@@ -6,6 +6,7 @@ export * from './media/site-media.service';
 export * from './media/domain/site-media.types';
 export * from './media/domain/media-format';
 export * from './media/domain/media-file-name';
+export * from './media/domain/site-media.sections';
 export * from './media/dto/site-media.dto';
 
 // Медиатека сайта (site_media): картинки, ролики и внешние видео для статей.
