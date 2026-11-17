@@ -4,6 +4,13 @@
  * направления метрик-якорей, коды якорей и модулей рекомендаций,
  * положение в отделе. Тексты для людей — period-digest.texts.ts.
  */
+import type { RopPeriodKind } from '@lib/rop-reports';
+
+/** Виды периодов первой поставки — подмножество видов @lib/rop-reports. */
+export const DIGEST_PERIOD_KIND = {
+    week: 'week',
+    month: 'month',
+} as const satisfies Record<string, RopPeriodKind>;
 
 /** Хватает ли данных на карточку. */
 export const DIGEST_READINESS = {

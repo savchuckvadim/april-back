@@ -33,12 +33,14 @@ describe('подписи карточки периода', () => {
             digestStandingTitle({
                 position: DIGEST_POSITION.below,
                 scope: DIGEST_COMPARE_SCOPE.department,
+                middle: 6,
             }),
         ).toBe('ниже середины отдела');
         expect(
             digestStandingTitle({
                 position: DIGEST_POSITION.above,
                 scope: DIGEST_COMPARE_SCOPE.structure,
+                middle: 6,
             }),
         ).toBe('выше середины по отделам продаж');
         expect(digestStandingTitle(null)).toBe('');

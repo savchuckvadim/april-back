@@ -4,14 +4,19 @@ import {
     upperFirst,
 } from '../dictionary-titles.util';
 import { ruDecimal } from '../ru-text.util';
-import { digestAnchorUnit } from './period-digest.anchors';
+import {
+    digestAnchorDirection,
+    digestAnchorUnit,
+} from './period-digest.anchors';
 import {
     DIGEST_ANCHOR_METRIC,
     DIGEST_COMPARE_SCOPE,
+    DIGEST_DIRECTION,
     DIGEST_LIFECYCLE,
     DIGEST_POSITION,
     DIGEST_READINESS,
     DIGEST_STATUS,
+    DIGEST_STEP_STATE,
     DIGEST_UNIT,
     DigestAnchorMetric,
     DigestCompareScope,
@@ -19,6 +24,7 @@ import {
     DigestPosition,
     DigestReadiness,
     DigestStatus,
+    DigestStepState,
     DigestUnit,
 } from './period-digest.codes';
 import type {
@@ -61,6 +67,15 @@ export const DIGEST_LIFECYCLE_TITLE: Readonly<Record<DigestLifecycle, string>> =
         [DIGEST_LIFECYCLE.escalated]: 'обсудить с РОПом',
         [DIGEST_LIFECYCLE.dropped]: 'снята: данных не было',
     };
+
+/** Как неделя идёт к цели месячной рекомендации. */
+export const DIGEST_STEP_STATE_TITLE: Readonly<
+    Record<DigestStepState, string>
+> = {
+    [DIGEST_STEP_STATE.onTrack]: 'идёт к цели',
+    [DIGEST_STEP_STATE.behind]: 'отстаёт',
+    [DIGEST_STEP_STATE.noData]: 'за неделю мало данных',
+};
 
 /** Пометка к «закрепить», когда цель достигнута только на третьей оценке. */
 export const DIGEST_HOLD_NOTE = 'держать';
@@ -122,6 +137,28 @@ export const formatAnchorValue = (
     anchor: DigestAnchor,
     value: number,
 ): string => formatDigestValue(digestAnchorUnit(anchor), value);
+
+/** Цель «меньше — лучше» не выше этого считается нулём. */
+export const DIGEST_ZERO_TARGET = 0.005;
+
+/**
+ * Цель якоря: «5,2», «58 %», у «меньше — лучше» — «не больше 40 %» (цель
+ * ноль — просто «0 %»).
+ */
+export function formatDigestTarget(
+    anchor: DigestAnchor,
+    target: number,
+): string {
+    const unit = digestAnchorUnit(anchor);
+    const text =
+        unit === DIGEST_UNIT.score
+            ? ruDecimal(target)
+            : formatDigestValue(unit, target);
+    const atMost =
+        digestAnchorDirection(anchor) === DIGEST_DIRECTION.down &&
+        target > DIGEST_ZERO_TARGET;
+    return atMost ? `не больше ${text}` : text;
+}
 
 const METRIC_TITLE: Readonly<Record<DigestAnchorMetric, string>> = {
     [DIGEST_ANCHOR_METRIC.sectionMean]: 'оценка раздела',
