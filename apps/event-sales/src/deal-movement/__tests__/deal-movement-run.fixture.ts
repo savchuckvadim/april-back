@@ -9,8 +9,12 @@ import {
     toNightDeal,
 } from '../lib/deal-movement-dossier.mapper';
 import type { DealMovementEvaluation } from '../services/deal-movement-evaluator.service';
+import { DealMovementPublishService } from '../services/deal-movement-publish.service';
 import { DealMovementRunService } from '../services/deal-movement-run.service';
-import type { DealMovementNotesOptions } from '../types/deal-movement.types';
+import type {
+    DealMovementDigestOptions,
+    DealMovementNotesOptions,
+} from '../types/deal-movement.types';
 import { dealRow } from './deal-movement.fixture';
 
 export const DOMAIN = 'garant.bitrix24.ru';
@@ -73,12 +77,24 @@ export const NOTES_OFF: DealMovementNotesOptions = {
 };
 export const NOTES_ON: DealMovementNotesOptions = { ...NOTES_OFF, write: true };
 
+/** Сводка руководителям по умолчанию выключена. */
+export const DIGEST_OFF: DealMovementDigestOptions = {
+    enabled: false,
+    mode: 'new_only',
+    top: 15,
+};
+export const DIGEST_ON: DealMovementDigestOptions = {
+    ...DIGEST_OFF,
+    enabled: true,
+};
+
 export interface RunSetup {
     lock?: string | null;
     lastRunAt?: string | null;
     previous?: Map<string, DealMovementStateEntry>;
     evaluate?: jest.Mock;
     notes?: DealMovementNotesOptions;
+    digest?: DealMovementDigestOptions;
     /** Сколько записей ещё можно этой ночью. */
     remaining?: number;
     /** Каким сделкам запись в ленту «ушла». */
@@ -147,9 +163,22 @@ export const buildRun = (setup: RunSetup = {}) => {
             ),
     };
     const settings = {
-        resolve: jest
-            .fn()
-            .mockResolvedValue({ notes: setup.notes ?? NOTES_OFF }),
+        resolve: jest.fn().mockResolvedValue({
+            notes: setup.notes ?? NOTES_OFF,
+            digest: setup.digest ?? DIGEST_OFF,
+        }),
+    };
+    const digest = {
+        send: jest.fn(() => {
+            order.push('digest');
+            return Promise.resolve({
+                enabled: true,
+                skipped: null,
+                recipients: 3,
+                sent: 2,
+                failed: 1,
+            });
+        }),
     };
     const notes = {
         remaining: jest.fn().mockResolvedValue(setup.remaining ?? 0),
@@ -170,6 +199,7 @@ export const buildRun = (setup: RunSetup = {}) => {
         stateStore as never,
         snapshots as never,
         notes as never,
+        new DealMovementPublishService(notes as never, digest as never),
     );
     return {
         service,
@@ -178,6 +208,7 @@ export const buildRun = (setup: RunSetup = {}) => {
         snapshots,
         statuses,
         notes,
+        digest,
         evaluator,
         order,
     };

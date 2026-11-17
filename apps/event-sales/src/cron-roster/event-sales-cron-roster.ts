@@ -104,14 +104,22 @@ const APP_SETTINGS_CRONS: readonly AppSettingsCron[] = [
         note: markedWhen(SETTINGS.duplicateReportCountOnly, 'только считать'),
     },
     {
-        // Запись в ленту сделки — отдельный флаг; без него только счёт.
+        // Запись в ленту и сводка руководителям — отдельные флаги; без них
+        // только счёт.
         name: DEAL_MOVEMENT_CRON_NAME,
         purpose: 'движение сделок: ночной счёт статусов открытых сделок ОП',
         enabled: SETTINGS.dealMovementEnabled,
         note: row =>
-            flag(row, SETTINGS.dealMovementWriteNotes)
-                ? 'пишет в ленту сделок'
-                : 'только считать',
+            [
+                flag(row, SETTINGS.dealMovementWriteNotes)
+                    ? 'пишет в ленту сделок'
+                    : null,
+                flag(row, SETTINGS.dealMovementDigestEnabled)
+                    ? 'сводка руководителям'
+                    : null,
+            ]
+                .filter((part): part is string => part !== null)
+                .join(', ') || 'только считать',
     },
 ];
 

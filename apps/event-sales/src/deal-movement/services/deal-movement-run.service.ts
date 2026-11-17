@@ -10,10 +10,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import { resolveTimezoneByDomain, type ETimeZone } from '@lib/shared/lib/date';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
-import {
-    DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES,
-    DEAL_MOVEMENT_NOTES,
-} from '../constants/deal-movement.const';
+import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
 import {
     buildDealMovementSnapshot,
     formatDealMovementFailure,
@@ -37,6 +34,7 @@ import {
     type DealMovementEvaluation,
 } from './deal-movement-evaluator.service';
 import { DealMovementNotesService } from './deal-movement-notes.service';
+import { DealMovementPublishService } from './deal-movement-publish.service';
 import { DealMovementRunState } from './deal-movement-run-state';
 import { DealMovementSettingsService } from './deal-movement-settings.service';
 import { DealMovementSnapshotStore } from './deal-movement-snapshot.store';
@@ -64,10 +62,10 @@ interface RunContext {
  * - «Посчитать» (`dry-run`) — ничего не сохраняет и не пишет; итог (и
  *   сколько записей ушло бы в ленту) — в состоянии прогона;
  * - счёт (`count`) — состояние по сделкам в Redis целиком, затем записи в
- *   ленту (если включены; каждая удачная — сразу одним полем хеша), затем
- *   дневной снимок в ais и метка счёта. Пишет в ленты ТОЛЬКО ночной счёт
- *   по расписанию: у ручного счёта из админки лимит записей 0, расхождения
- *   не теряются и уходят ночью.
+ *   ленту и сводка руководителям (`DealMovementPublishService`), затем
+ *   дневной снимок в ais и метка счёта. Пишет в ленты и шлёт сводку ТОЛЬКО
+ *   ночной счёт по расписанию: у ручного счёта из админки лимит записей 0,
+ *   расхождения не теряются и уходят ночью.
  *
  * Прошлое состояние читается ДО оценки: последняя активность сделки
  * считается без нашей записи. Счёт старше трёх суток (или его нет) —
@@ -88,6 +86,7 @@ export class DealMovementRunService {
         private readonly stateStore: DealMovementStateStore,
         private readonly snapshots: DealMovementSnapshotStore,
         private readonly notes: DealMovementNotesService,
+        private readonly publish: DealMovementPublishService,
     ) {}
 
     async run(
@@ -193,7 +192,7 @@ export class DealMovementRunService {
         return plan;
     }
 
-    /** Счёт: состояние целиком → записи в ленту → снимок дня → метка. */
+    /** Счёт: состояние целиком → записи и сводка → снимок дня → метка. */
     private async persist(
         ctx: RunContext,
         options: DealMovementOptions,
@@ -201,7 +200,17 @@ export class DealMovementRunService {
         plan: DealMovementNightPlan,
     ): Promise<void> {
         await this.stateStore.save(ctx.domain, plan.state);
-        const notified = await this.writeNotes(ctx, options, evaluation, plan);
+        const notified = await this.publish.publish({
+            domain: ctx.domain,
+            day: ctx.day,
+            timezone: ctx.timezone,
+            nightly: !ctx.heldForNight,
+            options,
+            evaluation,
+            plan,
+            status: ctx.status,
+            onPhase: phase => this.progress(ctx, phase),
+        });
         ctx.status.updatedAt = new Date().toISOString();
         await this.snapshots.save(
             ctx.domain,
@@ -219,40 +228,6 @@ export class DealMovementRunService {
         });
         ctx.status.snapshotDay = ctx.day;
         ctx.status.phase = 'saved';
-    }
-
-    /** Записи в ленту по плану; ничего в плане — ничего не делаем. */
-    private async writeNotes(
-        ctx: RunContext,
-        options: DealMovementOptions,
-        evaluation: DealMovementEvaluation,
-        plan: DealMovementNightPlan,
-    ): Promise<ReadonlySet<string>> {
-        const summary = ctx.status.notes;
-        if (
-            summary === undefined ||
-            ctx.heldForNight ||
-            plan.toNotify.length === 0
-        ) {
-            return new Set();
-        }
-        await this.progress(ctx, 'notes');
-        const outcome = await this.notes.write({
-            domain: ctx.domain,
-            day: ctx.day,
-            timezone: ctx.timezone,
-            plan,
-            verdicts: evaluation.verdicts,
-            pointers: evaluation.pointers,
-            options: options.notes,
-            summary,
-            // notifiedAt — момент самой записи, а не старт прогона.
-            clock: () => new Date(),
-            pauseMs: DEAL_MOVEMENT_NOTES.pauseMs,
-            onProgress: () => this.progress(ctx, 'notes'),
-        });
-        ctx.status.warnings.push(...outcome.warnings);
-        return outcome.written;
     }
 
     private async finish(ctx: RunContext): Promise<DealMovementRunOutcome> {

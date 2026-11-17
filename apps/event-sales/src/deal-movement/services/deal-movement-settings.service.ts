@@ -3,6 +3,7 @@ import {
     EnumPortalAppCode,
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingsService,
+    toDealMovementDigestMode,
     toDealMovementNoteKind,
     type PortalAppSettingsValues,
 } from '@lib/portal-lib/store/app-settings';
@@ -42,7 +43,15 @@ export function toDealMovementOptions(
         | 'dealMovementNoteKind'
         | 'dealMovementMaxNotes'
         | 'dealMovementMaxTexts'
-    >,
+    > &
+        Partial<
+            Pick<
+                EventSalesSettings,
+                | 'dealMovementDigestEnabled'
+                | 'dealMovementDigestMode'
+                | 'dealMovementDigestTop'
+            >
+        >,
 ): DealMovementOptions {
     const defaults = DEAL_MOVEMENT_SETTING_DEFAULTS;
     const windowDays = positiveInt(
@@ -81,6 +90,15 @@ export function toDealMovementOptions(
             maxTexts: nonNegativeInt(
                 settings.dealMovementMaxTexts,
                 defaults.maxTexts,
+            ),
+        },
+        digest: {
+            // Только явное «да»: сводка руководителям по умолчанию выключена.
+            enabled: settings.dealMovementDigestEnabled === true,
+            mode: toDealMovementDigestMode(settings.dealMovementDigestMode),
+            top: positiveInt(
+                settings.dealMovementDigestTop,
+                defaults.digestTop,
             ),
         },
     };

@@ -45,4 +45,22 @@ export class DealMovementNightCounters {
         await redis.incr(key);
         await redis.expire(key, DEAL_MOVEMENT_TTL_SEC.nightCounter);
     }
+
+    /**
+     * Отметка «сводка руководителям за этот день портала уже уходила»: true
+     * — отметку поставили сейчас (слать), false — она уже была (повторный
+     * тик той же ночи сводку не дублирует).
+     */
+    async claimDigest(domain: string, day: string): Promise<boolean> {
+        const result = await this.redisService
+            .getClient()
+            .set(
+                DEAL_MOVEMENT_REDIS_KEYS.digestDay(domain, day),
+                new Date().toISOString(),
+                'EX',
+                DEAL_MOVEMENT_TTL_SEC.nightCounter,
+                'NX',
+            );
+        return result === 'OK';
+    }
 }
