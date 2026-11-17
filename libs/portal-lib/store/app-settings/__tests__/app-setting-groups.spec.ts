@@ -137,6 +137,12 @@ describe('категории настроек приложений', () => {
         expect(resolveAppSettingGroup(app, 'deal_movement_max_deals')).toBe(
             'deal_movement',
         );
+        expect(resolveAppSettingGroup(app, 'deal_movement_write_notes')).toBe(
+            'deal_movement',
+        );
+        expect(resolveAppSettingGroup(app, 'deal_movement_note_kind')).toBe(
+            'deal_movement',
+        );
         expect(
             resolveAppSettingGroup(
                 EnumPortalAppCode.portal,
