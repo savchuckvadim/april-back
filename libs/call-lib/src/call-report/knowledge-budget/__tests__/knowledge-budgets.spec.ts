@@ -2,6 +2,7 @@ import {
     FOCUS_SHARED_BUDGET_CHARS,
     FOCUS_SHARED_MATERIALS_CHARS,
     KNOWLEDGE_USES,
+    KNOWLEDGE_USE_TITLES,
     budgetRequests,
     complianceBudgetLines,
     focusBudgetLines,
@@ -170,5 +171,13 @@ describe('таблица бюджетов базы знаний', () => {
             { kind: 'sales-regulation', budgetChars: 5000 },
             { kind: 'sales-script', budgetChars: 6000 },
         ]);
+    });
+});
+
+describe('подписи мест чтения материалов', () => {
+    it('место «focus-movement» подписано обоими проходами «движения сделки»: возражения и цена, закрытие', () => {
+        expect(KNOWLEDGE_USE_TITLES[KNOWLEDGE_USES.focusMovement]).toBe(
+            'Разбор звонка: проходы «Возражения и цена» и «Закрытие»',
+        );
     });
 });

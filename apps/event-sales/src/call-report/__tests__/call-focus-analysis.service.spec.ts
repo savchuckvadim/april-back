@@ -5,7 +5,13 @@ import {
     type ResolvedMethodology,
 } from '@lib/call-lib';
 import { LlmUnavailableError } from '@lib/llm-gateway';
-import { FOCUS_SECTION_CODES } from '../contracts/call-focus-analysis.contract';
+import {
+    FOCUS_CLOSING_PROMPT,
+    FOCUS_CLOSING_SCHEMA,
+    FOCUS_MOVEMENT_PROMPT,
+    FOCUS_MOVEMENT_SCHEMA,
+    FOCUS_SECTION_CODES,
+} from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 
 const focusResult = (overrides?: Record<string, unknown>) => ({
@@ -134,10 +140,15 @@ describe('контракт фокусов', () => {
         );
         expect(new Set(union).size).toBe(union.length);
     });
+
+    it('бывший проход «движение сделки» поделён: возражения и цена — отдельно от закрытия', () => {
+        expect(FOCUS_SECTION_CODES.movement).toEqual(['OBJECTIONS', 'PRICE']);
+        expect(FOCUS_SECTION_CODES.closing).toEqual(['CLOSING', 'REFUSAL']);
+    });
 });
 
 describe('CallFocusAnalysisService', () => {
-    it('собирает dto из трёх фокусов и синтеза; секции объединяются', async () => {
+    it('собирает dto из четырёх фокусов и синтеза; секции объединяются', async () => {
         const { service, llm } = makeDeps({
             responses: {
                 call_focus_form: focusResult({
@@ -154,7 +165,11 @@ describe('CallFocusAnalysisService', () => {
                 call_focus_movement: focusResult({
                     sections: [{ section: 'PRICE', relevance: 0 }],
                     priceDiscussed: false,
+                }),
+                call_focus_closing: focusResult({
+                    sections: [{ section: 'CLOSING', relevance: 90, score: 7 }],
                     nextStep: { set: true, description: 'созвон', date: null },
+                    outcome: 'callback_dated',
                 }),
                 call_focus_synthesis: {
                     summary: 'Итог звонка',
@@ -177,6 +192,7 @@ describe('CallFocusAnalysisService', () => {
             'GREETING',
             'NEEDS',
             'PRICE',
+            'CLOSING',
         ]);
         expect(dto?.summary).toBe('Итог звонка');
         expect(dto?.score).toBe(7);
@@ -184,20 +200,85 @@ describe('CallFocusAnalysisService', () => {
         // Уточнение типа синтезом едет рядом; применяет его процессор.
         expect(dto?.callTypeRefined).toBe('presentation');
         expect(dto?.callTypeReason).toBe('показали систему');
+        // Поля прохода «возражения и цена» и прохода «закрытие» — в одном разборе.
         expect(dto?.priceDiscussed).toBe(false);
-        // Все четыре вызова получили паспорт в user-контенте.
+        expect(dto?.nextStep).toMatchObject({
+            set: true,
+            description: 'созвон',
+        });
+        expect(dto?.outcome).toBe('callback_dated');
+        // Все пять вызовов получили паспорт в user-контенте.
         for (const call of llm.structuredCompletionWithUsage.mock.calls) {
             expect(String(call[1])).toContain('ПАСПОРТ');
         }
-        // Расход — сумма четырёх вызовов (3 фокуса + синтез).
+        // Расход — сумма пяти вызовов (4 фокуса + синтез).
         expect(dto?.usage).toEqual({
-            tokens: 480,
-            promptTokens: 400,
-            completionTokens: 80,
-            calls: 4,
-            callsWithUsage: 4,
+            tokens: 600,
+            promptTokens: 500,
+            completionTokens: 100,
+            calls: 5,
+            callsWithUsage: 5,
             model: 'bitrix/bitrixgpt-5.5',
         });
+    });
+
+    it('четыре фокус-прохода зовутся с именами схем form, content, movement, closing; у каждого своя схема и свой промпт', async () => {
+        const { service, llm } = makeDeps();
+        await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        const calls = llm.structuredCompletionWithUsage.mock
+            .calls as unknown[][];
+        const focusCalls = calls.filter(
+            call => call[2] !== 'call_focus_synthesis',
+        );
+        expect(focusCalls.map(call => call[2]).sort()).toEqual([
+            'call_focus_closing',
+            'call_focus_content',
+            'call_focus_form',
+            'call_focus_movement',
+        ]);
+        const schemaOf = (name: string) =>
+            focusCalls.find(call => call[2] === name)?.[3];
+        expect(schemaOf('call_focus_movement')).toBe(FOCUS_MOVEMENT_SCHEMA);
+        expect(schemaOf('call_focus_closing')).toBe(FOCUS_CLOSING_SCHEMA);
+        const promptOf = (name: string) =>
+            String(focusCalls.find(call => call[2] === name)?.[0]);
+        expect(promptOf('call_focus_movement')).toContain(
+            FOCUS_MOVEMENT_PROMPT,
+        );
+        expect(promptOf('call_focus_closing')).toContain(FOCUS_CLOSING_PROMPT);
+        // Журнал шлюза: синтез идёт отдельным пятым вызовом.
+        expect(calls).toHaveLength(5);
+    });
+
+    it('синтезу уходят четыре выжимки: форма, содержание, возражения и цена, закрытие и следующий шаг', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_movement: focusResult({
+                    sections: [{ section: 'PRICE', relevance: 80, score: 4 }],
+                }),
+                call_focus_closing: focusResult({
+                    sections: [{ section: 'CLOSING', relevance: 90, score: 8 }],
+                }),
+            },
+        });
+        await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        const synthesis = (
+            llm.structuredCompletionWithUsage.mock.calls as unknown[][]
+        ).find(call => call[2] === 'call_focus_synthesis');
+        const user = String(synthesis?.[1]);
+        for (const label of [
+            'ФОРМА РАЗГОВОРА:',
+            'СОДЕРЖАНИЕ ПРОДАЖИ:',
+            'ВОЗРАЖЕНИЯ И ЦЕНА:',
+            'ЗАКРЫТИЕ И СЛЕДУЮЩИЙ ШАГ:',
+        ]) {
+            expect(user).toContain(label);
+        }
+        expect(user).toContain('PRICE: 4/10');
+        expect(user).toContain('CLOSING: 8/10');
+        expect(user).not.toContain('ДВИЖЕНИЕ СДЕЛКИ');
     });
 
     it('дубли кода внутри прохода схлопываются, чужие коды прохода отбрасываются (три «Приветствия» 29.10.2026)', async () => {
@@ -221,8 +302,16 @@ describe('CallFocusAnalysisService', () => {
                 call_focus_movement: focusResult({
                     sections: [
                         { section: 'PRICE', relevance: 100, score: 1 },
-                        { section: 'CLOSING', relevance: 100, score: 2 },
+                        // Закрытие — зона соседнего прохода.
+                        { section: 'CLOSING', relevance: 100, score: 9 },
                         { section: 'PRICE', relevance: 100, score: 1 },
+                    ],
+                }),
+                call_focus_closing: focusResult({
+                    sections: [
+                        { section: 'CLOSING', relevance: 100, score: 2 },
+                        // Цена — зона прохода «возражения и цена».
+                        { section: 'PRICE', relevance: 100, score: 9 },
                     ],
                 }),
                 call_focus_synthesis: { summary: 'Итог', score: 3 },
@@ -240,6 +329,12 @@ describe('CallFocusAnalysisService', () => {
             .map(call => String(call[0]))
             .join('\n');
         expect(warnings).toContain('чужие разделы NEEDS отброшены');
+        expect(warnings).toContain(
+            'проход «возражения и цена»: чужие разделы CLOSING отброшены',
+        );
+        expect(warnings).toContain(
+            'проход «закрытие и следующий шаг»: чужие разделы PRICE отброшены',
+        );
         expect(warnings).toContain('GREETING ×3, PRICE ×2');
         warn.mockRestore();
     });
@@ -258,18 +353,20 @@ describe('CallFocusAnalysisService', () => {
                 ['NEEDS', 'PRESENTATION'].includes(section.section),
             ),
         ).toBe(false);
-        expect(dto?.usage).toMatchObject({ tokens: 360, calls: 3 });
+        expect(dto?.usage).toMatchObject({ tokens: 480, calls: 4 });
         // Пометка для догона: какой проход не собрался.
         expect(dto?.incompleteParts).toEqual(['content']);
     });
 
-    it('промпт «движения сделки» несёт блок сигналов руководителю с критериями флагов и доказательствами', async () => {
+    it('промпт «возражений и цены» несёт блок сигналов руководителю с критериями флагов и доказательствами; у «закрытия» его нет', async () => {
         const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'текст', 'cold');
 
-        const movement = llm.structuredCompletionWithUsage.mock.calls.find(
-            call => (call as unknown[])[2] === 'call_focus_movement',
-        ) as unknown[];
+        const callOf = (schemaName: string): unknown[] =>
+            llm.structuredCompletionWithUsage.mock.calls.find(
+                call => (call as unknown[])[2] === schemaName,
+            ) as unknown[];
+        const movement = callOf('call_focus_movement');
         const prompt = String(movement[0]);
         expect(prompt).toContain('СИГНАЛЫ РУКОВОДИТЕЛЮ');
         expect(prompt).toContain('сомневаешься — не ставь');
@@ -281,6 +378,14 @@ describe('CallFocusAnalysisService', () => {
         };
         expect(schema.required).toContain('riskEvidence');
         expect(schema.properties.riskEvidence).toBeDefined();
+
+        const closing = callOf('call_focus_closing');
+        expect(String(closing[0])).not.toContain('СИГНАЛЫ РУКОВОДИТЕЛЮ');
+        const closingSchema = closing[3] as {
+            properties: Record<string, unknown>;
+        };
+        expect(closingSchema.properties.riskEvidence).toBeUndefined();
+        expect(closingSchema.properties.riskFlags).toBeUndefined();
     });
 
     /**
@@ -294,7 +399,8 @@ describe('CallFocusAnalysisService', () => {
         const prompts = llm.structuredCompletionWithUsage.mock.calls.map(call =>
             String((call as unknown[])[0]),
         );
-        expect(prompts).toHaveLength(4);
+        // Четыре фокус-прохода и синтез.
+        expect(prompts).toHaveLength(5);
         for (const prompt of prompts) {
             expect(prompt).toContain('ЗВОНОК-ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ');
             expect(prompt).toContain(
@@ -316,15 +422,65 @@ describe('CallFocusAnalysisService', () => {
         }
     });
 
-    it('два упавших фокуса → результат отброшен (null)', async () => {
-        const { service } = makeDeps({
+    it('выжил один проход из четырёх → результат отброшен (null), в журнале «выжило 1/4»', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        const { service, llm } = makeDeps({
             responses: {
                 call_focus_form: new Error('down'),
                 call_focus_content: new Error('down'),
+                call_focus_movement: new Error('down'),
             },
         });
         const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
         expect(dto).toBeNull();
+        // Синтез не зовётся: выжил один проход, а нужно не меньше двух.
+        expect(
+            (llm.structuredCompletionWithUsage.mock.calls as unknown[][]).some(
+                call => call[2] === 'call_focus_synthesis',
+            ),
+        ).toBe(false);
+        expect(
+            warn.mock.calls.map(call => String(call[0])).join('\n'),
+        ).toContain('выжило 1/4 проходов — результат отброшен');
+        warn.mockRestore();
+    });
+
+    it('выжили два прохода из четырёх → разбор есть, но неполный: сорвавшиеся названы для догона', async () => {
+        const { service } = makeDeps({
+            responses: {
+                call_focus_form: new Error('down'),
+                call_focus_content: new Error('down'),
+                call_focus_synthesis: { summary: 'Итог', score: 4 },
+            },
+        });
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+        expect(dto).not.toBeNull();
+        expect(dto?.incompleteParts).toEqual(['form', 'content']);
+        expect(dto?.summary).toBe('Итог');
+    });
+
+    it('сорвался проход «закрытие» — он назван в incompleteParts, остальные три сохранены для догона', async () => {
+        const { service } = makeDeps({
+            responses: {
+                call_focus_closing: new Error('down'),
+                call_focus_synthesis: { summary: 'Итог', score: 5 },
+            },
+        });
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+        expect(dto?.incompleteParts).toEqual(['closing']);
+        const stored = dto?.extra?.focusPasses as {
+            passes: Record<string, unknown>;
+        };
+        expect(Object.keys(stored.passes).sort()).toEqual([
+            'content',
+            'form',
+            'movement',
+        ]);
+        // Поля прохода «закрытие» в разборе отсутствуют, остальное на месте.
+        expect(dto?.nextStep).toBeUndefined();
+        expect(dto?.sections).toBeDefined();
     });
 
     it('упавший синтез не фатален: секции есть, итоговых полей нет', async () => {
@@ -339,7 +495,7 @@ describe('CallFocusAnalysisService', () => {
         expect(dto?.incompleteParts).toEqual(['synthesis']);
     });
 
-    it('материалы по ролям: скрипт во всех проходах, возражения — в «содержании», регламент — в «движении», эталоны — в синтезе', async () => {
+    it('материалы по ролям: скрипт во всех проходах, возражения — в «содержании», регламент — в «возражениях и цене» и «закрытии», эталоны — в синтезе', async () => {
         const { service, llm, materials } = makeDeps();
         materials.collect.mockImplementation(
             (_domain: string, requests: { kind: string }[]) =>
@@ -358,17 +514,22 @@ describe('CallFocusAnalysisService', () => {
         const prompts = llm.structuredCompletionWithUsage.mock.calls.map(call =>
             String((call as unknown[])[0]),
         );
-        expect(prompts).toHaveLength(4);
+        expect(prompts).toHaveLength(5);
         // Скрипт компании — в каждом проходе и в синтезе.
         for (const prompt of prompts) {
             expect(prompt).toContain('ТЕКСТ[sales-script]');
         }
         // Узкие материалы — только в своём проходе.
-        const [form, content, movement, synthesis] = prompts;
+        const [form, content, movement, closing, synthesis] = prompts;
         expect(content).toContain('ТЕКСТ[objection-playbook]');
         expect(form).not.toContain('ТЕКСТ[objection-playbook]');
+        expect(movement).not.toContain('ТЕКСТ[objection-playbook]');
+        expect(closing).not.toContain('ТЕКСТ[objection-playbook]');
+        // Оба прохода «движения сделки» читают регламент отдела.
         expect(movement).toContain('ТЕКСТ[sales-regulation]');
+        expect(closing).toContain('ТЕКСТ[sales-regulation]');
         expect(content).not.toContain('ТЕКСТ[sales-regulation]');
+        expect(form).not.toContain('ТЕКСТ[sales-regulation]');
         expect(synthesis).toContain('ТЕКСТ[call-etalon]');
         expect(form).not.toContain('ТЕКСТ[call-etalon]');
     });
@@ -511,6 +672,7 @@ describe('CallFocusAnalysisService', () => {
             'call_focus_form',
             'call_focus_content',
             'call_focus_movement',
+            'call_focus_closing',
             'call_focus_synthesis',
         ]) {
             expect(promptOf(schemaName)).toContain(anchor);
@@ -530,9 +692,9 @@ function requestedKinds(materials: { collect: jest.Mock }): string[] {
 
 /**
  * Проход «методика» (этап 1 плана методики Полянского): на портале с
- * методикой идёт четвёртый вызов по пунктам типа, его ответ раскладывается
+ * методикой идёт пятый вызов по пунктам типа, его ответ раскладывается
  * в dto.methodology, ограничители ядра и методики срезают оценки; без
- * методики — три прохода и синтез, но ограничители ядра всё равно считаются.
+ * методики — четыре прохода и синтез, но ограничители ядра всё равно считаются.
  */
 describe('CallFocusAnalysisService: методика и ограничители', () => {
     const resolved: ResolvedMethodology = {
@@ -542,7 +704,7 @@ describe('CallFocusAnalysisService: методика и ограничители
         versionTag: 'polyansky@1.0.0',
     };
 
-    it('с методикой: пять вызовов, пункты и спирали в dto, ограничитель методики срезал презентацию', async () => {
+    it('с методикой: шесть вызовов, пункты и спирали в dto, ограничитель методики срезал презентацию', async () => {
         const { service, llm } = makeDeps({
             methodology: resolved,
             responses: {
@@ -555,7 +717,7 @@ describe('CallFocusAnalysisService: методика и ограничители
                     needs: ['практика'],
                     presentationDone: true,
                 }),
-                call_focus_movement: focusResult({
+                call_focus_closing: focusResult({
                     sections: [{ section: 'CLOSING', relevance: 90, score: 8 }],
                     nextStep: {
                         set: true,
@@ -618,7 +780,7 @@ describe('CallFocusAnalysisService: методика и ограничители
             call => String(call[2]),
         );
         expect(schemaNames).toContain('call_focus_methodology');
-        expect(schemaNames).toHaveLength(5);
+        expect(schemaNames).toHaveLength(6);
         expect(dto?.methodology).toMatchObject({
             code: 'polyansky',
             version: '1.0.0',
@@ -639,10 +801,10 @@ describe('CallFocusAnalysisService: методика и ограничители
             'pres.no_questions_after_blocks',
         );
         expect(dto?.dealProgress).toMatchObject({ score: 3 });
-        expect(dto?.usage?.calls).toBe(5);
+        expect(dto?.usage?.calls).toBe(6);
     });
 
-    it('без методики: четыре вызова, methodology null, ограничитель ядра срезал презентацию без потребностей', async () => {
+    it('без методики: пять вызовов, methodology null, ограничитель ядра срезал презентацию без потребностей', async () => {
         const { service, llm } = makeDeps({
             responses: {
                 call_focus_content: focusResult({
@@ -663,7 +825,7 @@ describe('CallFocusAnalysisService: методика и ограничители
             'presentation',
         );
 
-        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(5);
         expect(dto?.methodology).toBeNull();
         expect(
             dto?.sections?.find(s => s.section === 'PRESENTATION')?.score,
@@ -685,16 +847,17 @@ describe('CallFocusAnalysisService: методика и ограничители
             'текст разговора',
             'event_invite',
         );
-        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(5);
         expect(dto?.methodology).toBeNull();
     });
 
-    it('таймаут прохода «методика» причину провала не меняет: решают три фокуса', async () => {
+    it('таймаут прохода «методика» причину провала не меняет: решают четыре фокуса', async () => {
         const { service, llm } = makeDeps({
             methodology: resolved,
             responses: {
                 call_focus_form: badAnswer(),
                 call_focus_content: badAnswer(),
+                call_focus_movement: badAnswer(),
                 call_focus_methodology: providerTimeout(),
             },
         });
@@ -728,11 +891,12 @@ describe('CallFocusAnalysisService: причина провала (runWithOutcom
         expect(outcome.providerFailure).toBe(false);
     });
 
-    it('два прохода оборвались по таймауту поставщика — providerFailure, синтез не зовётся', async () => {
+    it('три прохода из четырёх оборвались по таймауту поставщика — providerFailure, синтез не зовётся', async () => {
         const { service, llm } = makeDeps({
             responses: {
                 call_focus_form: providerTimeout(),
                 call_focus_content: providerTimeout(),
+                call_focus_movement: providerTimeout(),
             },
         });
         const outcome = await service.runWithOutcome(
@@ -741,7 +905,7 @@ describe('CallFocusAnalysisService: причина провала (runWithOutcom
             'call',
         );
         expect(outcome).toEqual({ analysis: null, providerFailure: true });
-        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(3);
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
     });
 
     it('модель ответила негодным JSON — причина другая; run отдаёт null, как раньше', async () => {
@@ -749,6 +913,7 @@ describe('CallFocusAnalysisService: причина провала (runWithOutcom
             responses: {
                 call_focus_form: badAnswer(),
                 call_focus_content: badAnswer(),
+                call_focus_movement: badAnswer(),
             },
         });
         await expect(
@@ -813,8 +978,8 @@ describe('CallFocusAnalysisService: один повтор сорвавшегос
         const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
 
         expect(dto?.incompleteParts).toEqual([]);
-        // Три прохода, повтор «движения» и синтез.
-        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(5);
+        // Четыре прохода, повтор «возражений и цены» и синтез.
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(6);
         // Первая попытка — с отложенной тревогой, повтор — с обычной.
         expect(optionsOf(llm, 'call_focus_movement')).toEqual([
             { model: undefined, deferExhaustedAlert: true },
@@ -838,11 +1003,12 @@ describe('CallFocusAnalysisService: один повтор сорвавшегос
         expect(llm.reportExhausted).not.toHaveBeenCalled();
     });
 
-    it('сорвались два прохода — поставщик не справляется: повторов нет, отложенные тревоги уходят сразу', async () => {
+    it('сорвались три прохода — поставщик не справляется: повторов нет, отложенные тревоги уходят сразу', async () => {
         const { service, llm } = makeDeps({
             responses: {
                 call_focus_form: primaryTimeout(),
                 call_focus_content: primaryTimeout(),
+                call_focus_movement: primaryTimeout(),
             },
         });
 
@@ -853,12 +1019,31 @@ describe('CallFocusAnalysisService: один повтор сорвавшегос
         );
 
         expect(outcome).toEqual({ analysis: null, providerFailure: true });
-        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(3);
-        expect(llm.reportExhausted).toHaveBeenCalledTimes(2);
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
+        expect(llm.reportExhausted).toHaveBeenCalledTimes(3);
         expect(llm.reportExhausted).toHaveBeenCalledWith(
             expect.any(LlmUnavailableError),
             { schemaName: 'call_focus_form', domain: 'test.bitrix24.ru' },
         );
+    });
+
+    it('сорвались два прохода из четырёх — повторов нет, разбор собран неполным, тревоги уходят сразу', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_form: primaryTimeout(),
+                call_focus_content: primaryTimeout(),
+                call_focus_synthesis: { summary: 'Итог', score: 5 },
+            },
+        });
+
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.incompleteParts).toEqual(['form', 'content']);
+        // Четыре прохода и синтез: ни один из сорвавшихся не повторялся.
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(5);
+        expect(optionsOf(llm, 'call_focus_form')).toHaveLength(1);
+        expect(optionsOf(llm, 'call_focus_content')).toHaveLength(1);
+        expect(llm.reportExhausted).toHaveBeenCalledTimes(2);
     });
 
     it('негодный ответ модели не повторяется: проход неполный, тревога одна', async () => {

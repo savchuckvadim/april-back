@@ -1,5 +1,6 @@
 import type { CallAnalysisPart } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
+    FOCUS_KEYS,
     FOCUS_SECTION_CODES,
     type CallFocusKey,
 } from '../contracts/call-focus-analysis.contract';
@@ -9,18 +10,22 @@ import type { FocusPassResult } from './call-focus-stored.util';
  * Сборка фокус-разбора из ответов проходов — чистые функции (16.11.2026,
  * вынесено из CallFocusAnalysisService). Одна сборка и у штатного разбора,
  * и у догона, который берёт часть проходов из сохранённых: разбор получается
- * одинаковым, откуда бы ни пришёл ответ прохода.
+ * одинаковым, откуда бы ни пришёл ответ прохода. Ключи проходов — общий
+ * список FOCUS_KEYS из контракта.
  */
 
-/** Ключи фокус-проходов в порядке сборки. */
-export const FOCUS_KEYS: readonly CallFocusKey[] = [
-    'form',
-    'content',
-    'movement',
-];
-
-/** Ответы трёх фокус-проходов; null — проход не собрался. */
+/** Ответы фокус-проходов по ключам; null — проход не собрался. */
 export type FocusResultsByKey = Record<CallFocusKey, FocusPassResult | null>;
+
+/** Пустая заготовка: ни один проход ещё не ответил. */
+export function emptyFocusResults(): FocusResultsByKey {
+    return {
+        form: null,
+        content: null,
+        movement: null,
+        closing: null,
+    };
+}
 
 /**
  * Чего не хватает в разборе: сорвавшиеся проходы, синтез и проход методики
@@ -84,10 +89,12 @@ export function mergeFocusResults(input: {
     incompleteParts: CallAnalysisPart[];
     usage: unknown;
 }): Record<string, unknown> {
+    const passFields = FOCUS_KEYS.reduce<Record<string, unknown>>(
+        (fields, key) => ({ ...fields, ...(input.byKey[key] ?? {}) }),
+        {},
+    );
     return {
-        ...(input.byKey.form ?? {}),
-        ...(input.byKey.content ?? {}),
-        ...(input.byKey.movement ?? {}),
+        ...passFields,
         ...(input.synthesis ?? {}),
         sections: input.sections,
         callType: input.callType,

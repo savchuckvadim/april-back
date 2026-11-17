@@ -12,9 +12,11 @@ import {
 const AFTER = new Date(REPAIR_LEGACY_SINCE.getTime() + 19 * 60 * 60 * 1000);
 const BEFORE = new Date(REPAIR_LEGACY_SINCE.getTime() - 60 * 60 * 1000);
 
+/** По разделу из зоны каждого из четырёх фокус-проходов. */
 const FULL_SECTIONS = [
     { section: 'GREETING' },
     { section: 'NEEDS' },
+    { section: 'PRICE' },
     { section: 'CLOSING' },
 ];
 
@@ -64,7 +66,50 @@ describe('incompletePartsOf', () => {
                     },
                 }),
             ),
-        ).toEqual(['movement', 'synthesis']);
+        ).toEqual(['movement', 'closing', 'synthesis']);
+    });
+
+    it('без пометки: нет только зоны «закрытия» (CLOSING, REFUSAL) — недостающий проход closing', () => {
+        expect(
+            incompletePartsOf(
+                record({
+                    user_result: {
+                        score: 70,
+                        sections: [
+                            { section: 'GREETING' },
+                            { section: 'NEEDS' },
+                            { section: 'OBJECTIONS' },
+                        ],
+                    },
+                }),
+            ),
+        ).toEqual(['closing']);
+        // Зона «закрытия» закрыта любым из её двух кодов.
+        expect(
+            incompletePartsOf(
+                record({
+                    user_result: {
+                        score: 70,
+                        sections: [
+                            { section: 'GREETING' },
+                            { section: 'NEEDS' },
+                            { section: 'OBJECTIONS' },
+                            { section: 'REFUSAL' },
+                        ],
+                    },
+                }),
+            ),
+        ).toEqual([]);
+    });
+
+    it('пометка с проходом closing принимается как есть', () => {
+        expect(
+            incompletePartsOf(
+                record({
+                    user_result: { incompleteParts: ['closing'], sections: [] },
+                }),
+            ),
+        ).toEqual(['closing']);
     });
 
     it('без пометки, полная свежая запись — не трогаем', () => {

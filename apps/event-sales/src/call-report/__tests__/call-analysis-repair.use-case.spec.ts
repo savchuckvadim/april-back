@@ -313,6 +313,7 @@ describe('CallAnalysisRepairUseCase: сохранённые проходы', () 
         passes: {
             form: { sections: [{ section: 'GREETING' }] },
             content: { sections: [] },
+            closing: { sections: [] },
         },
     };
     const withPasses = (stored: Record<string, unknown> = PASSES) =>
@@ -345,10 +346,10 @@ describe('CallAnalysisRepairUseCase: сохранённые проходы', () 
         });
     });
 
-    it('проходы получены прежним промптом — разбор переделывается целиком', async () => {
+    it('проходы получены прежним промптом (до деления «движения сделки» на два вызова) — разбор переделывается целиком', async () => {
         const { useCase, aiService, rerunService } = makeDeps();
         aiService.findByDomainTypesInPeriod.mockResolvedValue([
-            withPasses({ ...PASSES, promptVersion: 'focus-v3-2026-11-01' }),
+            withPasses({ ...PASSES, promptVersion: 'focus-v3.2-2026-11-16' }),
         ]);
 
         await useCase.repairDomain(DOMAIN, NOW);
@@ -370,6 +371,7 @@ describe('CallAnalysisRepairUseCase: сохранённые проходы', () 
                 form: { sections: [] },
                 content: { sections: [] },
                 movement: { sections: [] },
+                closing: { sections: [] },
             },
         };
         rerunService.rerun.mockResolvedValue({

@@ -2,11 +2,15 @@ import { Logger } from '@nestjs/common';
 import { POLYANSKY_METHODOLOGY, type ResolvedMethodology } from '@lib/call-lib';
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
-import type { StoredFocusPasses } from '../services/call-focus-stored.util';
+import {
+    usableStoredFocusPasses,
+    type StoredFocusPasses,
+} from '../services/call-focus-stored.util';
 
 /**
  * 16.11.2026: неполный разбор уносит ответы выживших проходов, догон зовёт
- * только недостающее — два вызова модели вместо пяти.
+ * только недостающее — два вызова модели вместо всех. С 17.11.2026
+ * фокус-проходов четыре: form, content, movement, closing.
  */
 const DOMAIN = 'test.bitrix24.ru';
 const USAGE = { promptTokens: 100, completionTokens: 20, totalTokens: 120 };
@@ -108,10 +112,12 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
         const dto = await partial.service.run(DOMAIN, 'текст', 'call');
 
         expect(dto?.incompleteParts).toEqual(['movement']);
+        // Три выживших прохода из четырёх: «закрытие» среди них.
         expect(dto?.extra?.focusPasses).toEqual(
             storedOf({
                 form: focusResult({ sentiment: 'neutral' }),
                 content: focusResult(),
+                closing: focusResult(),
             }),
         );
 
@@ -123,10 +129,10 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
         expect(complete?.extra).toBeUndefined();
     });
 
-    it('догон с сохранёнными проходами: зовутся только недостающий проход и синтез, расход — только за них', async () => {
+    it('догон с сохранёнными form, content, movement: зовутся только closing и синтез, расход — только за них', async () => {
         const { service, schemas } = makeService({
             responses: {
-                call_focus_movement: focusResult({ dealProgress: 4 }),
+                call_focus_closing: focusResult({ dealProgress: 4 }),
                 call_focus_synthesis: { summary: 'Итог', score: 7 },
             },
         });
@@ -135,6 +141,39 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
             stored: storedOf({
                 form: focusResult({ sentiment: 'neutral' }),
                 content: focusResult({ needsFound: true }),
+                movement: focusResult({ priceDiscussed: true }),
+            }),
+        });
+
+        expect(schemas()).toEqual([
+            'call_focus_closing',
+            'call_focus_synthesis',
+        ]);
+        expect(dto).toMatchObject({
+            sentiment: 'neutral',
+            needsFound: true,
+            priceDiscussed: true,
+            dealProgress: 4,
+            score: 7,
+            incompleteParts: [],
+        });
+        expect(dto?.usage).toMatchObject({ tokens: 240, calls: 2 });
+        expect(dto?.extra).toBeUndefined();
+    });
+
+    it('догон с сохранёнными form, content, closing: зовутся только movement и синтез', async () => {
+        const { service, schemas } = makeService({
+            responses: {
+                call_focus_movement: focusResult({ priceDiscussed: true }),
+                call_focus_synthesis: { summary: 'Итог', score: 7 },
+            },
+        });
+
+        const dto = await service.run(DOMAIN, 'текст', 'call', undefined, {
+            stored: storedOf({
+                form: focusResult(),
+                content: focusResult(),
+                closing: focusResult({ dealProgress: 3 }),
             }),
         });
 
@@ -143,14 +182,10 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
             'call_focus_synthesis',
         ]);
         expect(dto).toMatchObject({
-            sentiment: 'neutral',
-            needsFound: true,
-            dealProgress: 4,
-            score: 7,
+            priceDiscussed: true,
+            dealProgress: 3,
             incompleteParts: [],
         });
-        expect(dto?.usage).toMatchObject({ tokens: 240, calls: 2 });
-        expect(dto?.extra).toBeUndefined();
     });
 
     it('не хватало только синтеза — один вызов', async () => {
@@ -163,6 +198,7 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
                 form: focusResult(),
                 content: focusResult(),
                 movement: focusResult(),
+                closing: focusResult(),
             }),
         });
 
@@ -188,8 +224,25 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
             storedOf({
                 form: focusResult({ sentiment: 'neutral' }),
                 content: focusResult({ needsFound: true }),
+                closing: focusResult(),
             }),
         );
+    });
+
+    it('сохранённые проходы прежнего промпта не годятся: догон переделывает разбор целиком', () => {
+        const old = {
+            ...storedOf({ form: focusResult(), movement: focusResult() }),
+            promptVersion: 'focus-v3.2-2026-11-16',
+        };
+        expect(usableStoredFocusPasses(old, CALL_REPORT_PROMPT_VERSION)).toBe(
+            false,
+        );
+        expect(
+            usableStoredFocusPasses(
+                storedOf({ form: focusResult() }),
+                CALL_REPORT_PROMPT_VERSION,
+            ),
+        ).toBe(true);
     });
 
     it('ответ методики берётся из сохранённого только при той же метке методики', async () => {
@@ -203,6 +256,7 @@ describe('CallFocusAnalysisService: сохранённые проходы неп
             form: focusResult(),
             content: focusResult(),
             movement: focusResult(),
+            closing: focusResult(),
         };
         const responses = {
             call_focus_methodology: { checkpoints: [], spirals: [] },

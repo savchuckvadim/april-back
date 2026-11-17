@@ -6,7 +6,7 @@
  * Неполный разбор — активная запись `agent-analysis`, в которой не собралась
  * хотя бы одна часть многослойного разбора:
  *  - с 10.11.2026 разбор сам пишет список `incompleteParts` (фокус-проходы,
- *    синтез, методика; цельный разбор-страховка — все три прохода);
+ *    синтез, методика; цельный разбор-страховка — все фокус-проходы);
  *  - записи без этого поля, созданные с REPAIR_LEGACY_SINCE, проверяются по
  *    содержимому: нет итоговой оценки или нет ни одного раздела зоны
  *    фокус-прохода. Так догон подбирает сбои вечера 10.11.2026, случившиеся
@@ -19,8 +19,8 @@ import {
     type CallAnalysisPart,
 } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
+    FOCUS_KEYS,
     FOCUS_SECTION_CODES,
-    type CallFocusKey,
 } from '../contracts/call-focus-analysis.contract';
 
 /** С какого момента записи без пометки проверяются по содержимому. */
@@ -31,7 +31,7 @@ export const REPAIR_LOOKBACK_HOURS = 72;
 
 /**
  * Сколько НЕПОЛНЫХ разборов портала догон переделывает за один проход:
- * переделка — новый разбор целиком (4–5 вызовов модели) и перезапись
+ * переделка — новый разбор целиком (5–6 вызовов модели) и перезапись
  * карточки, поэтому понемногу.
  */
 export const REPAIR_QUOTA_PER_DOMAIN = 5;
@@ -65,8 +65,6 @@ export interface RepairCandidate<T extends RepairRecordView> {
     record: T;
     parts: CallAnalysisPart[];
 }
-
-const FOCUS_KEYS = Object.keys(FOCUS_SECTION_CODES) as CallFocusKey[];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
