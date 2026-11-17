@@ -42,6 +42,30 @@ export class PortalAppSettingLinkDto {
     href: string;
 }
 
+/**
+ * Особая пометка категории: секция выделяется, ярлык и пояснение видны,
+ * не раскрывая её (запрос владельца по движению сделок, 16.11.2026).
+ */
+export class PortalAppSettingGroupHighlightDto {
+    @ApiProperty({
+        description: 'Короткий ярлык рядом с названием категории.',
+        example: 'Новое',
+        type: String,
+    })
+    label: string;
+
+    @ApiProperty({
+        description:
+            'Одна строка пояснения, которую админка показывает, не ' +
+            'раскрывая секцию: что делает категория сейчас и как включать.',
+        example:
+            'Пока только подсчёт: в сделки ничего не пишется, итог ночи ' +
+            'приходит команде April. Включайте по порталу.',
+        type: String,
+    })
+    note: string;
+}
+
 /** Хук каталога, который читает настройку (ссылка на страницу хука). */
 export class PortalAppSettingHookLinkDto {
     @ApiProperty({
@@ -203,6 +227,14 @@ export class PortalAppSettingGroupDto {
         type: String,
     })
     theory?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Особая пометка категории: админка выделяет секцию и показывает ' +
+            'ярлык и пояснение без раскрытия. Нет поля — обычная секция.',
+        type: PortalAppSettingGroupHighlightDto,
+    })
+    highlight?: PortalAppSettingGroupHighlightDto;
 
     @ApiPropertyOptional({
         description: 'Хуки каталога, которые читают настройки категории.',

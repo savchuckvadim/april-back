@@ -31,6 +31,20 @@ export interface PortalAppSettingGroup {
      * технически. Тексты — в `app-setting-group-docs.ts`.
      */
     theory?: string;
+    /**
+     * Особая пометка категории (запрос владельца 10.11 и 16.11.2026 по
+     * движению сделок): админка выделяет секцию и показывает ярлык и
+     * пояснение, не раскрывая её. Нет поля — обычная секция.
+     */
+    highlight?: PortalAppSettingGroupHighlight;
+}
+
+/** Пометка заметной категории: короткий ярлык и строка пояснения. */
+export interface PortalAppSettingGroupHighlight {
+    /** Ярлык рядом с названием: «Новое». */
+    label: string;
+    /** Одна строка, видная без раскрытия секции. */
+    note: string;
 }
 
 const link = (title: string, path: string): PortalAppSettingLink => ({
@@ -172,6 +186,20 @@ export const PORTAL_APP_SETTING_GROUPS = {
         ],
     },
     // --- event-sales ---
+    // Первой и с пометкой: владелец просил выделить блок движения сделок.
+    deal_movement: {
+        title: 'Движение сделок',
+        description:
+            'Ночной счёт статусов открытых сделок ОП: движется, застряла, ' +
+            'откатилась, под риском. Включается на каждом портале отдельно.',
+        links: [LINK.dealFields, LINK.aiSettings],
+        highlight: {
+            label: 'Новое',
+            note:
+                'Пока только подсчёт: в сделки ничего не пишется, итог ночи ' +
+                'приходит команде April. Включайте по порталу.',
+        },
+    },
     lead_sla: {
         title: 'Заявки: SLA принятия',
         description:
@@ -421,6 +449,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
         },
         { group: 'reject_revive', prefixes: ['reject_revive_'] },
         { group: 'deal_audit', prefixes: ['deal_audit_'] },
+        { group: 'deal_movement', prefixes: ['deal_movement_'] },
         { group: 'duplicate_report', prefixes: ['duplicate_report_'] },
     ],
     [EnumPortalAppCode.konstructor]: [
