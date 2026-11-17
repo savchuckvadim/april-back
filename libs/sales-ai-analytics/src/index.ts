@@ -200,6 +200,11 @@ export * from './model/quantile.util';
 export * from './model/lag-cdf';
 export * from './model/forecast';
 export * from './model/forecast-pipeline-top';
+// Прогноз отдела «от презентаций» (метод presentations-v2, 17.11.2026):
+// ядро сдвига продажи по месяцам, подбор доли продаж на презентацию и
+// ожидание остатка месяца от проведённых и новых презентаций.
+export * from './model/presentation-flow';
+export * from './model/presentation-flow.fit';
 export * from './model/capacity';
 export * from './model/target';
 export * from './model/ramp';
