@@ -84,6 +84,30 @@ const makeDataDeps = () => {
 };
 
 describe('CallReportWeeklyDataService', () => {
+    it('разбор 5К записью словаря — строками по блокам анкеты', async () => {
+        const { service, aiService } = makeDataDeps();
+        aiService.findByTranscriptionIds.mockResolvedValue([
+            {
+                type: 'agent-analysis',
+                transcription_id: '42',
+                report_item_id: '206',
+                user_result: {
+                    ...ANALYSIS,
+                    fiveKAnalysis: "{'client': 'Юрист;', 'company': None}",
+                },
+            },
+        ]);
+        const dataset = await service.collect(
+            'alfacentr.bitrix24.ru',
+            FROM,
+            TO,
+        );
+        expect(dataset.rows[0].fiveKAnalysis).toBe(
+            'Клиент: Юрист\nКомпания: не выяснено',
+        );
+        expect(dataset.rows[0].hvostAnalysis).toBe(ANALYSIS.hvostAnalysis);
+    });
+
     it('собирает полные тексты разбора и строки по разделам', async () => {
         const { service } = makeDataDeps();
         const dataset = await service.collect(

@@ -14,6 +14,10 @@ import {
     WeeklyFiveKItems,
 } from './call-report-weekly.types';
 import { CallReportSmartResolverService } from '../services/call-report-smart-resolver.service';
+import {
+    normalizeFiveKAnalysisText,
+    normalizeHvostAnalysisText,
+} from '../checklist-text';
 
 /** Размер фрагмента расшифровки: под лимит ячейки Excel (32767). */
 const TRANSCRIPT_PART_CHARS = 30000;
@@ -338,8 +342,9 @@ export class CallReportWeeklyDataService {
                 (analysis?.recommendations ?? []).join('\n') || null,
             employeeRecommendations: analysis?.employeeRecommendations ?? null,
             speechAnalysis: analysis?.speechAnalysis ?? null,
-            hvostAnalysis: analysis?.hvostAnalysis ?? null,
-            fiveKAnalysis: analysis?.fiveKAnalysis ?? null,
+            // Запись словаря в старых разборах — строками по блокам анкеты.
+            hvostAnalysis: normalizeHvostAnalysisText(analysis?.hvostAnalysis),
+            fiveKAnalysis: normalizeFiveKAnalysisText(analysis?.fiveKAnalysis),
             reportComparison: analysis?.reportComparison ?? null,
             transcript: call.text ?? null,
         };

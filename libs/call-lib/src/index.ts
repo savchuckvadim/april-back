@@ -46,6 +46,7 @@ export * from './call-report/use-cases/check-call-report-smart.util';
 export * from './call-report/dto/call-report-smart-check.dto';
 export * from './call-report/dto/install-field-failure.dto';
 export * from './call-report/methodology';
+export * from './call-report/checklist-text';
 export * from './call-report/knowledge-budget';
 export * from './call-analysis/call-analysis.module';
 export * from './ai/ai.module';

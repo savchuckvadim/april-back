@@ -4,6 +4,7 @@ import {
     fiveKChecklistLines,
     hasChecklistAnswer,
     hvostChecklistLines,
+    tidyChecklistTexts,
 } from './agent-analysis-checklist.util';
 import {
     isTimecodeRangeValid,
@@ -26,8 +27,9 @@ export function normalizeAgentAnalysis(
     logger: Logger,
 ): AgentCallAnalysisDto {
     // Гигиена входа от LLM-агента: LaTeX-артефакты (\rightarrow → «→»)
-    // и литеральные "null"-строки (боевые кейсы 2026-07-30).
-    const sanitized = sanitizeLatexDeep(dto);
+    // и литеральные "null"-строки (боевые кейсы 2026-07-30); запись
+    // словаря в разборах хвоста и 5К — строками по блокам (17.11.2026).
+    const sanitized = tidyChecklistTexts(sanitizeLatexDeep(dto), logger);
     warnStaleChecklistShape(transcriptionId, agentName, sanitized, logger);
     // Флаг без доказательства-цитаты снимается (решение владельца 19.10.2026).
     const proven = reconcileRiskFlags(transcriptionId, sanitized, logger);

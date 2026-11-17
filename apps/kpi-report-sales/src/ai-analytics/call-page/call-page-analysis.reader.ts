@@ -11,6 +11,10 @@ import {
     asString,
     asStringArray,
 } from '@lib/call-lib/call-report-analytics/lib/json-value.util';
+import {
+    normalizeFiveKAnalysisText,
+    normalizeHvostAnalysisText,
+} from '@lib/call-lib/call-report/checklist-text';
 import type {
     CallPageAnalysisView,
     CallPageCheckpointView,
@@ -220,9 +224,11 @@ export function readCallPageAnalysis(
         talkRatioPct: asNumber(source.talkRatioPct),
         questionsCount: asNumber(source.questionsCount),
         hvostDone: asBoolean(source.hvostDone),
-        hvostAnalysis: text(source.hvostAnalysis),
+        // Старые разборы бывают с записью словаря вместо строк — читаемыми
+        // строками по блокам анкеты (17.11.2026).
+        hvostAnalysis: text(normalizeHvostAnalysisText(source.hvostAnalysis)),
         fiveKDone: asBoolean(source.fiveKDone),
-        fiveKAnalysis: text(source.fiveKAnalysis),
+        fiveKAnalysis: text(normalizeFiveKAnalysisText(source.fiveKAnalysis)),
         reportComparison: text(source.reportComparison),
         speechAnalysis: text(source.speechAnalysis),
         nextStep: nextStepOf(source.nextStep),

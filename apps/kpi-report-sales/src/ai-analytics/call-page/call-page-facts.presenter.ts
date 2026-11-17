@@ -139,15 +139,20 @@ function dealProgressFact(view: CallPageAnalysisView): Fact {
     );
 }
 
+/**
+ * Итог чек-листа и разбор: разбор в несколько строк (по блоку на строку) —
+ * с новой строки после итога, одна строка — через точку.
+ */
 function checklistFact(
     label: string,
     done: boolean | null,
     analysis: string | null,
 ): Fact {
     if (done === null) return null;
+    const glue = analysis?.includes('\n') ? '.\n' : '. ';
     return fact(
         label,
-        joined([done ? 'выполнен' : 'не выполнен', analysis], '. '),
+        joined([done ? 'выполнен' : 'не выполнен', analysis], glue),
         done ? 'good' : 'bad',
     );
 }
