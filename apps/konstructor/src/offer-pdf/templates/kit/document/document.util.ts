@@ -48,3 +48,49 @@ export const offerSectionOrder = (
         ? ['price', ...stamps, 'infoblocks']
         : [...stamps, 'infoblocks', 'price'];
 };
+
+/** Поток листов: свой <Page>, со своим началом на новом листе */
+export interface OfferSheetFlow {
+    /** Поток открывается письмом */
+    withLetter: boolean;
+    /** Разделы потока в порядке печати */
+    keys: OfferSectionKey[];
+}
+
+export interface OfferSheetFlowsInput {
+    /** Письмо печатается среди листов с разделами (не на промо-странице) */
+    letterOnSheets: boolean;
+    /** Таблица цен помещается на лист письма целиком (расчёт до раскладки) */
+    priceFitsLetter: boolean;
+}
+
+/**
+ * Потоки листов с разделами (решение владельца 16.11.2026):
+ * - письмо с подписью занимает свои листы, наполнение всегда открывает новый;
+ * - при «сначала цена» таблица цен встаёт на лист письма, только если
+ *   помещается там целиком; иначе письмо остаётся одно, цена с подписью
+ *   открывают следующий лист.
+ *
+ * Каждый поток — отдельный <Page>, как титульник и промо-страница.
+ * Принудительный разрыв внутри одного потока (свойство `break`) не годится:
+ * в ряде раскладок (длинное письмо, цена и подпись перед разрывом) разбивка
+ * react-pdf на нём зацикливается, рендер висит.
+ */
+export const offerSheetFlows = (
+    settings: OfferPdfSettings,
+    { letterOnSheets, priceFitsLetter }: OfferSheetFlowsInput,
+): OfferSheetFlow[] => {
+    const order = offerSectionOrder(settings, !letterOnSheets);
+    const index = order.indexOf('infoblocks');
+    const before = order.slice(0, index);
+    const flows: OfferSheetFlow[] = [];
+    if (letterOnSheets) {
+        const priceApart = before[0] === 'price' && !priceFitsLetter;
+        flows.push({ withLetter: true, keys: priceApart ? [] : before });
+        if (priceApart) flows.push({ withLetter: false, keys: before });
+    } else if (before.length > 0) {
+        flows.push({ withLetter: false, keys: before });
+    }
+    flows.push({ withLetter: false, keys: order.slice(index) });
+    return flows;
+};

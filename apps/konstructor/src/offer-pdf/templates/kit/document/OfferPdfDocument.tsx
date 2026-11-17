@@ -3,12 +3,19 @@ import { Document, Page } from '@react-pdf/renderer';
 import type { OfferPdfPageFrame } from '../../../lib/pdf-layout';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
+import { groupsWithItems } from '../infoblocks/infoblock-description.util';
 import { OfferLetter } from '../letter/OfferLetter';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { ChromePage } from './ChromePage';
-import { offerDocumentPages, offerDocumentTitle } from './document.util';
+import {
+    offerDocumentPages,
+    offerDocumentTitle,
+    offerSheetFlows,
+    type OfferSheetFlow,
+} from './document.util';
 import type { OfferPdfChrome } from './offer-pdf-chrome';
 import { OfferSections } from './OfferSections';
+import { priceFitsLetterSheet } from './sheet-fit.util';
 
 export interface OfferPdfDocumentProps {
     model: OfferPdfDocumentModel;
@@ -20,8 +27,9 @@ export interface OfferPdfDocumentProps {
 
 /**
  * КП любого стиля: титульник и промо-страница (если они есть у стиля и
- * включены), затем страницы с шапкой, подложкой, письмом, разделами и
- * подвалом. Стиль задаёт тему и своё оформление листа (chrome).
+ * включены), затем потоки листов с шапкой, подложкой и подвалом: письмо с
+ * подписью, цена, наполнение. Стиль задаёт тему и своё оформление листа
+ * (chrome); что стоит на одном листе, решает offerSheetFlows.
  */
 export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     model,
@@ -33,6 +41,20 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     const base = baseStyles(theme);
     const { Cover, Promo } = chrome;
     const pages = offerDocumentPages(settings, chrome);
+    const letterOnSheets = !pages.letterInPromo;
+    const hasInfoblocks =
+        groupsWithItems(data.infoblocksByGroups ?? []).length > 0;
+    // поток из одного наполнения, которого нет, — пустой лист не печатаем
+    const isPrintable = (flow: OfferSheetFlow): boolean =>
+        flow.withLetter ||
+        flow.keys.some(key => key !== 'infoblocks' || hasInfoblocks);
+    const flows = offerSheetFlows(settings, {
+        letterOnSheets,
+        priceFitsLetter:
+            letterOnSheets &&
+            settings.isPriceFirst &&
+            priceFitsLetterSheet(model, theme),
+    }).filter(isPrintable);
 
     return (
         <Document
@@ -51,27 +73,34 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                 <ChromePage
                     model={model}
                     theme={theme}
-                    chrome={chrome}
+                    chrome={
+                        chrome.PromoUnderlay
+                            ? { ...chrome, Underlay: chrome.PromoUnderlay }
+                            : chrome
+                    }
                     frame={frame}
                 >
                     <Promo model={model} theme={theme} />
                 </ChromePage>
             ) : null}
-            <ChromePage
-                model={model}
-                theme={theme}
-                chrome={chrome}
-                frame={frame}
-            >
-                {pages.letterInPromo ? null : (
-                    <OfferLetter model={model} theme={theme} />
-                )}
-                <OfferSections
+            {flows.map((flow, index) => (
+                <ChromePage
+                    key={index}
                     model={model}
                     theme={theme}
-                    withoutStamps={pages.letterInPromo}
-                />
-            </ChromePage>
+                    chrome={chrome}
+                    frame={frame}
+                >
+                    {flow.withLetter ? (
+                        <OfferLetter model={model} theme={theme} />
+                    ) : null}
+                    <OfferSections
+                        model={model}
+                        theme={theme}
+                        keys={flow.keys}
+                    />
+                </ChromePage>
+            ))}
         </Document>
     );
 };

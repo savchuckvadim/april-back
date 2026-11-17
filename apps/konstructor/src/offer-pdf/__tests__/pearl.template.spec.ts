@@ -33,6 +33,8 @@ describe('«Перламутр» PDF-шаблон КП', () => {
         expect(pearlTemplate.assets).toEqual([
             PEARL_ASSETS.cover,
             PEARL_ASSETS.sheet,
+            PEARL_ASSETS.glow,
+            PEARL_ASSETS.soft,
         ]);
         expect(pearlTemplate.logos).toEqual(['garant']);
         expect(PEARL_THEME.surface?.background).toBe('#FFFFFF');
