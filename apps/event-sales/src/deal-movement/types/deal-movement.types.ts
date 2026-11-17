@@ -4,6 +4,17 @@ import type {
     DealMovementThresholds,
 } from '@lib/sales-ai-analytics';
 import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import type { DealMovementNoteKind } from '@lib/portal-lib/store/app-settings';
+
+/** Запись в ленту сделок: включена ли, каким видом и лимиты ночи. */
+export interface DealMovementNotesOptions {
+    readonly write: boolean;
+    readonly kind: DealMovementNoteKind;
+    /** Записей в ленты сделок за ночь на портал. */
+    readonly maxNotes: number;
+    /** Вызовов модели «что сделать» за ночь на портал. */
+    readonly maxTexts: number;
+}
 
 /** Настройки портала → параметры счёта (реестр «Настроек приложений»). */
 export interface DealMovementOptions {
@@ -12,6 +23,21 @@ export interface DealMovementOptions {
     readonly callsLookbackDays: number;
     /** Потолок оцениваемых сделок за ночь. */
     readonly maxDeals: number;
+    readonly notes: DealMovementNotesOptions;
+}
+
+/** Расшифровки, по которым «что сделать» перечитывает разборы. */
+export interface DealMovementCallPointers {
+    /** Последний разобранный звонок: расшифровка и момент; null — звонков нет. */
+    readonly lastCall: { readonly id: string; readonly at: string } | null;
+    /**
+     * Последний звонок с договорённостью: расшифровка и дата шага
+     * 'YYYY-MM-DD'; null — договорённостей нет.
+     */
+    readonly lastAgreement: {
+        readonly id: string;
+        readonly date: string | null;
+    } | null;
 }
 
 /**

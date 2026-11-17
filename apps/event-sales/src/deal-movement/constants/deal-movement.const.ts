@@ -33,7 +33,25 @@ export const DEAL_MOVEMENT_TTL_SEC = {
     lock: 30 * 60,
     /** Замок тика: меньше часа, чтобы следующий тик не встал. */
     tickLock: 55 * 60,
+    /** Счётчики записей и подсказок за день портала — с запасом на пояс. */
+    nightCounter: 2 * DAY_SEC,
+    /** Итог проверки записи в ленту — две недели. */
+    probe: 14 * DAY_SEC,
 } as const;
+
+/**
+ * Запись в ленту сделок (решение 17.11.2026): по одной, не пачкой, с
+ * паузой между записями; в итог — не больше стольких сбоев словами.
+ */
+export const DEAL_MOVEMENT_NOTES = {
+    pauseMs: 1_000,
+    warningsShown: 3,
+    /** Иконка служебной записи журнала (crm.timeline.icon.list). */
+    logMessageIcon: 'info',
+} as const;
+
+/** Проверка записи в ленту: пауза перед чтением «последней активности». */
+export const DEAL_MOVEMENT_PROBE_WAIT_MS = 5_000;
 
 /**
  * Состояние старше стольких суток — базовая линия заново: после простоя
@@ -75,4 +93,6 @@ export const DEAL_MOVEMENT_SETTING_DEFAULTS = {
     agreedStillDays: 12,
     callsLookbackDays: 60,
     maxDeals: 10_000,
+    maxNotes: 100,
+    maxTexts: 50,
 } as const;

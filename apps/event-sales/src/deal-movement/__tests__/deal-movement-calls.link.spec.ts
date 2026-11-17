@@ -1,6 +1,8 @@
 import type { DealMovementCall } from '@lib/sales-ai-analytics';
 import { toDealMovementCallRef } from '../lib/deal-movement-call-ref';
 import {
+    callPointersOf,
+    callsOf,
     indexOpenDeals,
     linkCallsToDeals,
     mayBelongToDeals,
@@ -62,10 +64,44 @@ describe('сцепка разобранных звонков с открытым
             index,
         );
 
-        expect(linked.get(200)).toEqual([call(1), call(4)]);
-        expect(linked.get(100)).toEqual([call(2), call(3), call(7), call(9)]);
+        expect(callsOf(linked.get(200) ?? [])).toEqual([call(1), call(4)]);
+        expect(callsOf(linked.get(100) ?? [])).toEqual([
+            call(2),
+            call(3),
+            call(7),
+            call(9),
+        ]);
+        expect(linked.get(200)?.map(item => item.transcriptionId)).toEqual([
+            't1',
+            't4',
+        ]);
         expect(linked.has(300)).toBe(false);
         expect(linked.has(301)).toBe(false);
+    });
+
+    it('последний звонок и последний с договорённостью — для «что сделать»', () => {
+        const agreed = (day: number): DealMovementCallRef => ({
+            ...ref('deal', 100, day),
+            call: {
+                ...call(day),
+                nextStep: { set: true, date: '2026-11-25' },
+            },
+        });
+        expect(
+            callPointersOf([
+                ref('deal', 100, 9),
+                agreed(4),
+                agreed(6),
+                ref('deal', 100, 2),
+            ]),
+        ).toEqual({
+            lastCall: { id: 't9', at: '2026-11-09T10:00:00.000Z' },
+            lastAgreement: { id: 't6', date: '2026-11-25' },
+        });
+        expect(callPointersOf([])).toEqual({
+            lastCall: null,
+            lastAgreement: null,
+        });
     });
 
     it('разборы читаются только у звонков, которые могут относиться к открытым сделкам', () => {

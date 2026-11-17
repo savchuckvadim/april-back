@@ -1,18 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import {
-    dealMovementVerdict,
-    type DealMovementNightDeal,
-    type DealMovementRunPhase,
-    type DealMovementVerdict,
-} from '@lib/sales-ai-analytics';
-import {
-    buildDealMovementDossier,
-    needsHistory,
-    toNightDeal,
-} from '../lib/deal-movement-dossier.mapper';
-import { indexOpenDeals } from '../lib/deal-movement-calls.link';
 import type {
+    DealMovementNightDeal,
+    DealMovementRunPhase,
+    DealMovementStateEntry,
+    DealMovementVerdict,
+} from '@lib/sales-ai-analytics';
+import { needsHistory } from '../lib/deal-movement-dossier.mapper';
+import { indexOpenDeals } from '../lib/deal-movement-calls.link';
+import { evaluateDealRows } from '../lib/deal-movement-rows.evaluation';
+import type {
+    DealMovementCallPointers,
     DealMovementDealRow,
     DealMovementOptions,
 } from '../types/deal-movement.types';
@@ -27,6 +25,8 @@ export interface DealMovementEvaluation {
     readonly openTotal: number;
     readonly deals: DealMovementNightDeal[];
     readonly verdicts: Map<string, DealMovementVerdict>;
+    /** Звонки для «что сделать» у тревожных статусов. */
+    readonly pointers: Map<string, DealMovementCallPointers>;
     /** Открытые сделки сверх потолка: их прошлое состояние сохраняется. */
     readonly carryOver: string[];
     readonly capped: boolean;
@@ -53,6 +53,8 @@ export class DealMovementEvaluator {
         options: DealMovementOptions,
         now: Date,
         onPhase: (phase: DealMovementRunPhase) => Promise<void>,
+        /** Состояние прошлой ночи: последняя активность без нашей записи. */
+        previous: ReadonlyMap<string, DealMovementStateEntry> | null = null,
     ): Promise<DealMovementEvaluation> {
         const warnings: string[] = [];
         await onPhase('deals');
@@ -95,26 +97,19 @@ export class DealMovementEvaluator {
         );
 
         await onPhase('evaluated');
-        const nowIso = now.toISOString();
-        const deals: DealMovementNightDeal[] = [];
-        const verdicts = new Map<string, DealMovementVerdict>();
-        for (const row of evaluated) {
-            const verdict = dealMovementVerdict(
-                buildDealMovementDossier(
-                    row,
-                    transitions.get(row.dealId) ?? [],
-                    callsByDeal.get(row.dealId) ?? [],
-                ),
-                nowIso,
-                options.thresholds,
-            );
-            verdicts.set(verdict.dealId, verdict);
-            deals.push(toNightDeal(row, verdict));
-        }
+        const { deals, verdicts, pointers } = evaluateDealRows({
+            rows: evaluated,
+            transitions,
+            calls: callsByDeal,
+            previous,
+            now: now.toISOString(),
+            thresholds: options.thresholds,
+        });
         return {
             openTotal: open.rows.length,
             deals,
             verdicts,
+            pointers,
             carryOver: carryOver.map(row => String(row.dealId)),
             capped: carryOver.length > 0,
             warnings,

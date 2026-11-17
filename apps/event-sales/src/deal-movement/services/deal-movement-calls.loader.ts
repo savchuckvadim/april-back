@@ -6,7 +6,6 @@ import {
     TranscriptionStoreService,
     type TranscriptionPipelineLiteView,
 } from '@lib/call-lib';
-import type { DealMovementCall } from '@lib/sales-ai-analytics';
 import { DEAL_MOVEMENT_CALLS_CHUNK } from '../constants/deal-movement.const';
 import { toDealMovementCallRef } from '../lib/deal-movement-call-ref';
 import {
@@ -25,7 +24,8 @@ import type { DealMovementCallRef } from '../types/deal-movement.types';
  * относиться к открытым сделкам (по связям) → действующие разборы порциями
  * по 100 расшифровок (существующими методами, без сырого SQL) → проекция
  * сразу: полные записи разбора в памяти не держатся (решение 17.11.2026)
- * → сцепка со сделками пятью путями.
+ * → сцепка со сделками пятью путями. У звонка остаётся id расшифровки:
+ * по нему «что сделать» перечитывает разбор последнего звонка.
  *
  * `@Injectable` без bitrix-состояния.
  */
@@ -41,7 +41,7 @@ export class DealMovementCallsLoader {
         from: Date,
         to: Date,
         index: DealMovementDealIndex,
-    ): Promise<Map<number, DealMovementCall[]>> {
+    ): Promise<Map<number, DealMovementCallRef[]>> {
         const rows = (
             await this.transcriptions.findDoneInPeriodLite(domain, from, to)
         ).filter(row =>

@@ -72,4 +72,20 @@ export class DealMovementStateStore {
         await redis.rename(draft, key);
         await redis.expire(key, DEAL_MOVEMENT_TTL_SEC.state);
     }
+
+    /**
+     * Одна сделка — одно поле хеша: запись в ленту удалась, и это должно
+     * пережить падение прогона посреди ночи (иначе повтор написал бы второй
+     * раз). Хеш уже сохранён целиком до записей в ленту.
+     */
+    async saveEntry(
+        domain: string,
+        dealId: string,
+        entry: DealMovementStateEntry,
+    ): Promise<void> {
+        const redis = this.redisService.getClient();
+        const key = DEAL_MOVEMENT_REDIS_KEYS.state(domain);
+        await redis.hset(key, dealId, encodeDealMovementEntry(entry));
+        await redis.expire(key, DEAL_MOVEMENT_TTL_SEC.state);
+    }
 }

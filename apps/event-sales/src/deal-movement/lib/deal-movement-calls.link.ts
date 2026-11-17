@@ -1,6 +1,7 @@
 import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
 import type { DealMovementCall } from '@lib/sales-ai-analytics';
 import type {
+    DealMovementCallPointers,
     DealMovementCallRef,
     DealMovementDealRow,
 } from '../types/deal-movement.types';
@@ -81,21 +82,65 @@ export function dealOfCall(
     }
 }
 
-/** Разобранные звонки → звонки по открытым сделкам. */
+/**
+ * Разобранные звонки → звонки по открытым сделкам. Остаются ссылки на
+ * расшифровки: по ним «что сделать» перечитывает разбор последнего звонка.
+ */
 export function linkCallsToDeals(
     refs: readonly DealMovementCallRef[],
     index: DealMovementDealIndex,
-): Map<number, DealMovementCall[]> {
-    const result = new Map<number, DealMovementCall[]>();
+): Map<number, DealMovementCallRef[]> {
+    const result = new Map<number, DealMovementCallRef[]>();
     for (const ref of refs) {
         const dealId = dealOfCall(ref, index);
         if (dealId === null) continue;
         const list = result.get(dealId) ?? [];
-        list.push(ref.call);
+        list.push(ref);
         result.set(dealId, list);
     }
     return result;
 }
+
+const callMs = (ref: DealMovementCallRef): number => {
+    const ms = Date.parse(ref.call.at);
+    return Number.isNaN(ms) ? 0 : ms;
+};
+
+/**
+ * Последний разобранный звонок сделки и последний с договорённостью — по
+ * ним модель узнаёт резюме и договорённость. Звонков нет — оба null.
+ */
+export function callPointersOf(
+    refs: readonly DealMovementCallRef[],
+): DealMovementCallPointers {
+    let lastCall: DealMovementCallRef | null = null;
+    let lastAgreement: DealMovementCallRef | null = null;
+    for (const ref of refs) {
+        if (lastCall === null || callMs(ref) > callMs(lastCall)) lastCall = ref;
+        if (
+            ref.call.nextStep?.set === true &&
+            (lastAgreement === null || callMs(ref) > callMs(lastAgreement))
+        ) {
+            lastAgreement = ref;
+        }
+    }
+    return {
+        lastCall: lastCall
+            ? { id: lastCall.transcriptionId, at: lastCall.call.at }
+            : null,
+        lastAgreement: lastAgreement
+            ? {
+                  id: lastAgreement.transcriptionId,
+                  date: lastAgreement.call.nextStep?.date ?? null,
+              }
+            : null,
+    };
+}
+
+/** Звонки в объёме правил статуса. */
+export const callsOf = (
+    refs: readonly DealMovementCallRef[],
+): DealMovementCall[] => refs.map(ref => ref.call);
 
 /**
  * Звонок может относиться к одной из сделок: по связям, которые знает

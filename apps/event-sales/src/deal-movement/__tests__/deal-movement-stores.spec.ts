@@ -4,6 +4,7 @@ import {
     type DealMovementSnapshotPayload,
     type DealMovementStateEntry,
 } from '@lib/sales-ai-analytics';
+import { DealMovementNightCounters } from '../services/deal-movement-night-counters';
 import { DealMovementRunState } from '../services/deal-movement-run-state';
 import { DealMovementSnapshotStore } from '../services/deal-movement-snapshot.store';
 import { DealMovementStateStore } from '../services/deal-movement-state.store';
@@ -33,6 +34,7 @@ const redisWith = (fields: Record<string, unknown> = {}) => ({
     get: jest.fn().mockResolvedValue(null),
     set: jest.fn().mockResolvedValue('OK'),
     eval: jest.fn().mockResolvedValue(1),
+    incr: jest.fn().mockResolvedValue(1),
     ...fields,
 });
 
@@ -93,6 +95,49 @@ describe('состояние по сделкам в Redis', () => {
             DEAL_MOVEMENT_REDIS_KEYS.state(DOMAIN),
         );
         expect(redis.rename).not.toHaveBeenCalled();
+    });
+
+    it('запись в ленту удалась — одно поле хеша сразу, срок продлевается', async () => {
+        const redis = redisWith();
+        const store = new DealMovementStateStore({
+            getClient: () => redis,
+        } as never);
+        const marked = { ...entry, notifiedAt: '2026-11-17T23:31:00.000Z' };
+
+        await store.saveEntry(DOMAIN, '9041', marked);
+
+        expect(redis.hset).toHaveBeenCalledWith(
+            DEAL_MOVEMENT_REDIS_KEYS.state(DOMAIN),
+            '9041',
+            encodeDealMovementEntry(marked),
+        );
+        expect(redis.expire).toHaveBeenCalledWith(
+            DEAL_MOVEMENT_REDIS_KEYS.state(DOMAIN),
+            7 * 24 * 60 * 60,
+        );
+    });
+});
+
+describe('счётчики ночи', () => {
+    it('записи и подсказки за день портала: пусто — ноль, прибавка со сроком двое суток', async () => {
+        const redis = redisWith({
+            get: jest
+                .fn()
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce('7'),
+        });
+        const counters = new DealMovementNightCounters({
+            getClient: () => redis,
+        } as never);
+
+        expect(await counters.used(DOMAIN, '2026-11-18', 'notes')).toBe(0);
+        expect(await counters.used(DOMAIN, '2026-11-18', 'texts')).toBe(7);
+        await counters.increment(DOMAIN, '2026-11-18', 'texts');
+
+        const key = DEAL_MOVEMENT_REDIS_KEYS.nightTexts(DOMAIN, '2026-11-18');
+        expect(redis.get).toHaveBeenLastCalledWith(key);
+        expect(redis.incr).toHaveBeenCalledWith(key);
+        expect(redis.expire).toHaveBeenCalledWith(key, 2 * 24 * 60 * 60);
     });
 });
 
