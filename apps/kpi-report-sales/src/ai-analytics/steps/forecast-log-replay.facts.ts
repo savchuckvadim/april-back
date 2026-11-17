@@ -11,8 +11,10 @@
  * деградирует честно: темп входной активности — KPI по дням недоступен,
  * берётся темп ПРОШЛОГО месяца (известен к любому дню M); нет прошлого
  * месяца — средний темп самого месяца (единственный источник, с
- * оглядкой в будущее). Без истории стадий пайплайн — null с причиной, как
- * у живого прогноза.
+ * оглядкой в будущее). То же правило — для темпа презентаций, от которых
+ * считается середина прогноза: презентаций к дню d — темп × прошло дней.
+ * Без истории стадий пайплайн — null с причиной, как у живого прогноза
+ * (справочно: в середину он не входит).
  *
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()` внутри.
  */
@@ -24,6 +26,7 @@ import {
     type PipelineEpisode,
 } from '@lib/sales-ai-analytics';
 import type { AiTargets } from '@lib/sales-ai-analytics/settings/ai-settings.types';
+import type { ForecastFlowManagerInput } from '../domain/assembler/forecast-flow.types';
 import type { ForecastManagerInput } from '../domain/assembler/forecast.types';
 import type {
     PortalManagerMonth,
@@ -221,32 +224,11 @@ export function managerMonthsOf(
     return found;
 }
 
-/** Что известно о темпе менеджера: прошлый месяц и месяц воспроизведения. */
-export interface EntryRateOptions {
-    readonly months: ReplayManagerMonths;
-    /** Рабочих дней календаря в прошлом месяце. */
-    readonly previousWorkdays: number;
-    /** Рабочих дней календаря в месяце воспроизведения. */
-    readonly workdays: number;
-}
-
-/**
- * Дневной темп входной активности, известный к дню: KPI прошлого месяца
- * на его рабочие дни. Прошлого месяца нет — средний темп самого месяца
- * (честная деградация с оглядкой в будущее — иначе остался бы ноль, то
- * есть «активности нет»).
- */
-export function entryRateOf(options: EntryRateOptions): number {
-    const { previous, current } = options.months;
-    if (previous !== undefined && options.previousWorkdays > 0) {
-        return previous.callsDone / options.previousWorkdays;
-    }
-    if (current !== undefined && options.workdays > 0) {
-        return current.callsDone / options.workdays;
-    }
-
-    return 0;
-}
+export {
+    entryRateOf,
+    presentationRateOf,
+    type EntryRateOptions,
+} from './forecast-log-replay.rates';
 
 /** Вход прогноза менеджера «в ночь на день d». */
 export interface ReplayManagerInputOptions {
@@ -259,6 +241,8 @@ export interface ReplayManagerInputOptions {
     readonly openEpisodes: readonly PipelineEpisode[];
     readonly model: PortalModelPayload;
     readonly targets: AiTargets;
+    /** Вход прогноза от презентаций на день (`managerFlowInput`). */
+    readonly flow: ForecastFlowManagerInput;
 }
 
 /**
@@ -276,6 +260,7 @@ export function replayManagerInput(
         managerId: options.managerId,
         doneSales: options.doneSales,
         entryDone: options.entryRate * options.daysElapsed,
+        flow: options.flow,
         planHead: current?.planSales ?? null,
         override: options.targets.overrides[options.managerId] ?? null,
         levelTarget: null,

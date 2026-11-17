@@ -29,6 +29,10 @@ import type { ManagerMonthPayload } from '../domain/assembler/manager-snapshot.t
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
 import { DailyPlanUseCase } from '../domain/use-cases/daily-plan.use-case';
 import type { AiDailyPlanDto } from '../dto/ai-daily-plan.dto';
+import {
+    managerFlowFixture,
+    portalFlowFixture,
+} from './fixtures/forecast-flow.fixture';
 import { settingsLoaderWith } from './fixtures/lite-row.fixture';
 import { dependenciesOf } from './fixtures/module-di.util';
 
@@ -210,10 +214,12 @@ function forecastInput(
         modelSnapshotId: 'ais-model-1',
         hasStageHistory: overrides.hasStageHistory ?? true,
         registry: REGISTRY,
+        flow: portalFlowFixture(),
         manager: {
             managerId: MANAGER,
             doneSales: 2,
             entryDone: 200,
+            flow: managerFlowFixture(),
             planHead: 6,
             override: null,
             levelTarget: null,

@@ -19,7 +19,9 @@ import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
     type ManagerTypeFact,
 } from '@lib/sales-ai-analytics';
+import { EnumSalesKpiEventType } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import { AI_MONTH_KPI_CODES } from '../assembler/manager-month.facts';
+import { doneInnerCode } from './kpi-month.assembler';
 import type { ManagerMonthPayload } from '../assembler/manager-snapshot.types';
 import type {
     PortalManagerMonth,
@@ -42,6 +44,10 @@ export interface PortalModelRecord {
 type MonthKpiCode = (typeof AI_MONTH_KPI_CODES)[number];
 const KPI_CALLS: MonthKpiCode = 'call_done';
 const KPI_PRESENTATIONS: MonthKpiCode = 'presentation_uniq_done';
+/** Все презентации месяца — вход прогноза, если уникальные не отмечают. */
+export const KPI_PRESENTATIONS_ALL = doneInnerCode(
+    EnumSalesKpiEventType.presentation,
+);
 
 const numberOf = (value: unknown): number =>
     typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -94,6 +100,7 @@ export function toPortalManagerMonth(
         daysSource: payload.exposure?.daysSource ?? null,
         callsDone: numberOf(kpi[KPI_CALLS]),
         presentations: numberOf(kpi[KPI_PRESENTATIONS]),
+        presentationsAll: numberOf(kpi[KPI_PRESENTATIONS_ALL]),
         salesCount: numberOf(payload.finance?.salesCount),
         averageCheck:
             typeof payload.finance?.averageCheck === 'number'

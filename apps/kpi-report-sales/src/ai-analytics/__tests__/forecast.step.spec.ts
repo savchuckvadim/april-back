@@ -11,20 +11,27 @@ import type { PortalModelRecord } from '../domain/loaders/portal-model.loader';
 import { workdaysOf } from '../steps/forecast.facts';
 import { ForecastStep, type ForecastDayBusEntry } from '../steps/forecast.step';
 import { createStepBus, type AiPipelineStepContext } from '../steps/step.types';
+import {
+    FORECAST_MODEL_EDGE,
+    FORECAST_MODEL_SECOND_EDGE,
+    FORECAST_MODEL_STAGE,
+    forecastModelPayload,
+} from './fixtures/forecast-model.fixture';
 import { stepContext } from './fixtures/manager-snapshot.fixture';
 
 /**
- * Ночной шаг прогноза (план Фазы 2, поток 16a). Проверяется главное:
- * запись за каждый день по каждому менеджеру, идентификатор
- * использованной модели в нагрузке и честный `pipelineExpected: null` с
- * причиной, когда истории стадий нет.
+ * Ночной шаг прогноза (план Фазы 2, поток 16a; метод presentations-v2).
+ * Проверяется главное: запись за каждый день по каждому менеджеру,
+ * идентификатор использованной модели в нагрузке, честный
+ * `pipelineExpected: null` с причиной, когда истории стадий нет, и то, что
+ * открытые сделки в середину прогноза не входят.
  */
 const DOMAIN = 'a.bitrix24.ru';
 const MONTH = '2026-09';
 const DAY = '2026-09-08';
-const EDGE = 'call_to_presentation';
-const SECOND_EDGE = 'presentation_to_offer';
-const STAGE = 'sales_in_progress';
+const EDGE = FORECAST_MODEL_EDGE;
+const SECOND_EDGE = FORECAST_MODEL_SECOND_EDGE;
+const STAGE = FORECAST_MODEL_STAGE;
 
 function context(
     overrides: Partial<AiPipelineStepContext> = {},
@@ -39,130 +46,7 @@ function context(
 }
 
 /** Модель портала: два ребра, стадийная θ и экспоненциальная шкала лага. */
-function modelPayload(): PortalModelPayload {
-    return {
-        monthKey: MONTH,
-        window: [MONTH],
-        observations: 1,
-        managers: 1,
-        edges: [
-            {
-                edge: EDGE,
-                mu: 0.2,
-                n: 500,
-                kappa: 30,
-                layer: 'portal',
-                managers: 3,
-                kappaSource: 'default',
-                kappaKind: 'late',
-                kappaGateOpen: false,
-                rho: null,
-                homogeneous: false,
-            },
-            {
-                edge: SECOND_EDGE,
-                mu: 0.5,
-                n: 100,
-                kappa: 30,
-                layer: 'portal',
-                managers: 3,
-                kappaSource: 'default',
-                kappaKind: 'late',
-                kappaGateOpen: false,
-                rho: null,
-                homogeneous: false,
-            },
-        ],
-        managerNorms: [
-            {
-                managerId: '11',
-                tenureBand: '6-18',
-                edges: [
-                    {
-                        edge: EDGE,
-                        mu: 0.2,
-                        layer: 'portal',
-                        n: 400,
-                        w: 1,
-                        kappa: 30,
-                    },
-                    {
-                        edge: SECOND_EDGE,
-                        mu: 0.5,
-                        layer: 'portal',
-                        n: 80,
-                        w: 1,
-                        kappa: 30,
-                    },
-                ],
-            },
-        ],
-        kappa: 30,
-        overdispersion: { value: 2.5, source: 'default' },
-        mS: 10,
-        msSource: 'default',
-        msGroups: 0,
-        sRef: 7,
-        sRefSource: 'default',
-        cap: 25,
-        capSource: 'default',
-        capActivity: 'call',
-        cycleMedianDays: 28,
-        lagCdf: {
-            kind: 'exponential',
-            medianDays: 28,
-            n: 0,
-            points: [
-                { days: 7, value: 0.16 },
-                { days: 14, value: 0.29 },
-                { days: 28, value: 0.5 },
-                { days: 60, value: 0.77 },
-            ],
-        },
-        stageTheta: [
-            {
-                stageCode: STAGE,
-                order: 8,
-                n: 40,
-                s: 6,
-                value: 0.15,
-                w: 0.5,
-                ci90: null,
-            },
-        ],
-        chainSharePct: 85,
-        edgeKind: 'prob',
-        edgeKindReason: 'chain-entered',
-        betaSource: 'none',
-        betaCountdown: null,
-        season: { index: 1, source: 'default', note: 'Сезонность не оценена' },
-        readiness: {
-            mode: 'descriptive',
-            historyMonths: 6,
-            presentations: 300,
-            sales: 20,
-            comparableFrom: '',
-            reasons: [],
-        },
-        sanity: null,
-        events: [],
-        detectedEvents: [],
-        reused: false,
-        reusedReason: null,
-        signature: {
-            rubricVersion: null,
-            scriptHash: null,
-            priceMedian: null,
-        },
-        meta: {
-            calcVersion: 'sam-1.0.0',
-            paramsVersion: 'pv-1',
-            comparableFrom: null,
-            generatedAt: '2026-09-03T01:00:00.000Z',
-            modelSnapshotId: null,
-        },
-    };
-}
+const modelPayload = (): PortalModelPayload => forecastModelPayload(MONTH);
 
 function month(monthKey: string, sales: number): PortalManagerMonth {
     return {
@@ -298,7 +182,7 @@ describe('ForecastStep', () => {
         expect(bus.get(AI_PIPELINE_BUS_KEYS.forecastDay)).toBeUndefined();
     });
 
-    it('без истории стадий ожидание от пайплайна — null с причиной', async () => {
+    it('без истории стадий ожидание от сделок — null с причиной, середина от презентаций', async () => {
         const { step, upsert } = makeStep({
             model: {
                 id: 'ais-model-3',
@@ -314,10 +198,36 @@ describe('ForecastStep', () => {
         const payload = payloadOf(upsert);
         expect(payload.pipelineExpected).toBeNull();
         expect(payload.pipelineReason).toBe('no-stage-history');
-        expect(payload.descriptive).toBe(payload.doneSales);
+        expect(payload.method).toBe('presentations-v2');
+        // «Уже в работе» — от проведённых презентаций (или своих продаж).
+        expect(payload.descriptive).toBeCloseTo(
+            payload.doneSales + (payload.flow?.backlogExpected ?? 0),
+            12,
+        );
+        expect(payload.p50).toBeCloseTo(
+            payload.descriptive + payload.newFlowExpected,
+            12,
+        );
     });
 
-    it('с историей стадий и сцепкой считает ожидание от открытых сделок', async () => {
+    it('грузит историю подбора: W + K месяцев до месяца прогона и сам месяц', async () => {
+        const { step, loadMonths } = makeStep({
+            model: {
+                id: 'ais-model-3',
+                monthKey: MONTH,
+                payload: modelPayload(),
+            },
+        });
+
+        await step.run(context(), createStepBus());
+
+        const keys = (loadMonths.mock.calls as [string, string[]][])[0][1];
+        expect(keys).toHaveLength(19);
+        expect(keys[0]).toBe('2025-03');
+        expect(keys[keys.length - 1]).toBe(MONTH);
+    });
+
+    it('с историей стадий и сцепкой ожидание от сделок считается справочно, вне середины', async () => {
         const { step, upsert } = makeStep({
             model: {
                 id: 'ais-model-3',
@@ -345,10 +255,21 @@ describe('ForecastStep', () => {
         ]);
 
         await step.run(context(), bus);
+        const plain = makeStep({
+            model: {
+                id: 'ais-model-3',
+                monthKey: MONTH,
+                payload: modelPayload(),
+            },
+        });
+        await plain.step.run(context(), createStepBus());
 
         const payload = payloadOf(upsert);
         expect(payload.pipelineReason).toBeNull();
         expect(payload.pipelineExpected).toBeGreaterThan(0);
+        // Сделки в середину не входят: без них прогноз тот же.
+        expect(payload.p50).toBe(payloadOf(plain.upsert).p50);
+        expect(payload.breakdown?.openEpisodes).toBe(1);
     });
 
     it('модели портала нет — шаг пропускается с причиной, записей нет', async () => {

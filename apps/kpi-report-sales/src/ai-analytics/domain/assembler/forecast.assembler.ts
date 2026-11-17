@@ -1,27 +1,33 @@
 /**
  * Сборка дневного прогноза менеджера (план Фазы 2, §4.8–§4.10, поток
- * 16a): срединная оценка месяца, наивные базы, ожидание от открытого
- * пайплайна, план на день, рычаги и утечки рёбер.
+ * 16a; метод `presentations-v2` — задача 17.11.2026): срединная оценка
+ * месяца, наивные базы, план на день, рычаги и утечки рёбер.
+ *
+ * Середина прогноза — `Y₀ + backlog + fresh`: продажи от проведённых и от
+ * новых презентаций (`forecast-flow.assembler.ts`). Открытые сделки
+ * (`pipelineExpected`) считаются справочно и в сумму не входят: их
+ * будущие продажи — это продажи от прошлых презентаций.
+ *
+ * План дня, `requiredVolume` и рычаги пока считаются по-старому — по
+ * воронке звонков с ожиданием от сделок; их пересмотр — отдельный этап
+ * после проверки нового прогноза на проде.
  *
  * Оркестрация готовых функций библиотеки: `pipelineExpected`,
- * `newFlowExpected`, `forecastP50`, `resolveTarget`, `requiredVolume`,
- * `unwindPaths`, `dailyPlan`, `decomposeFunnelGap`, `buildLevers`.
- * Собственных формул файл не держит.
- *
- * Главная честность здесь — `pipelineExpected: null` с причиной, когда
- * истории стадий нет: ноль означал бы «пайплайн пуст», а это неправда.
+ * `forecastP50`, `resolveTarget`, `requiredVolume`, `unwindPaths`,
+ * `dailyPlan`, `decomposeFunnelGap`, `buildLevers`. Собственных формул
+ * файл не держит.
  *
  * Чистые функции: без DI и без `new Date()` — момент расчёта приходит в
  * `meta.generatedAt`, зерно сэмплирования — параметром.
  */
 import {
+    AI_FORECAST_METHOD_CURRENT,
     edgePosterior,
     decomposeFunnelGap,
     forecastP50,
     lagCdfFromTable,
     maturityFloor,
     meanMaturity,
-    newFlowExpected,
     pipelineExpected,
     requiredVolume,
     resolveNumberParam,
@@ -31,6 +37,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import { AI_FORECAST_CI80_Z } from '../../constants/ai-portal-model.const';
 import { AI_QUALITY_LINK_OFFSET_EDGE } from '../../constants/ai-quality-link.const';
+import { flowForecastOf } from './forecast-flow.assembler';
 import { buildPlan, leversOf, linkOf } from './forecast.plan';
 import {
     AI_FORECAST_TOP_EPISODES,
@@ -60,7 +67,14 @@ function edgeThetasOf(
     return thetas;
 }
 
-/** Путь воронки: все рёбра модели в порядке справочника. */
+/**
+ * Путь воронки: рёбра модели в порядке её снимка. ⚠ Известная ошибка
+ * (17.11.2026, не исправлена): `buildPortalNorms` сортирует рёбра по
+ * алфавиту кода, а не по справочнику, поэтому разворот плана дня и
+ * «ниже по пути» у рычага качества считаются не по тем рёбрам. На
+ * середину прогноза не влияет; исправление — этап «план дня» после
+ * проверки прогноза от презентаций (it.todo в `forecast-path-order.spec.ts`).
+ */
 const pathOf = (model: PortalModelPayload): string[] =>
     model.edges.map(edge => edge.edge);
 
@@ -170,17 +184,15 @@ export function buildForecastPayload(
     const thetas = edgeThetasOf(model, manager.norms);
     const path = pathOf(model);
     const conversion = conversionOf(thetas, path);
+    // Темп звонков — вход рычага объёма (воронка по рёбрам), не прогноза.
     const entryRate =
         input.daysElapsed > 0 ? manager.entryDone / input.daysElapsed : 0;
-    const newFlow = newFlowExpected({
-        paths: [{ code: 'main', entryRate, conversion }],
-        daysRemaining: input.daysLeft,
-        fBar,
-    });
+    const flow = flowForecastOf(input);
+    // «Уже в работе» — продажи от проведённых презентаций, не сделки.
     const forecast = forecastP50({
         doneSales: manager.doneSales,
-        pipelineExpected: pipeline.value,
-        newFlowExpected: newFlow,
+        pipelineExpected: flow.backlog,
+        newFlowExpected: flow.fresh,
         daysElapsed: input.daysElapsed,
         daysRemaining: input.daysLeft,
         lastMonthSales: manager.lastMonthSales,
@@ -216,7 +228,10 @@ export function buildForecastPayload(
         naiveLastMonth: manager.lastMonthSales,
         pipelineExpected: pipeline.value,
         pipelineReason: pipeline.reason ?? null,
-        newFlowExpected: newFlow,
+        newFlowExpected: flow.fresh,
+        method: AI_FORECAST_METHOD_CURRENT,
+        entry: input.flow.fit.entry,
+        flow: flow.facts,
         doneSales: manager.doneSales,
         target: {
             value: target.value,
@@ -237,10 +252,10 @@ export function buildForecastPayload(
         }),
         leaks: [...leaks],
         breakdown: {
-            entryDone: manager.entryDone,
-            entryRate,
-            conversion,
-            fBar,
+            entryDone: flow.facts.presentationsDone,
+            entryRate: flow.facts.presentationsRate,
+            conversion: flow.facts.salesPerPresentation,
+            fBar: flow.facts.sameMonthShare * flow.facts.remainingShare,
             openEpisodes: manager.openEpisodes.length,
             topEpisodes: input.hasStageHistory
                 ? topPipelineEpisodes(

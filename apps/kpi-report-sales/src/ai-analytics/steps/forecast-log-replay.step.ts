@@ -34,13 +34,11 @@ import {
     AI_FORECAST_LOG_REPLAY_RHYTHMS,
     AI_FORECAST_LOG_REPLAY_STEP_CODE,
 } from '../constants/ai-forecast-log.const';
-import {
-    monthBounds,
-    monthKeysBack,
-} from '../constants/ai-manager-snapshot.const';
+import { monthBounds } from '../constants/ai-manager-snapshot.const';
 import { AI_PORTAL_MODEL_REASONS } from '../constants/ai-portal-model.const';
 import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import { AI_STAGE_HISTORY_MIN_MONTHS } from '../constants/ai-stage-history.const';
+import { forecastMonthKeys } from '../domain/assembler/forecast-flow.assembler';
 import { ClosedSalesDaysLoader } from '../domain/loaders/closed-sales-days.loader';
 import { PortalModelLoader } from '../domain/loaders/portal-model.loader';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
@@ -93,9 +91,14 @@ export class ForecastLogReplayStep implements AiAnalyticsPipelineStep {
             await this.loader.latestModel(ctx.domain, ctx.monthKey),
         );
         if (model === null) return skip(AI_PORTAL_MODEL_REASONS.modelMissing);
+        // Окно простого среднего и история подбора прогноза от презентаций.
         const months = await this.loader.loadMonths(
             ctx.domain,
-            monthKeysBack(ctx.monthKey, AI_FORECAST_LOG_REPLAY_MONTHS),
+            forecastMonthKeys(
+                ctx.monthKey,
+                ctx.registry,
+                AI_FORECAST_LOG_REPLAY_MONTHS,
+            ),
         );
         if (!months.some(month => month.monthKey === ctx.monthKey)) {
             return skip(AI_PORTAL_MODEL_REASONS.monthMissing);

@@ -66,8 +66,13 @@ export interface PortalManagerMonth {
     daysSource: string | null;
     /** Звонков за месяц (KPI-вектор) — числитель дневного темпа. */
     callsDone: number;
-    /** Подтверждённых презентаций за месяц. */
+    /** Уникальных презентаций за месяц (`presentation_uniq_done`). */
     presentations: number;
+    /**
+     * Всех презентаций за месяц (`presentation_done`) — вход прогноза, если
+     * уникальные на портале не отмечают; нет поля — 0.
+     */
+    presentationsAll?: number;
     /** Закрытых продаж за месяц. */
     salesCount: number;
     /** Средний чек месяца, ₽; null — продаж не было. */

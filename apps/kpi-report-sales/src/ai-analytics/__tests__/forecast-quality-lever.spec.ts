@@ -6,6 +6,10 @@ import {
 import { linkOf } from '../domain/assembler/forecast.plan';
 import type { PortalQualityLinkFacts } from '../domain/assembler/portal-model.phase4.types';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
+import {
+    managerFlowFixture,
+    portalFlowFixture,
+} from './fixtures/forecast-flow.fixture';
 
 /**
  * Связь «качество → исход» в ночном прогнозе (находка data-flow-1): при
@@ -93,10 +97,12 @@ function input(
         modelSnapshotId: 'model-1',
         hasStageHistory: false,
         registry: {},
+        flow: portalFlowFixture(),
         manager: {
             managerId: '11',
             doneSales: 1,
             entryDone: 200,
+            flow: managerFlowFixture(),
             planHead: 10,
             override: null,
             levelTarget: null,

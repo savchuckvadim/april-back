@@ -35,6 +35,12 @@ import type { LagCdfKind, LagCdfPoint } from '../model/lag-cdf';
 import type { LognormalCheckSource } from '../model/lognormal-check';
 import type { OverdispersionSource } from '../model/overdispersion';
 import type {
+    AiForecastEntry,
+    AiForecastMethod,
+    PresentationFlowReason,
+    PresentationFlowStatus,
+} from '../model/presentation-flow.types';
+import type {
     PoolBeta,
     PoolEdgeNorm,
     PoolEvidence,
@@ -202,7 +208,9 @@ export interface ForecastLogDay {
      * «Сделано + ожидание от открытых сделок» по отделу (`Σ(Y₀ + λ_pipe)`).
      * Вместе с `done` и `p50` раскладывает прогноз на слагаемые: открытые
      * сделки = descriptive − done, новые встречи = p50 − descriptive. Нет
-     * поля — день записан до 16.11.2026.
+     * поля — день записан до 16.11.2026. С методом `presentations-v2` —
+     * «сделано + ожидание от проведённых презентаций»: открытые сделки в
+     * сумму не входят, `p50 − descriptive` — от новых презентаций.
      */
     readonly descriptive?: number;
     /** Деньги по чеку: вилка в ₽; null — чека нет. */
@@ -221,6 +229,27 @@ export interface ForecastLogDay {
      * записан ночным прогоном. Нет поля — день живой.
      */
     readonly replayed?: boolean;
+    /**
+     * Метод расчёта дня; нет поля — расчёт по звонкам (`calls-v1`, дни до
+     * 18.11.2026): читать через `forecastMethodOf`.
+     */
+    readonly method?: AiForecastMethod;
+    /** Счётчик презентаций — вход прогноза дня (`presentations-v2`). */
+    readonly entry?: AiForecastEntry;
+    /** Подбор доли продаж на презентацию на день (`presentations-v2`). */
+    readonly flow?: ForecastLogDayFlow;
+}
+
+/** Подбор прогноза «от презентаций» в дне журнала отдела. */
+export interface ForecastLogDayFlow {
+    readonly status: PresentationFlowStatus;
+    readonly reason: PresentationFlowReason | null;
+    /** q портала — продаж на презентацию. */
+    readonly q: number;
+    /** ρ — затухание сдвига продажи по месяцам. */
+    readonly rho: number;
+    /** Менеджеров, посчитанных по своим продажам: презентации не отмечены. */
+    readonly salesHistoryManagers: number;
 }
 
 /** Кто записал дни журнала: ночной прогон или воспроизведение по истории. */

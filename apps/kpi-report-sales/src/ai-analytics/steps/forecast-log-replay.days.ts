@@ -22,6 +22,7 @@ import {
     type ForecastLogSnapshot,
     type LognormalCheckSource,
     type ParamContext,
+    type PipelineEpisode,
     type WorkCalendar,
 } from '@lib/sales-ai-analytics';
 import type { AiTargets } from '@lib/sales-ai-analytics/settings/ai-settings.types';
@@ -29,9 +30,18 @@ import { monthBounds } from '../constants/ai-manager-snapshot.const';
 import { previousMonthKey } from '../constants/ai-snapshot.const';
 import {
     buildForecastLogDay,
+    dayFlowOf,
     managerPointOf,
 } from '../domain/assembler/department-forecast.assembler';
-import { buildForecastPayload } from '../domain/assembler/forecast.assembler';
+import {
+    managerFlowInput,
+    portalFlowOf,
+} from '../domain/assembler/forecast-flow.assembler';
+import type { PortalFlow } from '../domain/assembler/forecast-flow.types';
+import {
+    buildForecastPayload,
+    type ForecastPayload,
+} from '../domain/assembler/forecast.assembler';
 import type { PortalManagerMonth } from '../domain/assembler/portal-model.types';
 import type { ClosedSaleDay } from '../domain/loaders/closed-sales-days.loader';
 import { portalRangeUtc } from '../domain/loaders/period.util';
@@ -49,6 +59,7 @@ import {
     isLiveDay,
     managerMonthsOf,
     pipelineByManager,
+    presentationRateOf,
     replayManagerInput,
     salesBefore,
     type ReplayEpisode,
@@ -68,7 +79,10 @@ export interface ReplayLogInput {
     readonly days: readonly string[];
     readonly roster: readonly string[];
     readonly model: ReplayModel;
-    /** Месяцы менеджеров: сам месяц, прошлый и окно простого среднего. */
+    /**
+     * Месяцы менеджеров: сам месяц, история подбора прогноза от презентаций
+     * (`forecastMonthKeys`) — в ней прошлый месяц и окно простого среднего.
+     */
     readonly months: readonly PortalManagerMonth[];
     readonly closeDays: readonly ClosedSaleDay[];
     readonly episodes: readonly ReplayEpisode[];
@@ -94,6 +108,8 @@ interface ReplayShared {
     readonly sums: ReadonlyMap<string, number>;
     readonly managerMonths: ReadonlyMap<string, ReplayManagerMonths>;
     readonly previousWorkdays: number;
+    /** Подбор прогноза от презентаций — по месяцам раньше месяца M. */
+    readonly flow: PortalFlow;
 }
 
 const byDay = (left: ForecastLogDay, right: ForecastLogDay): number =>
@@ -104,51 +120,93 @@ export function replayInstantOf(day: string, timeZone: string): string {
     return portalRangeUtc(day, day, timeZone).from.toISOString();
 }
 
+/** Что известно на день d: счётчики дней, продажи и открытые сделки. */
+interface ReplayDayFacts {
+    readonly day: string;
+    readonly counters: ReturnType<typeof workdayCountersAt>;
+    readonly done: ReadonlyMap<string, number>;
+    readonly pipeline: ReadonlyMap<string, PipelineEpisode[]>;
+}
+
+/**
+ * Прогноз менеджера «как в ночь на d». Презентаций к дню — темп прошлого
+ * месяца × прошло дней (KPI по дням не хранится), как и звонки.
+ */
+function replayPayload(
+    managerId: string,
+    facts: ReplayDayFacts,
+    shared: ReplayShared,
+): ForecastPayload {
+    const { input } = shared;
+    const { counters } = facts;
+    const months = shared.managerMonths.get(managerId) ?? {};
+    const rates = {
+        months,
+        previousWorkdays: shared.previousWorkdays,
+        workdays: counters.total,
+    };
+    const presentationsRate = presentationRateOf(rates, shared.flow.fit.entry);
+
+    return buildForecastPayload({
+        day: facts.day,
+        monthKey: input.monthKey,
+        workdaysInMonth: counters.total,
+        daysElapsed: counters.elapsed,
+        daysLeft: counters.left,
+        model: input.model.payload,
+        modelSnapshotId: input.model.id,
+        hasStageHistory: input.hasStageHistory,
+        registry: input.registry,
+        flow: shared.flow,
+        manager: replayManagerInput({
+            managerId,
+            months,
+            doneSales: facts.done.get(managerId) ?? 0,
+            entryRate: entryRateOf(rates),
+            daysElapsed: counters.elapsed,
+            openEpisodes: facts.pipeline.get(managerId) ?? [],
+            model: input.model.payload,
+            targets: input.targets,
+            flow: managerFlowInput({
+                managerId,
+                months: input.months,
+                monthKey: input.monthKey,
+                portal: shared.flow,
+                daysElapsed: counters.elapsed,
+                presentationsRate,
+                presentationsDone: presentationsRate * counters.elapsed,
+            }),
+        }),
+        seed: seedOf(input.domain, managerId, facts.day, input.calcVersion),
+        meta: { ...input.meta, modelSnapshotId: input.model.id },
+    });
+}
+
 /** День журнала «как в ночь на d» с пометкой о воспроизведении. */
 function buildReplayDay(day: string, shared: ReplayShared): ForecastLogDay {
     const { input } = shared;
-    const counters = workdayCountersAt(input.workdays, day);
-    const pipeline = pipelineByManager(
-        episodesOpenAt(input.episodes, replayInstantOf(day, input.timeZone)),
-        input.managerByEpisodeKey,
-        input.model.payload,
-    );
-    const done = salesBefore(input.closeDays, day);
-    const managers = input.roster.map(managerId => {
-        const months = shared.managerMonths.get(managerId) ?? {};
-        const payload = buildForecastPayload({
-            day,
-            monthKey: input.monthKey,
-            workdaysInMonth: counters.total,
-            daysElapsed: counters.elapsed,
-            daysLeft: counters.left,
-            model: input.model.payload,
-            modelSnapshotId: input.model.id,
-            hasStageHistory: input.hasStageHistory,
-            registry: input.registry,
-            manager: replayManagerInput({
-                managerId,
-                months,
-                doneSales: done.get(managerId) ?? 0,
-                entryRate: entryRateOf({
-                    months,
-                    previousWorkdays: shared.previousWorkdays,
-                    workdays: counters.total,
-                }),
-                daysElapsed: counters.elapsed,
-                openEpisodes: pipeline.get(managerId) ?? [],
-                model: input.model.payload,
-                targets: input.targets,
-            }),
-            seed: seedOf(input.domain, managerId, day, input.calcVersion),
-            meta: { ...input.meta, modelSnapshotId: input.model.id },
-        });
-
-        return managerPointOf(managerId, payload);
-    });
+    const facts: ReplayDayFacts = {
+        day,
+        counters: workdayCountersAt(input.workdays, day),
+        done: salesBefore(input.closeDays, day),
+        pipeline: pipelineByManager(
+            episodesOpenAt(
+                input.episodes,
+                replayInstantOf(day, input.timeZone),
+            ),
+            input.managerByEpisodeKey,
+            input.model.payload,
+        ),
+    };
+    const payloads = input.roster.map(managerId => ({
+        managerId,
+        payload: replayPayload(managerId, facts, shared),
+    }));
     const logDay = buildForecastLogDay({
         day,
-        managers,
+        managers: payloads.map(item =>
+            managerPointOf(item.managerId, item.payload),
+        ),
         phi: shared.facts.phi,
         phiSource: shared.facts.phiSource,
         level: shared.level,
@@ -156,6 +214,7 @@ function buildReplayDay(day: string, shared: ReplayShared): ForecastLogDay {
         seed: seedOf(input.domain, day, input.calcVersion),
         mean3: mean3Of(shared.sums, mean3MonthKeys(day)),
         modelSnapshotId: input.model.id,
+        flow: dayFlowOf(payloads.map(item => item.payload)),
     });
 
     return { ...logDay, replayed: true };
@@ -212,6 +271,7 @@ export function buildReplayLog(input: ReplayLogInput): ForecastLogSnapshot {
             bounds.to,
             input.calendar,
         ).length,
+        flow: portalFlowOf(input.months, input.monthKey, input.registry),
     };
 
     return mergeReplayedLog({

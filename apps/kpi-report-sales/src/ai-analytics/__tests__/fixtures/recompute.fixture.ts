@@ -1,6 +1,7 @@
 import { seedOf, type PipelineEpisode } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import { assembleEpisodes } from '../../domain/assembler/episodes.assembler';
+import { portalFlowOf } from '../../domain/assembler/forecast-flow.assembler';
 import {
     buildForecastPayload,
     type ForecastPayload,
@@ -295,6 +296,8 @@ export function recomputeForecast(
     managerId: string,
     seed: number,
 ): ForecastPayload {
+    const flow = portalFlowOf(months, RECOMPUTE_MONTH, {});
+
     return buildForecastPayload({
         day: RECOMPUTE_DAY,
         monthKey: RECOMPUTE_MONTH,
@@ -305,6 +308,7 @@ export function recomputeForecast(
         modelSnapshotId: RECOMPUTE_MODEL_ID,
         hasStageHistory: true,
         registry: {},
+        flow,
         manager: managerInput({
             managerId,
             months,
@@ -313,6 +317,8 @@ export function recomputeForecast(
             openEpisodes: managerId === '10' ? openEpisodesFor(model) : [],
             model,
             targets: portalSettings().targets,
+            flow,
+            daysElapsed: 5,
         }),
         seed,
         meta: { ...recomputeMeta(), modelSnapshotId: RECOMPUTE_MODEL_ID },

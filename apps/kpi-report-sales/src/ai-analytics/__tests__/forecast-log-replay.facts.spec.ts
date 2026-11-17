@@ -8,6 +8,7 @@ import {
     isMonthClosed,
     managerMonthsOf,
     pipelineByManager,
+    presentationRateOf,
     replayDaysOf,
     replayEpisodesOf,
     replayManagerInput,
@@ -19,6 +20,7 @@ import {
     mergeReplayedLog,
     replayInstantOf,
 } from '../steps/forecast-log-replay.days';
+import { managerFlowFixture } from './fixtures/forecast-flow.fixture';
 import {
     FIXTURE_META,
     forecastLog,
@@ -239,7 +241,9 @@ describe('forecast-log-replay.facts — темп и вход менеджера'
             openEpisodes: [{ id: 'D1#0', ageDays: 3, theta: 0.3 }],
             model,
             targets: { ...defaultTargets(), overrides: { '10': 7 } },
+            flow: managerFlowFixture(),
         });
+        expect(input.flow).toEqual(managerFlowFixture());
         expect(input).toMatchObject({
             managerId: '10',
             doneSales: 2,
@@ -263,8 +267,36 @@ describe('forecast-log-replay.facts — темп и вход менеджера'
                 openEpisodes: [],
                 model,
                 targets: defaultTargets(),
+                flow: managerFlowFixture(),
             }),
         ).toMatchObject({ lastMonthSales: null, norms: null, planHead: null });
+    });
+
+    it('темп презентаций — по тому же правилу, что звонки, по выбранному счётчику', () => {
+        const options = { previousWorkdays: 20, workdays: 22 };
+        const withAll = managerMonthsOf(
+            [
+                { ...managerMonth('10', '2026-08', 4), presentationsAll: 50 },
+                managerMonth('10', '2026-09', 5),
+            ],
+            '2026-09',
+            '2026-08',
+        );
+        const rates = { months: withAll.get('10') ?? {}, ...options };
+
+        // Прошлый месяц: 20 уникальных или 50 всех на 20 рабочих дней.
+        expect(presentationRateOf(rates, 'presentation-uniq')).toBe(1);
+        expect(presentationRateOf(rates, 'presentation')).toBe(2.5);
+        // Прошлого нет — средний темп месяца; ничего нет — ноль.
+        expect(
+            presentationRateOf(
+                { months: months.get('20') ?? {}, ...options },
+                'presentation-uniq',
+            ),
+        ).toBeCloseTo(20 / 22, 12);
+        expect(
+            presentationRateOf({ months: {}, ...options }, 'presentation'),
+        ).toBe(0);
     });
 });
 

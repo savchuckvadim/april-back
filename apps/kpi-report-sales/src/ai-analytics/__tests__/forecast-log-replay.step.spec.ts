@@ -271,37 +271,45 @@ describe('ForecastLogReplayStep — воспроизведение журнал�
         }
     });
 
-    it('без истории стадий в шине ожидание от сделок — неизвестно у всех, а не ноль', async () => {
+    it('дни считаются от презентаций: метод, вход и подбор в каждом дне, «неизвестных» сделок нет', async () => {
         const { step, upsert } = makeStep();
         await step.run(context(), createStepBus());
         const log = written(upsert).payload;
-        expect(log.days.every(day => day.pipelineUnknown === 2)).toBe(true);
+        expect(log.days.every(day => day.pipelineUnknown === 0)).toBe(true);
+        for (const day of log.days) {
+            expect(day.method).toBe('presentations-v2');
+            expect(day.entry).toBe('presentation-uniq');
+            expect(day.flow?.status).toBeDefined();
+        }
     });
 
-    it('с историей стадий пайплайн на день d — эпизоды, открытые в ночь на d', async () => {
+    it('открытые сделки в середину не входят: со сцепкой и без неё дни одинаковы', async () => {
         const plain = makeStep();
         await plain.step.run(context(), createStepBus());
         const { step, upsert } = makeStep();
         await step.run(context(), busWithPipeline());
-        const log = written(upsert).payload;
-        const byDay = new Map(log.days.map(day => [day.day, day]));
-        expect(log.days.every(day => day.pipelineUnknown === 0)).toBe(true);
-        // Пайплайн добавляет ожидание: P50 не меньше, чем без него.
-        const plainByDay = new Map(
-            written(plain.upsert).payload.days.map(day => [day.day, day]),
-        );
-        expect(byDay.get('2026-09-08')?.p50).toBeGreaterThan(
-            plainByDay.get('2026-09-08')?.p50 ?? Number.POSITIVE_INFINITY,
-        );
-        // Эпизод D2 закрыт 10 сентября: позже он в пайплайн не входит, и
-        // прибавка к P50 падает (сравнение с днём без него).
-        const gainBefore =
-            (byDay.get('2026-09-09')?.p50 ?? 0) -
-            (plainByDay.get('2026-09-09')?.p50 ?? 0);
-        const gainAfter =
-            (byDay.get('2026-09-14')?.p50 ?? 0) -
-            (plainByDay.get('2026-09-14')?.p50 ?? 0);
-        expect(gainAfter).toBeLessThan(gainBefore);
+        const withDeals = written(upsert).payload.days.map(day => [
+            day.day,
+            day.p50,
+            day.descriptive,
+        ]);
+        const without = written(plain.upsert).payload.days.map(day => [
+            day.day,
+            day.p50,
+            day.descriptive,
+        ]);
+        expect(withDeals).toEqual(without);
+    });
+
+    it('история подбора: загружаются W + K месяцев до M и сам M', async () => {
+        const { step, loader } = makeStep();
+        await step.run(context(), createStepBus());
+        const keys = (
+            loader.loadMonths.mock.calls as [string, string[]][]
+        )[0][1];
+        expect(keys).toHaveLength(19);
+        expect(keys[0]).toBe('2025-03');
+        expect(keys[keys.length - 1]).toBe(MONTH);
     });
 
     it('живые дни ночного журнала не затираются: восстанавливаются только дни раньше первого живого', async () => {
