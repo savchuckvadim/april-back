@@ -319,6 +319,7 @@ export function recomputeForecast(
             targets: portalSettings().targets,
             flow,
             daysElapsed: 5,
+            previousWorkdays: 21,
         }),
         seed,
         meta: { ...recomputeMeta(), modelSnapshotId: RECOMPUTE_MODEL_ID },

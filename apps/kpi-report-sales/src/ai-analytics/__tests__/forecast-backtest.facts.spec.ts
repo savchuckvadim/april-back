@@ -156,6 +156,74 @@ describe('forecast-backtest.facts', () => {
         expect(snapshot.backtest?.days).toBe(7);
     });
 
+    it('дней старого расчёта в выборке нет: месяц без нового — вне проверки и в otherMethodMonths', () => {
+        const old = { method: undefined };
+        const logs = new Map<string, ForecastLogSnapshot>([
+            [
+                '2026-08',
+                forecastLog('2026-08', [logDay('2026-08-05', 30, old)], 7),
+            ],
+            [
+                '2026-09',
+                forecastLog('2026-09', [logDay('2026-09-05', 31, old)], 8),
+            ],
+            // Смешанный месяц: из него берутся только дни нового расчёта.
+            [
+                '2026-10',
+                forecastLog(
+                    '2026-10',
+                    [logDay('2026-10-05', 40, old), logDay('2026-10-20', 8)],
+                    8,
+                ),
+            ],
+        ]);
+        const months = backtestMonthsOf(logs);
+        expect(months.map(month => month.monthKey)).toEqual(['2026-10']);
+        expect(months[0].days.map(day => day.p50)).toEqual([8]);
+
+        const snapshot = buildBacktestSnapshot({
+            monthKey: '2026-10',
+            logs,
+            params: backtestParamsOf({}),
+            seed: 1,
+            meta: { ...FIXTURE_META },
+        });
+        expect(snapshot).toMatchObject({
+            status: 'insufficient',
+            shadowMonths: 1,
+            method: 'presentations-v2',
+            otherMethodMonths: 2,
+        });
+        expect(snapshot.backtest?.months).toEqual(['2026-10']);
+    });
+
+    it('только старый расчёт — проверки нового нет, месяцы старого посчитаны', () => {
+        const snapshot = buildBacktestSnapshot({
+            monthKey: '2026-09',
+            logs: new Map([
+                [
+                    '2026-09',
+                    forecastLog(
+                        '2026-09',
+                        [logDay('2026-09-05', 30, { method: undefined })],
+                        8,
+                    ),
+                ],
+            ]),
+            params: backtestParamsOf({}),
+            seed: 1,
+            meta: { ...FIXTURE_META },
+        });
+        expect(snapshot).toMatchObject({
+            status: 'insufficient',
+            reasons: ['not-enough-months'],
+            shadowMonths: 0,
+            backtest: null,
+            method: 'presentations-v2',
+            otherMethodMonths: 1,
+        });
+    });
+
     it('параметры гейта: переопределение портала побеждает дефолт', () => {
         expect(backtestParamsOf({}).level).toBe(
             registryDefault('forecast_interval_level'),

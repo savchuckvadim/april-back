@@ -13,6 +13,9 @@ interface BacktestOptions {
     shadowMonths?: number;
     /** false — проверка без чисел (журналов с фактом нет). */
     withNumbers?: boolean;
+    /** Метод проверки; null — записи без поля (до 18.11.2026). */
+    method?: 'presentations-v2' | null;
+    otherMethodMonths?: number;
 }
 
 const backtestOf = (options: BacktestOptions = {}) =>
@@ -22,6 +25,12 @@ const backtestOf = (options: BacktestOptions = {}) =>
         reasons: options.reasons ?? [],
         shadowMonths: options.shadowMonths ?? 10,
         shadowMinMonths: 9,
+        ...(options.method === null
+            ? {}
+            : { method: options.method ?? 'presentations-v2' }),
+        ...(options.otherMethodMonths === undefined
+            ? {}
+            : { otherMethodMonths: options.otherMethodMonths }),
         ...(options.withNumbers === false
             ? {}
             : {
@@ -60,6 +69,8 @@ const sources = (over: Partial<ForecastSources> = {}): ForecastSources => ({
         done: 6,
         money: null,
         checkSource: 'estimated',
+        method: 'presentations-v2',
+        flowStatus: 'default-lag',
     },
     backtest: backtestOf(),
     stageEnabled: true,
@@ -197,6 +208,63 @@ describe('прогноз без «стены»: что показать в ка�
             value: 44,
             note: 'readiness-below',
         });
+    });
+
+    it('презентации не отмечаются — простой расчёт с уточнением; старый фронт видит no-model', () => {
+        const base = sources();
+        const day = base.day;
+        if (day === null) throw new Error('в образце нет дня');
+        const dto = presentForecast(
+            sources({
+                day: { ...day, flowStatus: 'not-applicable' },
+                backtest: backtestOf({ status: 'insufficient' }),
+            }),
+        );
+        expect(dto.shown).toEqual({
+            source: 'naive',
+            value: 44,
+            note: 'no-model',
+            detail: 'presentations-missing',
+        });
+        // В начале месяца продаж нет — по темпу ноль, берётся среднее.
+        const empty = presentForecast(
+            sources({
+                day: { ...day, flowStatus: 'not-applicable', done: 0 },
+                backtest: backtestOf({ status: 'insufficient' }),
+            }),
+        );
+        expect(empty.shown).toMatchObject({ source: 'mean3', value: 41 });
+    });
+
+    it('месяцы посчитаны старым методом — мало истории нового расчёта, по темпу', () => {
+        const expected = {
+            source: 'naive',
+            value: 44,
+            note: 'history-short',
+            detail: 'method-history-short',
+        };
+        // Проверка нового метода: месяцев старого нет в выборке.
+        expect(
+            presentForecast(
+                sources({
+                    backtest: backtestOf({
+                        status: 'insufficient',
+                        reasons: ['not-enough-months'],
+                        shadowMonths: 1,
+                        otherMethodMonths: 5,
+                    }),
+                }),
+            ).shown,
+        ).toEqual(expected);
+        // Проверка, записанная до 18.11.2026 (по старому расчёту), — даже
+        // пройденная — о новом расчёте ничего не говорит.
+        const legacy = presentForecast(
+            sources({ backtest: backtestOf({ method: null }) }),
+        );
+        expect(legacy.mode).toBe('shadow');
+        expect(legacy.band).toBeNull();
+        expect(legacy.shown).toEqual(expected);
+        expect(legacy.shadow.monthsLogged).toBe(0);
     });
 
     it('журнала дня нет — показывать нечего', () => {

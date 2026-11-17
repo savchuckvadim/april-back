@@ -16,6 +16,7 @@ const BACKTEST_PAYLOAD = {
     shadowMonths: 5,
     shadowMinMonths: 9,
     backtest: null,
+    method: 'presentations-v2',
 };
 
 describe('replayedMonths — чтение снапшота проверки', () => {

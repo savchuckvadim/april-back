@@ -9,6 +9,7 @@ import {
     managerMonthsOf,
     pipelineByManager,
     presentationRateOf,
+    replacesOtherMethod,
     replayDaysOf,
     replayEpisodesOf,
     replayManagerInput,
@@ -96,6 +97,32 @@ describe('forecast-log-replay.facts — закрытый месяц и дни в
         ]);
         const fromStart = forecastLog('2026-09', [logDay('2026-09-01', 5)]);
         expect(replayDaysOf(fromStart, WORKDAYS)).toEqual([]);
+    });
+
+    it('живые дни старого расчёта переписываются только догоном из админки с force', () => {
+        const old = { method: undefined };
+        const log = forecastLog('2026-09', [
+            logDay('2026-09-01', 30, old),
+            logDay('2026-09-02', 31, old),
+            logDay('2026-09-04', 9),
+        ]);
+        // Ночной и месячный прогоны старые живые дни не трогают.
+        expect(replayDaysOf(log, WORKDAYS)).toEqual([]);
+        // Догон с force: старые — переписать, живые нового метода — нет.
+        expect(replayDaysOf(log, WORKDAYS, true)).toEqual([
+            '2026-09-01',
+            '2026-09-02',
+            '2026-09-03',
+        ]);
+        expect(
+            replacesOtherMethod({ rhythm: 'backfill', forceRefresh: true }),
+        ).toBe(true);
+        expect(
+            replacesOtherMethod({ rhythm: 'backfill', forceRefresh: false }),
+        ).toBe(false);
+        expect(
+            replacesOtherMethod({ rhythm: 'monthly', forceRefresh: true }),
+        ).toBe(false);
     });
 
     it('модель пригодна только с рёбрами в нагрузке', () => {
@@ -346,5 +373,35 @@ describe('forecast-log-replay.days — слияние с живыми днями
         expect(merged.days).toHaveLength(1);
         expect(merged.actual).toBe(8);
         expect(merged.checkSource).toBe('estimated');
+    });
+
+    it('с разрешением живые дни старого расчёта заменяются, нового — остаются', () => {
+        const log = forecastLog('2026-09', [
+            logDay('2026-09-01', 30, { method: undefined }),
+            logDay('2026-09-02', 9),
+        ]);
+        const replay = [
+            logDay('2026-09-01', 7, { replayed: true }),
+            logDay('2026-09-02', 99, { replayed: true }),
+        ];
+        const merge = (replaceOtherMethod: boolean) =>
+            mergeReplayedLog({
+                monthKey: '2026-09',
+                previous: log,
+                days: replay,
+                actual: null,
+                checkSource: 'default',
+                meta: { ...FIXTURE_META },
+                replaceOtherMethod,
+            }).days.map(day => [day.day, day.p50]);
+
+        expect(merge(true)).toEqual([
+            ['2026-09-01', 7],
+            ['2026-09-02', 9],
+        ]);
+        expect(merge(false)).toEqual([
+            ['2026-09-01', 30],
+            ['2026-09-02', 9],
+        ]);
     });
 });

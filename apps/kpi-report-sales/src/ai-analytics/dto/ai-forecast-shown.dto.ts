@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+    AI_FORECAST_SHOWN_DETAILS,
     AI_FORECAST_SHOWN_NOTES,
     AI_FORECAST_SHOWN_SOURCES,
+    type AiForecastShownDetail,
     type AiForecastShownNote,
     type AiForecastShownSource,
 } from '../constants/ai-forecast.const';
@@ -46,4 +48,18 @@ export class AiForecastShownDto {
         example: 'simple-better',
     })
     note: AiForecastShownNote;
+
+    @ApiProperty({
+        description:
+            'Уточнение пометки (с 18.11.2026, прогноз от презентаций); нет ' +
+            'поля — хватает пометки note. presentations-missing — ' +
+            'презентации в отчёте KPI отмечаются не полностью, прогноз от ' +
+            'них не строится, показан простой расчёт (note: no-model); ' +
+            'method-history-short — расчёт новый, на прошлых месяцах его ' +
+            'ещё не проверяли (note: history-short).',
+        enum: AI_FORECAST_SHOWN_DETAILS,
+        required: false,
+        example: 'method-history-short',
+    })
+    detail?: AiForecastShownDetail;
 }

@@ -13,6 +13,10 @@ import {
 import type { ForecastBuildInput } from '../domain/assembler/forecast.types';
 import type { PortalManagerMonth } from '../domain/assembler/portal-model.types';
 import {
+    managerMonthsOf,
+    presentationRateOf,
+} from '../steps/forecast-log-replay.facts';
+import {
     managerFlowFixture,
     portalFlowFixture,
 } from './fixtures/forecast-flow.fixture';
@@ -88,15 +92,24 @@ describe('portalFlowOf — подбор портала на месяц', () => {
 describe('managerFlowInput — вход менеджера', () => {
     const months = gsrMonths();
     const portal = portalFlowOf(months, GSR_MONTH, {});
-
-    it('отмечает презентации: доля портала, прошлые месяцы, темп по месяцу', () => {
-        const input = managerFlowInput({
-            managerId: '1',
+    /** Октябрь 2026 — 22 рабочих дня календаря портала. */
+    const OCTOBER_WORKDAYS = 22;
+    const inputOf = (
+        managerId: string,
+        overrides: Partial<Parameters<typeof managerFlowInput>[0]> = {},
+    ) =>
+        managerFlowInput({
+            managerId,
             months,
             monthKey: GSR_MONTH,
             portal,
             daysElapsed: 10,
+            previousWorkdays: OCTOBER_WORKDAYS,
+            ...overrides,
         });
+
+    it('отмечает презентации: доля портала, прошлые месяцы, темп по месяцу', () => {
+        const input = inputOf('1');
 
         expect(input.source).toBe('presentations');
         expect(input.presentationsDone).toBe(10);
@@ -106,16 +119,21 @@ describe('managerFlowInput — вход менеджера', () => {
         expect(input.salesMean).toBeCloseTo(0.6, 12);
     });
 
-    it('первый рабочий день — темп прошлого месяца на отработанные дни', () => {
-        const input = managerFlowInput({
-            managerId: '1',
-            months,
-            monthKey: GSR_MONTH,
-            portal,
-            daysElapsed: 0,
-        });
+    it('первый рабочий день — темп прошлого месяца на рабочие дни календаря, как у воспроизведения', () => {
+        const live = inputOf('1', { daysElapsed: 0 });
+        const replay = presentationRateOf(
+            {
+                months:
+                    managerMonthsOf(months, GSR_MONTH, '2026-10').get('1') ??
+                    {},
+                previousWorkdays: OCTOBER_WORKDAYS,
+                workdays: 20,
+            },
+            portal.fit.entry,
+        );
 
-        expect(input.presentationsRate).toBe(1);
+        expect(live.presentationsRate).toBeCloseTo(20 / OCTOBER_WORKDAYS, 12);
+        expect(live.presentationsRate).toBe(replay);
     });
 
     it('продажи есть, презентаций нет — считается по своим продажам', () => {
@@ -125,31 +143,41 @@ describe('managerFlowInput — вход менеджера', () => {
                 month('99', key, { presentations: 0, sales: 2, all: 0 }),
             ),
         ];
-        const input = managerFlowInput({
-            managerId: '99',
+        const input = inputOf('99', {
             months: silent,
-            monthKey: GSR_MONTH,
             portal: portalFlowOf(silent, GSR_MONTH, {}),
-            daysElapsed: 10,
         });
 
         expect(input.source).toBe('sales-history');
         expect(input.salesMean).toBe(2);
+        expect(input.ownShare).toBe(0);
     });
 
-    it('портал презентации не отмечает — все по своим продажам', () => {
+    it('начал отмечать в этом месяце — по своим продажам, презентации месяца по доле отдела', () => {
+        const starter = [
+            ...months,
+            ...GSR_HISTORY.map(key =>
+                month('77', key, { presentations: 0, sales: 1, all: 0 }),
+            ),
+            month('77', GSR_MONTH, { presentations: 8, sales: 0 }),
+        ];
+        const flow = portalFlowOf(starter, GSR_MONTH, {});
+        const input = inputOf('77', { months: starter, portal: flow });
+
+        expect(input.source).toBe('sales-history');
+        expect(input.presentationsDone).toBe(8);
+        // Своих презентаций в истории нет — доля отдела, а не завышенная своя.
+        expect(input.salesPerPresentation).toBeCloseTo(flow.fit.q, 12);
+    });
+
+    it('портал презентации не отмечает — все по своим продажам, доля 0', () => {
         const blind = portalFlowOf(months, GSR_MONTH, {
             portal: { forecast_flow_min_presentations: 1000 },
         });
-        const input = managerFlowInput({
-            managerId: '1',
-            months,
-            monthKey: GSR_MONTH,
-            portal: blind,
-            daysElapsed: 10,
-        });
+        const input = inputOf('1', { portal: blind });
 
         expect(input.source).toBe('sales-history');
+        expect(input.salesPerPresentation).toBe(0);
     });
 });
 
@@ -181,13 +209,35 @@ describe('flowForecastOf — слагаемые середины', () => {
         });
     });
 
-    it('по своим продажам: средние продажи на долю остатка, новых нет', () => {
+    it('портал презентации не отмечает: средние продажи на долю остатка, новых нет', () => {
         const result = flowForecastOf(
-            inputOf(managerFlowFixture({ source: 'sales-history' })),
+            inputOf(
+                managerFlowFixture({
+                    source: 'sales-history',
+                    salesPerPresentation: 0,
+                }),
+            ),
         );
 
         expect(result.backlog).toBeCloseTo(0.3, 12);
         expect(result.fresh).toBe(0);
+    });
+
+    it('начал отмечать в этом месяце: средние продажи плюс презентации месяца по доле отдела', () => {
+        const result = flowForecastOf(
+            inputOf(
+                managerFlowFixture({
+                    source: 'sales-history',
+                    salesPerPresentation: 0.03,
+                    pastPresentations: [],
+                }),
+            ),
+        );
+
+        // 0,6 × 0,5 по продажам + 0,03 × w_0 × 10 × 0,5 от проведённых.
+        expect(result.backlog).toBeCloseTo(0.3 + 0.03 * 0.5039 * 10 * 0.5, 4);
+        expect(result.fresh).toBeCloseTo(0.0756, 4);
+        expect(result.facts.source).toBe('sales-history');
     });
 });
 

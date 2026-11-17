@@ -352,6 +352,33 @@ describe('ForecastLogReplayStep — воспроизведение журнал�
         expect(upsert).not.toHaveBeenCalled();
     });
 
+    it('живые дни старого расчёта: месячный прогон не трогает, догон с force переписывает новым', async () => {
+        const previousLog = forecastLog(
+            MONTH,
+            [
+                logDay('2026-09-01', 40, { method: undefined }),
+                logDay('2026-09-15', 41, { method: undefined }),
+            ],
+            8,
+        );
+        const monthly = makeStep({ previousLog });
+        const kept = await monthly.step.run(context({ rhythm: 'monthly' }));
+        expect(kept.reason).toBe(AI_FORECAST_LOG_REASONS.replayNothingToDo);
+        expect(monthly.upsert).not.toHaveBeenCalled();
+
+        const rebuild = makeStep({ previousLog });
+        await rebuild.step.run(context({ forceRefresh: true }));
+        const log = written(rebuild.upsert).payload;
+        expect(log.days).toHaveLength(SEPTEMBER_WORKDAYS);
+        expect(log.days.every(day => day.method === 'presentations-v2')).toBe(
+            true,
+        );
+        expect(log.days.every(day => day.replayed === true)).toBe(true);
+        expect(log.days.some(day => day.p50 === 40 || day.p50 === 41)).toBe(
+            false,
+        );
+    });
+
     it('идемпотентен: повтор даёт ту же нагрузку, зёрна детерминированы', async () => {
         const first = makeStep();
         const second = makeStep();

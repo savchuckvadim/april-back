@@ -98,7 +98,10 @@ export function managerMonth(
     };
 }
 
-/** День журнала отдела с вилкой вокруг p50. */
+/**
+ * День журнала отдела с вилкой вокруг p50 — текущим методом
+ * (`presentations-v2`); день старого расчёта — `{ method: undefined }`.
+ */
 export function logDay(
     day: string,
     p50: number,
@@ -119,6 +122,7 @@ export function logDay(
         managers: 2,
         pipelineUnknown: 0,
         modelSnapshotId: 'ais-model-3',
+        method: 'presentations-v2',
         ...overrides,
     };
 }

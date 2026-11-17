@@ -11,10 +11,14 @@
 import {
     AI_FORECAST_BACKTEST_REASONS,
     AI_FORECAST_BACKTEST_STATUSES,
+    AI_PRESENTATION_FLOW_STATUSES,
+    forecastMethodOf,
+    type AiForecastMethod,
     type ForecastBacktestReason,
     type ForecastBacktestStatus,
     type ForecastCalibration,
     type LognormalCheckSource,
+    type PresentationFlowStatus,
 } from '@lib/sales-ai-analytics';
 import { AI_FORECAST_CHECK_SOURCES } from '../../constants/ai-forecast.const';
 
@@ -39,6 +43,13 @@ export interface ForecastLogDayView {
      * null — старая запись без источника.
      */
     readonly checkSource: LognormalCheckSource | null;
+    /** Метод расчёта дня; нет поля в записи — старый расчёт по звонкам. */
+    readonly method: AiForecastMethod;
+    /**
+     * Итог подбора прогноза от презентаций; `not-applicable` — портал
+     * презентации не отмечает. null — старый расчёт или нет поля.
+     */
+    readonly flowStatus: PresentationFlowStatus | null;
 }
 
 /** Числа проверки точности, нужные витрине. */
@@ -74,6 +85,10 @@ export interface ForecastBacktestView {
      * null — нет в записи (старая проверка или мало месяцев).
      */
     readonly calibration: ForecastCalibration | null;
+    /** Метод, дни которого проверялись; нет поля — старый расчёт. */
+    readonly method: AiForecastMethod;
+    /** Закрытых месяцев только со старым расчётом — вне проверки. */
+    readonly otherMethodMonths: number;
 }
 
 type Json = Record<string, unknown>;
@@ -102,6 +117,14 @@ function bandOf(value: unknown): ForecastBandView | null {
 const checkSourceOf = (value: unknown): LognormalCheckSource | null =>
     AI_FORECAST_CHECK_SOURCES.find(source => source === value) ?? null;
 
+/** Итог подбора дня от презентаций; нет или чужая форма — null. */
+const flowStatusOf = (value: unknown): PresentationFlowStatus | null =>
+    isRecord(value)
+        ? (AI_PRESENTATION_FLOW_STATUSES.find(
+              status => status === value.status,
+          ) ?? null)
+        : null;
+
 function dayOf(
     value: unknown,
     checkSource: LognormalCheckSource | null,
@@ -123,6 +146,8 @@ function dayOf(
         done,
         money: bandOf(value.money),
         checkSource,
+        method: forecastMethodOf(value.method),
+        flowStatus: flowStatusOf(value.flow),
     };
 }
 
@@ -225,5 +250,32 @@ export function readForecastBacktest(
         ...(replayed === null ? {} : { replayedMonths: count(replayed) }),
         numbers: numbersOf(payload.backtest),
         calibration: calibrationOf(payload.backtest),
+        method: forecastMethodOf(payload.method),
+        otherMethodMonths: count(payload.otherMethodMonths),
+    };
+}
+
+/**
+ * Проверка точности для текущего метода расчёта. Записанная по другому
+ * методу (до 18.11.2026 — по всем дням расчёта по звонкам) о точности
+ * нового расчёта ничего не говорит: читается как «мало истории нового
+ * расчёта» — без чисел и калибровки, её месяцы — вне проверки.
+ */
+export function backtestOfMethod(
+    view: ForecastBacktestView | null,
+    method: AiForecastMethod,
+): ForecastBacktestView | null {
+    if (view === null || view.method === method) return view;
+
+    return {
+        ...view,
+        status: 'insufficient',
+        reasons: ['not-enough-months'],
+        shadowMonths: 0,
+        replayedMonths: 0,
+        numbers: null,
+        calibration: null,
+        method,
+        otherMethodMonths: Math.max(view.otherMethodMonths, view.shadowMonths),
     };
 }

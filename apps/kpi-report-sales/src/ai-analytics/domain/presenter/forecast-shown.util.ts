@@ -5,16 +5,23 @@
  *
  * - проверка на истории пройдена и показ включён — модель, подтверждена;
  * - проверка пройдена, показ не включён — число модели с пометкой;
+ * - презентации на портале не отмечаются (прогноз от них не строится) —
+ *   простой расчёт с уточнением `presentations-missing`;
  * - готовность портала ниже «прогноза» — расчёт по темпу;
- * - истории мало (проверки нет или ей не хватило месяцев) — расчёт по темпу;
+ * - истории мало (проверки нет или ей не хватило месяцев) — расчёт по
+ *   темпу; если месяцы есть, но посчитаны старым методом, — с уточнением
+ *   `method-history-short`;
  * - проверка не пройдена и простой расчёт на истории точнее — он;
  * - проверка не пройдена, но модель точнее простых — модель с пометкой
  *   «точность не подтверждена».
  *
- * Журнала дня нет — показывать нечего (null). Чистые функции.
+ * Уточнение идёт в поле `detail` — фронт до 18.11.2026 его не читает и
+ * видит пометку из старого набора. Журнала дня нет — показывать нечего
+ * (null). Чистые функции.
  */
 import {
     AI_FORECAST_REASONS,
+    type AiForecastShownDetail,
     type AiForecastShownNote,
     type AiForecastShownSource,
 } from '../../constants/ai-forecast.const';
@@ -29,6 +36,8 @@ export interface ForecastShown {
     /** Ожидаемое число продаж отдела за месяц. */
     value: number;
     note: AiForecastShownNote;
+    /** Уточнение пометки для нового фронта; нет — пометки хватает. */
+    detail?: AiForecastShownDetail;
 }
 
 /** Простой расчёт с его значением на день журнала. */
@@ -68,6 +77,17 @@ export function betterSimpleForecast(
     return candidates[0]?.simple ?? null;
 }
 
+/**
+ * Простой расчёт без проверки: по темпу, если в месяце уже есть продажи,
+ * иначе среднее за три месяца (если есть) — в начале месяца ноль продаж
+ * дал бы «по темпу» ноль.
+ */
+function plainSimple(day: ForecastLogDayView): SimpleForecast {
+    return day.done <= 0 && day.mean3 !== null
+        ? { source: 'mean3', value: day.mean3 }
+        : { source: 'naive', value: day.naive };
+}
+
 /** Числа проверки, по которым можно сравнивать; истории мало — null. */
 function comparableNumbers(
     backtest: ForecastBacktestView | null,
@@ -76,9 +96,16 @@ function comparableNumbers(
     return backtest.numbers;
 }
 
+/** Истории мало потому, что месяцы посчитаны старым методом. */
+const methodHistoryShort = (backtest: ForecastBacktestView | null): boolean =>
+    backtest !== null &&
+    backtest.status === 'insufficient' &&
+    backtest.otherMethodMonths > 0;
+
 /**
  * Показываемый прогноз по журналу дня, проверке и причинам режима shadow
- * (`forecastReasons`): пустые причины — вилка опубликована.
+ * (`forecastReasons`): пустые причины — вилка опубликована. Проверка —
+ * уже для метода дня (`backtestOfMethod`).
  */
 export function chooseShownForecast(
     day: ForecastLogDayView | null,
@@ -101,11 +128,22 @@ export function chooseShownForecast(
     if (reasons.includes(AI_FORECAST_REASONS.stageDisabled)) {
         return model('stage-disabled');
     }
+    if (day.flowStatus === 'not-applicable') {
+        return {
+            ...plainSimple(day),
+            note: 'no-model',
+            detail: 'presentations-missing',
+        };
+    }
     if (reasons.includes(AI_FORECAST_REASONS.readinessBelow)) {
         return byPace('readiness-below');
     }
     const numbers = comparableNumbers(backtest);
-    if (numbers === null) return byPace('history-short');
+    if (numbers === null) {
+        return methodHistoryShort(backtest)
+            ? { ...byPace('history-short'), detail: 'method-history-short' }
+            : byPace('history-short');
+    }
     const simple = betterSimpleForecast(day, numbers);
     return simple === null
         ? model('model-unconfirmed')

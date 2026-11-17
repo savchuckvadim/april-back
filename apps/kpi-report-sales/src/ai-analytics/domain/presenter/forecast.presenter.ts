@@ -17,7 +17,11 @@
  *
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()`.
  */
-import { calibratedBand, calibratedMoneyBand } from '@lib/sales-ai-analytics';
+import {
+    AI_FORECAST_METHOD_CURRENT,
+    calibratedBand,
+    calibratedMoneyBand,
+} from '@lib/sales-ai-analytics';
 import type { AiAnalyticsReadinessMode } from '../../constants/ai-analytics.const';
 import {
     AI_FORECAST_BACKTEST_REASON_MAP,
@@ -30,9 +34,10 @@ import type {
     AiForecastBacktestSummaryDto,
     AiForecastDto,
 } from '../../dto/ai-forecast.dto';
-import type {
-    ForecastBacktestView,
-    ForecastLogDayView,
+import {
+    backtestOfMethod,
+    type ForecastBacktestView,
+    type ForecastLogDayView,
 } from '../assembler/forecast-snapshots.reader';
 import type { ForecastFallback } from './forecast-fallback.util';
 import { chooseShownForecast } from './forecast-shown.util';
@@ -155,8 +160,16 @@ function shownBands(
     };
 }
 
-/** Прогноз отдела в DTO: вилка — только в режиме published и при журнале дня. */
-export function presentForecast(sources: ForecastSources): AiForecastDto {
+/**
+ * Прогноз отдела в DTO: вилка — только в режиме published и при журнале
+ * дня. Проверка точности, записанная по старому методу расчёта, о новом
+ * ничего не говорит — читается как «мало истории нового расчёта».
+ */
+export function presentForecast(input: ForecastSources): AiForecastDto {
+    const sources: ForecastSources = {
+        ...input,
+        backtest: backtestOfMethod(input.backtest, AI_FORECAST_METHOD_CURRENT),
+    };
     const minMonths = sources.shadowMinMonths;
     const reasons = forecastReasons(sources, minMonths);
     const mode: AiForecastMode = reasons.length === 0 ? 'published' : 'shadow';

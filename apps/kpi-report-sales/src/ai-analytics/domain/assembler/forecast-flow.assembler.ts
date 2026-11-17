@@ -47,6 +47,11 @@ export interface ManagerFlowOptions {
     readonly portal: PortalFlow;
     /** Прошедших рабочих дней месяца. */
     readonly daysElapsed: number;
+    /**
+     * Рабочих дней календаря портала в прошлом месяце — знаменатель темпа
+     * в первый рабочий день (то же правило, что у воспроизведения).
+     */
+    readonly previousWorkdays: number;
     /** Темп презентаций в рабочий день; нет — по месяцу или прошлому. */
     readonly presentationsRate?: number;
     /** Презентаций с начала месяца; нет — из снимка месяца. */
@@ -68,20 +73,41 @@ function salesMeanOf(
         : recent.reduce((sum, sales) => sum + sales, 0) / recent.length;
 }
 
-/** Темп прошлого месяца на отработанный день; нет месяца — 0. */
+/**
+ * Темп прошлого месяца на рабочие дни календаря портала — то же правило,
+ * что у воспроизведения (`presentationRateOf`); нет месяца — 0.
+ */
 function previousRateOf(
     previous: PortalManagerMonth | undefined,
-    portal: PortalFlow,
+    options: ManagerFlowOptions,
 ): number {
-    return previous !== undefined && previous.workedDays > 0
-        ? monthPresentationsOf(previous, portal.fit.entry) / previous.workedDays
+    return previous !== undefined && options.previousWorkdays > 0
+        ? monthPresentationsOf(previous, options.portal.fit.entry) /
+              options.previousWorkdays
         : 0;
 }
 
 /**
+ * Доля продаж на презентацию для входа: портал презентации не отмечает —
+ * 0 (от презентаций не считаем); у менеджера их нет в истории — доля
+ * отдела (своей не из чего взять); иначе своя после усадки.
+ */
+function salesPerPresentationOf(
+    fit: PortalFlow['fit'],
+    marked: boolean,
+    own: number,
+): number {
+    if (fit.status === 'not-applicable') return 0;
+
+    return marked ? own : fit.q;
+}
+
+/**
  * Вход прогноза от презентаций по менеджеру. По своим продажам считается
- * менеджер, который презентации не отмечает (продажи в истории есть, а
- * презентаций нет), и все — когда их не отмечает портал.
+ * менеджер, который презентации в истории не отмечал (продажи есть, а
+ * презентаций нет), и все — когда их не отмечает портал. Презентации
+ * текущего месяца у такого менеджера не теряются: они идут по доле
+ * отдела (`flowForecastOf`).
  */
 export function managerFlowInput(
     options: ManagerFlowOptions,
@@ -110,7 +136,7 @@ export function managerFlowInput(
         monthPresentationsOf(own.get(options.monthKey), fit.entry);
     const fallbackRate = previousRateOf(
         own.get(keys[keys.length - 1] ?? ''),
-        options.portal,
+        options,
     );
 
     return {
@@ -127,8 +153,8 @@ export function managerFlowInput(
         pastPresentations: [...series.presentations]
             .reverse()
             .slice(0, fit.kernel.length - 1),
-        salesPerPresentation: share.value,
-        ownShare: share.w,
+        salesPerPresentation: salesPerPresentationOf(fit, marked, share.value),
+        ownShare: marked ? share.w : 0,
         salesMean: salesMeanOf(own, keys),
     };
 }
@@ -141,31 +167,34 @@ export interface FlowForecast {
 }
 
 /**
- * Ожидание остатка месяца: от проведённых и от новых презентаций; если
- * менеджер (или портал) презентации не отмечает — от своих средних
- * продаж на долю оставшихся дней, новых не ждём.
+ * Ожидание остатка месяца: от проведённых и от новых презентаций. Если
+ * менеджер презентации в истории не отмечал — от своих средних продаж на
+ * долю оставшихся дней плюс презентации этого месяца по доле отдела;
+ * если их не отмечает портал — только от своих продаж (доля 0).
  */
 export function flowForecastOf(input: ForecastBuildInput): FlowForecast {
     const flow = input.manager.flow;
     const { fit } = input.flow;
+    const bySales = flow.source === 'sales-history';
     const expected = presentationFlowExpected({
         q: flow.salesPerPresentation,
         kernel: fit.kernel,
-        pastPresentations: flow.pastPresentations,
+        // Прошлые продажи «по продажам» уже в средних — их не удваиваем.
+        pastPresentations: bySales ? [] : flow.pastPresentations,
         presentationsDone: flow.presentationsDone,
         presentationsRate: flow.presentationsRate,
         daysTotal: input.workdaysInMonth,
         daysRemaining: input.daysLeft,
     });
-    const bySales = flow.source === 'sales-history';
-    const backlog = bySales
+    const pace = bySales
         ? salesPaceRemainder(
               flow.salesMean,
               input.workdaysInMonth,
               input.daysLeft,
           )
-        : expected.backlog;
-    const fresh = bySales ? 0 : expected.fresh;
+        : 0;
+    const backlog = pace + expected.backlog;
+    const fresh = expected.fresh;
 
     return {
         backlog,

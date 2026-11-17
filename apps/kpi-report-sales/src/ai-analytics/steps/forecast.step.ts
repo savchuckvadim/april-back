@@ -63,7 +63,7 @@ import {
     managerByEpisodeKey,
     openEpisodesOf,
 } from './portal-model.facts';
-import { managerInput, workdaysOf } from './forecast.facts';
+import { managerInput, previousWorkdaysOf, workdaysOf } from './forecast.facts';
 import type { PortalModelBusEntry } from './portal-model.step';
 import {
     AiAnalyticsPipelineStep,
@@ -182,6 +182,7 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
         const episodes = this.episodesByManager(bus, model.payload);
         const previousMonth = previousMonthOf(ctx.monthKey);
         const flow = portalFlowOf(months, ctx.monthKey, ctx.registry);
+        const previousWorkdays = previousWorkdaysOf(ctx);
         const managers: ForecastDayManager[] = [];
         for (const managerId of ctx.managerIds.map(String)) {
             const payload = buildForecastPayload({
@@ -207,6 +208,7 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                     targets: ctx.settings.targets,
                     flow,
                     daysElapsed: days.elapsed,
+                    previousWorkdays,
                 }),
                 seed: seedOf(ctx.domain, managerId, ctx.day, ctx.calcVersion),
                 meta: {

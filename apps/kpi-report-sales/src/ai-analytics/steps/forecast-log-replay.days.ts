@@ -56,7 +56,7 @@ import { workdayCountersAt } from './forecast.facts';
 import {
     entryRateOf,
     episodesOpenAt,
-    isLiveDay,
+    isProtectedDay,
     managerMonthsOf,
     pipelineByManager,
     presentationRateOf,
@@ -98,6 +98,8 @@ export interface ReplayLogInput {
     /** Факт продаж месяца (как ставит бэктест); null — факта нет. */
     readonly actual: number | null;
     readonly meta: AiSnapshotMeta;
+    /** Переписать живые дни другого метода (догон из админки с force). */
+    readonly replaceOtherMethod?: boolean;
 }
 
 /** Общее для всех дней месяца: модель, темпы, среднее, рабочие дни. */
@@ -173,6 +175,7 @@ function replayPayload(
                 monthKey: input.monthKey,
                 portal: shared.flow,
                 daysElapsed: counters.elapsed,
+                previousWorkdays: shared.previousWorkdays,
                 presentationsRate,
                 presentationsDone: presentationsRate * counters.elapsed,
             }),
@@ -228,16 +231,21 @@ export interface ReplayMergeInput {
     readonly actual: number | null;
     readonly checkSource: LognormalCheckSource | null;
     readonly meta: AiSnapshotMeta;
+    /** Переписать живые дни другого метода (догон из админки с force). */
+    readonly replaceOtherMethod?: boolean;
 }
 
 /**
- * Журнал месяца: живые дни ночного прогона остаются как есть (при
- * совпадении дня живой побеждает), прежние воспроизведённые заменяются
- * новыми, дни — по возрастанию. Факт — переданный, иначе прежний.
- * Источник последней записи — `replay`.
+ * Журнал месяца: неприкосновенные живые дни остаются как есть (при
+ * совпадении дня живой побеждает), прежние воспроизведённые и — при
+ * разрешении — живые дни другого метода заменяются новыми, дни — по
+ * возрастанию. Факт — переданный, иначе прежний. Источник последней
+ * записи — `replay`.
  */
 export function mergeReplayedLog(input: ReplayMergeInput): ForecastLogSnapshot {
-    const live = (input.previous?.days ?? []).filter(isLiveDay);
+    const live = (input.previous?.days ?? []).filter(day =>
+        isProtectedDay(day, input.replaceOtherMethod === true),
+    );
     const liveDays = new Set(live.map(day => day.day));
     const replayed = input.days.filter(day => !liveDays.has(day.day));
 
@@ -281,5 +289,6 @@ export function buildReplayLog(input: ReplayLogInput): ForecastLogSnapshot {
         actual: input.actual,
         checkSource: shared.facts.check.source,
         meta: input.meta,
+        replaceOtherMethod: input.replaceOtherMethod,
     });
 }

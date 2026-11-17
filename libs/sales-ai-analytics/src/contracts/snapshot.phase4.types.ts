@@ -293,6 +293,16 @@ export interface ForecastBacktestSnapshot {
     readonly replayedMonths?: number;
     /** Полный результат бэктеста; null — журналов с фактом нет. */
     readonly backtest: ForecastBacktest | null;
+    /**
+     * Метод, дни которого проверялись; дней других методов в выборке нет.
+     * Нет поля — проверка до 18.11.2026 (по всем дням, расчёт по звонкам).
+     */
+    readonly method?: AiForecastMethod;
+    /**
+     * Закрытых месяцев только со днями другого метода — вне проверки,
+     * пока историю не пересчитали; нет поля — 0.
+     */
+    readonly otherMethodMonths?: number;
     readonly meta: AiSnapshotMeta;
 }
 

@@ -21,8 +21,6 @@
 import {
     daysBetween,
     toPortalDate,
-    type ForecastLogDay,
-    type ForecastLogSnapshot,
     type PipelineEpisode,
 } from '@lib/sales-ai-analytics';
 import type { AiTargets } from '@lib/sales-ai-analytics/settings/ai-settings.types';
@@ -49,29 +47,12 @@ export function isMonthClosed(
     return monthKey < toPortalDate(now, timeZone).slice(0, 7);
 }
 
-/** День журнала записан ночным прогоном, а не воспроизведён. */
-export const isLiveDay = (day: ForecastLogDay): boolean =>
-    day.replayed !== true;
-
-/**
- * Какие рабочие дни восстанавливать: все, пока в журнале нет живых дней;
- * иначе — только раньше первого живого. Живые дни ночного прогона
- * неприкосновенны, прежние воспроизведённые переписываются.
- */
-export function replayDaysOf(
-    previous: ForecastLogSnapshot | null,
-    workdays: readonly string[],
-): string[] {
-    const live = (previous?.days ?? [])
-        .filter(isLiveDay)
-        .map(day => day.day)
-        .sort();
-    const firstLive = live[0];
-
-    return firstLive === undefined
-        ? [...workdays]
-        : workdays.filter(day => day < firstLive);
-}
+export {
+    isLiveDay,
+    isProtectedDay,
+    replacesOtherMethod,
+    replayDaysOf,
+} from './forecast-log-replay.protect';
 
 /** Модель портала с id записи — вход прогноза. */
 export interface ReplayModel {

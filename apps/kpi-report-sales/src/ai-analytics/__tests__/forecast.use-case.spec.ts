@@ -41,6 +41,7 @@ const backtestPayload = (
     shadowMonths: 9,
     shadowMinMonths: 9,
     backtest: null,
+    method: 'presentations-v2',
     ...over,
 });
 

@@ -8,16 +8,25 @@
  * предыдущих журналов, а без них — наивный прогноз дня: эталон тогда
  * совпадает с наивным и сравнение с ним не мягче, чем с наивным.
  *
+ * Метод расчёта (17.11.2026): точность проверяется только по дням
+ * текущего метода (`presentations-v2`). Дней старого метода (по звонкам,
+ * поля `method` нет) в выборке нет: месяц, где их нет и других, выпадает
+ * и считается в `otherMethodMonths` — по нему витрина пишет «мало истории
+ * нового расчёта», пока владелец не пересчитает историю.
+ *
  * Чистые функции: без DI, Bitrix и `new Date()`; случайность — только
  * переданный seed.
  */
 import {
+    AI_FORECAST_METHOD_CURRENT,
     backtestForecast,
     FORECAST_BACKTEST_DEFAULTS,
+    forecastMethodOf,
     registryDefault,
     resolveNumberParam,
     type ForecastBacktestMonth,
     type ForecastBacktestSnapshot,
+    type ForecastLogDay,
     type ForecastLogSnapshot,
     type ParamContext,
 } from '@lib/sales-ai-analytics';
@@ -95,27 +104,49 @@ function mean3FromLogs(
     return total / keys.length;
 }
 
-/** Закрытые журналы → месяцы бэктеста с днями-origin. */
+/** День посчитан текущим методом; нет поля — старый расчёт по звонкам. */
+export const isCurrentMethodDay = (day: ForecastLogDay): boolean =>
+    forecastMethodOf(day.method) === AI_FORECAST_METHOD_CURRENT;
+
+/**
+ * Закрытые журналы → месяцы бэктеста с днями-origin текущего метода.
+ * Месяц, где все дни посчитаны другим методом, в бэктест не идёт (дней
+ * старого метода в выборке нет вовсе); журнал вовсе без дней остаётся,
+ * как прежде.
+ */
 export function backtestMonthsOf(
     logs: ReadonlyMap<string, ForecastLogSnapshot>,
 ): ForecastBacktestMonth[] {
-    return closedLogs(logs).map(log => {
+    return closedLogs(logs).flatMap(log => {
+        const days = log.days.filter(isCurrentMethodDay);
+        if (log.days.length > 0 && days.length === 0) return [];
         const fallback = mean3FromLogs(log.monthKey, logs);
 
-        return {
-            monthKey: log.monthKey,
-            actual: log.actual,
-            days: log.days.map(day => ({
-                day: day.day,
-                low: day.low,
-                p50: day.p50,
-                high: day.high,
-                naive: day.naive,
-                mean3: day.mean3 ?? fallback ?? day.naive,
-                done: day.done,
-            })),
-        };
+        return [
+            {
+                monthKey: log.monthKey,
+                actual: log.actual,
+                days: days.map(day => ({
+                    day: day.day,
+                    low: day.low,
+                    p50: day.p50,
+                    high: day.high,
+                    naive: day.naive,
+                    mean3: day.mean3 ?? fallback ?? day.naive,
+                    done: day.done,
+                })),
+            },
+        ];
     });
+}
+
+/** Закрытых месяцев только со днями старого метода — вне проверки. */
+export function otherMethodMonthsOf(
+    logs: ReadonlyMap<string, ForecastLogSnapshot>,
+): number {
+    return closedLogs(logs).filter(
+        log => log.days.length > 0 && !log.days.some(isCurrentMethodDay),
+    ).length;
 }
 
 /** Вход сборки снапшота бэктеста. */
@@ -129,26 +160,31 @@ export interface ForecastBacktestBuildInput {
 }
 
 /**
- * Сколько журналов с фактом восстановлено по истории: хотя бы один день
- * воспроизведён шагом `forecast-log-replay` (живые дни могли дописаться
- * позже — месяц всё равно считается восстановленным).
+ * Сколько журналов с фактом восстановлено по истории текущим методом:
+ * хотя бы один его день воспроизведён шагом `forecast-log-replay` (живые
+ * дни могли дописаться позже — месяц всё равно считается восстановленным).
  */
 export function replayedMonthsOf(
     logs: ReadonlyMap<string, ForecastLogSnapshot>,
 ): number {
     return closedLogs(logs).filter(log =>
-        log.days.some(day => day.replayed === true),
+        log.days.some(day => day.replayed === true && isCurrentMethodDay(day)),
     ).length;
 }
 
 /**
- * Снапшот бэктеста: журналов с фактом нет — `insufficient` без чисел,
- * иначе полный результат библиотеки со статусом и причинами.
+ * Снапшот бэктеста по дням текущего метода: таких месяцев нет —
+ * `insufficient` без чисел, иначе полный результат библиотеки со статусом
+ * и причинами. `otherMethodMonths` — месяцы только со старым расчётом.
  */
 export function buildBacktestSnapshot(
     input: ForecastBacktestBuildInput,
 ): ForecastBacktestSnapshot {
     const months = backtestMonthsOf(input.logs);
+    const method = {
+        method: AI_FORECAST_METHOD_CURRENT,
+        otherMethodMonths: otherMethodMonthsOf(input.logs),
+    };
     if (months.length === 0) {
         return {
             monthKey: input.monthKey,
@@ -158,6 +194,7 @@ export function buildBacktestSnapshot(
             shadowMinMonths: input.params.shadowMinMonths,
             replayedMonths: 0,
             backtest: null,
+            ...method,
             meta: input.meta,
         };
     }
@@ -181,6 +218,7 @@ export function buildBacktestSnapshot(
         shadowMinMonths: input.params.shadowMinMonths,
         replayedMonths: replayedMonthsOf(input.logs),
         backtest,
+        ...method,
         meta: input.meta,
     };
 }
