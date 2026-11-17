@@ -411,6 +411,7 @@ export * from './contracts/deal-movement-run.types';
 export * from './contracts/deal-movement-snapshot.types';
 export * from './contracts/deal-movement-notes.types';
 export * from './contracts/deal-movement-probe.types';
+export * from './contracts/deal-movement-digest.types';
 
 // Итоги периода по менеджерам (этап 7.4, 17.11.2026): факты качества,
 // пороги «Внимания» и проекции lite-строк переехали из kpi-report-sales,
