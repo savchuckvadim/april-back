@@ -107,6 +107,7 @@ export class InitFormService {
                 contractProductName,
                 total,
                 dto.paymentLtPacketString,
+                dto.complect.lt,
             ),
             clientType: getClientTypeSelect(),
             currentComplect: dto.complect.name || dto.complect.title,
@@ -281,9 +282,9 @@ export class InitFormService {
         contractProductName?: string,
         total?: ProductRowDto,
         paymentLtPacketString?: string,
+        complectLt?: number[],
     ): ContractSpecificationItemDto[] {
         void currentComplect;
-        void lt;
         void starProduct;
         void contract;
         void contractProductName;
@@ -296,6 +297,10 @@ export class InitFormService {
             contractCoefficient: Number(contractQuantity) || 1,
             documentInfoblocks: (documentInfoblocks ?? []) as ComplectDto[],
             paymentLtPacketString,
+            // бесплатный LT комплекта: без них пункты specification_lt_free*
+            // пустые, и LT пропадает из отчёта и комментария заявки RPA
+            complectLt,
+            legalTech: lt,
         });
     }
 
