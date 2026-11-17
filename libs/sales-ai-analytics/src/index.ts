@@ -406,3 +406,11 @@ export * from './model/phase4.index';
 export * from './model/owner-report';
 // Движение сделок (этап 7.3): статус открытой сделки по досье — см. model/deal-movement.
 export * from './model/deal-movement';
+
+// Итоги периода по менеджерам (этап 7.4, 17.11.2026): факты качества,
+// пороги «Внимания» и проекции lite-строк переехали из kpi-report-sales,
+// чтобы их читал и event-sales (там — реэкспорты прежних путей).
+export * from './model/dated-lite-row';
+export * from './model/quality-facts.types';
+export * from './model/quality-facts.assembler';
+export * from './settings/attention-thresholds';
