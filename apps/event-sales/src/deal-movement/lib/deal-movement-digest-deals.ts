@@ -37,6 +37,22 @@ export function buildDealMovementDigestDeals(
         newFrom: newFrom.get(deal.verdict.dealId) ?? null,
         reasons: dealMovementReasonTexts(deal.verdict).join('; '),
         daysInStage: deal.verdict.facts.daysInStage,
+        // Находку аудита добавляет сама рассылка (читает хранилище аудита).
+        audit: null,
+    }));
+}
+
+/**
+ * Пометки аудита к сделкам сводки: сделка с пометкой — с ней, без — как
+ * была. Статус и порядок не меняются.
+ */
+export function withDealAuditNotes(
+    deals: readonly DealMovementDigestDeal[],
+    notes: ReadonlyMap<string, string>,
+): DealMovementDigestDeal[] {
+    return deals.map(deal => ({
+        ...deal,
+        audit: notes.get(deal.dealId) ?? null,
     }));
 }
 

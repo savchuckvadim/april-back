@@ -94,14 +94,16 @@ const makeService = (
     const { bitrix, batches } = makeBitrix(results, listRows);
     const getFullDepartment = jest.fn().mockResolvedValue(DEPARTMENTS);
     const send = jest.fn().mockResolvedValue(0);
+    const findings = { save: jest.fn().mockResolvedValue(undefined) };
     const service = new DealAuditService(
         {
             init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portal }),
         } as never,
         { send } as never,
         { getFullDepartment } as never,
+        findings as never,
     );
-    return { service, bitrix, batches, getFullDepartment, send };
+    return { service, bitrix, batches, getFullDepartment, send, findings };
 };
 
 describe('DealAuditService.runForDomain', () => {
@@ -163,6 +165,58 @@ describe('DealAuditService.runForDomain', () => {
         expect(result.verdicts.map(verdict => verdict.dealId)).toEqual([20]);
         expect(result.verdicts[0].status).toBe(DEAL_AUDIT_STATUS.noTask);
         expect(result.verdicts[0].idleDays).toBeGreaterThanOrEqual(39);
+    });
+
+    it('находки прогона — в хранилище для «Движения сделок»: все вердикты, и норма тоже (её уберут)', async () => {
+        const { service, findings } = makeService({
+            audit_group_0: [
+                {
+                    ID: '10',
+                    ASSIGNED_BY_ID: '11',
+                    LAST_ACTIVITY_TIME: daysAgo(1),
+                    MOVED_TIME: daysAgo(3),
+                },
+            ],
+            audit_group_1: [
+                {
+                    ID: '20',
+                    ASSIGNED_BY_ID: '21',
+                    LAST_ACTIVITY_TIME: daysAgo(40),
+                    MOVED_TIME: daysAgo(40),
+                },
+            ],
+            audit_group_outside: [],
+            audit_tasks_10: {
+                tasks: [
+                    {
+                        id: '700',
+                        status: '2',
+                        deadline: new Date(
+                            Date.now() + 24 * 60 * 60 * 1000,
+                        ).toISOString(),
+                    },
+                ],
+            },
+            audit_tasks_20: { tasks: [] },
+        });
+
+        // Холостой ход («только считать») находки тоже сохраняет.
+        await service.runForDomain(DOMAIN, options());
+
+        expect(findings.save).toHaveBeenCalledTimes(1);
+        const [domain, verdicts, at] = findings.save.mock.calls[0] as [
+            string,
+            { dealId: number; status: string }[],
+            string,
+        ];
+        expect(domain).toBe(DOMAIN);
+        expect(
+            verdicts.map(verdict => [verdict.dealId, verdict.status]),
+        ).toEqual([
+            [10, DEAL_AUDIT_STATUS.ok],
+            [20, DEAL_AUDIT_STATUS.noTask],
+        ]);
+        expect(Number.isNaN(Date.parse(at))).toBe(false);
     });
 
     it('«только считать»: ничего не пишет и сводок не шлёт', async () => {

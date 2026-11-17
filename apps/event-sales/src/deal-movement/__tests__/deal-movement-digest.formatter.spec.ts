@@ -1,5 +1,8 @@
 import { DEAL_MOVEMENT_DIGEST } from '../constants/deal-movement.const';
-import { buildDealMovementDigestDeals } from '../lib/deal-movement-digest-deals';
+import {
+    buildDealMovementDigestDeals,
+    withDealAuditNotes,
+} from '../lib/deal-movement-digest-deals';
 import {
     buildDealMovementDigest,
     DEAL_MOVEMENT_DIGEST_TEXTS,
@@ -23,6 +26,7 @@ const deal = (
     newFrom: null,
     reasons: 'стадия сделки продвинулась вперёд',
     daysInStage: 2,
+    audit: null,
     ...fields,
 });
 
@@ -109,6 +113,33 @@ const DIGEST_EXAMPLE = [
     `[i]${DEAL_MOVEMENT_DIGEST_TEXTS.closing}[/i]`,
 ].join('\n');
 
+/** Та же сводка, когда у двух сделок есть свежие находки аудита сделок. */
+const DIGEST_WITH_AUDIT = [
+    '[B]Движение сделок за 18.11[/B]',
+    'Движется — 1 · Застряла — 1 · Откатилась — 1 · Под риском — 4',
+    'Из них забыты по аудиту: 2',
+    '',
+    '[B]Новые за ночь — 3[/B]',
+    `>> [URL=${URL}/101/]ООО «Альфа»[/URL] — Иванов Пётр — 450 000 ₽`,
+    '   Движется → Откатилась: стадия сделки вернулась назад',
+    `>> [URL=${URL}/102/]ИП Смирнов[/URL] — Петрова Анна — 120 000 ₽`,
+    '   Движется → Застряла: в стадии 30 дней при сроке 21 день, работы по сделке за последнее время нет',
+    '   [i]ещё и по аудиту: без задач, нет работы 18 дней[/i]',
+    `>> [URL=${URL}/103/]ООО «Вега»[/URL] — Иванов Пётр — 300 000 ₽`,
+    '   Движется → Под риском: договорились на 05.11 — контакта после этого не было',
+    '',
+    '[B]Под риском — первые 3 по сумме[/B]',
+    `>> [URL=${URL}/107/]ООО «Гамма»[/URL] — Петрова Анна — 900 000 ₽`,
+    '   клиент согласился по звонку, а стадия не меняется 12 дней',
+    `>> [URL=${URL}/104/]АО «Сигма»[/URL] — Петрова Анна — 900 000 ₽`,
+    '   клиент согласился по звонку, а стадия не меняется 14 дней',
+    '   [i]ещё и по аудиту: задача просрочена на 5 дней[/i]',
+    `>> [URL=${URL}/105/]ООО «Омега»[/URL] — ответственный не указан`,
+    '   два последних звонка подряд ничего не изменили по сделке',
+    '',
+    `[i]${DEAL_MOVEMENT_DIGEST_TEXTS.closing}[/i]`,
+].join('\n');
+
 describe('сводка «Движение сделок» руководителю', () => {
     it('шапка со счётом набора, новые за ночь по важности, под риском по сумме без повторов, итоговая строка', () => {
         const digest = buildDealMovementDigest({
@@ -128,6 +159,31 @@ describe('сводка «Движение сделок» руководител�
         expect(digest?.text).not.toMatch(/rolled_back|at_risk|stuck|moving|_/);
         // Номера сотрудников на экран не выводятся.
         expect(digest?.text).not.toContain('ID 99');
+    });
+
+    it('свежая находка аудита — пометкой под причинами и числом в шапке; без раздела «забытые»', () => {
+        const noted = withDealAuditNotes(
+            DEALS,
+            new Map([
+                ['102', 'ещё и по аудиту: без задач, нет работы 18 дней'],
+                ['104', 'ещё и по аудиту: задача просрочена на 5 дней'],
+            ]),
+        );
+
+        const digest = buildDealMovementDigest({
+            domain: DOMAIN,
+            day: DAY,
+            deals: noted,
+            top: 15,
+            userNames: NAMES,
+        });
+
+        expect(digest?.text).toBe(DIGEST_WITH_AUDIT);
+        expect(digest?.text).not.toContain('Забытые по аудиту —');
+        // Статус сделок пометка не меняет.
+        expect(noted.map(item => item.status)).toEqual(
+            DEALS.map(item => item.status),
+        );
     });
 
     it('«Под риском» — первые N из настройки; при равной сумме — кто дольше в стадии', () => {

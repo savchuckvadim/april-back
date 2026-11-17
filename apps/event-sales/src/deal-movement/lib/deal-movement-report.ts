@@ -77,9 +77,11 @@ export function dealMovementDigestLine(
     if (digest.skipped !== null) {
         return `Сводка руководителям: ${DEAL_MOVEMENT_DIGEST_SKIP_TITLES[digest.skipped]}`;
     }
+    const audit = digest.auditForgotten ?? 0;
     return (
         `Сводка руководителям: получателей ${digest.recipients}, ` +
-        `ушло ${digest.sent}, не доставлено ${digest.failed}`
+        `ушло ${digest.sent}, не доставлено ${digest.failed}` +
+        (audit > 0 ? `; забыты по аудиту: ${audit}` : '')
     );
 }
 

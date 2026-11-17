@@ -54,6 +54,11 @@ export interface DealMovementDigestDeal {
     /** Причины статуса словами, одной строкой. */
     readonly reasons: string;
     readonly daysInStage: number;
+    /**
+     * Свежая находка аудита сделок словами («ещё и по аудиту: …»); null —
+     * находки нет или она старая. Статус она не меняет.
+     */
+    readonly audit: string | null;
 }
 
 /** Расшифровки, по которым «что сделать» перечитывает разборы. */

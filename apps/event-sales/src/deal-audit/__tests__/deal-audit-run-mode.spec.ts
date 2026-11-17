@@ -134,6 +134,7 @@ describe('DealAuditService: сводки без установленных по�
                     },
                 }),
             } as never,
+            { save: jest.fn().mockResolvedValue(undefined) } as never,
         );
         return { service, send };
     };

@@ -1,5 +1,10 @@
 import { ETimeZone } from '@lib/shared/lib/date';
+import {
+    DEAL_AUDIT_FLAG,
+    DEAL_AUDIT_STATUS,
+} from '../../deal-audit/constants/deal-audit.const';
 import { DealAuditDigestDelivery } from '../../deal-audit/services/deal-audit-digest-delivery';
+import type { DealAuditFinding } from '../../deal-audit/services/deal-audit-findings.store';
 import { DealMovementDigestService } from '../services/deal-movement-digest.service';
 import type {
     DealMovementDigestDeal,
@@ -35,6 +40,7 @@ const deal = (
     newFrom: null,
     reasons: 'тревожных признаков нет',
     daysInStage: 3,
+    audit: null,
     ...fields,
 });
 
@@ -53,6 +59,9 @@ interface Setup {
     channels?: { notify: boolean; message: boolean; task: boolean };
     claimed?: boolean;
     active?: number[];
+    /** Находки аудита в Redis; Error — хранилище не прочиталось. */
+    findings?: Map<string, DealAuditFinding> | Error;
+    frequency?: 'weekly' | 'monthly';
 }
 
 const build = (setup: Setup = {}) => {
@@ -107,10 +116,17 @@ const build = (setup: Setup = {}) => {
                     task: false,
                 },
             },
+            frequency: setup.frequency ?? 'weekly',
         }),
     };
     const counters = {
         claimDigest: jest.fn().mockResolvedValue(setup.claimed ?? true),
+    };
+    const findings = {
+        load:
+            setup.findings instanceof Error
+                ? jest.fn().mockRejectedValue(setup.findings)
+                : jest.fn().mockResolvedValue(setup.findings ?? new Map()),
     };
     const service = new DealMovementDigestService(
         pbx as never,
@@ -118,15 +134,32 @@ const build = (setup: Setup = {}) => {
         staff as never,
         auditSettings as never,
         counters as never,
+        findings as never,
     );
     return { service, bitrix, departments, counters };
 };
 
+/** Ночь движения сделок: 18.11 02:27 МСК. */
+const NOW = new Date('2026-11-17T23:27:00.000Z');
+
 const request = (deals: DealMovementDigestDeal[]) => ({
     domain: DOMAIN,
     day: DAY,
+    now: NOW,
     options: OPTIONS,
     deals,
+});
+
+/** Свежая находка аудита: ночь на понедельник 16.11. */
+const auditFinding = (
+    fields: Partial<DealAuditFinding> = {},
+): DealAuditFinding => ({
+    status: DEAL_AUDIT_STATUS.noTask,
+    flags: [DEAL_AUDIT_FLAG.noTask, DEAL_AUDIT_FLAG.idle],
+    idleDays: 18,
+    overdueDays: 0,
+    at: '2026-11-15T22:30:00.000Z',
+    ...fields,
 });
 
 describe('сводка «Движение сделок» руководителям: кому и чем', () => {
@@ -145,6 +178,7 @@ describe('сводка «Движение сделок» руководител�
             recipients: 1,
             sent: 1,
             failed: 0,
+            auditForgotten: 0,
         });
         expect(bitrix.message.add).toHaveBeenCalledTimes(1);
         const [message] = bitrix.message.add.mock.calls[0] as unknown as [
@@ -230,6 +264,66 @@ describe('сводка «Движение сделок» руководител�
         expect(bitrix.task.getList).toHaveBeenCalledWith(
             expect.objectContaining({ '%TITLE': 'сводка движения сделок' }),
             ['ID', 'STATUS', 'TITLE'],
+        );
+    });
+});
+
+describe('сводка «Движение сделок»: находки аудита сделок', () => {
+    it('свежая находка — пометкой у сделки и числом в шапке и итоге; старая — нет', async () => {
+        const { service, bitrix } = build({
+            findings: new Map([
+                ['1', auditFinding()],
+                // Прошлый понедельник — старше 8 суток при недельном аудите.
+                ['2', auditFinding({ at: '2026-11-08T22:30:00.000Z' })],
+            ]),
+        });
+
+        const summary = await service.send(
+            request([deal('1', 7, NEW_STUCK), deal('2', 8)]),
+            [],
+        );
+
+        expect(summary.auditForgotten).toBe(1);
+        const [message] = bitrix.message.add.mock.calls[0] as unknown as [
+            { MESSAGE: string },
+        ];
+        expect(message.MESSAGE).toContain('Из них забыты по аудиту: 1');
+        expect(message.MESSAGE).toContain(
+            '[i]ещё и по аудиту: без задач, нет работы 18 дней[/i]',
+        );
+    });
+
+    it('аудит раз в месяц — находка трёхнедельной давности ещё свежая', async () => {
+        const { service } = build({
+            frequency: 'monthly',
+            findings: new Map([
+                ['1', auditFinding({ at: '2026-10-31T22:30:00.000Z' })],
+            ]),
+        });
+
+        const summary = await service.send(
+            request([deal('1', 7, NEW_STUCK)]),
+            [],
+        );
+
+        expect(summary.auditForgotten).toBe(1);
+    });
+
+    it('хранилище находок не прочиталось — сводка уходит без пометок, причина в предупреждениях', async () => {
+        const { service, bitrix } = build({
+            findings: new Error('Redis недоступен'),
+        });
+        const warnings: string[] = [];
+
+        const summary = await service.send(
+            request([deal('1', 7, NEW_STUCK)]),
+            warnings,
+        );
+
+        expect(summary).toMatchObject({ sent: 1, auditForgotten: 0 });
+        expect(bitrix.message.add).toHaveBeenCalledTimes(1);
+        expect(warnings).toContain(
+            'находки аудита сделок не прочитаны — сводка без пометок: Redis недоступен',
         );
     });
 });

@@ -203,6 +203,7 @@ export class DealMovementRunService {
         const notified = await this.publish.publish({
             domain: ctx.domain,
             day: ctx.day,
+            now: ctx.now,
             timezone: ctx.timezone,
             nightly: !ctx.heldForNight,
             options,

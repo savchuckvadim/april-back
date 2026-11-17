@@ -40,6 +40,11 @@ export interface DealMovementDigestSummary {
     sent: number;
     /** Сколько не дошло ни одним каналом. */
     failed: number;
+    /**
+     * Сколько сделок ночи со свежей находкой аудита сделок («забыта»); нет
+     * у сводок до 18.11.2026 и у пропущенных.
+     */
+    auditForgotten?: number;
 }
 
 export const skippedDealMovementDigest = (
