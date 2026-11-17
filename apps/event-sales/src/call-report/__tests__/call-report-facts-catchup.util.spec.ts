@@ -181,7 +181,7 @@ describe('estimateFactsCatchupCost', () => {
         expect(estimate.message).toContain('догонам фактов');
     });
 
-    it('без своих записей — четверть полного разбора с пометкой «приблизительно»', () => {
+    it('без своих записей — пятая часть полного разбора с пометкой «приблизительно»', () => {
         const estimate = estimateFactsCatchupCost(
             [],
             [{ tokens_count: 8000, price: 4 }],
@@ -190,10 +190,10 @@ describe('estimateFactsCatchupCost', () => {
 
         expect(estimate).toMatchObject({
             basedOnRecords: 1,
-            avgTokens: 2000,
-            avgPrice: 1,
-            estimatedTokens: 20000,
-            estimatedPrice: 10,
+            avgTokens: 1600,
+            avgPrice: 0.8,
+            estimatedTokens: 16000,
+            estimatedPrice: 8,
         });
         expect(estimate.message).toContain('Приблизительно');
     });

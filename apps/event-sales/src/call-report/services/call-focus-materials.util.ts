@@ -8,7 +8,8 @@
  *   устаревший `call-analysis-base`, общие материалы компании, инструкция
  *   типа звонка;
  * - «содержание продажи» дополнительно получает плейбук возражений;
- * - «движение сделки» — регламент отдела;
+ * - проходы «возражения и цена» и «закрытие и следующий шаг» — регламент
+ *   отдела (оба);
  * - итог — эталонные разборы РОПа (калибровка шкалы оценок);
  * - проход методики — виды, которые методика портала объявила в `knowledge`
  *   (факты о продукте, плейбуки, регламент).
@@ -34,7 +35,7 @@ export interface FocusMaterials {
     shared: string;
     /** Плейбук возражений — проход «содержание продажи». */
     content: string;
-    /** Регламент отдела — проход «движение сделки». */
+    /** Регламент отдела — проходы «возражения и цена» и «закрытие». */
     movement: string;
     /** Эталонные разборы — итог (калибровка оценок). */
     synthesis: string;
@@ -166,7 +167,11 @@ export function renderFocusMaterials(input: {
 const withExtra = (shared: string, extra: string): string =>
     extra ? `${shared}\n\n${extra}` : shared;
 
-/** Контекст прохода разбора: общий слой + слой этого прохода. */
+/**
+ * Контекст прохода разбора: общий слой + слой этого прохода. Оба прохода
+ * «движения сделки» — «возражения и цена» и «закрытие и следующий шаг» —
+ * читают один регламент отдела.
+ */
 export function focusContextFor(
     materials: FocusMaterials,
     key: CallFocusKey,
@@ -174,7 +179,7 @@ export function focusContextFor(
     const extra =
         key === 'content'
             ? materials.content
-            : key === 'movement'
+            : key === 'movement' || key === 'closing'
               ? materials.movement
               : '';
     return withExtra(materials.shared, extra);

@@ -194,4 +194,29 @@ describe('AgentCallAnalysisDto (слои наследования)', () => {
 
         expect(errors.map(error => error.property)).toEqual(['dialog']);
     });
+
+    it('несобравшиеся части разбора: принимаются все фокус-проходы, включая closing; чужая часть отвергается', async () => {
+        const ok = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            incompleteParts: [
+                'form',
+                'content',
+                'movement',
+                'closing',
+                'synthesis',
+                'methodology',
+            ],
+        });
+        expect(await validate(ok, { whitelist: true })).toEqual([]);
+
+        // Прежнего единого прохода «движение сделки» под другим именем нет.
+        const bad = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            incompleteParts: ['closing', 'deal_movement'],
+        });
+        const errors = await validate(bad, { whitelist: true });
+        expect(errors.map(error => error.property)).toEqual([
+            'incompleteParts',
+        ]);
+    });
 });

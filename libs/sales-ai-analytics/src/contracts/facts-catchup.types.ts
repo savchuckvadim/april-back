@@ -158,9 +158,9 @@ export const FACTS_CATCHUP_DEFAULTS = {
     estimateLookbackDays: 30,
     /**
      * Нет своих записей расхода — оценка по полным разборам, делённым на
-     * число проходов (три фокуса и синтез): один короткий вызов за факты.
+     * число проходов (четыре фокуса и синтез): один короткий вызов за факты.
      */
-    fullAnalysisCalls: 4,
+    fullAnalysisCalls: 5,
     timeZone: 'Europe/Moscow',
     /** Версия расчёта в колонке model записей статуса. */
     calcVersion: 'facts-catchup-1.0.0',

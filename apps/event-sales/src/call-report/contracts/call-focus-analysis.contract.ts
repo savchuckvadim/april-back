@@ -1,26 +1,18 @@
 import {
-    CALL_REPORT_SECTIONS,
     CALL_REPORT_CALL_TYPE_CODES,
     CALL_REPORT_COACHING_CODES,
-    CALL_REPORT_COMPETITOR_CODES,
     CALL_REPORT_INTERLOCUTOR_CODES,
-    CALL_REPORT_REFUSAL_CODES,
     CALL_REPORT_SENTIMENT_CODES,
     CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
 import {
     DEEP_ANALYSIS_CORE_RULES,
-    FIVE_K_CHECKLIST_SPEC,
-    FIVE_K_ITEMS_SCHEMA,
-    HVOST_CHECKLIST_SPEC,
-    FLOW_SCHEMA,
-    HVOST_STEPS_SCHEMA,
-    NEXT_STEP_SCHEMA,
-    OBJECTION_SCHEMA,
-    OBJECTION_TIMECODE_SPEC,
     SECTION_FIELDS_SPEC,
-    SECTION_ITEM_SCHEMA,
 } from './call-deep-analysis.contract';
+import {
+    focusCatalog,
+    focusSectionsSchema,
+} from './call-focus-sections.contract';
 import {
     FORM_FACTS_PROPERTIES,
     FORM_FACTS_REQUIRED,
@@ -28,64 +20,35 @@ import {
     CONTENT_MOMENTS_REQUIRED,
     CONTENT_MOMENTS_SPEC,
     FORM_FACTS_SPEC,
-    MOVEMENT_FACTS_PROPERTIES,
-    MOVEMENT_FACTS_REQUIRED,
-    MOVEMENT_FACTS_SPEC,
 } from './call-report-facts.contract';
-import {
-    RISK_EVIDENCE_LIST_SCHEMA,
-    RISK_FLAGS_SCHEMA,
-    RISK_FLAGS_SPEC,
-} from './call-risk-flags.contract';
 
 /**
  * Контракт МНОГОСЛОЙНОГО разбора (Фаза 2 плана
  * ai/tasks/call-analysis-v2-plan.md): вместо одного гигантского вызова —
- * три ФОКУС-вызова с узкими схемами + синтез. Каждый фокус отвечает только
+ * четыре ФОКУС-вызова с узкими схемами + синтез. Каждый фокус отвечает только
  * за свои разделы и факты, поэтому глубже прорабатывает их и меньше
  * галлюцинирует; синтез собирает итоговую картину по выжимкам фокусов.
  *
  * Разделы смарта распределены между фокусами БЕЗ пересечений и БЕЗ пропусков
  * (проверяется тестом): FORM — форма разговора, CONTENT — содержание
- * продажи, MOVEMENT — движение сделки.
+ * продажи, MOVEMENT — возражения и цена, CLOSING — закрытие и следующий шаг.
+ * Зоны — в call-focus-sections.contract.ts, проходы MOVEMENT и CLOSING — в
+ * call-focus-deal.contract.ts; отсюда они переэкспортируются, чтобы остальной
+ * код брал весь контракт фокусов из одного места.
  */
 
-export type CallFocusKey = 'form' | 'content' | 'movement';
-
-/** Разделы каждого фокуса (union == все коды разделов смарта). */
-export const FOCUS_SECTION_CODES: Record<CallFocusKey, readonly string[]> = {
-    form: ['GREETING'],
-    content: ['NEEDS', 'PRESENTATION'],
-    movement: ['OBJECTIONS', 'PRICE', 'CLOSING', 'REFUSAL'],
-};
-
-/** Каталог разделов конкретного фокуса для промпта. */
-function focusCatalog(focus: CallFocusKey): string {
-    return CALL_REPORT_SECTIONS.filter(section =>
-        FOCUS_SECTION_CODES[focus].includes(section.code),
-    )
-        .map(section => `- '${section.code}' — ${section.title}`)
-        .join('\n');
-}
-
-/** sections-подсхема, ограниченная кодами фокуса. */
-function focusSectionsSchema(focus: CallFocusKey): Record<string, unknown> {
-    return {
-        type: 'array',
-        items: {
-            ...SECTION_ITEM_SCHEMA,
-            properties: {
-                ...SECTION_ITEM_SCHEMA.properties,
-                section: {
-                    type: 'string',
-                    enum: [...FOCUS_SECTION_CODES[focus]],
-                    description:
-                        'Код раздела; каждый код — не более одной записи в sections',
-                },
-            },
-        },
-    };
-}
+export {
+    FOCUS_KEYS,
+    FOCUS_SECTION_CODES,
+    type CallFocusKey,
+} from './call-focus-sections.contract';
+export {
+    DEAL_PROGRESS_SCHEMA,
+    FOCUS_CLOSING_PROMPT,
+    FOCUS_CLOSING_SCHEMA,
+    FOCUS_MOVEMENT_PROMPT,
+    FOCUS_MOVEMENT_SCHEMA,
+} from './call-focus-deal.contract';
 
 // ---------------------------------------------------------------------------
 // ФОКУС «ФОРМА»: вход в разговор, тон, речь. Оценивается всегда.
@@ -202,181 +165,8 @@ ${SECTION_FIELDS_SPEC}
 - productsOffered — что именно предлагали, по одному на пункт.
 ${CONTENT_MOMENTS_SPEC}`;
 
-/**
- * Продвижение сделки по звонку (раздел 7.1 материалов методики; ядро для
- * всех порталов с v3.0): шкала 1–5 с обязательным комментарием; null — для
- * типа звонка не применимо.
- */
-export const DEAL_PROGRESS_SCHEMA: Record<string, unknown> = {
-    type: ['object', 'null'],
-    properties: {
-        score: { type: 'integer', minimum: 1, maximum: 5 },
-        before: { type: 'string' },
-        after: { type: 'string' },
-        why: { type: 'string' },
-        whyNotHigher: { type: 'string' },
-    },
-    required: ['score', 'before', 'after', 'why', 'whyNotHigher'],
-    additionalProperties: false,
-};
-
 // ---------------------------------------------------------------------------
-// ФОКУС «ДВИЖЕНИЕ СДЕЛКИ»: возражения, цена, закрытие, следующий шаг.
-// ---------------------------------------------------------------------------
-
-export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
-    type: 'object',
-    properties: {
-        sections: focusSectionsSchema('movement'),
-        objections: { type: 'array', items: OBJECTION_SCHEMA },
-        priceDiscussed: { type: 'boolean' },
-        competitors: {
-            type: 'array',
-            items: { type: 'string', enum: [...CALL_REPORT_COMPETITOR_CODES] },
-        },
-        refusalCategory: {
-            type: ['string', 'null'],
-            enum: [...CALL_REPORT_REFUSAL_CODES, null],
-        },
-        refusalReason: { type: ['string', 'null'] },
-        nextStep: NEXT_STEP_SCHEMA,
-        dealProgress: DEAL_PROGRESS_SCHEMA,
-        productive: { type: 'boolean' },
-        riskFlags: RISK_FLAGS_SCHEMA,
-        // Доказательства флагов (focus-v2.4): флаг без цитаты снимается.
-        riskEvidence: RISK_EVIDENCE_LIST_SCHEMA,
-        // «Хвост» и «5К» — только для презентаций/решений, иначе null
-        // (boolean — фильтры смарта; *_Analysis — отдельные записи в
-        // таймлайн элемента).
-        hvostDone: { type: ['boolean', 'null'] },
-        hvostAnalysis: { type: ['string', 'null'] },
-        hvostSteps: HVOST_STEPS_SCHEMA,
-        fiveKDone: { type: ['boolean', 'null'] },
-        fiveKAnalysis: { type: ['string', 'null'] },
-        fiveKItems: FIVE_K_ITEMS_SCHEMA,
-        flow: FLOW_SCHEMA,
-        // Факты для отчётов руководителю (focus-v3.1, 06.11.2026): исход,
-        // сбои, цены, допродажа.
-        ...MOVEMENT_FACTS_PROPERTIES,
-    },
-    required: [
-        'sections',
-        'objections',
-        'priceDiscussed',
-        'competitors',
-        'refusalCategory',
-        'refusalReason',
-        'nextStep',
-        'dealProgress',
-        'productive',
-        'riskFlags',
-        'riskEvidence',
-        'hvostDone',
-        'hvostAnalysis',
-        'hvostSteps',
-        'fiveKDone',
-        'fiveKAnalysis',
-        'fiveKItems',
-        'flow',
-        ...MOVEMENT_FACTS_REQUIRED,
-    ],
-    additionalProperties: false,
-};
-
-export const FOCUS_MOVEMENT_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
-
-ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО ДВИЖЕНИЕ СДЕЛКИ: сопротивление клиента,
-цена, закрытие разговора и следующий шаг. Не оценивай приветствие и
-презентацию — этим занимаются другие проходы разбора. Твоя зона:
-${focusCatalog('movement')}
-
-ЖЕЛЕЗНОЕ ПРАВИЛО ФАКТОВ: если тема в разговоре НЕ звучала (цена не
-обсуждалась, возражений не было, конкуренты не упоминались) — ставь
-priceDiscussed=false, пустые массивы, relevance раздела по ситуации этапа —
-и НЕ выдумывай разбор несуществующей темы.
-
-${SECTION_FIELDS_SPEC}
-
-ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ТВОЕГО ФОКУСА
-- objections — каждое возражение: формулировка, отработка, удалось ли, дословная
-  цитата, категория и тема (topic — см. факты ниже). Считай возражением и
-  СКРЫТОЕ сопротивление: «у нас уже есть
-  Консультант», «пришлите на почту», «надо посоветоваться».
-  ${OBJECTION_TIMECODE_SPEC}
-- priceDiscussed — обсуждалась ли цена фактически.
-- competitors — конкуренты, упомянутые клиентом (коды справочника).
-- refusalCategory — при отказе: РЫНОЧНАЯ причина или ИСПОЛНИТЕЛЬСКАЯ; null без отказа.
-- refusalReason — ПРИЧИНА ОТКАЗА СЛОВАМИ КЛИЕНТА, одно-два предложения по
-  тому, что реально прозвучало: «работают с Консультантом, договор оплачен
-  до декабря», «руководитель не согласовал бюджет до конца года». Не код и
-  не пересказ этапа. Заполняй и при мягком отказе («не интересно»,
-  «перезвоните через год»), если причина в разговоре названа. Причина не
-  прозвучала или отказа не было — null, НЕ ДОГАДЫВАЙСЯ: это поле уходит в
-  карточку как факт разговора.
-- nextStep.set — договорились ли о КОНКРЕТНОМ шаге («клиент подумает» — не шаг);
-  description — что и когда; date — YYYY-MM-DD или null; time — время
-  контакта («11:00», «после обеда») или null; goal — цель контакта («узнать
-  решение», «показать директору») или null; clientAction — что клиент делает
-  до контакта, managerAction — что делает менеджер; не прозвучало — null.
-  Полный шаг — дата, время, цель и действия обеих сторон.
-- productive — состоялся ли контакт и есть ли продвижение по сделке.
-- dealProgress — ПРОДВИЖЕНИЕ СДЕЛКИ по этому звонку, шкала 1–5: 1 — ничего не
-  изменилось («снова подумать», причина не выявлена, обязательств нет);
-  2 — новая информация, но неопределённость (мнение получено, ЛПР определён,
-  общий барьер, назначен контакт); 3 — конкретный барьер и действие по его
-  снятию (ЛПР и критерии известны, клиент подтвердил ценность, шаг ведёт к
-  решению); 4 — принципиальное согласие (комплект, цена, срок в целом
-  согласованы, осталось оформление); 5 — закрыто (счёт, дата оплаты,
-  возражений нет). Правила: активность менеджера ≠ результат; новый звонок
-  ≠ продвижение; обязательство клиента сильнее обязательства менеджера;
-  интерес («удобно», «понравилось») ≠ намерение купить; «пришлите счёт,
-  покажу директору» — не выше 3; объективные ограничения (бюджетный
-  процесс, закупка) оценку не снижают, если коммерческое решение принято.
-  Поля: before — состояние до звонка, after — после, why — почему такая
-  оценка, whyNotHigher — почему не выше. Применимо к доработке, решению,
-  оплате и презентации, дошедшей до условий; для холодного, звонка под
-  показ, заявки с сайта, приглашения на мероприятие и нерелевантного — null.
-- hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
-  после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
-  механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
-  или «поработайте, я перезвоню» без даты — false. Для других типов — null.
-- hvostAnalysis — вместе с hvostDone: разбор прохождения хвоста по этапам,
-  каждый с новой строки, по ПЯТИ блокам «Хвоста» и в том же порядке, что в
-  анкете менеджера: «1. ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ — ✓/✗ …», «2. ЧТО
-  ПРЕДЛОЖИЛИ — …», «3. РЕАКЦИЯ НА ЦЕНУ — …», «4. ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ —
-  …», «5. ВЫХОД НА РЕШЕНИЕ — …»; в конце одна строка вывода. Для других
-  типов — null.
-- fiveKDone — ТОЛЬКО для презентации/звонка по решению: закрыты ли все пять
-  «К» (КЛИЕНТ, КОМПАНИЯ, КОЛЛЕГИ, КОНКУРЕНТ, КРИТЕРИИ ВЫБОРА). Хотя бы один
-  блок не выяснен — false. Для других типов — null.
-- fiveKAnalysis — вместе с fiveKDone: по каждому блоку с новой строки, что
-  выяснено (с конкретикой из разговора) или что осталось невыясненным:
-  «КЛИЕНТ — …», «КОМПАНИЯ — …», «КОЛЛЕГИ — …», «КОНКУРЕНТ — …»,
-  «КРИТЕРИИ ВЫБОРА — …». Для других типов — null. НЕВЫЯСНЕННОЕ — ТОЖЕ
-  РЕЗУЛЬТАТ: если ни одна «К» не выяснена, всё равно перечисли их все с
-  пометкой «не выяснено» — пустой разбор при заполненном итоге в карточке
-  выглядит как сбой системы.
-- hvostSteps — гранулярный «Хвост», ТЕ ЖЕ блоки, которые менеджер заполняет
-  в своей анкете (true = тема раскрыта в разговоре, false = должна была
-  прозвучать, но не прозвучала, null = тип звонка не презентация/решение):
-${HVOST_CHECKLIST_SPEC}
-- fiveKItems — гранулярные «5К», те же блоки анкеты менеджера
-  (true = выяснено в разговоре, false = не выяснено, null = не тот тип
-  звонка):
-${FIVE_K_CHECKLIST_SPEC}
-- flow — черновик отчёта менеджера: resultStatus result/noresult/expired;
-  noresultReasonCode только при noresult (secretar/nopickup/nonumber/busy/
-  noresult_notime/nocontact/giveup/bay/wrong/auto), иначе null; plan.isPlanned —
-  будет ли следующий контакт; plan.typeCode при isPlanned (cold/warm/
-  presentation/hot/moneyAwait/supply), иначе null; plan.name — короткое название;
-  plan.deadlineDate — YYYY-MM-DD или null.
-
-${MOVEMENT_FACTS_SPEC}
-
-${RISK_FLAGS_SPEC}`;
-
-// ---------------------------------------------------------------------------
-// СИНТЕЗ: итоговая картина по выжимкам трёх фокусов.
+// СИНТЕЗ: итоговая картина по выжимкам четырёх фокусов.
 // ---------------------------------------------------------------------------
 
 export const FOCUS_SYNTHESIS_SCHEMA: Record<string, unknown> = {
@@ -420,10 +210,10 @@ export const FOCUS_SYNTHESIS_SCHEMA: Record<string, unknown> = {
 
 export const FOCUS_SYNTHESIS_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
 
-ТВОЯ ЗАДАЧА — ИТОГОВАЯ КАРТИНА ЗВОНКА. Три специализированных разбора уже
-выполнены (форма разговора, содержание продажи, движение сделки) — их выводы
-приложены в сообщении пользователя вместе с транскриптом. Не пересматривай их
-оценки — собери из них целое:
+ТВОЯ ЗАДАЧА — ИТОГОВАЯ КАРТИНА ЗВОНКА. Четыре специализированных разбора уже
+выполнены (форма разговора, содержание продажи, возражения и цена, закрытие и
+следующий шаг) — их выводы приложены в сообщении пользователя вместе с
+транскриптом. Не пересматривай их оценки — собери из них целое:
 - summary — два смысловых блока в одном тексте. Сначала канва разговора: кто
   кому звонил, что предложили, чем закончилось, с именами и конкретикой.
   Затем — что обещали мы, что обещал клиент, и какие вопросы менеджер задал.

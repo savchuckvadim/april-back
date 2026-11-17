@@ -274,7 +274,7 @@ describe('CallReportProcessor (стадии)', () => {
             '42',
             expect.any(String),
             expect.objectContaining({
-                incompleteParts: ['form', 'content', 'movement'],
+                incompleteParts: ['form', 'content', 'movement', 'closing'],
             }),
         );
     });
@@ -346,7 +346,7 @@ describe('CallReportProcessor (стадии)', () => {
             '42',
             'call-report-analyzer',
             expect.objectContaining({
-                incompleteParts: ['form', 'content', 'movement'],
+                incompleteParts: ['form', 'content', 'movement', 'closing'],
             }),
         );
         expect(repairStore.markFailed).not.toHaveBeenCalled();

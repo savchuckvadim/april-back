@@ -367,8 +367,8 @@ export class CallReportProcessor {
             // [mm:ss] в startSec/endSec цитат; без сегментов — текст.
             const transcript =
                 renderTranscriptWithTimecodes(row.segments ?? []) || row.text;
-            // Режим разбора: focus — три фокус-вызова + синтез (Фаза 2 плана
-            // v2, глубже и точнее, ×1.5 вызовов); иначе — цельный разбор.
+            // Режим разбора: focus — четыре фокус-вызова + синтез (Фаза 2
+            // плана v2, глубже и точнее); иначе — цельный разбор.
             const model = settings.deepAnalysisModel ?? undefined;
             // Штатный режим — многослойный фокус-разбор (Фаза 2 плана v2:
             // глубже и точнее). Цельный CallDeepAnalysisService — страховка:
