@@ -19,9 +19,23 @@ import {
     type CallAnalysisPart,
 } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
-    FOCUS_KEYS,
     FOCUS_SECTION_CODES,
+    type CallFocusKey,
 } from '../contracts/call-focus-analysis.contract';
+
+/**
+ * Зоны для записей БЕЗ пометки. «Возражения и цена» и «закрытие» идут одной
+ * зоной — как до деления прохода «движение сделки» (17.11.2026). Наш разбор
+ * пометку ставит всегда, поэтому запись без неё — старая или от внешнего
+ * агента, и судить по её разделам о каждой половине отдельно нельзя: звонок
+ * без возражений и цены остаётся полным, как и раньше, и догон не переделывает
+ * здоровые разборы.
+ */
+const UNMARKED_ZONES: readonly (readonly CallFocusKey[])[] = [
+    ['form'],
+    ['content'],
+    ['movement', 'closing'],
+];
 
 /** С какого момента записи без пометки проверяются по содержимому. */
 export const REPAIR_LEGACY_SINCE = new Date('2026-11-10T00:00:00.000Z');
@@ -104,8 +118,10 @@ export function incompletePartsOf(
     }
     if (record.createdAt.getTime() < REPAIR_LEGACY_SINCE.getTime()) return [];
     const codes = sectionCodesOf(result);
-    const parts: CallAnalysisPart[] = FOCUS_KEYS.filter(
-        key => !FOCUS_SECTION_CODES[key].some(code => codes.has(code)),
+    const parts: CallAnalysisPart[] = UNMARKED_ZONES.flatMap(zone =>
+        zone.some(key => FOCUS_SECTION_CODES[key].some(code => codes.has(code)))
+            ? []
+            : [...zone],
     );
     const score = result.score;
     if (typeof score !== 'number' || !Number.isFinite(score)) {

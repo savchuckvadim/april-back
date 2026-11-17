@@ -12,11 +12,13 @@ import {
 const AFTER = new Date(REPAIR_LEGACY_SINCE.getTime() + 19 * 60 * 60 * 1000);
 const BEFORE = new Date(REPAIR_LEGACY_SINCE.getTime() - 60 * 60 * 1000);
 
-/** По разделу из зоны каждого из четырёх фокус-проходов. */
+/**
+ * По разделу из каждой зоны записи без пометки: «возражения и цена» и
+ * «закрытие» у таких записей — одна зона, как до деления прохода.
+ */
 const FULL_SECTIONS = [
     { section: 'GREETING' },
     { section: 'NEEDS' },
-    { section: 'PRICE' },
     { section: 'CLOSING' },
 ];
 
@@ -69,7 +71,26 @@ describe('incompletePartsOf', () => {
         ).toEqual(['movement', 'closing', 'synthesis']);
     });
 
-    it('без пометки: нет только зоны «закрытия» (CLOSING, REFUSAL) — недостающий проход closing', () => {
+    it('без пометки: «возражения и цена» и «закрытие» — одна зона, как до деления прохода', () => {
+        // Любой один раздел из четырёх закрывает обе половины: звонок без
+        // возражений и цены остаётся полным, догон его не переделывает.
+        for (const section of ['OBJECTIONS', 'PRICE', 'CLOSING', 'REFUSAL']) {
+            expect(
+                incompletePartsOf(
+                    record({
+                        user_result: {
+                            score: 70,
+                            sections: [
+                                { section: 'GREETING' },
+                                { section: 'NEEDS' },
+                                { section },
+                            ],
+                        },
+                    }),
+                ),
+            ).toEqual([]);
+        }
+        // Нет ни одного из четырёх — недостают оба прохода.
         expect(
             incompletePartsOf(
                 record({
@@ -78,28 +99,11 @@ describe('incompletePartsOf', () => {
                         sections: [
                             { section: 'GREETING' },
                             { section: 'NEEDS' },
-                            { section: 'OBJECTIONS' },
                         ],
                     },
                 }),
             ),
-        ).toEqual(['closing']);
-        // Зона «закрытия» закрыта любым из её двух кодов.
-        expect(
-            incompletePartsOf(
-                record({
-                    user_result: {
-                        score: 70,
-                        sections: [
-                            { section: 'GREETING' },
-                            { section: 'NEEDS' },
-                            { section: 'OBJECTIONS' },
-                            { section: 'REFUSAL' },
-                        ],
-                    },
-                }),
-            ),
-        ).toEqual([]);
+        ).toEqual(['movement', 'closing']);
     });
 
     it('пометка с проходом closing принимается как есть', () => {
