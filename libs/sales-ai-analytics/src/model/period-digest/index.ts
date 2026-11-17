@@ -21,3 +21,4 @@ export * from './period-digest.recommend';
 export * from './period-digest.weekly-steps';
 export * from './period-digest.rop';
 export * from './period-digest.card';
+export * from './period-digest.settings';
