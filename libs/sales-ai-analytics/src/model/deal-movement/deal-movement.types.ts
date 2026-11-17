@@ -34,7 +34,11 @@ export const DEAL_MOVEMENT_REASONS = [
 ] as const;
 export type DealMovementReason = (typeof DEAL_MOVEMENT_REASONS)[number];
 
-/** Смена стадии сделки. */
+/**
+ * Смена стадии сделки. Порядок — ступень лестницы «ОП Основная»
+ * (`PBX_DEAL_SALES_BASE_STAGES`): закрытые стадии (успех, провал и прочие
+ * финалы) — от `PBX_DEAL_SALES_BASE_WON_ORDER` и выше.
+ */
 export interface DealMovementTransition {
     /** Момент перехода, ISO 8601. */
     at: string;
@@ -58,6 +62,16 @@ export interface DealMovementDossier {
     dealId: string;
     /** Когда сделка вошла в текущую стадию, ISO 8601. */
     stageEnteredAt: string;
+    /**
+     * Порядок текущей стадии в лестнице; null — стадия вне лестницы
+     * (тогда текущей считается стадия последнего перехода).
+     */
+    stageOrder: number | null;
+    /**
+     * Последняя активность по сделке (`LAST_ACTIVITY_TIME`), ISO 8601;
+     * null — неизвестна. Свежая активность снимает «застряла».
+     */
+    lastActivityAt: string | null;
     /** Смены стадий сделки (любой порядок). */
     transitions: readonly DealMovementTransition[];
     /** Обычный срок стадии на портале, дней (p90 факта); null — ряд короткий. */
@@ -68,7 +82,10 @@ export interface DealMovementDossier {
     amount: number | null;
     /** Разборы звонков по сделке (любой порядок). */
     calls: readonly DealMovementCall[];
-    /** Моменты закрытия дел и задач по сделке, ISO 8601. */
+    /**
+     * Моменты контакта по сделке помимо разобранных звонков, ISO 8601:
+     * закрытые дела и задачи либо последняя активность по сделке.
+     */
     closedActivitiesAt: readonly string[];
     /** Сделка в списке «забытых» аудита сделок; null — аудит не считался. */
     forgotten: boolean | null;

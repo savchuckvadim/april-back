@@ -35,6 +35,8 @@ const dossier = (
 ): DealMovementDossier => ({
     dealId: '9041',
     stageEnteredAt: at(11),
+    stageOrder: null,
+    lastActivityAt: null,
     transitions: [],
     stageNormDays: null,
     stageChance: null,
@@ -64,24 +66,75 @@ describe('статус сделки по досье', () => {
     });
 
     it('откатилась: стадия ушла назад за окно; старый откат и переход на ту же стадию не считаются', () => {
+        // «Отправлены» (7) → «Доработка» (5).
         expect(
             verdictOf({
-                transitions: [{ at: at(10), fromOrder: 40, toOrder: 20 }],
+                stageOrder: 5,
+                transitions: [{ at: at(10), fromOrder: 7, toOrder: 5 }],
             }),
         ).toMatchObject({ status: 'rolled_back', reasons: ['stage_back'] });
 
         expect(
             verdictOf({
+                stageOrder: 5,
                 transitions: [
                     {
                         at: '2026-10-20T12:00:00.000Z',
-                        fromOrder: 40,
-                        toOrder: 20,
+                        fromOrder: 7,
+                        toOrder: 5,
                     },
-                    { at: at(10), fromOrder: 20, toOrder: 20 },
+                    { at: at(10), fromOrder: 5, toOrder: 5 },
                 ],
             }).status,
         ).toBe('moving');
+    });
+
+    it('откат — ступень ниже самой высокой в окне: возврат на прежнюю ступень и переоткрытие откатом не считаются', () => {
+        // Повторная заявка: «Отправлены» → «Новая» → обратно «Отправлены».
+        expect(
+            verdictOf({
+                stageOrder: 7,
+                transitions: [
+                    { at: at(8), fromOrder: 7, toOrder: 1 },
+                    { at: at(9), fromOrder: 1, toOrder: 7 },
+                ],
+            }).status,
+        ).toBe('moving');
+        // Реанимация: «Отказ» (12) → «Холодные» (2) — начинает заново и
+        // продвижением стадии тоже не считается.
+        expect(
+            verdictOf({
+                stageOrder: 2,
+                transitions: [{ at: at(9), fromOrder: 12, toOrder: 2 }],
+            }),
+        ).toMatchObject({ status: 'moving', reasons: ['no_signals'] });
+        // В окне: «Отправлены» → «Отказ» → переоткрыта в «Тёплые».
+        expect(
+            verdictOf({
+                stageOrder: 3,
+                transitions: [
+                    { at: at(5), fromOrder: 7, toOrder: 12 },
+                    { at: at(9), fromOrder: 12, toOrder: 3 },
+                ],
+            }).status,
+        ).toBe('moving');
+        // Текущая стадия вне лестницы — берётся стадия последнего перехода.
+        expect(
+            verdictOf({
+                stageOrder: null,
+                transitions: [{ at: at(10), fromOrder: 7, toOrder: 5 }],
+            }).status,
+        ).toBe('rolled_back');
+        // Откат и снова вперёд, но не до прежней высоты — всё ещё откат.
+        expect(
+            verdictOf({
+                stageOrder: 6,
+                transitions: [
+                    { at: at(8), fromOrder: 8, toOrder: 5 },
+                    { at: at(9), fromOrder: 5, toOrder: 6 },
+                ],
+            }).status,
+        ).toBe('rolled_back');
     });
 
     it('застряла: в стадии дольше обычного срока портала и звонков за окно нет', () => {
@@ -109,6 +162,23 @@ describe('статус сделки по досье', () => {
                 calls: [call(12, { progress: 3 })],
             }).status,
         ).toBe('moving');
+    });
+
+    it('застряла — только без активности по сделке за окно: разобраны не все звонки', () => {
+        const longInStage = { stageEnteredAt: '2026-10-01T12:00:00.000Z' };
+
+        expect(
+            verdictOf({ ...longInStage, lastActivityAt: at(12) }).status,
+        ).toBe('moving');
+        expect(
+            verdictOf({
+                ...longInStage,
+                lastActivityAt: '2026-10-25T12:00:00.000Z',
+            }).status,
+        ).toBe('stuck');
+        expect(
+            verdictOf({ ...longInStage, lastActivityAt: 'не дата' }).status,
+        ).toBe('stuck');
     });
 
     it('под риском: договорённость просрочена — дата прошла, контакта после неё не было', () => {
@@ -205,9 +275,23 @@ describe('статус сделки по досье', () => {
             verdictOf({
                 stageEnteredAt: at(6),
                 calls: [call(2, { progress: 5 })],
-                transitions: [{ at: at(6), fromOrder: 30, toOrder: 40 }],
+                transitions: [{ at: at(6), fromOrder: 3, toOrder: 4 }],
             }),
         ).toMatchObject({ status: 'moving', reasons: ['stage_forward'] });
+        // Истории стадий нет (сдвиг был до окна), но вход в текущую стадию
+        // позже звонка с согласием — стадия после согласия сдвинулась.
+        expect(
+            verdictOf({
+                stageEnteredAt: '2026-10-30T12:00:00.000Z',
+                calls: [
+                    {
+                        at: '2026-10-25T12:00:00.000Z',
+                        progress: 5,
+                        nextStep: null,
+                    },
+                ],
+            }).reasons,
+        ).not.toContain('agreed_but_still');
         // Согласие свежее — ещё рано тревожиться.
         expect(verdictOf({ calls: [call(10, { progress: 4 })] }).status).toBe(
             'moving',
@@ -256,7 +340,8 @@ describe('статус сделки по досье', () => {
             verdictOf({
                 stageEnteredAt: '2026-10-01T12:00:00.000Z',
                 forgotten: true,
-                transitions: [{ at: at(10), fromOrder: 40, toOrder: 20 }],
+                stageOrder: 5,
+                transitions: [{ at: at(10), fromOrder: 7, toOrder: 5 }],
             }).status,
         ).toBe('rolled_back');
         expect(
@@ -270,7 +355,7 @@ describe('статус сделки по досье', () => {
     it('движется: стадия вперёд и последний звонок продвинул сделку', () => {
         expect(
             verdictOf({
-                transitions: [{ at: at(11), fromOrder: 20, toOrder: 30 }],
+                transitions: [{ at: at(11), fromOrder: 2, toOrder: 3 }],
                 calls: [call(12, { progress: 3 })],
             }),
         ).toMatchObject({
@@ -284,7 +369,7 @@ describe('статус сделки по досье', () => {
             verdictOf({
                 stageEnteredAt: 'не дата',
                 calls: [{ at: 'мусор', progress: 1, nextStep: null }],
-                transitions: [{ at: '', fromOrder: 40, toOrder: 20 }],
+                transitions: [{ at: '', fromOrder: 7, toOrder: 5 }],
                 closedActivitiesAt: ['???'],
             }),
         ).toMatchObject({ status: 'moving', reasons: ['no_signals'] });
@@ -319,7 +404,7 @@ describe('статус сделки словами', () => {
                 }),
             ),
         ).toBe(
-            'Застряла: в стадии 46 дней при обычных 30, звонков за последнее время нет',
+            'Застряла: в стадии 46 дней при сроке 30 дней, работы по сделке за последнее время нет',
         );
         expect(
             dealMovementLine(
