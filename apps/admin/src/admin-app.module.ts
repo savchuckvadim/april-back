@@ -73,6 +73,7 @@ import { SupportMonitorAdminModule } from '@lib/support';
 import { LogsAdminModule } from '@lib/logger/query';
 import { CabinetAdminModule } from '@lib/cabinet';
 import {
+    SiteArticlesAdminModule,
     SiteMediaAdminModule,
     SiteMediaLibraryAdminModule,
 } from '@lib/site-content';
@@ -211,6 +212,10 @@ import {
         // для статей всех разделов — строки site_media, файлы в разделе
         // library того же хранилища; только суперпользователь.
         SiteMediaLibraryAdminModule,
+        // Статьи сайта (17.11.2026): главы ai и process-sales поверх текста
+        // из кода, открытый раздел статей; черновики, версии, публикация
+        // (только суперпользователь), медиа в статье.
+        SiteArticlesAdminModule,
     ],
 })
 export class AdminAddModule {}
