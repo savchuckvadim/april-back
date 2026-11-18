@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import type { TranscriptSegment } from '@lib/call-lib';
+import { callTypeHasChecklists, type TranscriptSegment } from '@lib/call-lib';
 import {
     EVIDENCE_CHECKS,
     evidenceIndexOf,
@@ -111,6 +111,26 @@ function tallyLine(tally: EvidenceTally): string {
     );
 }
 
+/**
+ * Пометка журнала: итоговый тип — презентация, а задание с цитатами
+ * строилось по другому типу, поэтому «хвоста» и 5К в разборе нет. Так
+ * видно, как часто тип меняется после синтеза.
+ */
+function taskTypeNote(dto: AgentCallAnalysisDto): string {
+    const task = dto.taskCallType;
+    if (
+        task === undefined ||
+        !callTypeHasChecklists(dto.callType) ||
+        callTypeHasChecklists(task)
+    ) {
+        return '';
+    }
+    return (
+        `; итоговый тип «${dto.callType}», задание — по типу «${task ?? 'не определён'}»: ` +
+        '«хвоста» и 5К в разборе нет'
+    );
+}
+
 /** Проверка мест разбора по расшифровке; разбор без мест — как есть. */
 export function verifyAnalysisEvidence(
     transcriptionId: string,
@@ -151,7 +171,8 @@ export function verifyAnalysisEvidence(
             : {}),
     };
     logger.log(
-        `Цитаты разбора (transcription ${transcriptionId}): ${tallyLine(checker.tally)}`,
+        `Цитаты разбора (transcription ${transcriptionId}): ${tallyLine(checker.tally)}` +
+            taskTypeNote(dto),
     );
     return checked;
 }

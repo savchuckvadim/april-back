@@ -18,7 +18,6 @@ import { StructuredLlmGateway, isRetryableLlmError } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
-    AFTER_PRESENTATION_STRICT_BLOCK,
     DECISION_CALL_BLOCK,
     EVENT_INVITE_CALL_BLOCK,
     REFINE_CALL_BLOCK,
@@ -28,7 +27,7 @@ import {
 } from '../contracts/call-deep-analysis.contract';
 import {
     QUOTE_EVIDENCE_ENABLED,
-    checklistsAskedFor,
+    afterPresentationBlockFor,
 } from '../contracts/call-evidence.contract';
 import { promptVersionFor } from '../contracts/call-report-versions.const';
 import { sumCompletionUsage } from './call-analysis-usage.util';
@@ -212,26 +211,24 @@ export class CallFocusAnalysisService {
      * Ужесточение «5К и хвост»: на порталах с обязательной отчётностью
      * после презентации (event-sales `withCheckPresentation`) разбор
      * презентационных/решенческих звонков строже требует закрытие. С
-     * цитатами (focus-v3.4) «хвост» и 5К есть только у презентации — блок
-     * идёт только ей. Fail-open: настройки не прочитались — разбор без блока.
+     * цитатами (focus-v3.4) требования к «хвосту» и 5К — только у
+     * презентации, правило оценки закрытия — как раньше
+     * (afterPresentationBlockFor). Fail-open: настройки не прочитались —
+     * разбор без блока.
      */
     private async buildAfterPresentationBlock(
         domain: string,
         callType: string | null,
         quoteEvidence: boolean,
     ): Promise<string> {
-        const applies = quoteEvidence
-            ? checklistsAskedFor(callType)
-            : callType === 'presentation' || callType === 'decision';
-        if (!applies) return '';
+        const block = afterPresentationBlockFor(callType, quoteEvidence);
+        if (block === '') return '';
         try {
             const settings = await this.appSettings.resolve(
                 domain,
                 EnumPortalAppCode.eventSales,
             );
-            return settings.withCheckPresentation
-                ? AFTER_PRESENTATION_STRICT_BLOCK
-                : '';
+            return settings.withCheckPresentation ? block : '';
         } catch (error) {
             this.logger.warn(
                 `Настройки event-sales недоступны (${domain}): ${(error as Error).message}`,
@@ -527,6 +524,9 @@ export class CallFocusAnalysisService {
             // Был ли скрипт разговора в материалах — по сборке, не по
             // ответу модели: без скрипта приём обнулит процент соответствия.
             dto.scriptIncluded = materials.scriptIncluded;
+            // Тип, по которому строилось задание с цитатами: «хвост» и 5К в
+            // нём только у презентации (журнал приёма сверяет с итоговым).
+            if (quoteEvidence) dto.taskCallType = callType;
             // Неполный разбор уносит ответы выживших проходов — догону
             // останется позвать только недостающее. Полный их не несёт.
             if (incompleteParts.length > 0) {

@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
 import {
+    AFTER_PRESENTATION_CLOSING_RULE,
+    AFTER_PRESENTATION_STRICT_BLOCK,
+} from '../contracts/call-deep-analysis.contract';
+import {
     FOCUS_CLOSING_SCHEMA,
     FOCUS_CONTENT_SCHEMA,
 } from '../contracts/call-focus-analysis.contract';
@@ -189,26 +193,54 @@ describe('CallFocusAnalysisService — задание с цитатами', () =
         ).toEqual([]);
     });
 
-    it('с цитатами блок обязательной отчётности «5К и хвост» идёт только презентации', async () => {
-        const decision = makeDeps({ withCheckPresentation: true });
-        await decision.service.run(
+    it('обязательная отчётность с цитатами: у решения — правило закрытия без «хвоста» и 5К, у презентации — весь блок, без цитат — прежний блок', async () => {
+        const run = async (
+            callType: string,
+            quoteEvidence?: boolean,
+        ): Promise<string> => {
+            const deps = makeDeps({ withCheckPresentation: true });
+            await deps.service.run(
+                'test.bitrix24.ru',
+                'текст',
+                callType,
+                undefined,
+                quoteEvidence === undefined ? undefined : { quoteEvidence },
+            );
+            return callOf(deps.llm, 'call_focus_form').system;
+        };
+
+        const decision = await run('decision', true);
+        expect(decision).toContain(AFTER_PRESENTATION_CLOSING_RULE);
+        expect(decision).not.toContain('«хвост»');
+        expect(decision).not.toContain('5К');
+
+        expect(await run('presentation', true)).toContain(
+            AFTER_PRESENTATION_STRICT_BLOCK,
+        );
+        expect(await run('decision')).toContain(
+            AFTER_PRESENTATION_STRICT_BLOCK,
+        );
+        expect(await run('refine', true)).not.toContain(
+            'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
+        );
+    });
+
+    it('с цитатами разбор помнит тип, по которому строилось задание; без цитат — нет', async () => {
+        const quoted = await makeDeps().service.run(
             'test.bitrix24.ru',
             'текст',
-            'decision',
+            'refine',
             undefined,
-            {
-                quoteEvidence: true,
-            },
+            { quoteEvidence: true },
         );
-        expect(callOf(decision.llm, 'call_focus_form').system).not.toContain(
-            'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
-        );
+        expect(quoted?.taskCallType).toBe('refine');
 
-        const legacy = makeDeps({ withCheckPresentation: true });
-        await legacy.service.run('test.bitrix24.ru', 'текст', 'decision');
-        expect(callOf(legacy.llm, 'call_focus_form').system).toContain(
-            'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
+        const legacy = await makeDeps().service.run(
+            'test.bitrix24.ru',
+            'текст',
+            'refine',
         );
+        expect(legacy?.taskCallType).toBeUndefined();
     });
 
     it('неполный разбор с цитатами сохраняет проходы с версией 3.4 — догон прежней версии их не возьмёт', async () => {

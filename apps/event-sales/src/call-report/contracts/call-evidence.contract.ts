@@ -3,6 +3,11 @@ import {
     HVOST_STEP_KEYS,
     callTypeHasChecklists,
 } from '@lib/call-lib';
+import type { CallReportCallTypeCode } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    AFTER_PRESENTATION_STRICT_BLOCK,
+    renderAfterPresentationBlock,
+} from './call-deep-analysis.contract';
 import { MOMENT_SEC_SCHEMA } from './call-report-facts.contract';
 
 /**
@@ -38,6 +43,35 @@ export interface FocusPassOptions {
  */
 export function checklistsAskedFor(callType: string | null): boolean {
     return callTypeHasChecklists(callType);
+}
+
+/**
+ * Типы звонков, которым идёт блок обязательной отчётности после презентации
+ * (настройка портала withCheckPresentation) — как было до цитат.
+ */
+export const AFTER_PRESENTATION_CALL_TYPES = [
+    'presentation',
+    'decision',
+] as const satisfies readonly CallReportCallTypeCode[];
+
+/**
+ * Блок обязательной отчётности для типа звонка (настройку портала
+ * проверяет вызывающий). Без цитат — прежний блок. С цитатами требования
+ * к «хвосту» и 5К — только у презентации, а правило оценки закрытия (не
+ * выше 5 без даты следующего шага) — у тех же типов, что раньше: решение
+ * владельца 18.11.2026 касалось показа чек-листов, не правил оценки.
+ */
+export function afterPresentationBlockFor(
+    callType: string | null,
+    quoteEvidence: boolean,
+): string {
+    const applies =
+        callType !== null &&
+        (AFTER_PRESENTATION_CALL_TYPES as readonly string[]).includes(callType);
+    if (!applies) return '';
+    return quoteEvidence
+        ? renderAfterPresentationBlock(checklistsAskedFor(callType))
+        : AFTER_PRESENTATION_STRICT_BLOCK;
 }
 
 /** Цитата и секунда раздела — дописываются в схему записи раздела. */

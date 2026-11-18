@@ -11,9 +11,12 @@ import {
     NEED_ITEMS_SPEC,
     QUOTE_EVIDENCE_ENABLED,
     SECTION_EVIDENCE_SPEC,
+    afterPresentationBlockFor,
     checklistsAskedFor,
 } from '../contracts/call-evidence.contract';
 import {
+    AFTER_PRESENTATION_CLOSING_RULE,
+    AFTER_PRESENTATION_STRICT_BLOCK,
     CALL_DEEP_ANALYSIS_SCHEMA,
     CALL_DEEP_ANALYSIS_SYSTEM_PROMPT,
 } from '../contracts/call-deep-analysis.contract';
@@ -50,6 +53,9 @@ const ORIGINAL_HASHES: Record<string, string> = {
     movement:
         'c7c37cde1d36173b1c91b1b53ca48f189553a20790cebf5052084756e348f95f',
     closing: '8f32208834f59cb50ef7a9f091b83306181daf970ac96cb4404a3d8e5e02fef1',
+    // Блок обязательной отчётности после презентации (withCheckPresentation).
+    afterPresentation:
+        '327ec4f9e9e222165ef5a6ca36231049ba2d48fd9f9700b15ad4c3dd5a331251',
     deep: 'f87c1d18bea87cbfcb45e75ee06c1b246dba3a8ea627d7a1cae2833c66cca559',
 };
 
@@ -106,6 +112,22 @@ describe('задание фокус-проходов: выключатель ц�
                 schema: CALL_DEEP_ANALYSIS_SCHEMA,
             }),
         ).toBe(ORIGINAL_HASHES.deep);
+        expect(
+            createHash('sha256')
+                .update(AFTER_PRESENTATION_STRICT_BLOCK)
+                .digest('hex'),
+        ).toBe(ORIGINAL_HASHES.afterPresentation);
+    });
+
+    it('обязательная отчётность без цитат — прежний блок у презентации и решения', () => {
+        for (const callType of ['presentation', 'decision']) {
+            expect(afterPresentationBlockFor(callType, false)).toBe(
+                AFTER_PRESENTATION_STRICT_BLOCK,
+            );
+        }
+        for (const callType of ['refine', 'cold', null]) {
+            expect(afterPresentationBlockFor(callType, false)).toBe('');
+        }
     });
 
     it('версия с цитатами 3.4 — в общей серии оценок', () => {
@@ -227,6 +249,20 @@ describe('задание с цитатами (focus-v3.4)', () => {
             expect(closing.prompt).not.toContain('hvost');
             expect(closing.prompt).not.toContain('«хвост»');
             expect(closing.prompt).not.toContain(CHECKLIST_EVIDENCE_SPEC);
+        }
+    });
+
+    it('обязательная отчётность: у решения — правило оценки закрытия без «хвоста» и 5К, у презентации — весь блок', () => {
+        const decision = afterPresentationBlockFor('decision', true);
+        expect(decision).toContain(AFTER_PRESENTATION_CLOSING_RULE);
+        expect(decision).toContain('не выше 5');
+        expect(decision).not.toContain('«хвост»');
+        expect(decision).not.toContain('5К');
+        expect(afterPresentationBlockFor('presentation', true)).toBe(
+            AFTER_PRESENTATION_STRICT_BLOCK,
+        );
+        for (const callType of ['refine', 'cold', null]) {
+            expect(afterPresentationBlockFor(callType, true)).toBe('');
         }
     });
 

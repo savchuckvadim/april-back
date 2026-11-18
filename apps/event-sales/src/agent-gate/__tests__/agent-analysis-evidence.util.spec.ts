@@ -149,6 +149,50 @@ describe('места разбора в разговоре — проверка �
         expect(checked.fiveKEvidence).toBeNull();
     });
 
+    it('итоговый тип «презентация», а задание строилось по другому — пометка в журнале', () => {
+        const { logger, log } = makeLogger();
+        const base = {
+            needItems: [
+                {
+                    need: 'НДС',
+                    quote: 'проверяем контрагентов постоянно',
+                    startSec: 30,
+                },
+            ],
+        };
+        verifyAnalysisEvidence(
+            '11',
+            {
+                ...base,
+                callType: 'presentation',
+                taskCallType: 'refine',
+            } as unknown as AgentCallAnalysisDto,
+            TIMING,
+            logger,
+        );
+        expect(log).toHaveBeenLastCalledWith(
+            expect.stringContaining(
+                '; итоговый тип «presentation», задание — по типу «refine»: «хвоста» и 5К в разборе нет',
+            ),
+        );
+
+        for (const dto of [
+            { ...base, callType: 'presentation', taskCallType: 'presentation' },
+            { ...base, callType: 'refine', taskCallType: 'refine' },
+            { ...base, callType: 'presentation' },
+        ]) {
+            verifyAnalysisEvidence(
+                '12',
+                dto as unknown as AgentCallAnalysisDto,
+                TIMING,
+                logger,
+            );
+            expect(log).toHaveBeenLastCalledWith(
+                expect.not.stringContaining('итоговый тип'),
+            );
+        }
+    });
+
     it('без реплик (старая расшифровка) — только «внутри записи»', () => {
         const { logger } = makeLogger();
         const dto = {

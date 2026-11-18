@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsOptional, ValidateNested } from 'class-validator';
 import { AgentCallAnalysisContentDto } from './agent-call-analysis-content.dto';
@@ -50,4 +50,14 @@ export class AgentCallAnalysisEvidenceDto extends AgentCallAnalysisContentDto {
     @ValidateNested({ each: true })
     @Type(() => AgentChecklistEvidenceDto)
     fiveKEvidence?: AgentChecklistEvidenceDto[] | null;
+
+    /**
+     * Служебное: тип звонка, по которому строилось задание фокус-разбора с
+     * цитатами (приор классификатора). Итоговый тип может стать другим после
+     * синтеза — тогда у презентации нет «хвоста» и 5К; приём отмечает это в
+     * журнале. Ставит код, из тела запроса не принимается (без декораторов
+     * class-validator whitelist вырезает поле).
+     */
+    @ApiHideProperty()
+    taskCallType?: string | null;
 }
