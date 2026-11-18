@@ -69,6 +69,21 @@ export const AI_ABOUT_NORM_PARAMS = [
 ] as const satisfies readonly AiAnalyticsParamCode[];
 
 /**
+ * Коды прогноза «от презентаций» (метод presentations-v2, 17.11.2026):
+ * сдвиг продажи после презентации, окно и пороги подбора, усадка доли
+ * менеджера. Их читает ночной шаг прогноза, а значит, и план дня.
+ */
+export const AI_ABOUT_FORECAST_FLOW_PARAMS = [
+    'forecast_lag_max_months',
+    'forecast_lag_rho_default',
+    'forecast_flow_window_months',
+    'forecast_flow_fit_min_months',
+    'forecast_flow_min_presentations',
+    'forecast_q_max',
+    'forecast_q_kappa',
+] as const satisfies readonly AiAnalyticsParamCode[];
+
+/**
  * Коды ступеней готовности Фазы 4 (прогноз и советы с эффектом): флаги
  * показа и гейты — их читает готовность обзора, настроек и прогноза.
  */

@@ -14,6 +14,7 @@
  */
 import {
     aggregateDepartment,
+    AI_FORECAST_METHOD_CURRENT,
     departmentBand,
     moneyBand,
     type ForecastLogDay,
@@ -25,7 +26,11 @@ import {
 import type { AiSnapshotMeta } from './manager-snapshot.types';
 import type { ForecastPayload } from './forecast.types';
 
-/** Прогноз менеджера → слагаемое отдела. */
+/**
+ * Прогноз менеджера → слагаемое отдела. С методом `presentations-v2`
+ * «уже в работе» считается от презентаций и известно всегда: открытые
+ * сделки в середину не входят, их отсутствие ничего не прячет.
+ */
 export function managerPointOf(
     managerId: string,
     payload: ForecastPayload,
@@ -36,7 +41,43 @@ export function managerPointOf(
         doneSales: payload.doneSales,
         naive: payload.naive,
         descriptive: payload.descriptive,
-        pipelineKnown: payload.pipelineExpected !== null,
+        pipelineKnown:
+            payload.flow !== undefined || payload.pipelineExpected !== null,
+    };
+}
+
+/** Метод, вход и подбор дня журнала — поля дня `ForecastLogDay`. */
+export type ForecastLogDayFlowFields = Pick<
+    ForecastLogDay,
+    'method' | 'entry' | 'flow'
+>;
+
+/**
+ * Метод и подбор дня по прогнозам менеджеров: подбор один на портал, его
+ * несёт любой прогноз от презентаций. Таких нет (старые записи) — пусто:
+ * день читается как расчёт по звонкам.
+ */
+export function dayFlowOf(
+    payloads: readonly ForecastPayload[],
+): ForecastLogDayFlowFields {
+    const flows = payloads.flatMap(payload =>
+        payload.flow === undefined ? [] : [payload],
+    );
+    const first = flows[0];
+    if (first?.flow === undefined) return {};
+
+    return {
+        method: AI_FORECAST_METHOD_CURRENT,
+        ...(first.entry === undefined ? {} : { entry: first.entry }),
+        flow: {
+            status: first.flow.status,
+            reason: first.flow.reason,
+            q: first.flow.portalQ,
+            rho: first.flow.rho,
+            salesHistoryManagers: flows.filter(
+                payload => payload.flow?.source === 'sales-history',
+            ).length,
+        },
     };
 }
 
@@ -56,6 +97,8 @@ export interface ForecastLogDayInput {
     /** Среднее продаж отдела за три замороженных месяца; null — нет. */
     readonly mean3: number | null;
     readonly modelSnapshotId: string | null;
+    /** Метод и подбор дня (`dayFlowOf`); нет — расчёт по звонкам. */
+    readonly flow?: ForecastLogDayFlowFields;
 }
 
 /** День журнала: вилка продаж и денег, простые базы и сделанное. */
@@ -93,6 +136,7 @@ export function buildForecastLogDay(
         managers: aggregate.managers,
         pipelineUnknown: aggregate.pipelineUnknown,
         modelSnapshotId: input.modelSnapshotId,
+        ...(input.flow ?? {}),
     };
 }
 

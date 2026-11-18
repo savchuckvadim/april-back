@@ -16,6 +16,8 @@ const DAY: ForecastLogDayView = {
     done: 8,
     money: { low: 90_000, p50: 100_000, high: 110_000 },
     checkSource: null,
+    method: 'presentations-v2',
+    flowStatus: 'default-lag',
 };
 
 const BACKTEST: ForecastBacktestView = {
@@ -26,6 +28,8 @@ const BACKTEST: ForecastBacktestView = {
     shadowMinMonths: 9,
     numbers: null,
     calibration: { qLow: -2, qHigh: 2, level: 0.8, days: 240, months: 12 },
+    method: 'presentations-v2',
+    otherMethodMonths: 0,
 };
 
 const sources = (over: Partial<ForecastSources> = {}): ForecastSources => ({

@@ -8,6 +8,10 @@ import {
     AI_FORECAST_BACKTEST_STATUSES,
     type ForecastBacktestStatus,
 } from '../../model/forecast-backtest.types';
+import {
+    AI_FORECAST_METHODS,
+    type AiForecastMethod,
+} from '../../model/presentation-flow.types';
 import type {
     Phase4BacktestView,
     Phase4ForecastBacktest,
@@ -67,6 +71,25 @@ export class AiAnalyticsForecastBacktestDto implements Phase4BacktestView {
         type: Number,
     })
     replayedMonths: number;
+
+    @ApiProperty({
+        description:
+            'Метод, дни которого проверялись: presentations-v2 — прогноз от ' +
+            'презентаций (с 18.11.2026; дней старого расчёта в выборке нет); ' +
+            'calls-v1 — проверка до 18.11.2026 по старому расчёту.',
+        enum: AI_FORECAST_METHODS,
+        example: 'presentations-v2',
+    })
+    method: AiForecastMethod;
+
+    @ApiProperty({
+        description:
+            'Закрытых месяцев только со старым расчётом — вне проверки, ' +
+            'пока историю не пересчитали догоном месяца.',
+        example: 5,
+        type: Number,
+    })
+    otherMethodMonths: number;
 
     @ApiProperty({
         description: 'Месяцев в проверке; 0 — журналов с фактом нет.',

@@ -7,6 +7,7 @@ import {
 } from './ai-analytics-about.const';
 import {
     AI_ABOUT_ATTENTION_PARAMS as ATTENTION_PARAMS,
+    AI_ABOUT_FORECAST_FLOW_PARAMS as FORECAST_FLOW_PARAMS,
     AI_ABOUT_NORM_PARAMS as NORM_PARAMS,
     AI_ABOUT_SHARED_PARAMS as SHARED_PARAMS,
     AI_ABOUT_STAGE_PARAMS as STAGE_PARAMS,
@@ -139,6 +140,7 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
         params: [
             ...SHARED_PARAMS,
             ...NORM_PARAMS,
+            ...FORECAST_FLOW_PARAMS,
             'plan_day_ceiling',
             'f_min',
             'cycle_median_days',

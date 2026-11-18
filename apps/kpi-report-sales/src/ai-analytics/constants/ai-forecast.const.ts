@@ -51,6 +51,21 @@ export const AI_FORECAST_SHOWN_NOTES = [
 export type AiForecastShownNote = (typeof AI_FORECAST_SHOWN_NOTES)[number];
 
 /**
+ * Уточнение пометки (метод расчёта от презентаций, 17.11.2026) — в
+ * отдельном поле `shown.detail`, которое фронт до 18.11.2026 не читает:
+ * он видит только `note` из старого набора и не ломается.
+ * `presentations-missing` — презентации в отчёте KPI отмечаются не
+ * полностью, прогноз от них не строится, показан простой расчёт (`note`:
+ * `no-model`); `method-history-short` — расчёт новый, на истории его ещё
+ * не проверяли (`note`: `history-short`).
+ */
+export const AI_FORECAST_SHOWN_DETAILS = [
+    'presentations-missing',
+    'method-history-short',
+] as const;
+export type AiForecastShownDetail = (typeof AI_FORECAST_SHOWN_DETAILS)[number];
+
+/**
  * Источники чека вилки в деньгах — те же, что `AI_LOGNORMAL_CHECK_SOURCES`
  * библиотеки (равенство закреплено спекой презентера). Свой список, а не
  * импорт значения: иначе поверхность ручки тянула бы файл чека с кодами

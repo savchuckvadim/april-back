@@ -4,6 +4,11 @@
  * срединная оценка месяца, наивные базы, ожидание от открытого
  * пайплайна с причиной при его отсутствии, план дня, рычаги и утечки.
  *
+ * Середина месяца считается от отмеченных презентаций (метод
+ * `presentations-v2`): подбор доли продаж на презентацию и сдвига — один
+ * раз на прогон по снимкам W + K месяцев до месяца прогона. Открытые
+ * сделки в середину не входят — справочно и для плана дня.
+ *
  * Модель портала берётся из шины (`portalModel`), а если её там нет —
  * последней записанной из `ais`; её идентификатор проставляется в
  * `meta.modelSnapshotId`, иначе пересчёт не воспроизвёл бы день,
@@ -37,6 +42,10 @@ import {
 } from '../constants/ai-snapshot.const';
 import { AI_STAGE_HISTORY_MIN_MONTHS } from '../constants/ai-stage-history.const';
 import {
+    forecastMonthKeys,
+    portalFlowOf,
+} from '../domain/assembler/forecast-flow.assembler';
+import {
     buildForecastPayload,
     type ForecastPayload,
 } from '../domain/assembler/forecast.assembler';
@@ -54,7 +63,7 @@ import {
     managerByEpisodeKey,
     openEpisodesOf,
 } from './portal-model.facts';
-import { managerInput, workdaysOf } from './forecast.facts';
+import { managerInput, previousWorkdaysOf, workdaysOf } from './forecast.facts';
 import type { PortalModelBusEntry } from './portal-model.step';
 import {
     AiAnalyticsPipelineStep,
@@ -115,10 +124,11 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                 { ms: Date.now() - startedAt },
             );
         }
-        const months = await this.loader.loadMonths(ctx.domain, [
-            previousMonthOf(ctx.monthKey),
-            ctx.monthKey,
-        ]);
+        // История подбора прогноза от презентаций (W + K месяцев) и месяц.
+        const months = await this.loader.loadMonths(
+            ctx.domain,
+            forecastMonthKeys(ctx.monthKey, ctx.registry),
+        );
         if (months.length === 0) {
             return stepSkipped(
                 this.code,
@@ -171,6 +181,8 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
             busNumber(bus.get(AI_PIPELINE_BUS_KEYS.historyMonths)) ?? 0;
         const episodes = this.episodesByManager(bus, model.payload);
         const previousMonth = previousMonthOf(ctx.monthKey);
+        const flow = portalFlowOf(months, ctx.monthKey, ctx.registry);
+        const previousWorkdays = previousWorkdaysOf(ctx);
         const managers: ForecastDayManager[] = [];
         for (const managerId of ctx.managerIds.map(String)) {
             const payload = buildForecastPayload({
@@ -185,6 +197,7 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                 // него шаг сам уходит в skipped и пайплайна в шине нет.
                 hasStageHistory: historyMonths >= AI_STAGE_HISTORY_MIN_MONTHS,
                 registry: ctx.registry,
+                flow,
                 manager: managerInput({
                     managerId,
                     months,
@@ -193,6 +206,9 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                     openEpisodes: episodes.get(managerId) ?? [],
                     model: model.payload,
                     targets: ctx.settings.targets,
+                    flow,
+                    daysElapsed: days.elapsed,
+                    previousWorkdays,
                 }),
                 seed: seedOf(ctx.domain, managerId, ctx.day, ctx.calcVersion),
                 meta: {

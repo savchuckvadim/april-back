@@ -196,6 +196,9 @@ describe('AiAnalyticsPhase4StatusService — проверка точности �
             shadowMinMonths: 9,
             // Запись без поля воспроизведения — восстановленных месяцев нет.
             replayedMonths: 0,
+            // Запись до 18.11.2026 — проверка по старому расчёту.
+            method: 'calls-v1',
+            otherMethodMonths: 0,
             months: 2,
             days: 40,
             coverageShare: 0.8,

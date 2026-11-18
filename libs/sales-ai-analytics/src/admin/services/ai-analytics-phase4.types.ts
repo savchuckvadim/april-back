@@ -6,6 +6,7 @@
 import type { ForecastBacktestStatus } from '../../model/forecast-backtest.types';
 import type { AiLever } from '../../model/lever.types';
 import type { PoolStatus } from '../../model/pool.types';
+import type { AiForecastMethod } from '../../model/presentation-flow.types';
 import type { RecommendationGateStatus } from '../../model/recommendation-effect.types';
 import type { AiQualityLinkStatus } from '../../contracts/snapshot.phase4.types';
 
@@ -109,6 +110,10 @@ export interface Phase4BacktestView extends Phase4SnapshotRef {
     shadowMinMonths: number;
     /** Из теневых месяцев восстановлено по истории (`forecast-log-replay`). */
     replayedMonths: number;
+    /** Метод, дни которого проверялись; нет поля в записи — `calls-v1`. */
+    method: AiForecastMethod;
+    /** Закрытых месяцев только со старым расчётом — вне проверки. */
+    otherMethodMonths: number;
     /** Месяцев и дней в проверке; 0 — журналов с фактом нет. */
     months: number;
     days: number;

@@ -3,153 +3,40 @@
  * п. 4.1): разложение прогноза отдела на слагаемые по отделу и менеджерам.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import {
+    AI_FORECAST_METHODS,
+    type AiForecastMethod,
+} from '../../model/presentation-flow.types';
 import type {
-    ForecastBreakdownDepartmentView,
-    ForecastBreakdownEpisodeView,
     ForecastBreakdownManagerView,
     ForecastBreakdownView,
 } from '../services/ai-analytics-forecast-breakdown.types';
+import { AiForecastBreakdownDepartmentDto } from './ai-analytics-forecast-breakdown.department.dto';
+import {
+    AiForecastBreakdownEpisodeDto,
+    AiForecastBreakdownManagerFlowDto,
+    BREAKDOWN_METHOD_DESCRIPTION as METHOD_DESCRIPTION,
+    BREAKDOWN_NEW_FLOW_DESCRIPTION as NEW_FLOW_DESCRIPTION,
+    BREAKDOWN_PIPELINE_DESCRIPTION as PIPELINE_DESCRIPTION,
+} from './ai-analytics-forecast-breakdown.parts.dto';
 
-const PIPELINE_DESCRIPTION =
-    'Ожидаемых продаж от открытых сделок до конца месяца; null — слагаемое ' +
-    'не сохранено (запись до 16.11.2026) или истории стадий нет.';
-const NEW_FLOW_DESCRIPTION =
-    'Ожидаемых продаж от новых встреч до конца месяца; null — слагаемое не ' +
-    'сохранено (запись до 16.11.2026).';
-
-export class AiForecastBreakdownEpisodeDto
-    implements ForecastBreakdownEpisodeView
-{
-    @ApiProperty({
-        description: 'Ключ эпизода сделки; null — у эпизода нет ключа.',
-        example: 'deal:90412',
-        type: String,
-        nullable: true,
-    })
-    id: string | null;
-
-    @ApiProperty({
-        description: 'Сколько дней сделка открыта.',
-        example: 34,
-        type: Number,
-    })
-    ageDays: number;
-
-    @ApiProperty({
-        description:
-            'Вероятность продажи из стадии сделки (0–1); null — не задана.',
-        example: 0.42,
-        type: Number,
-        nullable: true,
-    })
-    theta: number | null;
-
-    @ApiProperty({
-        description: 'Вклад сделки в ожидание: продаж до конца месяца.',
-        example: 0.18,
-        type: Number,
-    })
-    expected: number;
-}
-
-export class AiForecastBreakdownDepartmentDto
-    implements ForecastBreakdownDepartmentView
-{
-    @ApiProperty({
-        description: 'День журнала, за который показано разложение.',
-        example: '2026-11-16',
-        type: String,
-    })
-    day: string;
-
-    @ApiProperty({
-        description: 'Месяц прогноза (YYYY-MM).',
-        example: '2026-11',
-        type: String,
-    })
-    monthKey: string;
-
-    @ApiProperty({
-        description: 'Середина прогноза продаж отдела за месяц.',
-        example: 46,
-        type: Number,
-    })
-    p50: number;
-
-    @ApiProperty({
-        description: 'Нижняя граница вилки.',
-        example: 38,
-        type: Number,
-    })
-    low: number;
-
-    @ApiProperty({
-        description: 'Верхняя граница вилки.',
-        example: 55,
-        type: Number,
-    })
-    high: number;
-
-    @ApiProperty({
-        description: 'Закрытых продаж с начала месяца.',
-        example: 21,
-        type: Number,
-    })
-    done: number;
-
-    @ApiProperty({
-        description: PIPELINE_DESCRIPTION,
-        example: 9.5,
-        type: Number,
-        nullable: true,
-    })
-    pipeline: number | null;
-
-    @ApiProperty({
-        description: NEW_FLOW_DESCRIPTION,
-        example: 15.5,
-        type: Number,
-        nullable: true,
-    })
-    newFlow: number | null;
-
-    @ApiProperty({
-        description: 'Простой расчёт по темпу с начала месяца — для сравнения.',
-        example: 44,
-        type: Number,
-    })
-    naive: number;
-
-    @ApiProperty({
-        description:
-            'Среднее продаж трёх прошлых месяцев — для сравнения; null — ' +
-            'истории нет.',
-        example: 41.3,
-        type: Number,
-        nullable: true,
-    })
-    mean3: number | null;
-
-    @ApiProperty({
-        description: 'Менеджеров в расчёте.',
-        example: 12,
-        type: Number,
-    })
-    managers: number;
-
-    @ApiProperty({
-        description:
-            'У скольких из них нет истории стадий: ожидание от открытых ' +
-            'сделок у них не считалось.',
-        example: 0,
-        type: Number,
-    })
-    pipelineUnknown: number;
-}
+export { AiForecastBreakdownDepartmentDto } from './ai-analytics-forecast-breakdown.department.dto';
+export {
+    AiForecastBreakdownEpisodeDto,
+    AiForecastBreakdownFlowDto,
+    AiForecastBreakdownManagerFlowDto,
+} from './ai-analytics-forecast-breakdown.parts.dto';
 
 export class AiForecastBreakdownManagerDto
     implements ForecastBreakdownManagerView
 {
+    @ApiProperty({
+        description: METHOD_DESCRIPTION,
+        enum: AI_FORECAST_METHODS,
+        example: 'presentations-v2',
+    })
+    method: AiForecastMethod;
+
     @ApiProperty({
         description: 'Id сотрудника в Битрикс24.',
         example: '15',
@@ -204,8 +91,8 @@ export class AiForecastBreakdownManagerDto
 
     @ApiProperty({
         description:
-            'Сделано входной активности с начала месяца; null — запись до ' +
-            '16.11.2026, входы расчёта не сохранялись.',
+            'Сделано входной активности с начала месяца (presentations-v2 — ' +
+            'презентаций, calls-v1 — звонков); null — запись до 16.11.2026.',
         example: 38,
         type: Number,
         nullable: true,
@@ -222,8 +109,8 @@ export class AiForecastBreakdownManagerDto
 
     @ApiProperty({
         description:
-            'Конверсия входной активности в продажу (0–1) по нормам портала ' +
-            'и менеджера.',
+            'Продаж на единицу входной активности (0–1): presentations-v2 — ' +
+            'на презентацию; calls-v1 — на звонок по нормам рёбер.',
         example: 0.06,
         type: Number,
         nullable: true,
@@ -241,7 +128,8 @@ export class AiForecastBreakdownManagerDto
     fBar: number | null;
 
     @ApiProperty({
-        description: 'Открытых сделок менеджера в расчёте ожидания.',
+        description:
+            'Открытых сделок менеджера (presentations-v2 — справочно).',
         example: 27,
         type: Number,
         nullable: true,
@@ -255,6 +143,23 @@ export class AiForecastBreakdownManagerDto
         type: [AiForecastBreakdownEpisodeDto],
     })
     topEpisodes: AiForecastBreakdownEpisodeDto[];
+
+    @ApiProperty({
+        description:
+            'Ожидание от открытых сделок — справочно, в середину не входит ' +
+            '(presentations-v2); null — старый расчёт или истории стадий нет.',
+        example: 0.4,
+        type: Number,
+        nullable: true,
+    })
+    deals: number | null;
+
+    @ApiProperty({
+        description: 'Входы прогноза от презентаций; null — старый расчёт.',
+        type: AiForecastBreakdownManagerFlowDto,
+        nullable: true,
+    })
+    flow: AiForecastBreakdownManagerFlowDto | null;
 }
 
 export class AiForecastBreakdownResultDto implements ForecastBreakdownView {

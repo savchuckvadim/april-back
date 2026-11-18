@@ -8,6 +8,8 @@ import {
     isMonthClosed,
     managerMonthsOf,
     pipelineByManager,
+    presentationRateOf,
+    replacesOtherMethod,
     replayDaysOf,
     replayEpisodesOf,
     replayManagerInput,
@@ -19,6 +21,7 @@ import {
     mergeReplayedLog,
     replayInstantOf,
 } from '../steps/forecast-log-replay.days';
+import { managerFlowFixture } from './fixtures/forecast-flow.fixture';
 import {
     FIXTURE_META,
     forecastLog,
@@ -94,6 +97,32 @@ describe('forecast-log-replay.facts — закрытый месяц и дни в
         ]);
         const fromStart = forecastLog('2026-09', [logDay('2026-09-01', 5)]);
         expect(replayDaysOf(fromStart, WORKDAYS)).toEqual([]);
+    });
+
+    it('живые дни старого расчёта переписываются только догоном из админки с force', () => {
+        const old = { method: undefined };
+        const log = forecastLog('2026-09', [
+            logDay('2026-09-01', 30, old),
+            logDay('2026-09-02', 31, old),
+            logDay('2026-09-04', 9),
+        ]);
+        // Ночной и месячный прогоны старые живые дни не трогают.
+        expect(replayDaysOf(log, WORKDAYS)).toEqual([]);
+        // Догон с force: старые — переписать, живые нового метода — нет.
+        expect(replayDaysOf(log, WORKDAYS, true)).toEqual([
+            '2026-09-01',
+            '2026-09-02',
+            '2026-09-03',
+        ]);
+        expect(
+            replacesOtherMethod({ rhythm: 'backfill', forceRefresh: true }),
+        ).toBe(true);
+        expect(
+            replacesOtherMethod({ rhythm: 'backfill', forceRefresh: false }),
+        ).toBe(false);
+        expect(
+            replacesOtherMethod({ rhythm: 'monthly', forceRefresh: true }),
+        ).toBe(false);
     });
 
     it('модель пригодна только с рёбрами в нагрузке', () => {
@@ -239,7 +268,9 @@ describe('forecast-log-replay.facts — темп и вход менеджера'
             openEpisodes: [{ id: 'D1#0', ageDays: 3, theta: 0.3 }],
             model,
             targets: { ...defaultTargets(), overrides: { '10': 7 } },
+            flow: managerFlowFixture(),
         });
+        expect(input.flow).toEqual(managerFlowFixture());
         expect(input).toMatchObject({
             managerId: '10',
             doneSales: 2,
@@ -263,8 +294,36 @@ describe('forecast-log-replay.facts — темп и вход менеджера'
                 openEpisodes: [],
                 model,
                 targets: defaultTargets(),
+                flow: managerFlowFixture(),
             }),
         ).toMatchObject({ lastMonthSales: null, norms: null, planHead: null });
+    });
+
+    it('темп презентаций — по тому же правилу, что звонки, по выбранному счётчику', () => {
+        const options = { previousWorkdays: 20, workdays: 22 };
+        const withAll = managerMonthsOf(
+            [
+                { ...managerMonth('10', '2026-08', 4), presentationsAll: 50 },
+                managerMonth('10', '2026-09', 5),
+            ],
+            '2026-09',
+            '2026-08',
+        );
+        const rates = { months: withAll.get('10') ?? {}, ...options };
+
+        // Прошлый месяц: 20 уникальных или 50 всех на 20 рабочих дней.
+        expect(presentationRateOf(rates, 'presentation-uniq')).toBe(1);
+        expect(presentationRateOf(rates, 'presentation')).toBe(2.5);
+        // Прошлого нет — средний темп месяца; ничего нет — ноль.
+        expect(
+            presentationRateOf(
+                { months: months.get('20') ?? {}, ...options },
+                'presentation-uniq',
+            ),
+        ).toBeCloseTo(20 / 22, 12);
+        expect(
+            presentationRateOf({ months: {}, ...options }, 'presentation'),
+        ).toBe(0);
     });
 });
 
@@ -314,5 +373,35 @@ describe('forecast-log-replay.days — слияние с живыми днями
         expect(merged.days).toHaveLength(1);
         expect(merged.actual).toBe(8);
         expect(merged.checkSource).toBe('estimated');
+    });
+
+    it('с разрешением живые дни старого расчёта заменяются, нового — остаются', () => {
+        const log = forecastLog('2026-09', [
+            logDay('2026-09-01', 30, { method: undefined }),
+            logDay('2026-09-02', 9),
+        ]);
+        const replay = [
+            logDay('2026-09-01', 7, { replayed: true }),
+            logDay('2026-09-02', 99, { replayed: true }),
+        ];
+        const merge = (replaceOtherMethod: boolean) =>
+            mergeReplayedLog({
+                monthKey: '2026-09',
+                previous: log,
+                days: replay,
+                actual: null,
+                checkSource: 'default',
+                meta: { ...FIXTURE_META },
+                replaceOtherMethod,
+            }).days.map(day => [day.day, day.p50]);
+
+        expect(merge(true)).toEqual([
+            ['2026-09-01', 7],
+            ['2026-09-02', 9],
+        ]);
+        expect(merge(false)).toEqual([
+            ['2026-09-01', 30],
+            ['2026-09-02', 9],
+        ]);
     });
 });

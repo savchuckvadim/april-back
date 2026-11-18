@@ -15,6 +15,9 @@ import {
 } from '@lib/sales-ai-analytics';
 import type { AiTargets } from '@lib/sales-ai-analytics/settings/ai-settings.types';
 import { monthBounds } from '../constants/ai-manager-snapshot.const';
+import { previousMonthKey } from '../constants/ai-snapshot.const';
+import { managerFlowInput } from '../domain/assembler/forecast-flow.assembler';
+import type { PortalFlow } from '../domain/assembler/forecast-flow.types';
 import type { ForecastManagerInput } from '../domain/assembler/forecast.types';
 import type {
     PortalManagerMonth,
@@ -55,6 +58,18 @@ export function workdaysOf(
     );
 }
 
+/**
+ * Рабочих дней календаря портала в прошлом месяце — знаменатель темпа
+ * презентаций в первый рабочий день (то же, что у воспроизведения).
+ */
+export function previousWorkdaysOf(
+    ctx: Pick<AiPipelineStepContext, 'monthKey' | 'calendar'>,
+): number {
+    const bounds = monthBounds(previousMonthKey(`${ctx.monthKey}-01`));
+
+    return enumerateWorkdays(bounds.from, bounds.to, ctx.calendar).length;
+}
+
 /** Что нужно знать о менеджере, чтобы собрать его прогноз дня. */
 export interface ManagerInputOptions {
     readonly managerId: string;
@@ -65,6 +80,12 @@ export interface ManagerInputOptions {
     readonly model: PortalModelPayload;
     /** Цели портала: уровень и личные переопределения. */
     readonly targets: AiTargets;
+    /** Подбор прогноза от презентаций на месяц (портал). */
+    readonly flow: PortalFlow;
+    /** Прошедших рабочих дней месяца — темп презентаций. */
+    readonly daysElapsed: number;
+    /** Рабочих дней календаря в прошлом месяце (`previousWorkdaysOf`). */
+    readonly previousWorkdays: number;
 }
 
 /** Цель уровня из настроек портала; уровня нет — цели нет. */
@@ -103,6 +124,14 @@ export function managerInput(
         managerId: options.managerId,
         doneSales: current?.salesCount ?? 0,
         entryDone: current?.callsDone ?? 0,
+        flow: managerFlowInput({
+            managerId: options.managerId,
+            months: options.months,
+            monthKey: options.monthKey,
+            portal: options.flow,
+            daysElapsed: options.daysElapsed,
+            previousWorkdays: options.previousWorkdays,
+        }),
         planHead: current?.planSales ?? null,
         override: options.targets.overrides[options.managerId] ?? null,
         levelTarget: levelTargetOf(options.targets, current?.level ?? null),

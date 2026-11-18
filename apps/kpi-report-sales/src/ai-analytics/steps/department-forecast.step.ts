@@ -34,6 +34,7 @@ import {
 import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import {
     buildForecastLogDay,
+    dayFlowOf,
     managerPointOf,
     mergeForecastLog,
 } from '../domain/assembler/department-forecast.assembler';
@@ -144,6 +145,7 @@ export class DepartmentForecastStep implements AiAnalyticsPipelineStep {
             seed: seedOf(ctx.domain, ctx.day, ctx.calcVersion),
             mean3: mean3Of(rosterMonthSales(months, roster), meanKeys),
             modelSnapshotId: forecastDay.modelSnapshotId,
+            flow: dayFlowOf(forecastDay.managers.map(item => item.payload)),
         });
 
         return mergeForecastLog({

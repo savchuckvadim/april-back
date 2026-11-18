@@ -79,6 +79,8 @@ export const backtest = (
     shadowMonths: 10,
     shadowMinMonths: 9,
     replayedMonths: 8,
+    method: 'presentations-v2',
+    otherMethodMonths: 0,
     months: 6,
     days: 120,
     coverageShare: 0.82,

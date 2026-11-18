@@ -39,6 +39,8 @@ const sources = (over: Partial<ForecastSources> = {}): ForecastSources => ({
         done: 6,
         money: null,
         checkSource: 'estimated',
+        method: 'presentations-v2',
+        flowStatus: 'default-lag',
     },
     backtest: readForecastBacktest('2026-09', {
         monthKey: '2026-09',
@@ -46,6 +48,7 @@ const sources = (over: Partial<ForecastSources> = {}): ForecastSources => ({
         reasons: [],
         shadowMonths: 10,
         shadowMinMonths: 9,
+        method: 'presentations-v2',
         backtest: BACKTEST,
     }),
     stageEnabled: true,
@@ -92,6 +95,8 @@ describe('forecast-snapshots.reader — структурное чтение жу
             done: 2,
             money: null,
             checkSource: null,
+            method: 'calls-v1',
+            flowStatus: null,
         });
     });
 
@@ -126,6 +131,8 @@ describe('forecast-snapshots.reader — структурное чтение жу
                 days: 132,
             },
             calibration: null,
+            method: 'calls-v1',
+            otherMethodMonths: 0,
         });
         expect(readForecastBacktest('2026-09', { status: 'магия' })).toBeNull();
         expect(

@@ -9,6 +9,8 @@
  * запрещены (§3.2).
  */
 import type {
+    AiForecastEntry,
+    AiForecastMethod,
     DailyPlan,
     FunnelLeak,
     LeverCandidate,
@@ -16,6 +18,11 @@ import type {
     PipelineEpisode,
     PipelineEpisodeShare,
 } from '@lib/sales-ai-analytics';
+import type {
+    ForecastFlowFacts,
+    ForecastFlowManagerInput,
+    PortalFlow,
+} from './forecast-flow.types';
 import type { AiSnapshotMeta } from './manager-snapshot.types';
 import type {
     PortalManagerNorms,
@@ -34,8 +41,13 @@ export interface ForecastManagerInput {
     readonly managerId: string;
     /** `Y₀` — закрытые продажи месяца. */
     readonly doneSales: number;
-    /** Сделано входной активности за месяц (числитель дневного темпа). */
+    /**
+     * Учтённых звонков за месяц — вход плана дня и рычагов (воронка по
+     * рёбрам). В середину прогноза не входит: она считается от презентаций.
+     */
     readonly entryDone: number;
+    /** Вход прогноза от презентаций (метод `presentations-v2`). */
+    readonly flow: ForecastFlowManagerInput;
     /** План руководителя на месяц; null — плана нет. */
     readonly planHead: number | null;
     /** Личная цель менеджера (`target_override`); null — не задана. */
@@ -74,6 +86,8 @@ export interface ForecastBuildInput {
     /** История стадий нужной глубины есть; false → `pipelineExpected: null`. */
     readonly hasStageHistory: boolean;
     readonly registry: ParamContext;
+    /** Подбор доли продаж на презентацию и сдвига на месяц (портал). */
+    readonly flow: PortalFlow;
     readonly manager: ForecastManagerInput;
     /** Зерно сэмплирования утечек: два прогона с ним дают один результат. */
     readonly seed: number;
@@ -84,19 +98,21 @@ export interface ForecastBuildInput {
 export const AI_FORECAST_TOP_EPISODES = 5;
 
 /**
- * Входы расчёта прогноза менеджера — для разложения в админке: из чего
- * сложились ожидание от новых встреч и ожидание от открытых сделок.
+ * Входы расчёта прогноза менеджера — для разложения в админке. С методом
+ * `presentations-v2` вход — отмеченные презентации: `entryDone·…·fBar`
+ * даёт ожидание от новых презентаций (`fBar = w_0·r`). Без поля `method`
+ * у записи — старый расчёт: вход по звонкам, `conversion = Π θ` по пути.
  */
 export interface ForecastBreakdown {
     /** Сделано входной активности с начала месяца. */
     entryDone: number;
     /** Темп входной активности в рабочий день. */
     entryRate: number;
-    /** Конверсия входной активности в продажу (`Π θ` по пути). */
+    /** Продаж на единицу входной активности. */
     conversion: number;
-    /** Зрелость `F̄`: какая доля будущих продаж успеет закрыться до конца месяца. */
+    /** Какая доля продаж новой активности придётся на остаток месяца. */
     fBar: number;
-    /** Открытых сделок в расчёте ожидания от пайплайна. */
+    /** Открытых сделок (справочно: в середину прогноза не входят). */
     openEpisodes: number;
     /** Сделки с наибольшим вкладом в ожидание; пусто — истории стадий нет. */
     topEpisodes: PipelineEpisodeShare[];
@@ -106,20 +122,35 @@ export interface ForecastBreakdown {
 export interface ForecastPayload {
     day: string;
     monthKey: string;
-    /** `P50 = Y₀ + λ_pipe + λ_new`. */
+    /**
+     * Середина прогноза месяца. `presentations-v2`:
+     * `Y₀ + backlog + fresh` (от проведённых и от новых презентаций); без
+     * поля `method` — старый расчёт `Y₀ + λ_pipe + λ_new`.
+     */
     p50: number;
-    /** Описательная часть `Y₀ + λ_pipe`. */
+    /** «Сделано + уже в работе»: `Y₀ + backlog` (`calls-v1`: `Y₀ + λ_pipe`). */
     descriptive: number;
     /** Наивная база: линейная экстраполяция темпа месяца. */
     naive: number;
     /** Наивная база «как в прошлом месяце»; null — прошлого месяца нет. */
     naiveLastMonth: number | null;
-    /** `λ_pipe`; null — истории стадий нет (см. `pipelineReason`). */
+    /**
+     * `λ_pipe` — ожидание от открытых сделок; null — истории стадий нет
+     * (см. `pipelineReason`). С `presentations-v2` — справочно: в середину
+     * не входит (двойной счёт с прошлыми презентациями), остаётся входом
+     * плана дня до его пересмотра.
+     */
     pipelineExpected: number | null;
     /** Причина отсутствия `λ_pipe`; null — значение посчитано. */
     pipelineReason: string | null;
-    /** `λ_new` — ожидание от новых активностей остатка месяца. */
+    /** Ожидание от новой активности до конца месяца (v2 — от презентаций). */
     newFlowExpected: number;
+    /** Метод расчёта; нет поля — запись до 18.11.2026 (`calls-v1`). */
+    method?: AiForecastMethod;
+    /** Счётчик презентаций — вход (`presentations-v2`). */
+    entry?: AiForecastEntry;
+    /** Факты расчёта от презентаций (`presentations-v2`). */
+    flow?: ForecastFlowFacts;
     /** `Y₀` — закрытые продажи месяца. */
     doneSales: number;
     /** Цель месяца и её источник. */

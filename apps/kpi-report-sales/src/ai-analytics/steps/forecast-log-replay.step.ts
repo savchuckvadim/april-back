@@ -13,7 +13,10 @@
  * прошлого месяца, факт прошлого месяца и простое среднее из `ais`.
  *
  * ⚠ Правила. Живые дни ночного журнала не затираются: восстанавливаются
- * только дни раньше первого живого. Месяц прогона и будущее не трогаются.
+ * только дни раньше первого живого. Исключение — живые дни старого
+ * метода расчёта (по звонкам): их переписывает только догон месяца из
+ * админки с force (пересчёт истории под новый метод запускают люди).
+ * Месяц прогона и будущее не трогаются.
  * Идемпотентен: `upsert` журнала месяца, `forceRefresh` переписывает.
  * Необязательный: сбой не рвёт прогон (раннер пишет пропуск с причиной).
  * Без шины истории стадий (ручной пересчёт одним шагом) пайплайн — null
@@ -34,13 +37,11 @@ import {
     AI_FORECAST_LOG_REPLAY_RHYTHMS,
     AI_FORECAST_LOG_REPLAY_STEP_CODE,
 } from '../constants/ai-forecast-log.const';
-import {
-    monthBounds,
-    monthKeysBack,
-} from '../constants/ai-manager-snapshot.const';
+import { monthBounds } from '../constants/ai-manager-snapshot.const';
 import { AI_PORTAL_MODEL_REASONS } from '../constants/ai-portal-model.const';
 import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import { AI_STAGE_HISTORY_MIN_MONTHS } from '../constants/ai-stage-history.const';
+import { forecastMonthKeys } from '../domain/assembler/forecast-flow.assembler';
 import { ClosedSalesDaysLoader } from '../domain/loaders/closed-sales-days.loader';
 import { PortalModelLoader } from '../domain/loaders/portal-model.loader';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
@@ -48,6 +49,7 @@ import { forecastLogsOf, rosterMonthSales } from './department-forecast.facts';
 import { buildReplayLog } from './forecast-log-replay.days';
 import {
     isMonthClosed,
+    replacesOtherMethod,
     replayDaysOf,
     replayEpisodesOf,
     replayModelOf,
@@ -93,9 +95,14 @@ export class ForecastLogReplayStep implements AiAnalyticsPipelineStep {
             await this.loader.latestModel(ctx.domain, ctx.monthKey),
         );
         if (model === null) return skip(AI_PORTAL_MODEL_REASONS.modelMissing);
+        // Окно простого среднего и история подбора прогноза от презентаций.
         const months = await this.loader.loadMonths(
             ctx.domain,
-            monthKeysBack(ctx.monthKey, AI_FORECAST_LOG_REPLAY_MONTHS),
+            forecastMonthKeys(
+                ctx.monthKey,
+                ctx.registry,
+                AI_FORECAST_LOG_REPLAY_MONTHS,
+            ),
         );
         if (!months.some(month => month.monthKey === ctx.monthKey)) {
             return skip(AI_PORTAL_MODEL_REASONS.monthMissing);
@@ -107,7 +114,9 @@ export class ForecastLogReplayStep implements AiAnalyticsPipelineStep {
             bounds.to,
             ctx.calendar,
         );
-        const days = replayDaysOf(previous, workdays);
+        // Живые дни старого метода — только догоном месяца из админки.
+        const replaceOtherMethod = replacesOtherMethod(ctx);
+        const days = replayDaysOf(previous, workdays, replaceOtherMethod);
         if (days.length === 0) {
             return skip(AI_FORECAST_LOG_REASONS.replayNothingToDo);
         }
@@ -143,6 +152,7 @@ export class ForecastLogReplayStep implements AiAnalyticsPipelineStep {
             targets: ctx.settings.targets,
             calcVersion: ctx.calcVersion,
             previous,
+            replaceOtherMethod,
             // Факт месяца — как его ставит бэктест: сумма продаж ростера.
             actual: rosterMonthSales(months, roster).get(ctx.monthKey) ?? null,
             meta: {
