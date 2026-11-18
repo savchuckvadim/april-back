@@ -116,6 +116,8 @@ export enum JobNames {
     CALL_REPORT_FACTS_CATCHUP = 'call-report-facts-catchup',
     /** Проверка черновика методики на одном звонке из админки: один проход методики, итог в Redis */
     CALL_REPORT_METHODOLOGY_PREVIEW = 'call-report-methodology-preview',
+    /** Проверка разбора на одном звонке из админки: фокус-разбор с цитатами без записи, итог в Redis */
+    CALL_REPORT_ANALYSIS_PREVIEW = 'call-report-analysis-preview',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

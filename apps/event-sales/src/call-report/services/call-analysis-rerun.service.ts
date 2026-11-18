@@ -37,6 +37,11 @@ export interface CallAnalysisRerunInput {
      * заново не вызываются. Не задано — разбор целиком.
      */
     stored?: StoredFocusPasses;
+    /**
+     * Задание с цитатами (focus-v3.4) — проверка разбора на звонке включает
+     * его явно; не задано — по выключателю.
+     */
+    quoteEvidence?: boolean;
 }
 
 export interface CallAnalysisRerunOutcome {
@@ -86,7 +91,10 @@ export class CallAnalysisRerunService {
         if (!transcript.trim()) return null;
         const domain = row.domain as string;
         // Без модели портала и без сохранённых проходов опции не передаются.
-        const hasOptions = input.model !== null || input.stored !== undefined;
+        const hasOptions =
+            input.model !== null ||
+            input.stored !== undefined ||
+            input.quoteEvidence !== undefined;
         const dto = await this.focusAnalysis.run(
             domain,
             transcript,
@@ -96,6 +104,9 @@ export class CallAnalysisRerunService {
                 ? {
                       ...(input.model === null ? {} : { model: input.model }),
                       ...(input.stored ? { stored: input.stored } : {}),
+                      ...(input.quoteEvidence === undefined
+                          ? {}
+                          : { quoteEvidence: input.quoteEvidence }),
                   }
                 : undefined,
         );

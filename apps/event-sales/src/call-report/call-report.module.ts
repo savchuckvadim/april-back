@@ -62,6 +62,9 @@ import { CallAnalysisRepairStore } from './services/call-analysis-repair.store';
 import { MethodologyPreviewStore } from '@lib/call-lib/call-report/methodology';
 import { MethodologyPreviewProcessor } from './queue/methodology-preview.processor';
 import { MethodologyPreviewUseCase } from './use-cases/methodology-preview.use-case';
+import { AnalysisPreviewStore } from '@lib/call-lib/call-report/analysis-preview';
+import { AnalysisPreviewProcessor } from './queue/analysis-preview.processor';
+import { AnalysisPreviewUseCase } from './use-cases/analysis-preview.use-case';
 import { CallAnalysisRepairUseCase } from './use-cases/call-analysis-repair.use-case';
 import { CallPageLinksRepairStore } from './services/call-page-links-repair.store';
 import { CallPageLinksRepairUseCase } from './use-cases/call-page-links-repair.use-case';
@@ -162,6 +165,11 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         MethodologyPreviewStore,
         MethodologyPreviewUseCase,
         MethodologyPreviewProcessor,
+        // Проверка разбора на одном звонке без записи (задание с цитатами
+        // focus-v3.4): джоба CALL_REPORT_ANALYSIS_PREVIEW, итог в Redis
+        AnalysisPreviewStore,
+        AnalysisPreviewUseCase,
+        AnalysisPreviewProcessor,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportDomainRosterService,

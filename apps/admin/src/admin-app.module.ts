@@ -48,6 +48,7 @@ import {
 import { MethodologyAdminModule } from '@lib/call-lib/call-report/methodology';
 import { MethodologyAssistAdminModule } from './methodology-assist/methodology-assist-admin.module';
 import { MethodologyPreviewAdminModule } from './methodology-preview/methodology-preview-admin.module';
+import { AnalysisPreviewAdminModule } from './analysis-preview/analysis-preview-admin.module';
 import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
@@ -130,6 +131,9 @@ import {
         // Проверка черновика методики на одном звонке: задание воркеру
         // event-sales через очередь разборов, итог из Redis.
         MethodologyPreviewAdminModule,
+        // Проверка разбора с цитатами (focus-v3.4) на одном звонке без
+        // записи: задание воркеру event-sales, итог из Redis.
+        AnalysisPreviewAdminModule,
         // База знаний RAG: документы общие и по порталам (скрипты типов
         // звонков) — управление из админки, чтение агентами через event-sales.
         AiRagAdminModule,
