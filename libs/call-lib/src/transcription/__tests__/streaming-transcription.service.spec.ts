@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 import {
-    StreamingTranscriptionService,
     YandexSttHttpError,
     channelsRequiredByYandex,
     isTransientYandexError,
 } from '../services/streaming-transcription.service';
+import { makeService, ok } from './streaming-transcription.fixture';
 
 /**
  * Терпимость к сбоям Яндекса (ночь 28.10.2026: 500 на опросе операций
@@ -28,30 +28,11 @@ const yandexErrorBody = (requestId: string): string =>
 const http = (status: number, body: string, statusText = ''): Response =>
     new Response(body, { status, statusText });
 
-const ok = (body: unknown): Response =>
-    new Response(JSON.stringify(body), { status: 200, statusText: 'OK' });
-
 const doneResponse = {
     done: true,
     response: {
         chunks: [{ channelTag: '1', alternatives: [{ text: 'Добрый день' }] }],
     },
-};
-
-const makeService = (
-    overrides: Record<string, string> = {},
-): StreamingTranscriptionService => {
-    const values: Record<string, string> = {
-        YA_FOLDER_ID: 'folder-1',
-        YANDEX_STT_POLL_DELAY_MS: '0',
-        YANDEX_STT_RETRY_BASE_MS: '0',
-        YANDEX_STT_TRANSIENT_RETRIES: '2',
-        YANDEX_STT_POLL_MAX_ATTEMPTS: '6',
-        ...overrides,
-    };
-    const config = { get: (key: string) => values[key] };
-    const auth = { getIamToken: jest.fn().mockResolvedValue('iam-token') };
-    return new StreamingTranscriptionService(config as never, auth as never);
 };
 
 describe('StreamingTranscriptionService — терпимость к сбоям Яндекса', () => {

@@ -6,6 +6,7 @@ import {
     yandexSecondsOf,
     yandexWordsOf,
 } from '../lib/segments.mapper';
+import { detectStereoEcho } from '../lib/stereo-echo.util';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
 
 export interface IYAChanks {
@@ -295,7 +296,10 @@ export class StreamingTranscriptionService {
                     `${data.error.code ?? '?'} ${data.error.message ?? ''}`.trim(),
             );
         }
-        const chunks = orderChunksByTime(data.response?.chunks ?? []);
+        const chunks = this.transcriptChunks(
+            operationId,
+            data.response?.chunks ?? [],
+        );
         if (chunks.length === 0) {
             this.logger.error(
                 `Операция ${operationId} без результата распознавания`,
@@ -319,6 +323,24 @@ export class StreamingTranscriptionService {
             text: transcription,
             segments: wordsToSegments(yandexWordsOf(chunks)),
         };
+    }
+
+    /**
+     * Куски для текста и сегментов. Стерео «двойное моно» (оба канала —
+     * весь разговор, gsr 18.11.2026) — только один канал, иначе каждое
+     * слово задвоится; раздельное стерео и моно — все куски по времени.
+     */
+    private transcriptChunks(
+        operationId: string,
+        chunks: IYAChanks[],
+    ): IYAChanks[] {
+        const echo = detectStereoEcho(yandexWordsOf(chunks));
+        if (!echo) return orderChunksByTime(chunks);
+        this.logger.log(
+            `Стерео с одинаковыми каналами: оставлен канал ${echo.keepChannel}, ` +
+                `совпало ${Math.round(echo.matchedShare * 100)} % слов (операция ${operationId})`,
+        );
+        return chunks.filter(chunk => chunk.channelTag === echo.keepChannel);
     }
 
     /**
