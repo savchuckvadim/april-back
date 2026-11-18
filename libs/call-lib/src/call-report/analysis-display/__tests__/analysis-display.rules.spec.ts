@@ -85,7 +85,7 @@ describe('правила показа разбора: чек-листы «Хво
         expect(callTypeHasChecklists(42)).toBe(false);
     });
 
-    it('набор полей чек-листов — шесть полей разбора', () => {
+    it('набор полей чек-листов — шесть полей разбора и места пунктов в разговоре', () => {
         expect([...CALL_ANALYSIS_CHECKLIST_FIELDS]).toEqual([
             'hvostDone',
             'hvostAnalysis',
@@ -93,6 +93,8 @@ describe('правила показа разбора: чек-листы «Хво
             'fiveKDone',
             'fiveKAnalysis',
             'fiveKItems',
+            'hvostEvidence',
+            'fiveKEvidence',
         ]);
         expect([...CALL_REPORT_CHECKLIST_CALL_TYPES]).toEqual(['presentation']);
     });

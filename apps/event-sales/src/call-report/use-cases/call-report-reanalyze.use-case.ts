@@ -253,6 +253,7 @@ export class CallReportReanalyzeUseCase {
                 outcome.dto,
                 durationSecOf(outcome.row),
                 this.logger,
+                outcome.row.segments,
             );
             await this.aiService.create(
                 buildReanalysisRecord({

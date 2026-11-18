@@ -3,6 +3,7 @@ import {
     CALL_ANALYSIS_CHECKLIST_FIELDS,
     callTypeHasChecklists,
     isScriptComplianceTrusted,
+    type CallAnalysisChecklistField,
 } from '@lib/call-lib';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 
@@ -28,10 +29,17 @@ export function applyAnalysisDisplayRules(
     );
 }
 
+/** Все поля чек-листов — null. */
+const CHECKLIST_NULLS = Object.fromEntries(
+    CALL_ANALYSIS_CHECKLIST_FIELDS.map(field => [field, null]),
+) as Readonly<Record<CallAnalysisChecklistField, null>>;
+
 /**
  * Чек-листы «Хвост» и 5К — только у презентации (итоговый тип разбора
- * `callType`). У остальных типов, включая звонок по решению, все шесть
- * полей обнуляются: в карточку (HVOST_* / FIVE_K_*) и в ленту они не идут.
+ * `callType`). У остальных типов, включая звонок по решению, все поля
+ * чек-листов (CALL_ANALYSIS_CHECKLIST_FIELDS, с местами пунктов в
+ * разговоре) обнуляются: в карточку (HVOST_* / FIVE_K_*), в ленту и на
+ * страницу звонка они не идут.
  */
 export function applyChecklistRule(
     transcriptionId: string,
@@ -48,15 +56,7 @@ export function applyChecklistRule(
                 `не презентация (${dropped.join(', ')}; transcription ${transcriptionId})`,
         );
     }
-    return {
-        ...dto,
-        hvostDone: null,
-        hvostAnalysis: null,
-        hvostSteps: null,
-        fiveKDone: null,
-        fiveKAnalysis: null,
-        fiveKItems: null,
-    };
+    return { ...dto, ...CHECKLIST_NULLS };
 }
 
 /**

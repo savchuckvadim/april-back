@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
+import type { TranscriptSegment } from '@lib/call-lib';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
+import { verifyAnalysisEvidence } from './agent-analysis-evidence.util';
 import {
     clampObjectionTimecodes,
     normalizeAgentAnalysis,
@@ -13,9 +15,11 @@ import { dedupeSectionsWithLog } from './agent-analysis-sections.util';
  * (CallReportReanalyzeUseCase): один раздел — одна запись (дубли кодов от
  * модели схлопываются), нормализация (гигиена строк, метрики кодом,
  * консистентность, риск-флаги по доказательствам) и таймкоды цитат (П6) в
- * пределах длительности записи — возражения и доказательства риск-флагов.
- * Один порядок шагов для обоих путей, иначе переразбор дал бы записи другой
- * формы. Чистая функция.
+ * пределах длительности записи — возражения и доказательства риск-флагов;
+ * места разбора в разговоре (задание с цитатами focus-v3.4) — по репликам
+ * расшифровки (segments; нет — только «внутри записи»). Один порядок шагов
+ * для всех путей, иначе переразбор дал бы записи другой формы. Чистая
+ * функция.
  */
 export function prepareAgentAnalysis(
     transcriptionId: string,
@@ -23,6 +27,7 @@ export function prepareAgentAnalysis(
     dto: AgentCallAnalysisDto,
     durationSec: number | null,
     logger: Logger,
+    segments: readonly TranscriptSegment[] | null = null,
 ): AgentCallAnalysisDto {
     // Дубли разделов — до нормализации, чтобы метрики, поля смарта и
     // таймлайн считались по одному набору записей.
@@ -43,7 +48,7 @@ export function prepareAgentAnalysis(
         deduped,
         logger,
     );
-    return clampRiskEvidenceTimecodes(
+    const clamped = clampRiskEvidenceTimecodes(
         transcriptionId,
         clampObjectionTimecodes(
             transcriptionId,
@@ -52,6 +57,14 @@ export function prepareAgentAnalysis(
             logger,
         ),
         durationSec,
+        logger,
+    );
+    // После правил показа: у не-презентаций чек-листов уже нет — и мест их
+    // пунктов тоже.
+    return verifyAnalysisEvidence(
+        transcriptionId,
+        clamped,
+        { durationSec, segments },
         logger,
     );
 }

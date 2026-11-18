@@ -100,6 +100,7 @@ export class AgentAnalysisSmartRewriteService {
             stored,
             durationSecOf(row),
             this.logger,
+            row.segments,
         );
         const { bitrix } = await this.pbxService.init(row.domain);
         const writer = new CallReportSmartWriterService(bitrix, smartInfo);

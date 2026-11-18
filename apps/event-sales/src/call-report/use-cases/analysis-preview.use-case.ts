@@ -116,6 +116,7 @@ export class AnalysisPreviewUseCase {
             outcome.dto,
             durationSec,
             this.logger,
+            outcome.row.segments,
         );
         return buildAnalysisPreviewResult({
             dto,

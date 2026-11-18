@@ -19,7 +19,11 @@ export const CALL_REPORT_CHECKLIST_CALL_TYPES = [
     'presentation',
 ] as const satisfies readonly CallReportCallTypeCode[];
 
-/** Поля чек-листов «Хвост» и 5К в разборе. */
+/**
+ * Поля чек-листов «Хвост» и 5К в разборе; места пунктов в разговоре
+ * (hvostEvidence, fiveKEvidence — задание с цитатами focus-v3.4) — тем же
+ * правилом.
+ */
 export const CALL_ANALYSIS_CHECKLIST_FIELDS = [
     'hvostDone',
     'hvostAnalysis',
@@ -27,6 +31,8 @@ export const CALL_ANALYSIS_CHECKLIST_FIELDS = [
     'fiveKDone',
     'fiveKAnalysis',
     'fiveKItems',
+    'hvostEvidence',
+    'fiveKEvidence',
 ] as const;
 
 export type CallAnalysisChecklistField =

@@ -1,5 +1,8 @@
-import { FIVE_K_ITEM_KEYS, HVOST_STEP_KEYS } from '@lib/call-lib';
-import type { CallReportCallTypeCode } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    FIVE_K_ITEM_KEYS,
+    HVOST_STEP_KEYS,
+    callTypeHasChecklists,
+} from '@lib/call-lib';
 import { MOMENT_SEC_SCHEMA } from './call-report-facts.contract';
 
 /**
@@ -29,19 +32,12 @@ export interface FocusPassOptions {
 }
 
 /**
- * Типы звонков, у которых при включённых цитатах спрашиваются «хвост» и 5К
- * (решение владельца 18.11.2026: «нужны только если тип звонка презентация»).
+ * Спрашивать ли у модели «хвост» и 5К для этого типа звонка (при
+ * включённых цитатах): то же правило, что у показа разбора —
+ * callTypeHasChecklists (решение владельца 18.11.2026: только презентация).
  */
-export const CHECKLIST_PASS_CALL_TYPES = [
-    'presentation',
-] as const satisfies readonly CallReportCallTypeCode[];
-
-/** Спрашивать ли у модели «хвост» и 5К для этого типа звонка. */
 export function checklistsAskedFor(callType: string | null): boolean {
-    return (
-        callType !== null &&
-        (CHECKLIST_PASS_CALL_TYPES as readonly string[]).includes(callType)
-    );
+    return callTypeHasChecklists(callType);
 }
 
 /** Цитата и секунда раздела — дописываются в схему записи раздела. */
