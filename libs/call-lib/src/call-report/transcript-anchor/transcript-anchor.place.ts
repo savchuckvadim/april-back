@@ -23,10 +23,41 @@ import {
  * - есть цитата: место по тексту; по тексту не нашлась — время из разбора,
  *   только если рядом с ним звучат её слова (та же проверка, что у приёма
  *   разбора, со своим окном); иначе места нет;
- * - цитаты нет: время, только если оно больше нуля и внутри записи.
+ * - цитаты нет: время, только если оно больше нуля и внутри записи;
+ * - цитата-заглушка («Нет», «не было», прочерк) — места нет совсем.
  *
  * Чистые функции.
  */
+
+/**
+ * Цитаты-заглушки (слова через пробел): так модель помечает «доказательства
+ * нет» — у невыполненных пунктов методики цитата «Нет» (gsr, 17.11.2026).
+ * По тексту такая «цитата» находит слово «нет» в десятке реплик.
+ */
+const NO_EVIDENCE_QUOTES: ReadonlySet<string> = new Set([
+    'нет',
+    'не было',
+    'отсутствует',
+    'нет цитаты',
+    'цитаты нет',
+    'не найдено',
+    'не найдена',
+    'нет данных',
+    'не указано',
+    'null',
+    'none',
+]);
+
+/** Цитата написана, но доказательства в ней нет: заглушка или одни знаки. */
+function isNoEvidenceQuote(
+    quote: string | null,
+    quoteWords: readonly string[],
+): boolean {
+    if (quote === null || quote.trim() === '') return false;
+    return (
+        quoteWords.length === 0 || NO_EVIDENCE_QUOTES.has(quoteWords.join(' '))
+    );
+}
 
 /** Секунда внутри записи; иначе (и не число) — null. */
 function secondWithin(
@@ -71,6 +102,7 @@ export function locateCheckedAnchor(
     const startSec = secondWithin(anchor.startSec, durationSec);
     const endSec = secondWithin(anchor.endSec, durationSec);
     const quoteWords = anchor.quote ? wordsOf(anchor.quote) : [];
+    if (isNoEvidenceQuote(anchor.quote, quoteWords)) return null;
     if (quoteWords.length === 0) {
         return startSec !== null && startSec > 0
             ? matchByTime(index, startSec, endSec)

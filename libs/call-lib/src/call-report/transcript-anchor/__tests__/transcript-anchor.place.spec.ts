@@ -86,4 +86,47 @@ describe('проверенное место разбора для кнопки �
         expect(locate({ startSec: 0 })).toBeNull();
         expect(locate({})).toBeNull();
     });
+
+    describe('цитата-заглушка («доказательства нет») — места нет совсем', () => {
+        /** Слово «нет» звучит в нескольких репликах (gsr, 17.11.2026). */
+        const WITH_NO = indexTranscript(
+            [
+                'Нет, пока не смотрели.',
+                'Скажите, а судебная практика нужна?',
+                'Нет, нам хватает сайтов судов.',
+                'Договор нет смысла продлевать до весны.',
+            ].map((text, index) => ({
+                index,
+                startSec: index * 10,
+                endSec: index * 10 + 9,
+                text,
+            })),
+        );
+        const locateIn = (anchor: Partial<TranscriptAnchor>) =>
+            locateCheckedAnchor(
+                WITH_NO,
+                { quote: null, startSec: null, endSec: null, ...anchor },
+                40,
+                RULE,
+            );
+
+        it('«Нет», «Не было.», прочерк — без подсветки, даже со временем', () => {
+            for (const quote of [
+                'Нет',
+                ' нет. ',
+                'Не было.',
+                '—',
+                '-',
+                'null',
+            ]) {
+                expect(locateIn({ quote, startSec: 12 })).toBeNull();
+            }
+        });
+
+        it('настоящая цитата со словом «нет» ищется как обычно', () => {
+            expect(
+                locateIn({ quote: 'нам хватает сайтов судов', startSec: 3 }),
+            ).toEqual({ segmentIndexes: [2], startSec: 20 });
+        });
+    });
 });
