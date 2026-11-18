@@ -29,6 +29,7 @@ import { EventSalesBadgesModule } from './badges/badges.module';
 import { DealAuditModule } from './deal-audit/deal-audit.module';
 import { DuplicateReportModule } from './duplicate-report/duplicate-report.module';
 import { DealMovementModule } from './deal-movement/deal-movement.module';
+import { PeriodDigestModule } from './period-digest/period-digest.module';
 import { InnModule } from './inn/inn.module';
 import { ClientTypeModule } from './client-type/client-type.module';
 import { DealOwnerModule } from './deal-owner/deal-owner.module';
@@ -102,6 +103,9 @@ import { EventSalesCronRosterModule } from './cron-roster/event-sales-cron-roste
         // Движение сделок (этап 7.3): ночной счёт статусов открытых сделок
         // ОП, без записи в сделки. Выключен на всех порталах.
         DealMovementModule,
+        // Итоги периода по менеджерам (этап 7.4): карточки недели и месяца
+        // снимками в ais, подсчёт из админки; задачи РОПам — следующим этапом.
+        PeriodDigestModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

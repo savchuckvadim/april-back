@@ -127,4 +127,7 @@ export enum JobNames {
     EVENT_SALES_DEAL_MOVEMENT_RUN = 'event-sales-deal-movement-run',
     /** Движение сделок: проверка записи в ленту на одной сделке (кнопка админки, пишет в портал) */
     EVENT_SALES_DEAL_MOVEMENT_PROBE = 'event-sales-deal-movement-probe',
+
+    /** Итоги периода по менеджерам: подсчёт недели или месяца по кнопке админки */
+    EVENT_SALES_PERIOD_DIGEST_RUN = 'event-sales-period-digest-run',
 }

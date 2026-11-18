@@ -8,6 +8,10 @@ import {
 import { PortalAiSettingsWithDomain } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import { nightlyLimitNote } from '../call-report/cron/call-report-facts-catchup.scheduler';
 import { DEAL_MOVEMENT_CRON_NAME } from '../deal-movement/constants/deal-movement.const';
+import {
+    PERIOD_DIGEST_CRON_NAME,
+    PERIOD_DIGEST_DELIVERY_READY,
+} from '../period-digest/constants/period-digest.const';
 
 /**
  * Сведения о кронах event-sales для стартового отчёта: что делает крон и
@@ -120,6 +124,17 @@ const APP_SETTINGS_CRONS: readonly AppSettingsCron[] = [
             ]
                 .filter((part): part is string => part !== null)
                 .join(', ') || 'только считать',
+    },
+    {
+        // Пока доставки нет (Э7), любой выпуск — только подсчёт.
+        name: PERIOD_DIGEST_CRON_NAME,
+        purpose: 'итоги периода по менеджерам: карточки недели и месяца',
+        enabled: SETTINGS.periodDigestEnabled,
+        note: row =>
+            PERIOD_DIGEST_DELIVERY_READY &&
+            !flag(row, SETTINGS.periodDigestCountOnly)
+                ? undefined
+                : 'только считать',
     },
 ];
 

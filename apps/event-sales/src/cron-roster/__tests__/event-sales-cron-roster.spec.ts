@@ -60,6 +60,7 @@ const EVENT_SALES_CRONS = [
     'event-sales-deal-audit',
     'event-sales-deal-movement',
     'event-sales-duplicate-report',
+    'event-sales-period-digest',
     'lead-intake-rescue',
     'lead-request-sla',
     'presentation-audit',
@@ -160,6 +161,30 @@ describe('buildEventSalesCronRoster', () => {
                 note: 'пишет в ленту сделок, сводка руководителям',
             },
         ]);
+    });
+
+    it('итоги периода: порталы по флагу; пока доставки нет — «только считать» даже со снятым флагом', () => {
+        const periodDigest = buildEventSalesCronRoster(
+            [
+                row(GARANT, {
+                    period_digest_enabled: true,
+                    period_digest_count_only: false,
+                }),
+                row(GSR, { period_digest_enabled: true }),
+                row('off.bitrix24.ru', { period_digest_enabled: false }),
+            ],
+            [],
+        );
+
+        expect(periodDigest.get('event-sales-period-digest')).toEqual({
+            purpose: 'итоги периода по менеджерам: карточки недели и месяца',
+            portals: [
+                { domain: GARANT, note: 'только считать' },
+                { domain: GSR, note: 'только считать' },
+            ],
+        });
+        // Не включён ни на одном портале по умолчанию.
+        expect(roster.get('event-sales-period-digest')?.portals).toEqual([]);
     });
 
     it('кроны AI-конвейера: все включённые порталы, свои тумблеры у недельного отчёта и ревизора', () => {

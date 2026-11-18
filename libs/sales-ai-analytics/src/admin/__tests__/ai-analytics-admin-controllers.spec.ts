@@ -38,6 +38,7 @@ import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.
 import { AiAnalyticsOwnerReportExportAdminController } from '../controllers/owner-report-export.admin.controller';
 import { AiAnalyticsRefreshAdminController } from '../controllers/refresh.admin.controller';
 import { AiAnalyticsDealMovementAdminController } from '../controllers/deal-movement.admin.controller';
+import { AiAnalyticsPeriodDigestAdminController } from '../controllers/period-digest.admin.controller';
 import { SalesAiAnalyticsRefreshModule } from '../refresh/sales-ai-analytics-refresh.module';
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
@@ -66,6 +67,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsOwnerReportExportAdminController,
     AiAnalyticsRefreshAdminController,
     AiAnalyticsDealMovementAdminController,
+    AiAnalyticsPeriodDigestAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>

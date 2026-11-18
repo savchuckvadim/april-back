@@ -240,6 +240,26 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             'по сделкам — в Redis, не здесь. Повтор за тот же день ' +
             'обновляет запись на месте.',
     },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.managerWeekDigest]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.managerWeekDigest,
+        grain: 'manager-week',
+        keyFormat: KEY_FORMAT.week,
+        retention: { unit: 'days', value: 800 },
+        description:
+            'Итоги недели по менеджеру (этап 7.4): метрики, сравнения, свои ' +
+            'рекомендации, шаги к целям месяца, блок «Для РОПа». Пишет ' +
+            'event-sales; пересчёт обновляет запись на месте.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.managerMonthDigest]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.managerMonthDigest,
+        grain: 'manager-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'days', value: 800 },
+        description:
+            'Итоги месяца по менеджеру (этап 7.4): метрики, сравнения (и год ' +
+            'назад), рекомендации с целями, блок «Для РОПа»; следующая ' +
+            'карточка читает рекомендации прошлой. Пишет event-sales.',
+    },
 } as const satisfies Record<
     AiAnalyticsSnapshotType,
     AiAnalyticsSnapshotDescriptor
