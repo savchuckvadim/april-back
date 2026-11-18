@@ -87,7 +87,7 @@ describe('agent-analysis-methodology-render.util', () => {
             }),
         );
         expect(comment).toContain(
-            '📋 [b]Методика «Полянский»: пунктов выполнено 1 из 2[/b]',
+            '📋 [b]Методика Полянского: пунктов выполнено 1 из 2[/b]',
         );
         expect(comment).toContain(
             '✓ Резюмировал потребности вслух — «Итак, вам важно…» (02:05)',
@@ -193,5 +193,39 @@ describe('agent-analysis-methodology-render.util', () => {
         );
         expect(both[0]).not.toContain('Спирали');
         expect(both[1]).toContain('⛔');
+    });
+
+    it('своя методика портала — в кавычках, без «Методика «Методика …»»', () => {
+        const outcome = (title: string) =>
+            dto({
+                methodology: {
+                    code: 'voronezh',
+                    version: '1.0.0',
+                    title,
+                    checkpointsDone: 0,
+                    checkpointsTotal: 0,
+                    spirals: null,
+                    spiralsFull: null,
+                    spiralsMinFull: null,
+                    checkpoints: [
+                        {
+                            code: 'cold.no_price',
+                            title: 'Не обсуждал стоимость до презентации',
+                            status: 'not_applicable',
+                            mandatory: true,
+                            source: 'model',
+                            quote: null,
+                            startSec: null,
+                            endSec: null,
+                        },
+                    ],
+                },
+            });
+        expect(
+            renderMethodologyCheckpointsComment(outcome('Воронеж')),
+        ).toContain('📋 [b]Методика «Воронеж»: пунктов выполнено 0 из 0[/b]');
+        expect(
+            renderMethodologyCheckpointsComment(outcome('Методика Воронежа')),
+        ).toContain('📋 [b]Методика Воронежа: пунктов выполнено 0 из 0[/b]');
     });
 });

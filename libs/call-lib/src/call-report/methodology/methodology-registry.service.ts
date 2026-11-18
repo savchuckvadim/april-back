@@ -13,6 +13,7 @@ import {
     type ResolvedMethodology,
 } from './methodology.types';
 import { BUILTIN_METHODOLOGIES } from './polyansky.methodology';
+import { methodologyDisplayTitle } from './methodology-display-title';
 
 /** TTL кэша методики домена, мс — как у реестра типов звонков. */
 const CACHE_TTL_MS = 60_000;
@@ -21,6 +22,8 @@ const CACHE_TTL_MS = 60_000;
 export interface MethodologyOption {
     code: string;
     title: string;
+    /** Имя для людей: «Методика Полянского» (methodologyDisplayTitle). */
+    displayTitle: string;
     version: string;
     scope: MethodologyScope;
     source: MethodologySource;
@@ -37,6 +40,7 @@ const optionOf = (
 ): MethodologyOption => ({
     code: methodology.code,
     title: methodology.title,
+    displayTitle: methodologyDisplayTitle(methodology),
     version: methodology.version,
     scope,
     source,

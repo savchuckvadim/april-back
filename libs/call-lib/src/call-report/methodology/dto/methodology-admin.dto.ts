@@ -42,6 +42,16 @@ export class MethodologyOptionDto implements MethodologyOption {
     title: string;
 
     @ApiProperty({
+        description:
+            'Имя методики для людей — показывать вместо названия: встроенная — ' +
+            '«Методика Полянского», название со словом «методика» — как есть, ' +
+            'иначе «Методика «Название»».',
+        example: 'Методика Полянского',
+        type: String,
+    })
+    displayTitle: string;
+
+    @ApiProperty({
         description: 'Версия конфига; меняется при правке пунктов.',
         example: '1.0.0',
         type: String,

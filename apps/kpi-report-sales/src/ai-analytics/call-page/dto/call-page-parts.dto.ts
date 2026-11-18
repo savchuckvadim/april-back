@@ -203,7 +203,9 @@ export class CallPageCheckpointDto {
 
 export class CallPageMethodologyDto {
     @ApiProperty({
-        description: 'Название методики продаж, по которой проверен звонок.',
+        description:
+            'Название методики продаж, по которой проверен звонок, — имя для ' +
+            'людей: «Методика Полянского», своя — «Методика «Название»».',
         example: 'Методика Полянского',
         type: String,
     })

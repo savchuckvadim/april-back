@@ -1,5 +1,6 @@
 import { POLYANSKY_METHODOLOGY, type ResolvedMethodology } from '@lib/call-lib';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { buildMethodologyPass } from '../services/call-focus-methodology.util';
 
 const DOMAIN = 'gsr.bitrix24.ru';
 
@@ -158,5 +159,35 @@ describe('CallFocusAnalysisService.runMethodologyPass', () => {
         await expect(
             service.runMethodologyPass(DOMAIN, 'текст', 'cold', RESOLVED),
         ).rejects.toThrow('LLM недоступна');
+    });
+});
+
+/**
+ * Подпись прохода — только для журнала: имя для людей (18.11.2026), со
+ * строчной, как у остальных проходов. Задание модели не меняется ни на байт:
+ * смена промпта начала бы новую серию оценок.
+ */
+describe('buildMethodologyPass — подпись и задание модели', () => {
+    it('встроенная: подпись «методика Полянского», в промпте прежнее «ПРОВЕРКА ПО МЕТОДИКЕ «Полянский»»', () => {
+        const pass = buildMethodologyPass(RESOLVED, 'presentation');
+        expect(pass?.label).toBe('методика Полянского');
+        expect(pass?.prompt).toContain('ПРОВЕРКА ПО МЕТОДИКЕ «Полянский»');
+        expect(pass?.prompt).not.toContain('Методика Полянского');
+    });
+
+    it('своя методика портала — подпись с названием в кавычках', () => {
+        const pass = buildMethodologyPass(
+            {
+                ...RESOLVED,
+                methodology: {
+                    ...POLYANSKY_METHODOLOGY,
+                    code: 'voronezh',
+                    title: 'Воронеж',
+                },
+            },
+            'presentation',
+        );
+        expect(pass?.label).toBe('методика «Воронеж»');
+        expect(pass?.prompt).toContain('ПРОВЕРКА ПО МЕТОДИКЕ «Воронеж»');
     });
 });

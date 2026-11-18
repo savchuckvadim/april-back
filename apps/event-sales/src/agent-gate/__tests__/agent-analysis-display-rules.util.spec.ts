@@ -242,3 +242,37 @@ describe('правила показа при записи разбора: чек
         expect(smartFieldsOf(withScript).ufCrm128ScriptCompliance).toBe(80);
     });
 });
+
+describe('правила показа при записи разбора: методика в карточке', () => {
+    const withMethodology = (code: string, title: string) =>
+        dtoOf({
+            methodology: {
+                code,
+                version: '1.0.0',
+                title,
+                checkpoints: [],
+                checkpointsDone: 0,
+                checkpointsTotal: 0,
+                spirals: null,
+                spiralsFull: null,
+                spiralsMinFull: null,
+            },
+        });
+
+    it('имя методики для людей и версия (решение 18.11.2026)', () => {
+        expect(
+            smartFieldsOf(withMethodology('polyansky', 'Полянский'))
+                .ufCrm128Methodology,
+        ).toBe('Методика Полянского 1.0.0');
+        expect(
+            smartFieldsOf(withMethodology('voronezh', 'Воронеж'))
+                .ufCrm128Methodology,
+        ).toBe('Методика «Воронеж» 1.0.0');
+    });
+
+    it('без методики поле не пишется', () => {
+        expect(smartFieldsOf(dtoOf())).not.toHaveProperty(
+            'ufCrm128Methodology',
+        );
+    });
+});

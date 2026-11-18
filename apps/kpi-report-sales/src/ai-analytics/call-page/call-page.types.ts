@@ -66,6 +66,8 @@ export interface CallPageCheckpointView {
 }
 
 export interface CallPageMethodologyView {
+    /** Код методики; null — в записи разбора его нет. */
+    code: string | null;
     title: string;
     checkpoints: CallPageCheckpointView[];
     checkpointsDone: number | null;

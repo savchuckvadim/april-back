@@ -25,12 +25,15 @@ import {
     type MethodologySource,
 } from './methodology.types';
 import { BUILTIN_METHODOLOGIES } from './polyansky.methodology';
+import { methodologyDisplayTitle } from './methodology-display-title';
 
 /** Строка списка методик в админке: таблица или встроенная (id null). */
 export interface MethodologyListItem {
     id: string | null;
     code: string;
     title: string;
+    /** Имя для людей: «Методика Полянского» (methodologyDisplayTitle). */
+    displayTitle: string;
     version: string;
     scope: MethodologyScope;
     portalDomain: string | null;
@@ -201,6 +204,7 @@ export class MethodologyAdminService {
             id: row.id,
             code: row.code,
             title: row.title,
+            displayTitle: methodologyDisplayTitle(row),
             version: row.version,
             scope: row.scope,
             portalDomain: row.portalDomain,
@@ -237,6 +241,7 @@ const builtinItem = (methodology: Methodology): MethodologyListItem => ({
     id: null,
     code: methodology.code,
     title: methodology.title,
+    displayTitle: methodologyDisplayTitle(methodology),
     version: methodology.version,
     scope: 'common',
     portalDomain: null,

@@ -1,6 +1,8 @@
 import {
     CORE_CAPS,
     evaluateMethodology,
+    methodologyDisplayTitle,
+    type Methodology,
     type MethodologyAnalysisView,
     type MethodologyOutcome,
     type ResolvedMethodology,
@@ -28,6 +30,15 @@ export interface MethodologyPassSpec {
     schema: Record<string, unknown>;
 }
 
+/**
+ * Подпись прохода в журнале — со строчной, как у остальных проходов:
+ * «методика Полянского», «методика «Своя»». В промпт не уходит.
+ */
+function passLabelOf(methodology: Methodology): string {
+    const name = methodologyDisplayTitle(methodology);
+    return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+}
+
 /** Проход по пунктам типа звонка; методики нет или спрашивать нечего — null. */
 export function buildMethodologyPass(
     resolved: ResolvedMethodology | null,
@@ -38,7 +49,7 @@ export function buildMethodologyPass(
     if (schema === null) return null;
     return {
         key: 'methodology',
-        label: `методика «${resolved.methodology.title}»`,
+        label: passLabelOf(resolved.methodology),
         prompt: buildMethodologyPassPrompt(resolved.methodology, callType),
         schema,
     };

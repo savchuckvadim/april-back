@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { KNOWN_KNOWLEDGE_KINDS, KnowledgeContentService } from '@lib/ai-rag';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import { methodologyDisplayTitle } from '../methodology/methodology-display-title';
 import { MethodologyRegistryService } from '../methodology/methodology-registry.service';
 import type { ResolvedMethodology } from '../methodology/methodology.types';
 import { CallTypeRegistryService } from '../services/call-type-registry.service';
@@ -17,6 +18,8 @@ import {
 /** Методика портала в объёме сводки. */
 export interface KnowledgeBudgetMethodology {
     title: string;
+    /** Имя для людей: «Методика Полянского» (methodologyDisplayTitle). */
+    displayTitle: string;
     version: string;
     /** Методика объявила свои виды материалов. */
     declaresKnowledge: boolean;
@@ -63,6 +66,9 @@ export class KnowledgeBudgetReportService {
             methodology: resolved
                 ? {
                       title: resolved.methodology.title,
+                      displayTitle: methodologyDisplayTitle(
+                          resolved.methodology,
+                      ),
                       version: resolved.methodology.version,
                       declaresKnowledge:
                           Object.keys(knowledge ?? {}).length > 0,

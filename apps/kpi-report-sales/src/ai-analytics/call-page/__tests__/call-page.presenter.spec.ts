@@ -334,6 +334,29 @@ describe('страница разбора звонка: сборка карто�
         ]);
     });
 
+    it('методика: имя для людей — и у старых разборов (показ, запись не меняется)', () => {
+        const titleOf = (methodology: Record<string, unknown>) =>
+            presentCallPage(
+                sourceOf({
+                    view: viewOf({
+                        ...ANALYSIS,
+                        methodology: {
+                            ...ANALYSIS.methodology,
+                            ...methodology,
+                        },
+                    }),
+                }),
+            ).methodology?.title;
+        // Название уже со словом «методика» — как есть, без «Методика «Методика …»».
+        expect(page.methodology?.title).toBe('Методика продаж');
+        expect(titleOf({ code: 'polyansky', title: 'Полянский' })).toBe(
+            'Методика Полянского',
+        );
+        expect(titleOf({ code: 'voronezh', title: 'Воронеж' })).toBe(
+            'Методика «Воронеж»',
+        );
+    });
+
     it('подсветки: ошибка менеджера, действующий риск, сбой и цена привязаны к репликам', () => {
         const byKind = (kind: string) =>
             page.highlights.filter(item => item.kind === kind);

@@ -212,6 +212,7 @@ describe('KnowledgeBudgetReportService', () => {
             complianceEnabled: true,
             methodology: {
                 title: POLYANSKY_METHODOLOGY.title,
+                displayTitle: 'Методика Полянского',
                 version: POLYANSKY_METHODOLOGY.version,
                 declaresKnowledge: true,
             },

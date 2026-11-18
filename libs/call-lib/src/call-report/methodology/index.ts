@@ -5,6 +5,7 @@ export * from './methodology-evaluate';
 export * from './methodology.validator';
 export * from './core-caps.const';
 export * from './polyansky.methodology';
+export * from './methodology-display-title';
 export * from './methodology.repository';
 export * from './methodology.prisma.repository';
 export * from './methodology-registry.service';

@@ -115,6 +115,7 @@ function methodologyOf(value: unknown): CallPageMethodologyView | null {
     const title = text(record?.title);
     if (record === null || title === null) return null;
     return {
+        code: text(record.code),
         title,
         checkpoints: asRecordArray(record.checkpoints)
             .map(checkpointOf)

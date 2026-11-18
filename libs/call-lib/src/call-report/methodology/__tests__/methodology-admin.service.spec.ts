@@ -116,6 +116,7 @@ describe('MethodologyAdminService', () => {
         expect(items[0]).toMatchObject({
             source: 'table',
             title: 'Полянский (таблица)',
+            displayTitle: 'Методика Полянского (таблица)',
         });
     });
 
@@ -133,6 +134,8 @@ describe('MethodologyAdminService', () => {
         expect(builtin).toMatchObject({
             id: null,
             source: 'builtin',
+            title: 'Полянский',
+            displayTitle: 'Методика Полянского',
             versionTag: 'polyansky@1.0.0',
         });
         expect(builtin.config).toEqual(POLYANSKY_METHODOLOGY);

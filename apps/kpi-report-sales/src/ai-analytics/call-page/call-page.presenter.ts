@@ -4,7 +4,7 @@
  * репликам. Чистые функции — всё, что нужно прочитать (имя менеджера,
  * ссылки), приходит готовым.
  */
-import type { TranscriptSegment } from '@lib/call-lib';
+import { methodologyDisplayTitle, type TranscriptSegment } from '@lib/call-lib';
 import { callTypeTitleOf, objectionTitleOf } from '@lib/sales-ai-analytics';
 import {
     CALL_PAGE_CHECKPOINT_STATUS_TITLES,
@@ -135,7 +135,8 @@ function methodologyOf(
         checkpoint => checkpoint.status !== 'not_applicable',
     );
     return {
-        title: methodology.title,
+        // Имя для людей (18.11.2026) — и у старых разборов: это показ, запись не меняется.
+        title: methodologyDisplayTitle(methodology),
         checkpointsDone:
             methodology.checkpointsDone ??
             applicable.filter(checkpoint => checkpoint.status === 'done')

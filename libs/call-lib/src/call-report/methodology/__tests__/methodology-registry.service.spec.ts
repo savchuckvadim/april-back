@@ -197,6 +197,7 @@ describe('MethodologyRegistryService.listOptions', () => {
         ]);
         expect(options[0]).toMatchObject({
             title: 'Полянский (таблица)',
+            displayTitle: 'Методика Полянского (таблица)',
             version: '1.1.0',
             scope: 'common',
             source: 'table',
@@ -206,6 +207,7 @@ describe('MethodologyRegistryService.listOptions', () => {
             POLYANSKY_METHODOLOGY.checkpoints.length,
         );
         expect(options[1]).toMatchObject({
+            displayTitle: 'Методика «Своя гаранта»',
             scope: 'portal',
             source: 'table',
             types: ['presentation'],
@@ -220,6 +222,8 @@ describe('MethodologyRegistryService.listOptions', () => {
         await expect(service.listOptions(DOMAIN)).resolves.toEqual([
             expect.objectContaining({
                 code: 'polyansky',
+                title: 'Полянский',
+                displayTitle: 'Методика Полянского',
                 source: 'builtin',
                 scope: 'common',
             }),

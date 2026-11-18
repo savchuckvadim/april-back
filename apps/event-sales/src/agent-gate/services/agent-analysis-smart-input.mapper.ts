@@ -1,5 +1,9 @@
 import { Prisma } from 'generated/prisma';
-import { AiService, TranscriptionPipelineView } from '@lib/call-lib';
+import {
+    AiService,
+    methodologyDisplayTitle,
+    TranscriptionPipelineView,
+} from '@lib/call-lib';
 import { CallReportDealFamily } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { CallReportSmartItemInput } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
@@ -138,8 +142,9 @@ export function buildAgentSmartItemInput(
         scriptCompliance: dto.scriptCompliance ?? undefined,
         coachingPriority: dto.coachingPriority,
         // Методика и ограничители (01.11.2026): сводные поля карточки.
+        // Имя — для людей: «Методика Полянского 1.0.0» (18.11.2026).
         methodology: dto.methodology
-            ? `${dto.methodology.title} ${dto.methodology.version}`
+            ? `${methodologyDisplayTitle(dto.methodology)} ${dto.methodology.version}`
             : undefined,
         checkpointsDone: dto.methodology?.checkpointsDone,
         checkpointsTotal: dto.methodology?.checkpointsTotal,

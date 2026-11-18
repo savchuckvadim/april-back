@@ -1,4 +1,4 @@
-import { CALL_REPORT_SECTIONS } from '@lib/call-lib';
+import { CALL_REPORT_SECTIONS, methodologyDisplayTitle } from '@lib/call-lib';
 import type { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import type {
     AgentCapTriggeredDto,
@@ -49,13 +49,17 @@ function checkpointLine(checkpoint: AgentCheckpointResultDto): string {
     return `${mark} ${checkpoint.title}${optional}${quote}`;
 }
 
-/** Запись «Методика …: пунктов N из M» со списком пунктов и спиралями; нет методики — null. */
+/**
+ * Запись «Методика Полянского: пунктов N из M» со списком пунктов и
+ * спиралями; нет методики — null. Имя методики — для людей
+ * (methodologyDisplayTitle); старые записи ленты не переписываются.
+ */
 export function renderMethodologyCheckpointsComment(
     dto: AgentCallAnalysisDto,
 ): string | null {
     const outcome = dto.methodology;
     if (!outcome || outcome.checkpoints.length === 0) return null;
-    const header = `📋 [b]Методика «${outcome.title}»: пунктов выполнено ${outcome.checkpointsDone} из ${outcome.checkpointsTotal}[/b]`;
+    const header = `📋 [b]${methodologyDisplayTitle(outcome)}: пунктов выполнено ${outcome.checkpointsDone} из ${outcome.checkpointsTotal}[/b]`;
     const lines = outcome.checkpoints.map(checkpointLine);
     const spirals =
         outcome.spirals !== null && outcome.spiralsFull !== null
