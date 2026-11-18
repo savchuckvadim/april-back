@@ -258,3 +258,11 @@ describe('CallDeepAnalysisService', () => {
         expect(options).toEqual({ model: 'bitrix/custom-model' });
     });
 });
+
+describe('CallDeepAnalysisService: признак скрипта', () => {
+    it('цельный разбор скрипт разговора не читает — scriptIncluded=false', async () => {
+        const { service } = makeDeps();
+        const result = await service.run('test.bitrix24.ru', 'алло', 'cold');
+        expect(result?.scriptIncluded).toBe(false);
+    });
+});

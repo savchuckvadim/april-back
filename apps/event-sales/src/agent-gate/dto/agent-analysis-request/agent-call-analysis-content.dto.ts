@@ -102,7 +102,9 @@ export class AgentCallAnalysisContentDto extends AgentCallAnalysisClassification
         description:
             'Пройден ли «хвост» после демонстрации (вопросы ценности, кто ' +
             'будет работать, цена комплекта, механизм решения, дата звонка ' +
-            'по решению). Только для презентаций/решений; null — не применимо.',
+            'по решению). Только для презентаций: у других типов приём ' +
+            'обнуляет все поля «хвоста» и 5К (решение владельца ' +
+            '18.11.2026); null — не применимо.',
         example: true,
         type: Boolean,
         nullable: true,
@@ -139,8 +141,8 @@ export class AgentCallAnalysisContentDto extends AgentCallAnalysisClassification
     @ApiPropertyOptional({
         description:
             'Закрыты ли все 5К после встречи (Клиент/Компания/Коллеги/' +
-            'Конкурент/Критерии выбора). Только для презентаций/решений; ' +
-            'null — не применимо.',
+            'Конкурент/Критерии выбора). Только для презентаций: у других ' +
+            'типов приём обнуляет; null — не применимо.',
         example: false,
         type: Boolean,
         nullable: true,

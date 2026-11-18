@@ -328,6 +328,20 @@ describe('PresentationAuditService (сверка отчёта менеджера
         expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
+    it('звонок по решению не сверяется: чек-листы и отчёт по ним — только у презентации (18.11.2026)', async () => {
+        const { service, llm } = makeDeps({
+            records: [analysisRecord({ callType: 'decision' })],
+        });
+        const result = await service.runForDomain(
+            DOMAIN,
+            new Date(0),
+            new Date(),
+        );
+        expect(result.candidates).toBe(0);
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
+        expect(mockUpdateExisting).not.toHaveBeenCalled();
+    });
+
     it('ошибка одной сверки не роняет прогон', async () => {
         const { service, llm } = makeDeps();
         llm.structuredCompletion.mockRejectedValue(new Error('llm down'));

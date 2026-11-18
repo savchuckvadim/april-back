@@ -173,7 +173,7 @@ describe('CallReportWeeklyDataService', () => {
         expect(dataset.transcripts[0].smartItemId).toBe(206);
     });
 
-    it('на лист презентаций звонок попадает по НАЛИЧИЮ хвоста/5К, даже если тип «другое»', async () => {
+    it('на лист презентаций звонок-презентация попадает по НАЛИЧИЮ хвоста/5К', async () => {
         const { service, aiService } = makeDataDeps();
         aiService.findByTranscriptionIds.mockResolvedValue([
             {
@@ -181,8 +181,7 @@ describe('CallReportWeeklyDataService', () => {
                 transcription_id: '42',
                 report_item_id: '206',
                 user_result: {
-                    // Классификатор ошибся с типом — разбор при этом есть.
-                    callType: 'other',
+                    callType: 'presentation',
                     hvostDone: false,
                     hvostSteps: { desire: true, priceReaction: false },
                     fiveKAnalysis: 'Коллеги — не выяснено',
@@ -197,8 +196,36 @@ describe('CallReportWeeklyDataService', () => {
         );
 
         expect(dataset.presentations).toHaveLength(1);
-        expect(dataset.presentations[0].callType).toBe('other');
+        expect(dataset.presentations[0].callType).toBe('presentation');
         expect(dataset.presentations[0].hvostSteps?.desire).toBe(true);
+    });
+
+    it('чек-листы только у презентации (18.11.2026): тип «другое» с хвостом/5К на лист не попадает', async () => {
+        const { service, aiService } = makeDataDeps();
+        aiService.findByTranscriptionIds.mockResolvedValue([
+            {
+                type: 'agent-analysis',
+                transcription_id: '42',
+                report_item_id: '206',
+                user_result: {
+                    callType: 'other',
+                    hvostDone: false,
+                    hvostSteps: { desire: true, priceReaction: false },
+                    fiveKAnalysis: 'Коллеги — не выяснено',
+                },
+            },
+        ]);
+
+        const dataset = await service.collect(
+            'alfacentr.bitrix24.ru',
+            FROM,
+            TO,
+        );
+
+        expect(dataset.presentations).toHaveLength(0);
+        expect(dataset.rows[0].hvostDone).toBeNull();
+        expect(dataset.rows[0].hvostSteps).toBeNull();
+        expect(dataset.rows[0].fiveKAnalysis).toBeNull();
     });
 
     it('звонок без методологического разбора на лист презентаций не попадает', async () => {

@@ -203,7 +203,10 @@ export interface AnalyticsLiteStyle {
     interlocutorRole: string | null;
     /** Состоялся ли контакт и есть ли продвижение по сделке. */
     productive: boolean | null;
-    /** Следование скрипту, % 0–100 (контекст, только при compliance-review). */
+    /**
+     * Следование скрипту, % 0–100; null — скрипта разговора в разборе не
+     * было (признак scriptIncluded), процент не учитывается.
+     */
     scriptCompliance: number | null;
     /**
      * Направление звонка (страта оси «повторные касания»). Во внутреннем

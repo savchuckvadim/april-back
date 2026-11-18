@@ -99,7 +99,9 @@ export class CallPageScoreDto {
     weightedScore: number | null;
 
     @ApiProperty({
-        description: 'Соответствие скрипту типа звонка, процентов.',
+        description:
+            'Соответствие скрипту разговора, процентов. null — скрипта ' +
+            'разговора в разборе не было (показатель не показывается).',
         example: 70,
         type: Number,
         nullable: true,

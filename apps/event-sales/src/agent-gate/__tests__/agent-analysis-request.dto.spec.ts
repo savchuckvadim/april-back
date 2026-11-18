@@ -128,6 +128,20 @@ describe('AgentCallAnalysisDto (слои наследования)', () => {
         ).toBeUndefined();
     });
 
+    it('служебный признак скрипта из тела запроса вырезается: внешний агент его не ставит', async () => {
+        const instance = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            scriptCompliance: 40,
+            scriptIncluded: true,
+        });
+
+        const errors = await validate(instance, { whitelist: true });
+
+        expect(errors).toEqual([]);
+        expect(instance.scriptIncluded).toBeUndefined();
+        expect(instance.scriptCompliance).toBe(40);
+    });
+
     it('правила базовых слоёв действуют на итоговом классе (слаг типа, диапазон оценки)', async () => {
         const instance = plainToInstance(AgentCallAnalysisDto, {
             ...REQUIRED,

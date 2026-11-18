@@ -1,3 +1,4 @@
+import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import { CallComplianceReviewService } from '../services/call-compliance-review.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 
@@ -78,6 +79,8 @@ const makeDeps = (options?: {
     modelResult?: unknown;
     aiRecords?: unknown[];
     materials?: string;
+    /** Вида «Скрипт разговора» в базе нет. */
+    noScript?: boolean;
 }) => {
     const updateExisting = jest.fn().mockResolvedValue(7);
     MockedWriter.mockImplementation(() => ({ updateExisting }) as never);
@@ -115,7 +118,10 @@ const makeDeps = (options?: {
                         requests.map(request => ({
                             kind: request.kind,
                             text:
-                                options?.materials === ''
+                                options?.materials === '' ||
+                                (options?.noScript &&
+                                    request.kind ===
+                                        KNOWLEDGE_KINDS.salesScript)
                                     ? ''
                                     : `ДОКУМЕНТ[${request.kind}]`,
                             chars: 10,
@@ -209,6 +215,28 @@ describe('CallComplianceReviewService', () => {
         );
     });
 
+    it('соответствие скрипту: скрипт в материалах — процент модели сохраняется', async () => {
+        const { service } = makeDeps();
+        const result = await service.run(ROW, 'presentation');
+        expect(result?.scriptCompliance).toBe(50);
+        expect(result?.scriptIncluded).toBe(true);
+    });
+
+    it('соответствие скрипту: скрипта в базе нет — процент модели снимается', async () => {
+        const { service, aiService } = makeDeps({ noScript: true });
+        const result = await service.run(ROW, 'presentation');
+        expect(result?.scriptCompliance).toBeNull();
+        expect(result?.scriptIncluded).toBe(false);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                user_result: expect.objectContaining({
+                    scriptCompliance: null,
+                    scriptIncluded: false,
+                }) as unknown,
+            }),
+        );
+    });
+
     it('готовых реплик не больше двух', async () => {
         const { service } = makeDeps();
         const result = await service.run(ROW, 'presentation');
@@ -276,6 +304,31 @@ describe('CallComplianceReviewService', () => {
             (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
+    });
+
+    it('обнулённые приёмом чек-листы (null у не-презентации) — не признак показа', async () => {
+        const { service, llm } = makeDeps({
+            aiRecords: [
+                {
+                    type: 'agent-analysis',
+                    user_result: {
+                        callType: 'call',
+                        presentationDone: false,
+                        hvostDone: null,
+                        hvostAnalysis: null,
+                        fiveKDone: null,
+                        fiveKAnalysis: null,
+                    },
+                },
+            ],
+        });
+
+        await service.run(ROW, 'call');
+
+        const prompt = String(
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
+        );
+        expect(prompt).not.toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
     });
 
     it('обычный холодный звонок презентационный блок не получает', async () => {

@@ -43,6 +43,12 @@ export interface FocusMaterials {
     methodology: string;
     /** Верхняя норма доли речи менеджера для типа; null — не нормируется. */
     talkRatioMax: number | null;
+    /**
+     * В общий слой попал документ вида «Скрипт разговора»: без него процент
+     * соответствия скрипту в разборе не сохраняется (решение владельца
+     * 18.11.2026).
+     */
+    scriptIncluded: boolean;
 }
 
 const OBJECTION_HEADING = 'ПЛЕЙБУК ОТРАБОТКИ ВОЗРАЖЕНИЙ:';
@@ -98,6 +104,11 @@ export function renderFocusMaterials(input: {
     talkRatioMax: number | null;
 }): { materials: FocusMaterials; sharedCutChars: number } {
     const byKind = new Map(input.blocks.map(block => [block.kind, block]));
+    // Скрипт попал в разбор, только если у документа есть текст: пустой
+    // блок renderMaterialBlock в промпт не выводит.
+    const scriptIncluded = Boolean(
+        byKind.get(KNOWLEDGE_KINDS.salesScript)?.text,
+    );
     const shared = fitSharedMaterials(
         joinBlocks([
             input.profileBlock,
@@ -159,6 +170,7 @@ export function renderFocusMaterials(input: {
             ),
             methodology,
             talkRatioMax: input.talkRatioMax,
+            scriptIncluded,
         },
         sharedCutChars: shared.cutChars,
     };

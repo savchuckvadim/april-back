@@ -15,6 +15,7 @@ import {
     ObjectionsSlice,
     TypeTotalsCell,
 } from '@lib/sales-ai-analytics';
+import { callTypeHasChecklists } from '@lib/call-lib/call-report/analysis-display';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import type { ManagerOrg } from '../loaders/manager-org.loader';
 
@@ -42,18 +43,16 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
 /**
  * Lite-строка → строка матрицы. Флаги «Хвост»/«5К» в lite-выборке Фазы 1b
  * не приходят; если loader начнёт их отдавать — они попадут в чек-листы
- * ячейки без правки assembler'а.
+ * ячейки без правки assembler'а, но только у презентаций (решение
+ * владельца 18.11.2026).
  */
 export function toMatrixRow(row: DatedLiteRow): MatrixCallRow {
-    const withFlags = row as LiteRowWithChecklists;
+    const { hvostDone, fiveKDone, ...rest } = row as LiteRowWithChecklists;
+    if (!callTypeHasChecklists(row.callType)) return rest;
     return {
-        ...row,
-        ...(withFlags.hvostDone !== undefined
-            ? { hvostDone: withFlags.hvostDone }
-            : {}),
-        ...(withFlags.fiveKDone !== undefined
-            ? { fiveKDone: withFlags.fiveKDone }
-            : {}),
+        ...rest,
+        ...(hvostDone !== undefined ? { hvostDone } : {}),
+        ...(fiveKDone !== undefined ? { fiveKDone } : {}),
     };
 }
 

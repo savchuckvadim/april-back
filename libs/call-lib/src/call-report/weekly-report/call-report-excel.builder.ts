@@ -156,10 +156,16 @@ export class CallReportExcelBuilder {
         );
 
         this.addSummarySheet(workbook, dataset);
+        // «Скрипт, %» — только если хоть у одного разбора скрипт разговора
+        // был в материалах (решение владельца 18.11.2026): пустой столбец
+        // показателя без скрипта не нужен.
+        const withScript = dataset.rows.some(
+            row => row.scriptCompliance !== null,
+        );
         this.addSheet<CallReportWeeklyRow>(
             workbook,
             'Звонки',
-            this.callColumns(links),
+            this.callColumns(links, withScript),
             dataset.rows,
         );
         // Звонки от 5 минут — предметный разговор, а не «недозвон/уточнение»;
@@ -167,7 +173,7 @@ export class CallReportExcelBuilder {
         this.addSheet<CallReportWeeklyRow>(
             workbook,
             'Звонки от 5 минут',
-            this.callColumns(links),
+            this.callColumns(links, withScript),
             dataset.rows.filter(row => (row.durationSec ?? 0) >= LONG_CALL_SEC),
         );
         this.addSheet<CallReportWeeklyPresentationRow>(
@@ -328,6 +334,7 @@ export class CallReportExcelBuilder {
 
     private callColumns(
         links: PortalLinks,
+        withScript: boolean,
     ): SheetColumn<CallReportWeeklyRow>[] {
         const yesNo = (value: boolean | null): string =>
             value === true ? 'да' : value === false ? 'нет' : '';
@@ -381,11 +388,16 @@ export class CallReportExcelBuilder {
                 width: 13,
                 value: row => row.weightedScore,
             },
-            {
-                header: 'Скрипт, %',
-                width: 11,
-                value: row => row.scriptCompliance,
-            },
+            ...(withScript
+                ? [
+                      {
+                          header: 'Скрипт, %',
+                          width: 11,
+                          value: (row: CallReportWeeklyRow) =>
+                              row.scriptCompliance,
+                      },
+                  ]
+                : []),
             {
                 header: 'Приоритет разбора',
                 width: 17,

@@ -106,10 +106,8 @@ export class CallComplianceReviewService {
                 callType,
                 analysis,
             );
-            const materialsText = await this.buildMaterials(
-                domain,
-                isPresentation,
-            );
+            const { text: materialsText, scriptIncluded } =
+                await this.buildMaterials(domain, isPresentation);
             if (!materialsText) {
                 this.logger.log(
                     `Документов компании нет (${domain}) — проверка по ` +
@@ -137,7 +135,7 @@ export class CallComplianceReviewService {
                 { model },
             )) as ComplianceReviewResult;
 
-            const result = this.sanitize(raw, row.text, row.id);
+            const result = this.sanitize(raw, row.text, row.id, scriptIncluded);
             await this.persist(domain, row, result);
             this.logger.log(
                 `Проверка по регламенту (${domain}, activity ${row.activityId}): ` +
@@ -173,27 +171,34 @@ export class CallComplianceReviewService {
         ) {
             return true;
         }
+        // null — «не применимо»: так приём записывает чек-листы у всех
+        // типов, кроме презентации (18.11.2026), и это не признак показа.
         return Boolean(
             analysis.presentationDone ||
-                analysis.hvostDone !== undefined ||
-                analysis.fiveKDone !== undefined ||
+                (analysis.hvostDone !== undefined &&
+                    analysis.hvostDone !== null) ||
+                (analysis.fiveKDone !== undefined &&
+                    analysis.fiveKDone !== null) ||
                 analysis.hvostAnalysis ||
                 analysis.fiveKAnalysis,
         );
     }
 
-    /** Норма и факты: скрипт, регламент, продукт, плейбуки. */
+    /**
+     * Норма и факты: скрипт, регламент, продукт, плейбуки. scriptIncluded —
+     * в материалы попал документ вида «Скрипт разговора».
+     */
     private async buildMaterials(
         domain: string,
         isPresentation: boolean,
-    ): Promise<string> {
+    ): Promise<{ text: string; scriptIncluded: boolean }> {
         // Бюджеты видов — общая таблица с разбором и сводкой в админке.
         const blocks = await this.materials.collect(
             domain,
             budgetRequests(complianceBudgetLines(isPresentation)),
         );
         const byKind = new Map(blocks.map(block => [block.kind, block]));
-        return [
+        const text = [
             renderMaterialBlock(
                 'СКРИПТ РАЗГОВОРА (норма):',
                 byKind.get(KNOWLEDGE_KINDS.salesScript),
@@ -224,17 +229,26 @@ export class CallComplianceReviewService {
         ]
             .filter(Boolean)
             .join('\n\n===\n\n');
+        return {
+            text,
+            scriptIncluded: Boolean(
+                byKind.get(KNOWLEDGE_KINDS.salesScript)?.text,
+            ),
+        };
     }
 
     /**
      * АНТИ-ГАЛЛЮЦИНАЦИЯ: находка без реальной цитаты недопустима —
      * менеджеру нельзя предъявлять то, чего он не говорил. Цитаты
-     * сверяются с расшифровкой по нормализованному тексту.
+     * сверяются с расшифровкой по нормализованному тексту. Процент
+     * соответствия скрипту — только при скрипте в материалах (решение
+     * владельца 18.11.2026): модель ставит его и без скрипта.
      */
     private sanitize(
         raw: ComplianceReviewResult,
         transcript: string,
         transcriptionId: string,
+        scriptIncluded: boolean,
     ): ComplianceReviewResult {
         const haystack = this.normalize(transcript);
         const isQuoted = (quote: string | null | undefined): boolean => {
@@ -265,7 +279,10 @@ export class CallComplianceReviewService {
             factErrors,
             betterLines: (raw.betterLines ?? []).slice(0, MAX_BETTER_LINES),
             verdict: raw.verdict ?? '',
-            scriptCompliance: raw.scriptCompliance ?? null,
+            scriptCompliance: scriptIncluded
+                ? (raw.scriptCompliance ?? null)
+                : null,
+            scriptIncluded,
         };
     }
 

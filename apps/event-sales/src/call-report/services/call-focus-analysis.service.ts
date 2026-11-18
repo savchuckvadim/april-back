@@ -524,6 +524,9 @@ export class CallFocusAnalysisService {
                 ),
             });
             const dto = plainToInstance(AgentCallAnalysisDto, merged);
+            // Был ли скрипт разговора в материалах — по сборке, не по
+            // ответу модели: без скрипта приём обнулит процент соответствия.
+            dto.scriptIncluded = materials.scriptIncluded;
             // Неполный разбор уносит ответы выживших проходов — догону
             // останется позвать только недостающее. Полный их не несёт.
             if (incompleteParts.length > 0) {

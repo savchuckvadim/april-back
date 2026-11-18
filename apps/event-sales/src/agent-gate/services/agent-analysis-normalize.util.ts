@@ -6,6 +6,7 @@ import {
     hvostChecklistLines,
     tidyChecklistTexts,
 } from './agent-analysis-checklist.util';
+import { applyAnalysisDisplayRules } from './agent-analysis-display-rules.util';
 import {
     isTimecodeRangeValid,
     reconcileRiskFlags,
@@ -30,9 +31,12 @@ export function normalizeAgentAnalysis(
     // и литеральные "null"-строки (боевые кейсы 2026-07-30); запись
     // словаря в разборах хвоста и 5К — строками по блокам (17.11.2026).
     const sanitized = tidyChecklistTexts(sanitizeLatexDeep(dto), logger);
-    warnStaleChecklistShape(transcriptionId, agentName, sanitized, logger);
+    // Правила показа (18.11.2026) — до проверок формы и консистентности:
+    // снятое правилом ни предупреждений, ни «исправлений» не вызывает.
+    const shown = applyAnalysisDisplayRules(transcriptionId, sanitized, logger);
+    warnStaleChecklistShape(transcriptionId, agentName, shown, logger);
     // Флаг без доказательства-цитаты снимается (решение владельца 19.10.2026).
-    const proven = reconcileRiskFlags(transcriptionId, sanitized, logger);
+    const proven = reconcileRiskFlags(transcriptionId, shown, logger);
     const withMetrics = applySpeechMetrics(transcriptionId, proven, logger);
     const consistent = enforceConsistency(transcriptionId, withMetrics, logger);
     return fillMethodologyAnalysis(consistent, logger);

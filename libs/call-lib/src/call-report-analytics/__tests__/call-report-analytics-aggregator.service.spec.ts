@@ -125,6 +125,32 @@ describe('CallReportAnalyticsAggregatorService', () => {
             expect(greeting.avgScore).toBe(6);
             expect(greeting.count).toBe(2);
         });
+
+        it('среднее соответствие скрипту — только по разборам со скриптом в материалах', () => {
+            const body = aggregator.buildSpeech([
+                row({
+                    analysis: { scriptCompliance: 80, scriptIncluded: true },
+                }),
+                // Скрипта не было — процент модели в среднее не идёт.
+                row({
+                    transcriptionId: '2',
+                    analysis: { scriptCompliance: 40, scriptIncluded: false },
+                }),
+                // Старый разбор без признака — тоже не идёт.
+                row({
+                    transcriptionId: '3',
+                    analysis: { scriptCompliance: 10 },
+                }),
+            ]);
+            expect(body.avgScriptCompliance).toBe(80);
+        });
+
+        it('ни одного разбора со скриптом — среднего соответствия скрипту нет', () => {
+            const body = aggregator.buildSpeech([
+                row({ analysis: { scriptCompliance: 40 } }),
+            ]);
+            expect(body.avgScriptCompliance).toBeNull();
+        });
     });
 
     describe('buildObjections', () => {

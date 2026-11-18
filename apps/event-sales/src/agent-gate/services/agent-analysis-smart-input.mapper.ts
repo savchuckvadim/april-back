@@ -133,7 +133,9 @@ export function buildAgentSmartItemInput(
         talkRatioPct: dto.talkRatioPct,
         questionsCount: dto.questionsCount,
         weightedScore: dto.weightedScore ?? computeWeightedScore(dto),
-        scriptCompliance: dto.scriptCompliance,
+        // null (скрипта в разборе не было) — поле карточки не трогается:
+        // ни 0, ни затирания значения старой карточки.
+        scriptCompliance: dto.scriptCompliance ?? undefined,
         coachingPriority: dto.coachingPriority,
         // Методика и ограничители (01.11.2026): сводные поля карточки.
         methodology: dto.methodology

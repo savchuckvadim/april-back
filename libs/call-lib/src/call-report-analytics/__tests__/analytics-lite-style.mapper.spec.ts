@@ -16,6 +16,7 @@ describe('mapLiteStyle', () => {
                 interlocutorRole: 'decision_maker',
                 productive: true,
                 scriptCompliance: 80,
+                scriptIncluded: true,
             }),
         ).toEqual({
             talkRatioPct: 58,
@@ -32,6 +33,16 @@ describe('mapLiteStyle', () => {
             scriptCompliance: 80,
             callDirection: null,
         });
+    });
+
+    it('процент скрипта без признака скрипта в разборе не берётся (старые и бесскриптовые разборы)', () => {
+        expect(mapLiteStyle({ scriptCompliance: 40 }).scriptCompliance).toBe(
+            null,
+        );
+        expect(
+            mapLiteStyle({ scriptCompliance: 40, scriptIncluded: false })
+                .scriptCompliance,
+        ).toBeNull();
     });
 
     it('разбора нет — все маркеры null', () => {

@@ -138,6 +138,10 @@ export class CallDeepAnalysisService {
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 // Расход единственного вызова — в колонки ais при приёме.
                 usage: sumCompletionUsage([response]),
+                // Цельный разбор читает только методички типа звонка, вид
+                // «Скрипт разговора» в него не идёт — процент соответствия
+                // скрипту приём обнулит (решение владельца 18.11.2026).
+                scriptIncluded: false,
             });
             this.logger.log(
                 `Глубокий разбор (${domain}): оценка ${dto.score ?? '—'}, ` +
