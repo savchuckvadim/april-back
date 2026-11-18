@@ -130,7 +130,13 @@ export interface ComplianceReviewResult {
         why: string;
     }[];
     verdict: string;
+    /** Только при скрипте в материалах; иначе код ставит null. */
     scriptCompliance: number | null;
+    /**
+     * В материалы проверки попал документ вида «Скрипт разговора» — ставит
+     * код по сборке материалов, у модели не спрашивается.
+     */
+    scriptIncluded?: boolean;
 }
 
 export const COMPLIANCE_REVIEW_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}

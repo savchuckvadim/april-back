@@ -18,6 +18,7 @@ import {
     normalizeFiveKAnalysisText,
     normalizeHvostAnalysisText,
 } from '../checklist-text';
+import { trustedScriptCompliance } from '../analysis-display';
 
 /** Размер фрагмента расшифровки: под лимит ячейки Excel (32767). */
 const TRANSCRIPT_PART_CHARS = 30000;
@@ -44,7 +45,9 @@ interface RawAnalysis {
     sentiment?: string;
     talkRatioPct?: number;
     questionsCount?: number;
-    scriptCompliance?: number;
+    scriptCompliance?: number | null;
+    /** В разбор попал скрипт разговора (без него процент не показывается). */
+    scriptIncluded?: boolean;
     coachingPriority?: string;
     needsFound?: boolean;
     needs?: string[];
@@ -316,7 +319,8 @@ export class CallReportWeeklyDataService {
             productive: analysis?.productive ?? null,
             score: analysis?.score ?? null,
             weightedScore: analysis?.weightedScore ?? null,
-            scriptCompliance: analysis?.scriptCompliance ?? null,
+            // Только при скрипте в разборе (решение владельца 18.11.2026).
+            scriptCompliance: trustedScriptCompliance(analysis),
             coachingPriority: analysis?.coachingPriority ?? null,
             interlocutorRole: analysis?.interlocutorRole ?? null,
             specialist: analysis?.specialist ?? null,

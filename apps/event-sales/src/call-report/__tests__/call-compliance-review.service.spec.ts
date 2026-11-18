@@ -1,3 +1,4 @@
+import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import { CallComplianceReviewService } from '../services/call-compliance-review.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 
@@ -78,6 +79,8 @@ const makeDeps = (options?: {
     modelResult?: unknown;
     aiRecords?: unknown[];
     materials?: string;
+    /** Вида «Скрипт разговора» в базе нет. */
+    noScript?: boolean;
 }) => {
     const updateExisting = jest.fn().mockResolvedValue(7);
     MockedWriter.mockImplementation(() => ({ updateExisting }) as never);
@@ -115,7 +118,9 @@ const makeDeps = (options?: {
                         requests.map(request => ({
                             kind: request.kind,
                             text:
-                                options?.materials === ''
+                                options?.materials === '' ||
+                                (options?.noScript &&
+                                    request.kind === KNOWLEDGE_KINDS.salesScript)
                                     ? ''
                                     : `ДОКУМЕНТ[${request.kind}]`,
                             chars: 10,
@@ -205,6 +210,28 @@ describe('CallComplianceReviewService', () => {
                 complianceViolations: 0,
                 // Подтверждённых находок нет — нарушений нет.
                 complianceSeverity: 'none',
+            }),
+        );
+    });
+
+    it('соответствие скрипту: скрипт в материалах — процент модели сохраняется', async () => {
+        const { service } = makeDeps();
+        const result = await service.run(ROW, 'presentation');
+        expect(result?.scriptCompliance).toBe(50);
+        expect(result?.scriptIncluded).toBe(true);
+    });
+
+    it('соответствие скрипту: скрипта в базе нет — процент модели снимается', async () => {
+        const { service, aiService } = makeDeps({ noScript: true });
+        const result = await service.run(ROW, 'presentation');
+        expect(result?.scriptCompliance).toBeNull();
+        expect(result?.scriptIncluded).toBe(false);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                user_result: expect.objectContaining({
+                    scriptCompliance: null,
+                    scriptIncluded: false,
+                }) as unknown,
             }),
         );
     });

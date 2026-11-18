@@ -63,6 +63,10 @@ export interface CallReportSmartItemInput {
     talkRatioPct?: number;
     questionsCount?: number;
     weightedScore?: number;
+    /**
+     * Соответствие скрипту, %; нет (скрипта в разборе не было) — поле
+     * карточки не пишется.
+     */
     scriptCompliance?: number;
     coachingPriority?: string;
     /** Методика разбора: «Название версия»; без методики — не пишется. */

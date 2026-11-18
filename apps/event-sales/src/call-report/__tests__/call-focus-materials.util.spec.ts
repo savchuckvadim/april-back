@@ -6,6 +6,7 @@ import {
     type KnowledgeBudgetLine,
     type KnowledgeMaterialBlock,
 } from '@lib/call-lib';
+import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import {
     fitSharedMaterials,
     focusContextFor,
@@ -136,6 +137,40 @@ describe('материалы разбора по проходам', () => {
         });
 
         expect(materials.shared.split('[call-analysis-base]')).toHaveLength(2);
+    });
+
+    it('признак скрипта: документ «Скрипт разговора» с текстом есть — true, нет или пустой — false', () => {
+        const lines = focusBudgetLines({
+            typedKind: 'call-analysis-cold',
+            presentation: false,
+        });
+        const render = (blocks: KnowledgeMaterialBlock[]) =>
+            renderFocusMaterials({
+                profileBlock: '',
+                typedKind: 'call-analysis-cold',
+                presentation: false,
+                lines,
+                blocks,
+                talkRatioMax: null,
+            }).materials;
+
+        const all = fullBlocks(lines);
+        expect(all.some(block => block.kind === KNOWLEDGE_KINDS.salesScript)).toBe(
+            true,
+        );
+        expect(render(all).scriptIncluded).toBe(true);
+
+        const withoutScript = all.filter(
+            block => block.kind !== KNOWLEDGE_KINDS.salesScript,
+        );
+        expect(render(withoutScript).scriptIncluded).toBe(false);
+
+        const emptyScript = all.map(block =>
+            block.kind === KNOWLEDGE_KINDS.salesScript
+                ? { ...block, text: '', chars: 0 }
+                : block,
+        );
+        expect(render(emptyScript).scriptIncluded).toBe(false);
     });
 
     it('страховка потолка: слой длиннее потолка режется с пометкой и числом обрезанных знаков', () => {

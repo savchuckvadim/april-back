@@ -41,9 +41,16 @@ export class CallReportSmartFieldSet {
         return callReportSmartUfName(this.smartInfo, code);
     }
 
-    set(code: string, value: string | number | undefined): void {
-        if (value === undefined || value === '') return;
-        this.fields[this.ufName(code)] = this.coerceScalar(code, value);
+    /**
+     * Скалярное поле. undefined, null и пустая строка поле не трогают:
+     * в запрос оно не попадает, значение карточки остаётся прежним (null —
+     * «показателя нет», а не 0).
+     */
+    set(code: string, value: string | number | null | undefined): void {
+        if (value === undefined || value === null || value === '') return;
+        const coerced = this.coerceScalar(code, value);
+        if (coerced === undefined) return;
+        this.fields[this.ufName(code)] = coerced;
     }
 
     /**

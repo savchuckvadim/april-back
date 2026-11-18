@@ -1,4 +1,5 @@
 import { asBoolean, asNumber, asString } from './json-value.util';
+import { trustedScriptCompliance } from '../../call-report/analysis-display';
 import type { AnalyticsLiteStyle } from '../types/analytics-lite.types';
 
 /**
@@ -27,7 +28,8 @@ export function mapLiteStyle(
         refusalCategory: asString(analysis.refusalCategory),
         interlocutorRole: asString(analysis.interlocutorRole),
         productive: asBoolean(analysis.productive),
-        scriptCompliance: asNumber(analysis.scriptCompliance),
+        // Только при скрипте в разборе (решение владельца 18.11.2026).
+        scriptCompliance: trustedScriptCompliance(analysis),
         callDirection: asString(analysis.callDirection),
     };
 }

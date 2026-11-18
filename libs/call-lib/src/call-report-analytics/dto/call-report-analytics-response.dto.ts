@@ -220,7 +220,9 @@ export class CallReportSpeechReportDto {
     avgQuestionsCount: number | null;
 
     @ApiProperty({
-        description: 'Среднее соответствие скрипту, %.',
+        description:
+            'Среднее соответствие скрипту, % — только по разборам, где скрипт ' +
+            'разговора был в материалах; таких нет — null.',
         example: 67,
         type: Number,
         nullable: true,

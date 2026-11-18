@@ -11,6 +11,7 @@ import {
     asString,
     asStringArray,
 } from '@lib/call-lib/call-report-analytics/lib/json-value.util';
+import { trustedScriptCompliance } from '@lib/call-lib/call-report/analysis-display';
 import {
     normalizeFiveKAnalysisText,
     normalizeHvostAnalysisText,
@@ -201,7 +202,9 @@ export function readCallPageAnalysis(
         summary: text(source.summary),
         score: asNumber(source.score),
         weightedScore: asNumber(source.weightedScore),
-        scriptCompliance: asNumber(source.scriptCompliance),
+        // Процент — только если скрипт разговора был в разборе
+        // (решение владельца 18.11.2026); у старых разборов признака нет.
+        scriptCompliance: trustedScriptCompliance(source),
         scoreExplanation: text(source.scoreExplanation),
         coachingPriority: text(source.coachingPriority),
         recommendations: asStringArray(source.recommendations),
