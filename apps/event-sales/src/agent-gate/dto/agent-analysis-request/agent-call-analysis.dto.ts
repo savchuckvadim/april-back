@@ -21,7 +21,7 @@ import {
 } from './agent-analysis-parts.const';
 import { AgentAnalysisUsageDto } from './agent-analysis-usage.dto';
 import { AgentAnalysisVersionsDto } from './agent-analysis-versions.dto';
-import { AgentCallAnalysisContentDto } from './agent-call-analysis-content.dto';
+import { AgentCallAnalysisEvidenceDto } from './agent-call-analysis-evidence.dto';
 import { AgentFlowDraftDto } from './agent-flow-draft.dto';
 import {
     AgentCapTriggeredDto,
@@ -44,9 +44,10 @@ import {
  * создаётся элемент смарт-процесса «AI-анализ звонков».
  *
  * Поля классификации и содержания разбора — в базовых слоях
- * (AgentCallAnalysisClassificationDto → AgentCallAnalysisContentDto).
+ * (AgentCallAnalysisClassificationDto → AgentCallAnalysisContentDto →
+ * AgentCallAnalysisEvidenceDto).
  */
-export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
+export class AgentCallAnalysisDto extends AgentCallAnalysisEvidenceDto {
     @ApiPropertyOptional({
         description:
             'Итоговая оценка качества работы менеджера в звонке (1–10), в контексте ' +

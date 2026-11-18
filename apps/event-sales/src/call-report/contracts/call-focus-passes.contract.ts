@@ -12,6 +12,8 @@ import {
     FOCUS_MOVEMENT_PROMPT,
     FOCUS_MOVEMENT_SCHEMA,
 } from './call-focus-deal.contract';
+import type { FocusPassOptions } from './call-evidence.contract';
+import { quotePassContract } from './call-focus-quote-passes.contract';
 import type { CallFocusKey } from './call-focus-sections.contract';
 
 /**
@@ -63,6 +65,21 @@ export const FOCUS_PASSES: readonly FocusPass[] = [
         schema: FOCUS_CLOSING_SCHEMA,
     },
 ];
+
+/**
+ * Проходы разбора для звонка: без цитат — прежнее задание (тот же список
+ * FOCUS_PASSES), с цитатами (focus-v3.4) — задание с цитатами и секундами и
+ * «хвостом»/5К только у презентации. Ключи, подписи и порядок — общие.
+ */
+export function buildFocusPasses(
+    options: FocusPassOptions,
+): readonly FocusPass[] {
+    if (!options.quoteEvidence) return FOCUS_PASSES;
+    return FOCUS_PASSES.map(pass => ({
+        ...pass,
+        ...quotePassContract(pass.key, options.callType),
+    }));
+}
 
 /** Синтез итога — в журнале и схеме как отдельный проход. */
 export const SYNTHESIS_PASS = {

@@ -26,7 +26,11 @@ import {
     renderPresentationStrictnessBlock,
     buildDeepAnalysisUserContent,
 } from '../contracts/call-deep-analysis.contract';
-import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
+import {
+    QUOTE_EVIDENCE_ENABLED,
+    checklistsAskedFor,
+} from '../contracts/call-evidence.contract';
+import { promptVersionFor } from '../contracts/call-report-versions.const';
 import { sumCompletionUsage } from './call-analysis-usage.util';
 import {
     emptyFocusResults,
@@ -70,6 +74,7 @@ import {
 import {
     FOCUS_PASSES,
     SYNTHESIS_PASS,
+    buildFocusPasses,
     focusSchemaName,
     type FocusPass,
 } from '../contracts/call-focus-passes.contract';
@@ -102,6 +107,12 @@ export interface CallFocusRunOptions {
      * заново не вызываются. Годность (версия промпта) проверяет вызывающий.
      */
     stored?: StoredFocusPasses;
+    /**
+     * Задание с цитатами и секундами (focus-v3.4); не задано — по
+     * выключателю QUOTE_EVIDENCE_ENABLED. Проверка разбора на звонке из
+     * админки включает его явно.
+     */
+    quoteEvidence?: boolean;
 }
 
 /** Ответ одного вызова модели с расходом токенов. */
@@ -200,14 +211,19 @@ export class CallFocusAnalysisService {
     /**
      * Ужесточение «5К и хвост»: на порталах с обязательной отчётностью
      * после презентации (event-sales `withCheckPresentation`) разбор
-     * презентационных/решенческих звонков строже требует закрытие.
-     * Fail-open: настройки не прочитались — разбор без блока.
+     * презентационных/решенческих звонков строже требует закрытие. С
+     * цитатами (focus-v3.4) «хвост» и 5К есть только у презентации — блок
+     * идёт только ей. Fail-open: настройки не прочитались — разбор без блока.
      */
     private async buildAfterPresentationBlock(
         domain: string,
         callType: string | null,
+        quoteEvidence: boolean,
     ): Promise<string> {
-        if (callType !== 'presentation' && callType !== 'decision') return '';
+        const applies = quoteEvidence
+            ? checklistsAskedFor(callType)
+            : callType === 'presentation' || callType === 'decision';
+        if (!applies) return '';
         try {
             const settings = await this.appSettings.resolve(
                 domain,
@@ -278,10 +294,15 @@ export class CallFocusAnalysisService {
     private async commonTailOf(
         domain: string,
         callType: string | null,
+        quoteEvidence = QUOTE_EVIDENCE_ENABLED,
     ): Promise<string> {
         return (
             this.buildStageBlock(callType) +
-            (await this.buildAfterPresentationBlock(domain, callType)) +
+            (await this.buildAfterPresentationBlock(
+                domain,
+                callType,
+                quoteEvidence,
+            )) +
             (await this.buildStrictnessBlock(domain))
         );
     }
@@ -325,7 +346,15 @@ export class CallFocusAnalysisService {
                       }
                     : undefined,
             );
-            const commonTail = await this.commonTailOf(domain, callType);
+            // Задание проходов: прежнее или с цитатами (focus-v3.4).
+            const quoteEvidence =
+                options?.quoteEvidence ?? QUOTE_EVIDENCE_ENABLED;
+            const passes = buildFocusPasses({ quoteEvidence, callType });
+            const commonTail = await this.commonTailOf(
+                domain,
+                callType,
+                quoteEvidence,
+            );
             // Якоря шкалы из методики — только проходам, которые ставят
             // оценки, и только когда у методики есть проход для этого типа.
             const scoringTail =
@@ -354,9 +383,7 @@ export class CallFocusAnalysisService {
                 keptMethodology.tag === resolved?.versionTag
                     ? keptMethodology.result
                     : null;
-            const livePasses = FOCUS_PASSES.filter(
-                pass => !stored?.passes[pass.key],
-            );
+            const livePasses = passes.filter(pass => !stored?.passes[pass.key]);
             // Проходы идут одновременно; сорвался ровно один и по временной
             // причине — он повторяется (call-focus-retry.util.ts).
             const calls: WaveCall<string, FocusCompletion>[] = [
@@ -400,7 +427,7 @@ export class CallFocusAnalysisService {
             );
             const responses: (FocusCompletion | null)[] = [];
             const byKey: FocusResultsByKey = emptyFocusResults();
-            for (const pass of FOCUS_PASSES) {
+            for (const pass of passes) {
                 const kept = stored?.passes[pass.key];
                 if (kept) {
                     byKey[pass.key] = kept;
@@ -426,7 +453,7 @@ export class CallFocusAnalysisService {
             if (survived < 2) {
                 const providerFailure = isFocusProviderFailure(passErrors);
                 this.logger.warn(
-                    `Фокус-разбор (${domain}): выжило ${survived}/${FOCUS_PASSES.length} проходов — результат отброшен` +
+                    `Фокус-разбор (${domain}): выжило ${survived}/${passes.length} проходов — результат отброшен` +
                         (providerFailure
                             ? ' (проходы оборвались на поставщике модели)'
                             : ''),
@@ -478,7 +505,7 @@ export class CallFocusAnalysisService {
                 synthesis,
                 // Каждый проход — только разделы своей зоны (чужие коды от
                 // модели отбрасываются); дубли кодов схлопываются ниже.
-                sections: FOCUS_PASSES.flatMap(pass =>
+                sections: passes.flatMap(pass =>
                     this.sectionsOf(byKey[pass.key], pass, domain),
                 ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
@@ -510,7 +537,7 @@ export class CallFocusAnalysisService {
                                   result: methodologyResult,
                               }
                             : null,
-                        CALL_REPORT_PROMPT_VERSION,
+                        promptVersionFor(quoteEvidence),
                     ),
                 };
             }
@@ -540,7 +567,7 @@ export class CallFocusAnalysisService {
             }
             const keptKeys = Object.keys(stored?.passes ?? {});
             this.logger.log(
-                `Фокус-разбор (${domain}): проходов ${survived}/${FOCUS_PASSES.length}` +
+                `Фокус-разбор (${domain}): проходов ${survived}/${passes.length}` +
                     (keptKeys.length > 0
                         ? ` (из сохранённых: ${keptKeys.join(', ')})`
                         : '') +

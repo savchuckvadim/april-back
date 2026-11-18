@@ -16,5 +16,7 @@ export * from './agent-analysis-request/agent-analysis-usage.dto';
 export * from './agent-analysis-request/agent-analysis-versions.dto';
 export * from './agent-analysis-request/agent-call-analysis-classification.dto';
 export * from './agent-analysis-request/agent-call-analysis-content.dto';
+export * from './agent-analysis-request/agent-evidence.dto';
+export * from './agent-analysis-request/agent-call-analysis-evidence.dto';
 export * from './agent-analysis-request/agent-call-analysis.dto';
 export * from './agent-analysis-request/agent-analysis-parts.const';

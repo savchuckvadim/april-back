@@ -60,6 +60,10 @@ const EXPECTED_FIELDS = [
     'prices',
     'upsell',
     'selfIntro',
+    // Места в разговоре (задание focus-v3.4) — слой AgentCallAnalysisEvidenceDto.
+    'needItems',
+    'hvostEvidence',
+    'fiveKEvidence',
     'score',
     'weightedScore',
     'scriptCompliance',

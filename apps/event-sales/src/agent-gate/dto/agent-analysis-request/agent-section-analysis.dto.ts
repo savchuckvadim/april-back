@@ -3,6 +3,7 @@ import {
     IsArray,
     IsIn,
     IsInt,
+    IsNumber,
     IsOptional,
     IsString,
     Max,
@@ -127,4 +128,30 @@ export class AgentSectionAnalysisDto {
     @IsArray()
     @IsString({ each: true })
     alternatives?: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Доказательство оценки раздела (задание focus-v3.4): дословная ' +
+            'реплика из расшифровки, на которой держится оценка; null — этап ' +
+            'не прозвучал. «Как было» остаётся пересказом.',
+        example: 'а вы сейчас чем пользуетесь для поиска документов?',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    quote?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда начала цитаты-доказательства в записи; null — меток нет ' +
+            'или время не подтвердилось по расшифровке.',
+        example: 95,
+        type: Number,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    startSec?: number | null;
 }

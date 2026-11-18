@@ -1,5 +1,6 @@
 import { CALL_REPORT_SECTIONS } from '@lib/call-lib';
 import { SECTION_ITEM_SCHEMA } from './call-deep-analysis.contract';
+import { SECTION_EVIDENCE_PROPERTIES } from './call-evidence.contract';
 
 /**
  * Зоны фокус-проходов: какой проход отвечает за какие разделы смарта.
@@ -35,23 +36,41 @@ export function focusCatalog(focus: CallFocusKey): string {
         .join('\n');
 }
 
-/** sections-подсхема, ограниченная кодами фокуса. */
+/**
+ * sections-подсхема, ограниченная кодами фокуса. quoteEvidence — у записи
+ * раздела ещё цитата-доказательство и секунда (focus-v3.4); без него
+ * подсхема прежняя байт в байт.
+ */
 export function focusSectionsSchema(
     focus: CallFocusKey,
+    quoteEvidence = false,
 ): Record<string, unknown> {
-    return {
-        type: 'array',
-        items: {
-            ...SECTION_ITEM_SCHEMA,
-            properties: {
-                ...SECTION_ITEM_SCHEMA.properties,
-                section: {
-                    type: 'string',
-                    enum: [...FOCUS_SECTION_CODES[focus]],
-                    description:
-                        'Код раздела; каждый код — не более одной записи в sections',
-                },
+    const items = {
+        ...SECTION_ITEM_SCHEMA,
+        properties: {
+            ...SECTION_ITEM_SCHEMA.properties,
+            section: {
+                type: 'string',
+                enum: [...FOCUS_SECTION_CODES[focus]],
+                description:
+                    'Код раздела; каждый код — не более одной записи в sections',
             },
         },
+    };
+    return {
+        type: 'array',
+        items: quoteEvidence
+            ? {
+                  ...items,
+                  properties: {
+                      ...items.properties,
+                      ...SECTION_EVIDENCE_PROPERTIES,
+                  },
+                  required: [
+                      ...items.required,
+                      ...Object.keys(SECTION_EVIDENCE_PROPERTIES),
+                  ],
+              }
+            : items,
     };
 }
