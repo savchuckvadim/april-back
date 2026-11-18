@@ -120,7 +120,8 @@ const makeDeps = (options?: {
                             text:
                                 options?.materials === '' ||
                                 (options?.noScript &&
-                                    request.kind === KNOWLEDGE_KINDS.salesScript)
+                                    request.kind ===
+                                        KNOWLEDGE_KINDS.salesScript)
                                     ? ''
                                     : `ДОКУМЕНТ[${request.kind}]`,
                             chars: 10,
@@ -303,6 +304,31 @@ describe('CallComplianceReviewService', () => {
             (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
+    });
+
+    it('обнулённые приёмом чек-листы (null у не-презентации) — не признак показа', async () => {
+        const { service, llm } = makeDeps({
+            aiRecords: [
+                {
+                    type: 'agent-analysis',
+                    user_result: {
+                        callType: 'call',
+                        presentationDone: false,
+                        hvostDone: null,
+                        hvostAnalysis: null,
+                        fiveKDone: null,
+                        fiveKAnalysis: null,
+                    },
+                },
+            ],
+        });
+
+        await service.run(ROW, 'call');
+
+        const prompt = String(
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
+        );
+        expect(prompt).not.toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
     });
 
     it('обычный холодный звонок презентационный блок не получает', async () => {

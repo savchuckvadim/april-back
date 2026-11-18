@@ -171,10 +171,14 @@ export class CallComplianceReviewService {
         ) {
             return true;
         }
+        // null — «не применимо»: так приём записывает чек-листы у всех
+        // типов, кроме презентации (18.11.2026), и это не признак показа.
         return Boolean(
             analysis.presentationDone ||
-                analysis.hvostDone !== undefined ||
-                analysis.fiveKDone !== undefined ||
+                (analysis.hvostDone !== undefined &&
+                    analysis.hvostDone !== null) ||
+                (analysis.fiveKDone !== undefined &&
+                    analysis.fiveKDone !== null) ||
                 analysis.hvostAnalysis ||
                 analysis.fiveKAnalysis,
         );

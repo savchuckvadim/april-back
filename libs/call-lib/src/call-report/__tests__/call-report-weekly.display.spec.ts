@@ -5,7 +5,8 @@ import { CallReportWeeklyDataset } from '../weekly-report/call-report-weekly.typ
 
 /**
  * Недельный Excel по правилам показа разбора (решения владельца
- * 18.11.2026): процент соответствия скрипту — только при скрипте в разборе.
+ * 18.11.2026): процент соответствия скрипту — только при скрипте в разборе,
+ * чек-листы «Хвост» и 5К — только у презентации.
  */
 const FROM = new Date('2026-11-09T00:00:00Z');
 const TO = new Date('2026-11-16T00:00:00Z');
@@ -53,7 +54,9 @@ const callHeaders = async (
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
     const values = workbook.getWorksheet('Звонки')?.getRow(1).values;
-    return Array.isArray(values) ? values.map(value => String(value)) : [];
+    return Array.isArray(values)
+        ? values.filter((value): value is string => typeof value === 'string')
+        : [];
 };
 
 describe('недельный отчёт: соответствие скрипту', () => {
@@ -83,5 +86,42 @@ describe('недельный отчёт: соответствие скрипту
             scriptCompliance: 40,
         });
         expect(dataset.rows[0].scriptCompliance).toBeNull();
+    });
+});
+
+const CHECKLISTS = {
+    hvostDone: true,
+    hvostSteps: { desire: true, offered: true },
+    hvostAnalysis: '1. ЖЕЛАНИЕ РАБОТАТЬ — ✓',
+    fiveKDone: false,
+    fiveKItems: { client: true, colleagues: false },
+    fiveKAnalysis: 'КОЛЛЕГИ — не выяснено',
+};
+
+describe('недельный отчёт: чек-листы «Хвост» и 5К', () => {
+    it('презентация — чек-листы в строке и на листе презентаций', async () => {
+        const dataset = await collect({
+            callType: 'presentation',
+            ...CHECKLISTS,
+        });
+        expect(dataset.rows[0]).toMatchObject({
+            hvostDone: true,
+            fiveKDone: false,
+            hvostAnalysis: '1. ЖЕЛАНИЕ РАБОТАТЬ — ✓',
+        });
+        expect(dataset.presentations).toHaveLength(1);
+    });
+
+    it('звонок по решению (старый разбор с чек-листами) — пусто, на лист презентаций не попадает', async () => {
+        const dataset = await collect({ callType: 'decision', ...CHECKLISTS });
+        expect(dataset.rows[0]).toMatchObject({
+            hvostDone: null,
+            fiveKDone: null,
+            hvostSteps: null,
+            fiveKItems: null,
+            hvostAnalysis: null,
+            fiveKAnalysis: null,
+        });
+        expect(dataset.presentations).toHaveLength(0);
     });
 });

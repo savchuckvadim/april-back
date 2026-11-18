@@ -18,7 +18,10 @@ import {
     normalizeFiveKAnalysisText,
     normalizeHvostAnalysisText,
 } from '../checklist-text';
-import { trustedScriptCompliance } from '../analysis-display';
+import {
+    callTypeHasChecklists,
+    trustedScriptCompliance,
+} from '../analysis-display';
 
 /** Размер фрагмента расшифровки: под лимит ячейки Excel (32767). */
 const TRANSCRIPT_PART_CHARS = 30000;
@@ -139,9 +142,9 @@ export class CallReportWeeklyDataService {
                 sections.push(...this.buildSectionRows(call, analysis));
             }
             transcripts.push(...this.buildTranscriptRows(row, call.text));
-            // Тип звонка модель иногда ставит «другое», хотя хвост/5К
-            // разобраны — поэтому на лист презентаций берём по НАЛИЧИЮ
-            // разбора, а не по типу (жалоба владельца 27.08.2026).
+            // На лист презентаций — по НАЛИЧИЮ разбора хвоста/5К (жалоба
+            // владельца 27.08.2026); с 18.11.2026 чек-листы есть только у
+            // типа «Презентация» (buildRow), другие типы сюда не попадают.
             const presentation = this.buildPresentationRow(row);
             if (presentation) presentations.push(presentation);
         }
@@ -211,8 +214,8 @@ export class CallReportWeeklyDataService {
     /**
      * Лист «Презентации»: звонок попадает сюда, если по нему ЕСТЬ разбор
      * хвоста или 5К — в любом виде (итог, текст разбора или хотя бы один
-     * пункт чеклиста). Тип звонка не проверяется: классификатор иногда
-     * ставит «другое», а методологический разбор при этом выполнен.
+     * пункт чеклиста). Чек-листы в строке есть только у презентации
+     * (решение владельца 18.11.2026, buildRow).
      */
     private buildPresentationRow(
         row: CallReportWeeklyRow,
@@ -301,6 +304,12 @@ export class CallReportWeeklyDataService {
                     : (item.objection ?? ''),
             )
             .filter(Boolean);
+        // Чек-листы «Хвост» и 5К — только у презентации (решение владельца
+        // 18.11.2026): у других типов столбцы пустые, на лист презентаций
+        // звонок не попадает.
+        const withChecklists = callTypeHasChecklists(analysis?.callType)
+            ? analysis
+            : null;
         return {
             callDate: call.callStartedAt ?? call.createdAt,
             managerId: call.userId ? Number(call.userId) : null,
@@ -330,10 +339,10 @@ export class CallReportWeeklyDataService {
             nextStepSet: analysis?.nextStep?.set ?? null,
             nextStep: analysis?.nextStep?.description ?? null,
             nextStepDate: analysis?.nextStep?.date ?? null,
-            hvostDone: analysis?.hvostDone ?? null,
-            fiveKDone: analysis?.fiveKDone ?? null,
-            hvostSteps: analysis?.hvostSteps ?? null,
-            fiveKItems: analysis?.fiveKItems ?? null,
+            hvostDone: withChecklists?.hvostDone ?? null,
+            fiveKDone: withChecklists?.fiveKDone ?? null,
+            hvostSteps: withChecklists?.hvostSteps ?? null,
+            fiveKItems: withChecklists?.fiveKItems ?? null,
             summary: analysis?.summary ?? null,
             scoreExplanation: analysis?.scoreExplanation ?? null,
             needs: (analysis?.needs ?? []).join('\n') || null,
@@ -347,8 +356,12 @@ export class CallReportWeeklyDataService {
             employeeRecommendations: analysis?.employeeRecommendations ?? null,
             speechAnalysis: analysis?.speechAnalysis ?? null,
             // Запись словаря в старых разборах — строками по блокам анкеты.
-            hvostAnalysis: normalizeHvostAnalysisText(analysis?.hvostAnalysis),
-            fiveKAnalysis: normalizeFiveKAnalysisText(analysis?.fiveKAnalysis),
+            hvostAnalysis: normalizeHvostAnalysisText(
+                withChecklists?.hvostAnalysis,
+            ),
+            fiveKAnalysis: normalizeFiveKAnalysisText(
+                withChecklists?.fiveKAnalysis,
+            ),
             reportComparison: analysis?.reportComparison ?? null,
             transcript: call.text ?? null,
         };

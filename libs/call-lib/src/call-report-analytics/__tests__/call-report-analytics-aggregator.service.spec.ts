@@ -128,14 +128,19 @@ describe('CallReportAnalyticsAggregatorService', () => {
 
         it('среднее соответствие скрипту — только по разборам со скриптом в материалах', () => {
             const body = aggregator.buildSpeech([
-                row({ analysis: { scriptCompliance: 80, scriptIncluded: true } }),
+                row({
+                    analysis: { scriptCompliance: 80, scriptIncluded: true },
+                }),
                 // Скрипта не было — процент модели в среднее не идёт.
                 row({
                     transcriptionId: '2',
                     analysis: { scriptCompliance: 40, scriptIncluded: false },
                 }),
                 // Старый разбор без признака — тоже не идёт.
-                row({ transcriptionId: '3', analysis: { scriptCompliance: 10 } }),
+                row({
+                    transcriptionId: '3',
+                    analysis: { scriptCompliance: 10 },
+                }),
             ]);
             expect(body.avgScriptCompliance).toBe(80);
         });

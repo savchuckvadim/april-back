@@ -39,9 +39,9 @@ describe('поля карточки разбора: соответствие с�
     });
 
     it('процент есть — пишется как есть, включая 0', () => {
-        expect(fieldsOf({ scriptCompliance: 70 }).ufCrm128ScriptCompliance).toBe(
-            70,
-        );
+        expect(
+            fieldsOf({ scriptCompliance: 70 }).ufCrm128ScriptCompliance,
+        ).toBe(70);
         expect(fieldsOf({ scriptCompliance: 0 }).ufCrm128ScriptCompliance).toBe(
             0,
         );

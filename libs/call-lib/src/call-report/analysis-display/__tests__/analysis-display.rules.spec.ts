@@ -1,4 +1,7 @@
 import {
+    CALL_ANALYSIS_CHECKLIST_FIELDS,
+    CALL_REPORT_CHECKLIST_CALL_TYPES,
+    callTypeHasChecklists,
     isScriptComplianceTrusted,
     trustedScriptCompliance,
 } from '../analysis-display.rules';
@@ -6,7 +9,10 @@ import {
 describe('правила показа разбора: соответствие скрипту', () => {
     it('скрипт был в разборе — процент показывается', () => {
         expect(
-            trustedScriptCompliance({ scriptIncluded: true, scriptCompliance: 70 }),
+            trustedScriptCompliance({
+                scriptIncluded: true,
+                scriptCompliance: 70,
+            }),
         ).toBe(70);
         expect(isScriptComplianceTrusted({ scriptIncluded: true })).toBe(true);
     });
@@ -52,5 +58,42 @@ describe('правила показа разбора: соответствие �
                 scriptCompliance: '70',
             }),
         ).toBeNull();
+    });
+});
+
+describe('правила показа разбора: чек-листы «Хвост» и 5К', () => {
+    it('только у презентации', () => {
+        expect(callTypeHasChecklists('presentation')).toBe(true);
+    });
+
+    it('звонок по решению, доработка и прочие типы — без чек-листов', () => {
+        for (const callType of [
+            'decision',
+            'refine',
+            'call',
+            'cold',
+            'other',
+            'renewal-call',
+        ]) {
+            expect(callTypeHasChecklists(callType)).toBe(false);
+        }
+    });
+
+    it('тип не определён — без чек-листов', () => {
+        expect(callTypeHasChecklists(null)).toBe(false);
+        expect(callTypeHasChecklists(undefined)).toBe(false);
+        expect(callTypeHasChecklists(42)).toBe(false);
+    });
+
+    it('набор полей чек-листов — шесть полей разбора', () => {
+        expect([...CALL_ANALYSIS_CHECKLIST_FIELDS]).toEqual([
+            'hvostDone',
+            'hvostAnalysis',
+            'hvostSteps',
+            'fiveKDone',
+            'fiveKAnalysis',
+            'fiveKItems',
+        ]);
+        expect([...CALL_REPORT_CHECKLIST_CALL_TYPES]).toEqual(['presentation']);
     });
 });

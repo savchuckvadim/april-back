@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { isScriptComplianceTrusted } from '@lib/call-lib';
+import {
+    CALL_ANALYSIS_CHECKLIST_FIELDS,
+    callTypeHasChecklists,
+    isScriptComplianceTrusted,
+} from '@lib/call-lib';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 
 /**
@@ -17,7 +21,42 @@ export function applyAnalysisDisplayRules(
     dto: AgentCallAnalysisDto,
     logger: Logger,
 ): AgentCallAnalysisDto {
-    return applyScriptComplianceRule(transcriptionId, dto, logger);
+    return applyChecklistRule(
+        transcriptionId,
+        applyScriptComplianceRule(transcriptionId, dto, logger),
+        logger,
+    );
+}
+
+/**
+ * Чек-листы «Хвост» и 5К — только у презентации (итоговый тип разбора
+ * `callType`). У остальных типов, включая звонок по решению, все шесть
+ * полей обнуляются: в карточку (HVOST_* / FIVE_K_*) и в ленту они не идут.
+ */
+export function applyChecklistRule(
+    transcriptionId: string,
+    dto: AgentCallAnalysisDto,
+    logger: Logger,
+): AgentCallAnalysisDto {
+    if (callTypeHasChecklists(dto.callType)) return dto;
+    const dropped = CALL_ANALYSIS_CHECKLIST_FIELDS.filter(
+        field => dto[field] !== undefined && dto[field] !== null,
+    );
+    if (dropped.length > 0) {
+        logger.log(
+            `Чек-листы «Хвост» и 5К сняты: тип звонка «${dto.callType}» — ` +
+                `не презентация (${dropped.join(', ')}; transcription ${transcriptionId})`,
+        );
+    }
+    return {
+        ...dto,
+        hvostDone: null,
+        hvostAnalysis: null,
+        hvostSteps: null,
+        fiveKDone: null,
+        fiveKAnalysis: null,
+        fiveKItems: null,
+    };
 }
 
 /**

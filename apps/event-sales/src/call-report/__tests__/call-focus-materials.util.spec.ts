@@ -155,9 +155,9 @@ describe('материалы разбора по проходам', () => {
             }).materials;
 
         const all = fullBlocks(lines);
-        expect(all.some(block => block.kind === KNOWLEDGE_KINDS.salesScript)).toBe(
-            true,
-        );
+        expect(
+            all.some(block => block.kind === KNOWLEDGE_KINDS.salesScript),
+        ).toBe(true);
         expect(render(all).scriptIncluded).toBe(true);
 
         const withoutScript = all.filter(
