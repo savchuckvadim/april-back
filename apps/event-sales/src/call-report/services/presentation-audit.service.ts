@@ -12,6 +12,7 @@ import {
 } from '@lib/portal-lib/pbx/pbx-sales-list-reader';
 import {
     AiService,
+    callTypeHasChecklists,
     pickActiveAnalysis,
     TranscriptionStoreService,
     callReportCallTypeTitle,
@@ -32,7 +33,7 @@ import { bxFieldBool } from '@lib/shared/lib/utils';
 /** Итог сверки одного домена. */
 export interface PresentationAuditDomainResult {
     domain: string;
-    /** Кандидатов (разборов презентаций/решений в окне). */
+    /** Кандидатов (разборов презентаций в окне). */
     candidates: number;
     /** Сверено (записи в таймлайн). */
     audited: number;
@@ -89,7 +90,7 @@ interface AuditCandidate {
 
 /**
  * КРОН-СВЕРКА ПО ПРЕЗЕНТАЦИЯМ (Фаза 4, архитектура владельца 15.08.2026):
- * для каждого свежего разбора презентации/решения читает отчёт менеджера
+ * для каждого свежего разбора презентации читает отчёт менеджера
  * из полей сделки-презентации («ОП Хвост», «ОП Пять К», «ОП Комментарии
  * после презентаций» — реестр pbx-sales-event-field) и сверяет одним
  * LLM-вызовом. Итог: «⚖️ Сверка с отчётом менеджера» в таймлайн
@@ -137,7 +138,10 @@ export class PresentationAuditService {
             rows.map(row => row.id),
         );
 
-        // Кандидаты: разборы презентаций/решений без выполненной сверки.
+        // Кандидаты: разборы презентаций без выполненной сверки. Звонок по
+        // решению больше не сверяется: чек-листы «Хвост» и 5К и отчёт по
+        // ним — только у презентации (решение владельца 18.11.2026), а
+        // сверять с отчётом менеджера разбор без чек-листов нечего.
         const candidates: AuditCandidate[] = [];
         for (const row of rows) {
             const forRow = records.filter(
@@ -152,8 +156,7 @@ export class PresentationAuditService {
             // Активный разбор звонка (после переразбора старый — superseded).
             const analysis = pickActiveAnalysis(forRow);
             const dto = analysis?.user_result as AgentCallAnalysisDto | null;
-            if (!dto?.callType) continue;
-            if (!['presentation', 'decision'].includes(dto.callType)) continue;
+            if (!dto || !callTypeHasChecklists(dto.callType)) continue;
             candidates.push({
                 transcriptionId: row.id,
                 dto,

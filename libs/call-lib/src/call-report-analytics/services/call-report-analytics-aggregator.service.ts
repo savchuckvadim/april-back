@@ -11,6 +11,7 @@ import {
     asString,
     asStringArray,
 } from '../lib/json-value.util';
+import { trustedScriptCompliance } from '../../call-report/analysis-display';
 import {
     CallReportManagerStatDto,
     CallReportSectionStatDto,
@@ -148,7 +149,9 @@ export class CallReportAnalyticsAggregatorService {
             }
             const questionsCount = asNumber(row.analysis?.questionsCount);
             if (questionsCount !== null) questions.push(questionsCount);
-            const scriptCompliance = asNumber(row.analysis?.scriptCompliance);
+            // В среднее — только разборы со скриптом в материалах
+            // (решение владельца 18.11.2026).
+            const scriptCompliance = trustedScriptCompliance(row.analysis);
             if (scriptCompliance !== null) compliance.push(scriptCompliance);
 
             const sections = Array.isArray(row.analysis?.sections)

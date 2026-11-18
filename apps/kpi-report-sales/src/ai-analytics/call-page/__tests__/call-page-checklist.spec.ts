@@ -5,12 +5,17 @@ import { buildCallPageFacts } from '../call-page-facts.presenter';
  * Строка итогов «Чек-лист 5К» / «Чек-лист ХВОСТ» на странице звонка
  * (17.11.2026): сохранённый разбор с записью словаря вместо строк
  * показывается строками по блокам анкеты, с новой строки после итога.
+ * Чек-листы есть только у презентации (18.11.2026) — разборы здесь
+ * презентационные.
  */
 function checklistValue(
     payload: Record<string, unknown>,
     label: string,
 ): string | undefined {
-    const view = readCallPageAnalysis(payload);
+    const view = readCallPageAnalysis({
+        callType: 'presentation',
+        ...payload,
+    });
     if (view === null) throw new Error('разбор не прочитан');
     return buildCallPageFacts(view).find(fact => fact.label === label)?.value;
 }

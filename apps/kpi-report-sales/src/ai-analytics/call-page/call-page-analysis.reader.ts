@@ -12,6 +12,10 @@ import {
     asStringArray,
 } from '@lib/call-lib/call-report-analytics/lib/json-value.util';
 import {
+    callTypeHasChecklists,
+    trustedScriptCompliance,
+} from '@lib/call-lib/call-report/analysis-display';
+import {
     normalizeFiveKAnalysisText,
     normalizeHvostAnalysisText,
 } from '@lib/call-lib/call-report/checklist-text';
@@ -188,6 +192,34 @@ function dialogTurnOf(item: Json): CallPageDialogTurnView | null {
 const present = <T>(items: (T | null)[]): T[] =>
     items.filter((item): item is T => item !== null);
 
+type CallPageChecklists = Pick<
+    CallPageAnalysisView,
+    'hvostDone' | 'hvostAnalysis' | 'fiveKDone' | 'fiveKAnalysis'
+>;
+
+/**
+ * Чек-листы «Хвост» и 5К — только у презентации (решение владельца
+ * 18.11.2026); у других типов, в том числе в старых разборах, строк нет.
+ */
+function checklistsOf(source: Json): CallPageChecklists {
+    if (!callTypeHasChecklists(source.callType)) {
+        return {
+            hvostDone: null,
+            hvostAnalysis: null,
+            fiveKDone: null,
+            fiveKAnalysis: null,
+        };
+    }
+    return {
+        hvostDone: asBoolean(source.hvostDone),
+        // Старые разборы бывают с записью словаря вместо строк — читаемыми
+        // строками по блокам анкеты (17.11.2026).
+        hvostAnalysis: text(normalizeHvostAnalysisText(source.hvostAnalysis)),
+        fiveKDone: asBoolean(source.fiveKDone),
+        fiveKAnalysis: text(normalizeFiveKAnalysisText(source.fiveKAnalysis)),
+    };
+}
+
 /** Разбор для страницы; нагрузка не объект — null (разбора нет). */
 export function readCallPageAnalysis(
     userResult: unknown,
@@ -201,7 +233,9 @@ export function readCallPageAnalysis(
         summary: text(source.summary),
         score: asNumber(source.score),
         weightedScore: asNumber(source.weightedScore),
-        scriptCompliance: asNumber(source.scriptCompliance),
+        // Процент — только если скрипт разговора был в разборе
+        // (решение владельца 18.11.2026); у старых разборов признака нет.
+        scriptCompliance: trustedScriptCompliance(source),
         scoreExplanation: text(source.scoreExplanation),
         coachingPriority: text(source.coachingPriority),
         recommendations: asStringArray(source.recommendations),
@@ -223,12 +257,7 @@ export function readCallPageAnalysis(
         refusalReason: text(source.refusalReason),
         talkRatioPct: asNumber(source.talkRatioPct),
         questionsCount: asNumber(source.questionsCount),
-        hvostDone: asBoolean(source.hvostDone),
-        // Старые разборы бывают с записью словаря вместо строк — читаемыми
-        // строками по блокам анкеты (17.11.2026).
-        hvostAnalysis: text(normalizeHvostAnalysisText(source.hvostAnalysis)),
-        fiveKDone: asBoolean(source.fiveKDone),
-        fiveKAnalysis: text(normalizeFiveKAnalysisText(source.fiveKAnalysis)),
+        ...checklistsOf(source),
         reportComparison: text(source.reportComparison),
         speechAnalysis: text(source.speechAnalysis),
         nextStep: nextStepOf(source.nextStep),

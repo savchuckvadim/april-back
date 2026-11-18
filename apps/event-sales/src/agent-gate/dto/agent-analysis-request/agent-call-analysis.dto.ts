@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -80,17 +80,32 @@ export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
 
     @ApiPropertyOptional({
         description:
-            'Соответствие скрипту типа звонка, % (по материалам базы знаний).',
+            'Соответствие скрипту разговора, % (по материалам базы знаний). ' +
+            'Сохраняется, только если в разбор попал документ вида «Скрипт ' +
+            'разговора»; иначе приём обнуляет значение (решение владельца ' +
+            '18.11.2026).',
         example: 70,
         type: Number,
         minimum: 0,
         maximum: 100,
+        nullable: true,
     })
     @IsOptional()
     @IsInt()
     @Min(0)
     @Max(100)
-    scriptCompliance?: number;
+    scriptCompliance?: number | null;
+
+    /**
+     * Служебный признак: в разбор попал хотя бы один документ вида «Скрипт
+     * разговора». Ставит код по сборке материалов (фокус-разбор, цельный
+     * разбор), а не модель. Из тела запроса не принимается: без
+     * декораторов class-validator глобальная валидация (whitelist) вырезает
+     * поле, поэтому внешний агент поставить его не может. Нет признака —
+     * процент соответствия скрипту не сохраняется и не показывается.
+     */
+    @ApiHideProperty()
+    scriptIncluded?: boolean;
 
     @ApiPropertyOptional({
         description:

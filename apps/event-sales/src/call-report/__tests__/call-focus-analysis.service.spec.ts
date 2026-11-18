@@ -1106,3 +1106,31 @@ describe('CallFocusAnalysisService: один повтор сорвавшегос
         expect(dto?.incompleteParts).toEqual([]);
     });
 });
+
+describe('CallFocusAnalysisService: признак скрипта в разборе', () => {
+    it('скрипта в базе нет — scriptIncluded=false (процент модели приём снимет)', async () => {
+        const { service } = makeDeps();
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+        expect(dto?.scriptIncluded).toBe(false);
+    });
+
+    it('документ «Скрипт разговора» с текстом попал в материалы — scriptIncluded=true', async () => {
+        const { service, materials } = makeDeps();
+        materials.collect.mockImplementation(
+            (_domain: string, requests: { kind: string }[]) =>
+                Promise.resolve(
+                    requests.map(request => ({
+                        kind: request.kind,
+                        text:
+                            request.kind === 'sales-script'
+                                ? 'Поздороваться, представиться, назвать цель'
+                                : '',
+                        chars: 0,
+                        truncated: false,
+                    })),
+                ),
+        );
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+        expect(dto?.scriptIncluded).toBe(true);
+    });
+});
