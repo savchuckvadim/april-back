@@ -96,10 +96,7 @@ describe('подсветки страницы звонка: время из ра
                 },
             ],
         });
-        const { highlights, factIds } = buildCallPageHighlights(
-            view,
-            SEGMENTS,
-        );
+        const { highlights, factIds } = buildCallPageHighlights(view, SEGMENTS);
 
         expect(factIds).toEqual({
             needs: 'moment-1',
@@ -176,13 +173,13 @@ describe('подсветки страницы звонка: время из ра
         expect(highlights).toEqual([]);
     });
 
-    it('сбой и цена с пересказанной цитатой находятся по времени из разбора', () => {
+    it('сбой с пересказанной цитатой — по времени из разбора, если её слова звучат рядом', () => {
         const { highlights } = buildCallPageHighlights(
             viewOf({
                 issues: [
                     {
                         code: 'crm_repeat_refused',
-                        quote: 'клиент сказал, что уже отказывался',
+                        quote: 'ищем всё в интернете, много времени уходит',
                         note: 'Звонили после отказа',
                         startSec: 21,
                         endSec: 28,

@@ -75,14 +75,35 @@ export function evidenceIndexOf(
     return indexTranscript(anchorSegments);
 }
 
+/** Где и как строго искать слова цитаты рядом с секундой модели. */
+export interface EvidenceNearRule {
+    /** Окно до и после секунды, сек. */
+    beforeSec: number;
+    afterSec: number;
+    /** Значимое слово — не короче стольких букв. */
+    minWordLetters: number;
+    /** Какая доля значимых слов цитаты должна прозвучать в окне. */
+    minWordShare: number;
+}
+
+/** Правило приёма разбора (focus-v3.4). */
+export const EVIDENCE_NEAR_RULE: EvidenceNearRule = {
+    beforeSec: EVIDENCE_WINDOW_BEFORE_SEC,
+    afterSec: EVIDENCE_WINDOW_AFTER_SEC,
+    minWordLetters: EVIDENCE_MIN_WORD_LETTERS,
+    minWordShare: EVIDENCE_MIN_WORD_SHARE,
+};
+
 /** Звучит ли большая часть значимых слов цитаты рядом с секундой. */
-function quoteWordsNear(
+export function quoteWordsNear(
     index: TranscriptAnchorIndex,
     quoteWords: readonly string[],
     atSec: number,
+    rule: EvidenceNearRule = EVIDENCE_NEAR_RULE,
 ): boolean {
-    const from = atSec - EVIDENCE_WINDOW_BEFORE_SEC;
-    const to = atSec + EVIDENCE_WINDOW_AFTER_SEC;
+    if (quoteWords.length === 0) return false;
+    const from = atSec - rule.beforeSec;
+    const to = atSec + rule.afterSec;
     const heard = new Set<string>();
     for (const segment of index.segments) {
         if (segment.startSec === null || segment.endSec === null) continue;
@@ -91,11 +112,11 @@ function quoteWordsNear(
         }
     }
     const significant = quoteWords.filter(
-        word => word.length >= EVIDENCE_MIN_WORD_LETTERS,
+        word => word.length >= rule.minWordLetters,
     );
     const needle = significant.length > 0 ? significant : quoteWords;
     const found = needle.filter(word => heard.has(word)).length;
-    return found / needle.length >= EVIDENCE_MIN_WORD_SHARE;
+    return found / needle.length >= rule.minWordShare;
 }
 
 /** Проверка секунды одного места разбора по его цитате. */

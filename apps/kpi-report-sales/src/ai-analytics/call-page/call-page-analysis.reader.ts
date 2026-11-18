@@ -8,8 +8,6 @@ import {
     asNumber,
     asRecord,
     asRecordArray,
-    asString,
-    asStringArray,
 } from '@lib/call-lib/call-report-analytics/lib/json-value.util';
 import {
     callTypeHasChecklists,
@@ -22,6 +20,8 @@ import {
 import {
     readChecklistPlaces,
     readNeedItems,
+    readText,
+    readTexts,
 } from './call-page-evidence.reader';
 import type {
     CallPageAnalysisView,
@@ -40,11 +40,8 @@ import type {
 
 type Json = Record<string, unknown>;
 
-/** Непустой текст без пробелов по краям. */
-const text = (value: unknown): string | null => {
-    const trimmed = asString(value)?.trim();
-    return trimmed ? trimmed : null;
-};
+/** Непустой текст без пробелов по краям; «null» словом — пусто. */
+const text = readText;
 
 /** Секунды записи: неотрицательное число, иначе null. */
 const seconds = (value: unknown): number | null => {
@@ -63,7 +60,7 @@ function sectionOf(item: Json): CallPageSectionView | null {
         advice: text(item.advice),
         asWas: text(item.asWas),
         weaknesses: text(item.weaknesses),
-        alternatives: asStringArray(item.alternatives),
+        alternatives: readTexts(item.alternatives),
         // Цитата-доказательство и секунда (focus-v3.4); прежний разбор — null.
         quote: text(item.quote),
         startSec: seconds(item.startSec),
@@ -255,22 +252,22 @@ export function readCallPageAnalysis(
         scriptCompliance: trustedScriptCompliance(source),
         scoreExplanation: text(source.scoreExplanation),
         coachingPriority: text(source.coachingPriority),
-        recommendations: asStringArray(source.recommendations),
+        recommendations: readTexts(source.recommendations),
         employeeRecommendations: text(source.employeeRecommendations),
         sentiment: text(source.sentiment),
         interlocutorRole: text(source.interlocutorRole),
         specialist: text(source.specialist),
         outcome: text(source.outcome),
         needsFound: asBoolean(source.needsFound),
-        needs: asStringArray(source.needs),
+        needs: readTexts(source.needs),
         needItems: readNeedItems(source.needItems),
         needsStartSec: asNumber(source.needsStartSec),
         presentationDone: asBoolean(source.presentationDone),
         presentationStartSec: asNumber(source.presentationStartSec),
-        productsOffered: asStringArray(source.productsOffered),
+        productsOffered: readTexts(source.productsOffered),
         priceDiscussed: asBoolean(source.priceDiscussed),
-        competitors: asStringArray(source.competitors),
-        riskFlags: asStringArray(source.riskFlags),
+        competitors: readTexts(source.competitors),
+        riskFlags: readTexts(source.riskFlags),
         refusalCategory: text(source.refusalCategory),
         refusalReason: text(source.refusalReason),
         talkRatioPct: asNumber(source.talkRatioPct),
@@ -290,6 +287,6 @@ export function readCallPageAnalysis(
         prices: present(asRecordArray(source.prices).map(priceOf)),
         methodology: methodologyOf(source.methodology),
         dialog: present(asRecordArray(source.dialog).map(dialogTurnOf)),
-        incompleteParts: asStringArray(source.incompleteParts),
+        incompleteParts: readTexts(source.incompleteParts),
     };
 }

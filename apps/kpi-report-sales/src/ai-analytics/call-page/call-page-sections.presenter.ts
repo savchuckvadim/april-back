@@ -14,7 +14,6 @@ import {
     type CallPageTone,
 } from './call-page.const';
 import { CallPageHighlightCollector } from './call-page-highlight.collector';
-import { indexTranscript } from '@lib/call-lib/call-report/transcript-anchor';
 import type {
     CallPageAnchor,
     CallPageSectionView,
@@ -48,8 +47,9 @@ export function sectionTone(score: number | null): CallPageTone {
 export function buildCallPageSectionHighlights(
     sections: readonly CallPageSectionView[],
     segments: readonly CallPageSegmentView[],
+    durationSec: number | null = null,
 ): CallPageSectionHighlights {
-    const collector = new CallPageHighlightCollector(indexTranscript(segments));
+    const collector = new CallPageHighlightCollector(segments, durationSec);
     const sectionIds = sections.map(section => {
         if (!isCallPageSectionShown(section)) return null;
         const mark = (anchor: CallPageAnchor): string | null =>

@@ -195,8 +195,8 @@ function spansByText(
     return spans;
 }
 
-/** Реплики, которые попадают на названное время. */
-function positionsByTime(
+/** Реплики, которые попадают на названное время (не больше TIME_ONLY_MAX_SEGMENTS). */
+export function positionsByTime(
     segments: readonly AnchorSegment[],
     anchor: TranscriptAnchor,
 ): number[] {

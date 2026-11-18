@@ -110,6 +110,7 @@ function nextStepFact(
 ): Fact {
     if (step === null) return null;
     if (!step.set) return fact('Следующий шаг', 'не назначен', 'warn');
+    // Времени нет — только дата, без «в …» (читатель отбрасывает «null» словом).
     const when = joined(
         [step.date ? dateTitle(step.date) : null, step.time],
         ' в ',
@@ -118,9 +119,11 @@ function nextStepFact(
         [callPageTitleOf('nextStepKind', step.kind), step.description],
         ': ',
     );
+    // «…закупки., 01.12.2026» → «…закупки, 01.12.2026».
+    const whatBeforeWhen = when ? what.replace(/[.;,:]+$/, '') : what;
     return fact(
         'Следующий шаг',
-        joined([what, when], ', ') || 'назначен',
+        joined([whatBeforeWhen, when], ', ') || 'назначен',
         'good',
         highlightId,
     );

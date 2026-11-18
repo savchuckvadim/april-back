@@ -2,6 +2,7 @@
  * Страница разбора звонка на сайте «Отчёта»: маршруты, справочники значений
  * ответа и тексты для человека.
  */
+import type { EvidenceNearRule } from '@lib/call-lib/call-report/transcript-anchor';
 
 /** Карточка звонка по ссылке-пропуску. */
 export const CALL_PAGE_ROUTE = 'call-page/:token' as const;
@@ -56,6 +57,18 @@ export const CALL_PAGE_HIGHLIGHT_KIND_TITLES: Readonly<
 /** С какой оценки раздела (1–10) он «хороший» и «средний» — как на сайте. */
 export const CALL_PAGE_SECTION_SCORE_GOOD = 7;
 export const CALL_PAGE_SECTION_SCORE_FAIR = 5;
+
+/**
+ * Проверка места без найденной цитаты (решение 18.11.2026): время из разбора
+ * принимается, только если в ±20 с от него звучит не меньше 60 % значимых
+ * слов цитаты (длиннее 3 букв). Иначе кнопки «Показать в разговоре» нет.
+ */
+export const CALL_PAGE_PLACE_NEAR_RULE: EvidenceNearRule = {
+    beforeSec: 20,
+    afterSec: 20,
+    minWordLetters: 4,
+    minWordShare: 0.6,
+};
 
 /** Подписи моментов разговора. */
 export const CALL_PAGE_MOMENT_TITLES = {

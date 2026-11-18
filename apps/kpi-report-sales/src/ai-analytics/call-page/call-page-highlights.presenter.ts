@@ -19,7 +19,6 @@ import {
     CallPageHighlightCollector,
     type CallPageHighlightDraft,
 } from './call-page-highlight.collector';
-import { indexTranscript } from '@lib/call-lib/call-report/transcript-anchor';
 import {
     callPageTitleOf,
     objectionHandlingOf,
@@ -133,8 +132,9 @@ function momentsOf(view: CallPageAnalysisView): CallPageMoment[] {
 export function buildCallPageHighlights(
     view: CallPageAnalysisView,
     segments: readonly CallPageSegmentView[],
+    durationSec: number | null = null,
 ): CallPageHighlights {
-    const collector = new CallPageHighlightCollector(indexTranscript(segments));
+    const collector = new CallPageHighlightCollector(segments, durationSec);
 
     const signal = signalDraft(view);
     if (signal !== null) collector.add(signal);

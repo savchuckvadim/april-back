@@ -11,7 +11,6 @@ import {
     HVOST_TEXT_BLOCKS,
     type ChecklistTextBlock,
 } from '@lib/call-lib';
-import { indexTranscript } from '@lib/call-lib/call-report/transcript-anchor';
 import type { CallPageHighlightKind } from './call-page.const';
 import { CallPageHighlightCollector } from './call-page-highlight.collector';
 import { shortTitle } from './call-page-titles.util';
@@ -54,8 +53,9 @@ interface PointDraft {
 export function buildCallPagePointHighlights(
     view: CallPageAnalysisView,
     segments: readonly CallPageSegmentView[],
+    durationSec: number | null = null,
 ): CallPagePointHighlights {
-    const collector = new CallPageHighlightCollector(indexTranscript(segments));
+    const collector = new CallPageHighlightCollector(segments, durationSec);
     const itemOf = (draft: PointDraft): CallPageFactItemDto | null => {
         const highlightId = collector.add({
             kind: draft.kind,

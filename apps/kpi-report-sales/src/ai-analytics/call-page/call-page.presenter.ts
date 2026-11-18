@@ -149,19 +149,26 @@ function methodologyOf(
 export function presentCallPage(source: CallPageSource): CallPageDto {
     const { view } = source;
     const transcript = buildCallPageTranscript(source.call, view.dialog);
+    // Время из разбора за пределами записи — места нет (решение 18.11.2026).
+    const durationSec = durationOf(source);
     const { highlights, objectionIds, checkpointIds, factIds } =
-        buildCallPageHighlights(view, transcript.segments);
+        buildCallPageHighlights(view, transcript.segments, durationSec);
     const sectionMarks = buildCallPageSectionHighlights(
         view.sections,
         transcript.segments,
+        durationSec,
     );
     // Места потребностей, «хвоста» и 5К (focus-v3.4) — тоже без бейджа.
-    const points = buildCallPagePointHighlights(view, transcript.segments);
+    const points = buildCallPagePointHighlights(
+        view,
+        transcript.segments,
+        durationSec,
+    );
     return {
         call: {
             managerName: source.managerName,
             startedAt: source.call.startedAt?.toISOString() ?? null,
-            durationSec: durationOf(source),
+            durationSec,
             callTypeTitle: callTypeTitle(view.callType),
             callTypeReason: view.callTypeReason,
             hasAudio: source.call.hasAudio,

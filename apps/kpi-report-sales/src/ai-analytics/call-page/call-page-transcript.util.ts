@@ -6,6 +6,12 @@
  * Чистые функции.
  */
 import type { TranscriptSegment } from '@lib/call-lib';
+import {
+    dropChannelEchoes,
+    isWordLevelTranscript,
+    joinWordTurns,
+    type CallPageTimedTurn,
+} from './call-page-transcript-turns.util';
 import type {
     CallPageDialogTurnView,
     CallPageSegmentView,
@@ -23,18 +29,27 @@ export interface CallPageTranscript {
 const speakerOf = (value: string): CallPageSegmentView['speaker'] =>
     value === 'manager' || value === 'client' ? value : null;
 
+/**
+ * Реплики с таймкодами. Точные повторы (одинаковые каналы стерео)
+ * убираются; пословная расшифровка склеивается в реплики (номера — заново
+ * по порядку: подсветки ссылаются на номера реплик страницы), фразовая
+ * остаётся как есть.
+ */
 function fromSegments(
     segments: readonly TranscriptSegment[],
 ): CallPageSegmentView[] {
-    return segments
-        .filter(segment => segment.text.trim() !== '')
-        .map((segment, index) => ({
-            index,
-            startSec: segment.startSec,
-            endSec: segment.endSec,
-            speaker: speakerOf(segment.speaker),
-            text: segment.text.trim(),
-        }));
+    const turns: CallPageTimedTurn[] = dropChannelEchoes(
+        segments
+            .filter(segment => segment.text.trim() !== '')
+            .map(segment => ({
+                startSec: segment.startSec,
+                endSec: segment.endSec,
+                speaker: speakerOf(segment.speaker),
+                text: segment.text.trim(),
+            })),
+    );
+    const shown = isWordLevelTranscript(turns) ? joinWordTurns(turns) : turns;
+    return shown.map((turn, index) => ({ index, ...turn }));
 }
 
 function fromDialog(

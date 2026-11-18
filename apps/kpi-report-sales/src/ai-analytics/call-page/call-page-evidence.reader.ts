@@ -8,6 +8,7 @@ import {
     asNumber,
     asRecordArray,
     asString,
+    asStringArray,
 } from '@lib/call-lib/call-report-analytics/lib/json-value.util';
 import type {
     CallPageChecklistPlaceView,
@@ -16,10 +17,22 @@ import type {
 
 type Json = Record<string, unknown>;
 
-const text = (value: unknown): string | null => {
+/** Пустое значение, которое модель пишет словом: «в null» на странице не нужно. */
+const EMPTY_WORDS: ReadonlySet<string> = new Set(['null', 'undefined', 'nan']);
+
+/** Непустой текст без пробелов по краям; «null» словом — пусто. */
+export const readText = (value: unknown): string | null => {
     const trimmed = asString(value)?.trim();
-    return trimmed ? trimmed : null;
+    return trimmed && !EMPTY_WORDS.has(trimmed.toLowerCase()) ? trimmed : null;
 };
+
+/** Список строк: пустые и «null» словом — пропускаются. */
+export const readTexts = (value: unknown): string[] =>
+    asStringArray(value)
+        .map(readText)
+        .filter((item): item is string => item !== null);
+
+const text = readText;
 
 /** Секунды записи: неотрицательное число, иначе null. */
 export const evidenceSeconds = (value: unknown): number | null => {
