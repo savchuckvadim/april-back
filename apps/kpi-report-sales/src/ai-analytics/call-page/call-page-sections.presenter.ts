@@ -1,9 +1,11 @@
 /**
  * Разделы разбора на странице звонка: только относящиеся к звонку и хоть
- * чем-то заполненные; цитата «как было» ищется в расшифровке тем же поиском,
- * что и остальные места разбора. Нашлась — у раздела есть подсветка (вид
- * `section`, бейджем не выводится), не нашлась — подсветки нет. Чистые
- * функции.
+ * чем-то заполненные. Место раздела в разговоре — цитата-доказательство с
+ * секундой (задание focus-v3.4, секунда проверена приёмом разбора), а у
+ * прежних разборов или когда она не нашлась — цитата «как было» тем же
+ * поиском, что и остальные места разбора. Нашлось — у раздела есть
+ * подсветка (вид `section`, бейджем не выводится), нет — подсветки нет.
+ * Чистые функции.
  */
 import { sectionTitleOf } from '@lib/sales-ai-analytics';
 import {
@@ -12,8 +14,9 @@ import {
     type CallPageTone,
 } from './call-page.const';
 import { CallPageHighlightCollector } from './call-page-highlight.collector';
-import { indexTranscript } from './call-page-highlights.util';
+import { indexTranscript } from '@lib/call-lib/call-report/transcript-anchor';
 import type {
+    CallPageAnchor,
     CallPageSectionView,
     CallPageSegmentView,
 } from './call-page.types';
@@ -47,21 +50,27 @@ export function buildCallPageSectionHighlights(
     segments: readonly CallPageSegmentView[],
 ): CallPageSectionHighlights {
     const collector = new CallPageHighlightCollector(indexTranscript(segments));
-    const sectionIds = sections.map(section =>
-        isCallPageSectionShown(section) && section.asWas !== null
-            ? collector.add({
-                  kind: 'section',
-                  label: sectionTitleOf(section.section),
-                  tone: sectionTone(section.score),
-                  note: null,
-                  anchor: {
-                      quote: section.asWas,
-                      startSec: null,
+    const sectionIds = sections.map(section => {
+        if (!isCallPageSectionShown(section)) return null;
+        const mark = (anchor: CallPageAnchor): string | null =>
+            collector.add({
+                kind: 'section',
+                label: sectionTitleOf(section.section),
+                tone: sectionTone(section.score),
+                note: null,
+                anchor,
+            });
+        const byEvidence =
+            section.quote !== null || section.startSec !== null
+                ? mark({
+                      quote: section.quote,
+                      startSec: section.startSec,
                       endSec: null,
-                  },
-              })
-            : null,
-    );
+                  })
+                : null;
+        if (byEvidence !== null || section.asWas === null) return byEvidence;
+        return mark({ quote: section.asWas, startSec: null, endSec: null });
+    });
     return { highlights: collector.highlights, sectionIds };
 }
 
@@ -80,6 +89,7 @@ export function presentCallPageSections(
             weaknesses: section.weaknesses,
             advice: section.advice,
             alternatives: section.alternatives,
+            quote: section.quote,
             highlightId: highlightIds[position] ?? null,
         });
     });

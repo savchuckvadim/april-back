@@ -145,7 +145,17 @@ export const FOCUS_CONTENT_SCHEMA: Record<string, unknown> = {
     additionalProperties: false,
 };
 
-export const FOCUS_CONTENT_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
+/** Строка потребностей в прежнем задании (`needs` — список строк). */
+export const CONTENT_NEEDS_SPEC =
+    '- needs — выявленные потребности клиента, по одной на пункт.';
+
+/**
+ * Задание прохода «содержание». needsSpec — описание потребностей: прежняя
+ * строка `needs` или `needItems` с цитатами (focus-v3.4).
+ */
+export const focusContentPrompt = (
+    needsSpec: string,
+): string => `${DEEP_ANALYSIS_CORE_RULES}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО СОДЕРЖАНИЕ ПРОДАЖИ. Не оценивай приветствие,
 тон и работу с ценой — этим занимаются другие проходы разбора. Твоя зона:
@@ -161,9 +171,11 @@ ${SECTION_FIELDS_SPEC}
 
 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ТВОЕГО ФОКУСА
 - needsFound / presentationDone — было ли это фактически.
-- needs — выявленные потребности клиента, по одной на пункт.
+${needsSpec}
 - productsOffered — что именно предлагали, по одному на пункт.
 ${CONTENT_MOMENTS_SPEC}`;
+
+export const FOCUS_CONTENT_PROMPT = focusContentPrompt(CONTENT_NEEDS_SPEC);
 
 // ---------------------------------------------------------------------------
 // СИНТЕЗ: итоговая картина по выжимкам четырёх фокусов.

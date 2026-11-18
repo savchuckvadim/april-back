@@ -111,6 +111,24 @@ describe('CallAnalysisRerunService', () => {
         expect(llmPrice.resolvePricing).not.toHaveBeenCalled();
     });
 
+    it('задание с цитатами (проверка разбора на звонке) уходит в опции фокус-разбора', async () => {
+        const { service, focusAnalysis } = makeService();
+        await service.rerun({
+            transcriptionId: 't-1',
+            source: { callType: 'presentation' },
+            model: null,
+            quoteEvidence: true,
+        });
+
+        expect(focusAnalysis.run).toHaveBeenCalledWith(
+            'gsr.bitrix24.ru',
+            '[00:00] Алло',
+            'presentation',
+            'ПАСПОРТ',
+            { quoteEvidence: true },
+        );
+    });
+
     it('пустая расшифровка — null без вызова модели; модель не ответила — null', async () => {
         const empty = makeService({ row: { ...ROW, text: '', segments: [] } });
         await expect(

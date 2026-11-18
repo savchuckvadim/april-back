@@ -6,12 +6,16 @@
  *    по началу и концу;
  * 3) текста не нашли, но время есть — реплики, которые на это время попадают.
  * Сравнение без регистра, знаков и «ё». Чистые функции.
+ *
+ * Общий поиск страницы звонка и приёма разбора (проверка времени цитат,
+ * задание focus-v3.4) — перенесён из kpi-report-sales без изменений.
  */
 import type {
-    CallPageAnchor,
-    CallPageAnchorMatch,
-    CallPageSegmentView,
-} from './call-page.types';
+    AnchorSegment,
+    TranscriptAnchor,
+    TranscriptAnchorIndex,
+    TranscriptAnchorMatch,
+} from './transcript-anchor.types';
 
 /** Слов в начале и конце длинной цитаты, по которым ищем без точного совпадения. */
 const EDGE_WORDS = 4;
@@ -34,17 +38,9 @@ export function wordsOf(text: string): string[] {
     );
 }
 
-/** Слова расшифровки подряд и номер реплики каждого слова. */
-export interface CallPageTranscriptIndex {
-    segments: readonly CallPageSegmentView[];
-    words: string[];
-    /** Позиция реплики (в `segments`) для каждого слова. */
-    owners: number[];
-}
-
 export function indexTranscript(
-    segments: readonly CallPageSegmentView[],
-): CallPageTranscriptIndex {
+    segments: readonly AnchorSegment[],
+): TranscriptAnchorIndex {
     const words: string[] = [];
     const owners: number[] = [];
     segments.forEach((segment, position) => {
@@ -111,14 +107,12 @@ function quoteParts(quote: string): string[][] {
         .filter(part => part.length > 0);
 }
 
-const startOf = (
-    index: CallPageTranscriptIndex,
-    span: WordSpan,
-): number | null => index.segments[index.owners[span.from]].startSec;
+const startOf = (index: TranscriptAnchorIndex, span: WordSpan): number | null =>
+    index.segments[index.owners[span.from]].startSec;
 
 /** Ближайший к времени отрезок; времени нет — первый. */
 function nearest(
-    index: CallPageTranscriptIndex,
+    index: TranscriptAnchorIndex,
     spans: readonly WordSpan[],
     atSec: number | null,
 ): WordSpan | null {
@@ -139,7 +133,7 @@ function nearest(
 
 /** Где в расшифровке первая часть цитаты. */
 function firstPartSpan(
-    index: CallPageTranscriptIndex,
+    index: TranscriptAnchorIndex,
     part: readonly string[],
     atSec: number | null,
 ): WordSpan | null {
@@ -165,7 +159,7 @@ function firstPartSpan(
 
 /** Следующая часть цитаты: первое совпадение после предыдущей, недалеко. */
 function nextPartSpan(
-    index: CallPageTranscriptIndex,
+    index: TranscriptAnchorIndex,
     part: readonly string[],
     after: WordSpan,
 ): WordSpan | null {
@@ -186,8 +180,8 @@ function nextPartSpan(
 }
 
 function spansByText(
-    index: CallPageTranscriptIndex,
-    anchor: CallPageAnchor,
+    index: TranscriptAnchorIndex,
+    anchor: TranscriptAnchor,
 ): WordSpan[] {
     const parts = anchor.quote ? quoteParts(anchor.quote) : [];
     if (parts.length === 0) return [];
@@ -203,8 +197,8 @@ function spansByText(
 
 /** Реплики, которые попадают на названное время. */
 function positionsByTime(
-    segments: readonly CallPageSegmentView[],
-    anchor: CallPageAnchor,
+    segments: readonly AnchorSegment[],
+    anchor: TranscriptAnchor,
 ): number[] {
     if (anchor.startSec === null) return [];
     const from = anchor.startSec;
@@ -219,21 +213,31 @@ function positionsByTime(
     return positions.slice(0, TIME_ONLY_MAX_SEGMENTS);
 }
 
-/** Реплики расшифровки, на которые ссылается место разбора. */
-export function matchAnchor(
-    index: CallPageTranscriptIndex,
-    anchor: CallPageAnchor,
-): CallPageAnchorMatch {
+/**
+ * Позиции реплик, где цитата нашлась по тексту (при нескольких совпадениях
+ * — ближайшее ко времени якоря); не нашлась — пусто.
+ */
+export function positionsByQuote(
+    index: TranscriptAnchorIndex,
+    anchor: TranscriptAnchor,
+): number[] {
     const positions = new Set<number>();
     for (const span of spansByText(index, anchor)) {
         for (let word = span.from; word <= span.to; word++) {
             positions.add(index.owners[word]);
         }
     }
+    return [...positions].sort((a, b) => a - b);
+}
+
+/** Реплики расшифровки, на которые ссылается место разбора. */
+export function matchAnchor(
+    index: TranscriptAnchorIndex,
+    anchor: TranscriptAnchor,
+): TranscriptAnchorMatch {
+    const byQuote = positionsByQuote(index, anchor);
     const found =
-        positions.size > 0
-            ? [...positions].sort((a, b) => a - b)
-            : positionsByTime(index.segments, anchor);
+        byQuote.length > 0 ? byQuote : positionsByTime(index.segments, anchor);
     const firstStart =
         found.length > 0 ? index.segments[found[0]].startSec : null;
     return {

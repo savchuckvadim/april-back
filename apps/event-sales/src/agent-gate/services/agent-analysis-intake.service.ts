@@ -93,6 +93,7 @@ export class AgentAnalysisIntakeService {
             dto,
             durationSecOf(row),
             this.logger,
+            row.segments,
         );
 
         // Идемпотентность: ретрай push-back (потерянный ответ, повтор скилла)

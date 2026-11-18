@@ -14,14 +14,16 @@ const V31: AnalysisVersions = {
 };
 
 describe('versionsSeriesKey — серия сравнимости набора версий', () => {
-    it('минорные версии промпта 3.1 → 3.2 → 3.3 — одна серия', () => {
+    it('минорные версии промпта 3.1 → 3.2 → 3.3 → 3.4 — одна серия', () => {
         const keys = [
             V31,
             { ...V31, prompt: 'focus-v3.2-2026-11-16' },
             { ...V31, prompt: 'focus-v3.3-2026-11-17' },
+            { ...V31, prompt: 'focus-v3.4-2026-11-18' },
         ].map(versionsSeriesKey);
 
         expect(keys).toEqual([
+            AI_ANALYSIS_SERIES_START,
             AI_ANALYSIS_SERIES_START,
             AI_ANALYSIS_SERIES_START,
             AI_ANALYSIS_SERIES_START,

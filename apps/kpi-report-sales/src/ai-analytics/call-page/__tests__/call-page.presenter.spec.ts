@@ -230,6 +230,7 @@ describe('страница разбора звонка: сборка карто�
             value: 'Отказ',
             tone: 'bad',
             highlightId: null,
+            items: [],
         });
         expect(facts.get('Собеседник')?.value).toBe('ЛПР, Бухгалтер');
         expect(facts.get('Потребности')).toMatchObject({

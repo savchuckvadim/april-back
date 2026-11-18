@@ -77,6 +77,31 @@ export function ownSectionsOf(
 }
 
 /**
+ * Список потребностей `needs` из `needItems` задания с цитатами (focus-v3.4):
+ * поле `needs` читают карточка, отчёты и методика — у них ничего не меняется.
+ * Прежнее задание (`needs` есть, `needItems` нет) — пусто, поля остаются.
+ */
+export function needsFromItems(fields: Readonly<Record<string, unknown>>): {
+    needs?: string[];
+} {
+    if (fields.needs !== undefined || !Array.isArray(fields.needItems)) {
+        return {};
+    }
+    const needs = fields.needItems
+        .map((item: unknown) =>
+            item !== null && typeof item === 'object'
+                ? (item as Record<string, unknown>).need
+                : null,
+        )
+        .filter(
+            (need): need is string =>
+                typeof need === 'string' && need.trim() !== '',
+        )
+        .map(need => need.trim());
+    return { needs };
+}
+
+/**
  * Плоский объект разбора из ответов проходов и синтеза: поля проходов не
  * пересекаются, синтез кладёт итоговые поверх, разделы — только свои у
  * каждого прохода.
@@ -95,6 +120,7 @@ export function mergeFocusResults(input: {
     );
     return {
         ...passFields,
+        ...needsFromItems(passFields),
         ...(input.synthesis ?? {}),
         sections: input.sections,
         callType: input.callType,

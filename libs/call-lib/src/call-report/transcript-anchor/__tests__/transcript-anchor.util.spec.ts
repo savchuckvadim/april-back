@@ -2,28 +2,29 @@ import {
     indexTranscript,
     matchAnchor,
     wordsOf,
-} from '../call-page-highlights.util';
-import type { CallPageAnchor, CallPageSegmentView } from '../call-page.types';
+} from '../transcript-anchor.util';
+import type {
+    AnchorSegment,
+    TranscriptAnchor,
+} from '../transcript-anchor.types';
 
-const timed = (texts: readonly string[]): CallPageSegmentView[] =>
+const timed = (texts: readonly string[]): AnchorSegment[] =>
     texts.map((text, index) => ({
         index,
         startSec: index * 10,
         endSec: index * 10 + 9,
-        speaker: null,
         text,
     }));
 
-const untimed = (texts: readonly string[]): CallPageSegmentView[] =>
+const untimed = (texts: readonly string[]): AnchorSegment[] =>
     texts.map((text, index) => ({
         index,
         startSec: null,
         endSec: null,
-        speaker: null,
         text,
     }));
 
-const anchor = (fields: Partial<CallPageAnchor>): CallPageAnchor => ({
+const anchor = (fields: Partial<TranscriptAnchor>): TranscriptAnchor => ({
     quote: null,
     startSec: null,
     endSec: null,

@@ -20,7 +20,6 @@ import {
 } from './call-focus-sections.contract';
 import {
     CLOSING_FACTS_PROPERTIES,
-    CLOSING_FACTS_REQUIRED,
     CLOSING_FACTS_SPEC,
     OBJECTIONS_PRICE_FACTS_PROPERTIES,
     OBJECTIONS_PRICE_FACTS_REQUIRED,
@@ -126,10 +125,31 @@ ${RISK_FLAGS_SPEC}`;
 // продвижение сделки, «хвост» и «5К», черновик отчёта менеджера.
 // ---------------------------------------------------------------------------
 
-export const FOCUS_CLOSING_SCHEMA: Record<string, unknown> = {
-    type: 'object',
-    properties: {
-        sections: focusSectionsSchema('closing'),
+/**
+ * «Хвост» и «5К» в схеме прохода (boolean — фильтры смарта; *_Analysis —
+ * отдельные записи в таймлайн элемента). В прежнем задании — у всех звонков
+ * (null для не-презентаций), с цитатами focus-v3.4 — только у презентации.
+ */
+export const CLOSING_CHECKLIST_PROPERTIES = {
+    hvostDone: { type: ['boolean', 'null'] },
+    hvostAnalysis: { type: ['string', 'null'] },
+    hvostSteps: HVOST_STEPS_SCHEMA,
+    fiveKDone: { type: ['boolean', 'null'] },
+    fiveKAnalysis: { type: ['string', 'null'] },
+    fiveKItems: FIVE_K_ITEMS_SCHEMA,
+} as const;
+
+/**
+ * Схема прохода «закрытие»: разделы и поля чек-листов задаёт вызывающий
+ * (прежнее задание или задание с цитатами); в strict-режиме обязательны все
+ * поля, порядок required — порядок properties.
+ */
+export function focusClosingSchema(
+    sections: Record<string, unknown>,
+    checklists: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+    const properties = {
+        sections,
         refusalCategory: {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_REFUSAL_CODES, null],
@@ -138,44 +158,66 @@ export const FOCUS_CLOSING_SCHEMA: Record<string, unknown> = {
         nextStep: NEXT_STEP_SCHEMA,
         dealProgress: DEAL_PROGRESS_SCHEMA,
         productive: { type: 'boolean' },
-        // «Хвост» и «5К» — только для презентаций/решений, иначе null
-        // (boolean — фильтры смарта; *_Analysis — отдельные записи в
-        // таймлайн элемента).
-        hvostDone: { type: ['boolean', 'null'] },
-        hvostAnalysis: { type: ['string', 'null'] },
-        hvostSteps: HVOST_STEPS_SCHEMA,
-        fiveKDone: { type: ['boolean', 'null'] },
-        fiveKAnalysis: { type: ['string', 'null'] },
-        fiveKItems: FIVE_K_ITEMS_SCHEMA,
+        ...checklists,
         flow: FLOW_SCHEMA,
         // Факты для отчётов руководителю (focus-v3.1, 06.11.2026): исход и
         // допродажа.
         ...CLOSING_FACTS_PROPERTIES,
-    },
-    required: [
-        'sections',
-        'refusalCategory',
-        'refusalReason',
-        'nextStep',
-        'dealProgress',
-        'productive',
-        'hvostDone',
-        'hvostAnalysis',
-        'hvostSteps',
-        'fiveKDone',
-        'fiveKAnalysis',
-        'fiveKItems',
-        'flow',
-        ...CLOSING_FACTS_REQUIRED,
-    ],
-    additionalProperties: false,
-};
+    };
+    return {
+        type: 'object',
+        properties,
+        required: Object.keys(properties),
+        additionalProperties: false,
+    };
+}
 
-export const FOCUS_CLOSING_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
+export const FOCUS_CLOSING_SCHEMA: Record<string, unknown> = focusClosingSchema(
+    focusSectionsSchema('closing'),
+    CLOSING_CHECKLIST_PROPERTIES,
+);
+
+/** Описания полей «хвоста» и «5К» в задании прохода «закрытие». */
+export const CLOSING_CHECKLISTS_SPEC = `- hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
+  после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
+  механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
+  или «поработайте, я перезвоню» без даты — false. Для других типов — null.
+- hvostAnalysis — вместе с hvostDone: разбор прохождения хвоста по этапам,
+  каждый с новой строки, по ПЯТИ блокам «Хвоста» и в том же порядке, что в
+  анкете менеджера: «1. ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ — ✓/✗ …», «2. ЧТО
+  ПРЕДЛОЖИЛИ — …», «3. РЕАКЦИЯ НА ЦЕНУ — …», «4. ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ —
+  …», «5. ВЫХОД НА РЕШЕНИЕ — …»; в конце одна строка вывода. Для других
+  типов — null.
+- fiveKDone — ТОЛЬКО для презентации/звонка по решению: закрыты ли все пять
+  «К» (КЛИЕНТ, КОМПАНИЯ, КОЛЛЕГИ, КОНКУРЕНТ, КРИТЕРИИ ВЫБОРА). Хотя бы один
+  блок не выяснен — false. Для других типов — null.
+- fiveKAnalysis — вместе с fiveKDone: по каждому блоку с новой строки, что
+  выяснено (с конкретикой из разговора) или что осталось невыясненным:
+  «КЛИЕНТ — …», «КОМПАНИЯ — …», «КОЛЛЕГИ — …», «КОНКУРЕНТ — …»,
+  «КРИТЕРИИ ВЫБОРА — …». Для других типов — null. НЕВЫЯСНЕННОЕ — ТОЖЕ
+  РЕЗУЛЬТАТ: если ни одна «К» не выяснена, всё равно перечисли их все с
+  пометкой «не выяснено» — пустой разбор при заполненном итоге в карточке
+  выглядит как сбой системы.
+- hvostSteps — гранулярный «Хвост», ТЕ ЖЕ блоки, которые менеджер заполняет
+  в своей анкете (true = тема раскрыта в разговоре, false = должна была
+  прозвучать, но не прозвучала, null = тип звонка не презентация/решение):
+${HVOST_CHECKLIST_SPEC}
+- fiveKItems — гранулярные «5К», те же блоки анкеты менеджера
+  (true = выяснено в разговоре, false = не выяснено, null = не тот тип
+  звонка):
+${FIVE_K_CHECKLIST_SPEC}`;
+
+/**
+ * Задание прохода «закрытие». withChecklists — спрашивать ли «хвост» и «5К»:
+ * прежнее задание — всегда, с цитатами (focus-v3.4) — только у презентации.
+ */
+export const focusClosingPrompt = (
+    withChecklists: boolean,
+): string => `${DEEP_ANALYSIS_CORE_RULES}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО ЗАКРЫТИЕ РАЗГОВОРА И СЛЕДУЮЩИЙ ШАГ: чем
 закончился разговор, отказ и его причина, договорённость о следующем контакте,
-продвижение сделки, «хвост» и «5К», черновик отчёта менеджера. Не оценивай
+продвижение сделки, ${withChecklists ? '«хвост» и «5К», ' : ''}черновик отчёта менеджера. Не оценивай
 приветствие, презентацию, возражения и цену — этим занимаются другие проходы
 разбора. Твоя зона:
 ${focusCatalog('closing')}
@@ -220,35 +262,7 @@ ${SECTION_FIELDS_SPEC}
   оценка, whyNotHigher — почему не выше. Применимо к доработке, решению,
   оплате и презентации, дошедшей до условий; для холодного, звонка под
   показ, заявки с сайта, приглашения на мероприятие и нерелевантного — null.
-- hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
-  после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
-  механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
-  или «поработайте, я перезвоню» без даты — false. Для других типов — null.
-- hvostAnalysis — вместе с hvostDone: разбор прохождения хвоста по этапам,
-  каждый с новой строки, по ПЯТИ блокам «Хвоста» и в том же порядке, что в
-  анкете менеджера: «1. ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ — ✓/✗ …», «2. ЧТО
-  ПРЕДЛОЖИЛИ — …», «3. РЕАКЦИЯ НА ЦЕНУ — …», «4. ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ —
-  …», «5. ВЫХОД НА РЕШЕНИЕ — …»; в конце одна строка вывода. Для других
-  типов — null.
-- fiveKDone — ТОЛЬКО для презентации/звонка по решению: закрыты ли все пять
-  «К» (КЛИЕНТ, КОМПАНИЯ, КОЛЛЕГИ, КОНКУРЕНТ, КРИТЕРИИ ВЫБОРА). Хотя бы один
-  блок не выяснен — false. Для других типов — null.
-- fiveKAnalysis — вместе с fiveKDone: по каждому блоку с новой строки, что
-  выяснено (с конкретикой из разговора) или что осталось невыясненным:
-  «КЛИЕНТ — …», «КОМПАНИЯ — …», «КОЛЛЕГИ — …», «КОНКУРЕНТ — …»,
-  «КРИТЕРИИ ВЫБОРА — …». Для других типов — null. НЕВЫЯСНЕННОЕ — ТОЖЕ
-  РЕЗУЛЬТАТ: если ни одна «К» не выяснена, всё равно перечисли их все с
-  пометкой «не выяснено» — пустой разбор при заполненном итоге в карточке
-  выглядит как сбой системы.
-- hvostSteps — гранулярный «Хвост», ТЕ ЖЕ блоки, которые менеджер заполняет
-  в своей анкете (true = тема раскрыта в разговоре, false = должна была
-  прозвучать, но не прозвучала, null = тип звонка не презентация/решение):
-${HVOST_CHECKLIST_SPEC}
-- fiveKItems — гранулярные «5К», те же блоки анкеты менеджера
-  (true = выяснено в разговоре, false = не выяснено, null = не тот тип
-  звонка):
-${FIVE_K_CHECKLIST_SPEC}
-- flow — черновик отчёта менеджера: resultStatus result/noresult/expired;
+${withChecklists ? `${CLOSING_CHECKLISTS_SPEC}\n` : ''}- flow — черновик отчёта менеджера: resultStatus result/noresult/expired;
   noresultReasonCode только при noresult (secretar/nopickup/nonumber/busy/
   noresult_notime/nocontact/giveup/bay/wrong/auto), иначе null; plan.isPlanned —
   будет ли следующий контакт; plan.typeCode при isPlanned (cold/warm/
@@ -256,3 +270,5 @@ ${FIVE_K_CHECKLIST_SPEC}
   plan.deadlineDate — YYYY-MM-DD или null.
 
 ${CLOSING_FACTS_SPEC}`;
+
+export const FOCUS_CLOSING_PROMPT = focusClosingPrompt(true);

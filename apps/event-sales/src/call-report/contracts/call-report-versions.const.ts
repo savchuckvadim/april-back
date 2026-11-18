@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { AnalysisVersions } from '@lib/sales-ai-analytics';
+import { QUOTE_EVIDENCE_ENABLED } from './call-evidence.contract';
 
 /**
  * Версии разбора звонка — пререквизит трендов AI-аналитики ОП
@@ -101,8 +102,30 @@ import { AnalysisVersions } from '@lib/sales-ai-analytics';
  * звонках. Состав итогового разбора, рубрика и оценки разделов не менялись;
  * сохранённые проходы прежней версии для догона негодны — такие разборы
  * переделываются целиком.
+ *
+ * v3.4 — 18.11.2026, МИНОРНАЯ (та же серия, запись в PROMPT_SERIES_START),
+ * действует, когда включён выключатель QUOTE_EVIDENCE_ENABLED
+ * (call-evidence.contract.ts): цитата-доказательство и секунда у разделов
+ * (рядом с asWas), места пунктов «хвоста» и 5К (hvostEvidence,
+ * fiveKEvidence), потребности с местом в разговоре (needItems; needs
+ * собирает код) — для кнопки «Показать в разговоре» на странице разбора;
+ * «хвост» и 5К спрашиваются только у презентации (решение владельца
+ * 18.11.2026). Рубрика и оценки разделов не менялись. Пока выключатель
+ * выключен, действует v3.3.
  */
-export const CALL_REPORT_PROMPT_VERSION = 'focus-v3.3-2026-11-17';
+export const CALL_REPORT_PROMPT_VERSION_BASE = 'focus-v3.3-2026-11-17';
+export const CALL_REPORT_PROMPT_VERSION_QUOTES = 'focus-v3.4-2026-11-18';
+
+/** Версия задания: с цитатами (focus-v3.4) или прежнее. */
+export const promptVersionFor = (quoteEvidence: boolean): string =>
+    quoteEvidence
+        ? CALL_REPORT_PROMPT_VERSION_QUOTES
+        : CALL_REPORT_PROMPT_VERSION_BASE;
+
+/** Версия задания штатного разбора — по выключателю цитат. */
+export const CALL_REPORT_PROMPT_VERSION = promptVersionFor(
+    QUOTE_EVIDENCE_ENABLED,
+);
 /**
  * Рубрика: 7 разделов × relevance/score, взвешенная оценка 0–100.
  * v2 (01.11.2026) — ограничители оценки и продвижение сделки; без даты в

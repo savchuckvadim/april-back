@@ -255,6 +255,7 @@ export class CallAnalysisRepairUseCase {
                 outcome.dto,
                 durationSecOf(outcome.row),
                 this.logger,
+                outcome.row.segments,
             );
             const created = await this.aiService.create(
                 buildReanalysisRecord({
