@@ -16,8 +16,9 @@ export interface ChecklistTextBlock {
 
 /** Подпись поля смарта без префикса «5К AI: » / «Хвост AI: », с заглавной. */
 function smartFieldLabel(code: string, fallback: string): string {
-    const name = CALL_REPORT_SMART_FIELDS.find(field => field.code === code)
-        ?.name;
+    const name = CALL_REPORT_SMART_FIELDS.find(
+        field => field.code === code,
+    )?.name;
     const tail = name?.split(': ').slice(1).join(': ').trim();
     if (!tail) return fallback;
     return tail.charAt(0).toUpperCase() + tail.slice(1);
