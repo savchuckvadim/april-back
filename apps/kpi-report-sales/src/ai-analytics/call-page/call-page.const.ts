@@ -28,6 +28,11 @@ export const CALL_PAGE_HIGHLIGHT_KINDS = [
     // Цитата «как было» раздела разбора. Бейджем над расшифровкой не
     // выводится: отдаётся отдельным списком `sectionHighlights`.
     'section',
+    // Места пунктов разбора (focus-v3.4): потребность, пункт «хвоста», блок
+    // 5К — тоже без бейджа, в `sectionHighlights`.
+    'need',
+    'hvost',
+    'five_k',
 ] as const;
 export type CallPageHighlightKind = (typeof CALL_PAGE_HIGHLIGHT_KINDS)[number];
 
@@ -43,6 +48,9 @@ export const CALL_PAGE_HIGHLIGHT_KIND_TITLES: Readonly<
     price: 'Цены',
     moment: 'Ход разговора',
     section: 'Разделы разговора',
+    need: 'Потребности',
+    hvost: 'Хвост',
+    five_k: '5К',
 };
 
 /** С какой оценки раздела (1–10) он «хороший» и «средний» — как на сайте. */

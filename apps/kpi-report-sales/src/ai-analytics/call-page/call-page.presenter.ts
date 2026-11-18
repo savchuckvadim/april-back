@@ -13,6 +13,7 @@ import {
 } from './call-page.const';
 import { buildCallPageFacts } from './call-page-facts.presenter';
 import { buildCallPageHighlights } from './call-page-highlights.presenter';
+import { buildCallPagePointHighlights } from './call-page-points.presenter';
 import {
     buildCallPageSectionHighlights,
     presentCallPageSections,
@@ -154,6 +155,8 @@ export function presentCallPage(source: CallPageSource): CallPageDto {
         view.sections,
         transcript.segments,
     );
+    // Места потребностей, «хвоста» и 5К (focus-v3.4) — тоже без бейджа.
+    const points = buildCallPagePointHighlights(view, transcript.segments);
     return {
         call: {
             managerName: source.managerName,
@@ -169,7 +172,7 @@ export function presentCallPage(source: CallPageSource): CallPageDto {
         summary: view.summary,
         recommendations: view.recommendations,
         employeeRecommendations: view.employeeRecommendations,
-        facts: buildCallPageFacts(view, factIds),
+        facts: buildCallPageFacts(view, factIds, points.items),
         sections: presentCallPageSections(
             view.sections,
             sectionMarks.sectionIds,
@@ -179,6 +182,6 @@ export function presentCallPage(source: CallPageSource): CallPageDto {
         transcript: transcript.segments,
         transcriptTimed: transcript.timed,
         highlights,
-        sectionHighlights: sectionMarks.highlights,
+        sectionHighlights: [...sectionMarks.highlights, ...points.highlights],
     };
 }

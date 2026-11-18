@@ -10,41 +10,8 @@ import {
     type CallPageTone,
 } from '../call-page.const';
 
-export class CallPageFactDto {
-    @ApiProperty({
-        description: 'Название показателя разговора для строки «Итоги».',
-        example: 'Следующий шаг',
-        type: String,
-    })
-    label: string;
-
-    @ApiProperty({
-        description: 'Значение словами, готовое к показу.',
-        example: 'Показ системы: в четверг в 11:00',
-        type: String,
-    })
-    value: string;
-
-    @ApiProperty({
-        description:
-            'Окраска значения: good — хорошо, bad — плохо, warn — обратить ' +
-            'внимание, neutral — просто сведение.',
-        enum: CALL_PAGE_TONES,
-        example: 'good',
-    })
-    tone: CallPageTone;
-
-    @ApiProperty({
-        description:
-            'Подсветка этого показателя в расшифровке (id из `highlights`): ' +
-            'у потребностей, показа и следующего шага — момент разговора, ' +
-            'у цены — первая названная цена; null — подсветки нет.',
-        example: 'moment-3',
-        type: String,
-        nullable: true,
-    })
-    highlightId: string | null;
-}
+// Строка «Итогов» и её пункты — в call-page-fact.dto.ts (лимит файла).
+export { CallPageFactDto, CallPageFactItemDto } from './call-page-fact.dto';
 
 export class CallPageSectionDto {
     @ApiProperty({
@@ -101,6 +68,16 @@ export class CallPageSectionDto {
         type: [String],
     })
     alternatives: string[];
+
+    @ApiProperty({
+        description:
+            'Цитата-доказательство оценки раздела — дословно из разговора ' +
+            '(задание focus-v3.4); null — прежний разбор или этап не прозвучал.',
+        example: 'а какие задачи у бухгалтерии сейчас?',
+        type: String,
+        nullable: true,
+    })
+    quote: string | null;
 
     @ApiProperty({
         description:
@@ -321,8 +298,10 @@ export class CallPageHighlightDto {
             'возражение, risk — сигнал риска, methodology — пункт методики, ' +
             'issue — сбой не по вине разговора, price — названная цена, ' +
             'moment — момент разговора: начало выяснения потребностей, ' +
-            'презентации, договорённость о следующем шаге; section — цитата ' +
-            '«как было» раздела разбора (только в `sectionHighlights`).',
+            'презентации, договорённость о следующем шаге; section — место ' +
+            'раздела разбора; need — потребность клиента, hvost — пункт ' +
+            '«хвоста», five_k — блок 5К (section, need, hvost и five_k — ' +
+            'только в `sectionHighlights`).',
         enum: CALL_PAGE_HIGHLIGHT_KINDS,
         example: 'objection',
     })

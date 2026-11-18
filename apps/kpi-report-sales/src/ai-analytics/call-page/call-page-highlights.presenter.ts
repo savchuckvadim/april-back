@@ -19,7 +19,7 @@ import {
     CallPageHighlightCollector,
     type CallPageHighlightDraft,
 } from './call-page-highlight.collector';
-import { indexTranscript } from './call-page-highlights.util';
+import { indexTranscript } from '@lib/call-lib/call-report/transcript-anchor';
 import {
     callPageTitleOf,
     objectionHandlingOf,

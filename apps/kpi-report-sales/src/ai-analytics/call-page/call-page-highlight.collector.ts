@@ -10,8 +10,8 @@ import {
 } from './call-page.const';
 import {
     matchAnchor,
-    type CallPageTranscriptIndex,
-} from './call-page-highlights.util';
+    type TranscriptAnchorIndex,
+} from '@lib/call-lib/call-report/transcript-anchor';
 import type { CallPageAnchor } from './call-page.types';
 import type { CallPageHighlightDto } from './dto/call-page-parts.dto';
 
@@ -27,7 +27,7 @@ export class CallPageHighlightCollector {
     readonly highlights: CallPageHighlightDto[] = [];
     private readonly counters = new Map<CallPageHighlightKind, number>();
 
-    constructor(private readonly index: CallPageTranscriptIndex) {}
+    constructor(private readonly index: TranscriptAnchorIndex) {}
 
     /** Идентификатор подсветки; места нет ни в тексте, ни по времени — null. */
     add(draft: CallPageHighlightDraft): string | null {

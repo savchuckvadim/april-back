@@ -7,6 +7,10 @@
 import type { CallPageTone } from './call-page.const';
 import type { CallPageFactHighlightIds } from './call-page-highlights.presenter';
 import {
+    NO_POINT_ITEMS,
+    type CallPagePointItems,
+} from './call-page-points.presenter';
+import {
     callPageTitleOf,
     callPageTitlesOf,
     rubTitle,
@@ -16,7 +20,10 @@ import type {
     CallPageNextStepView,
     CallPagePriceView,
 } from './call-page.types';
-import type { CallPageFactDto } from './dto/call-page-parts.dto';
+import type {
+    CallPageFactDto,
+    CallPageFactItemDto,
+} from './dto/call-page-fact.dto';
 
 type Fact = CallPageFactDto | null;
 
@@ -32,8 +39,11 @@ const fact = (
     value: string | null,
     tone: CallPageTone = 'neutral',
     highlightId: string | null = null,
+    items: CallPageFactItemDto[] = [],
 ): Fact =>
-    value === null || value === '' ? null : { label, value, tone, highlightId };
+    value === null || value === ''
+        ? null
+        : { label, value, tone, highlightId, items };
 
 const joined = (parts: readonly (string | null)[], glue: string): string =>
     parts.filter((part): part is string => Boolean(part)).join(glue);
@@ -57,6 +67,7 @@ const SENTIMENT_TONES: Readonly<Record<string, CallPageTone>> = {
 function needsFact(
     view: CallPageAnalysisView,
     highlightId: string | null,
+    items: CallPageFactItemDto[],
 ): Fact {
     if (view.needsFound === null) return null;
     return view.needsFound
@@ -65,6 +76,7 @@ function needsFact(
               view.needs.join('; ') || 'выявлены',
               'good',
               highlightId,
+              items,
           )
         : fact('Потребности', 'не выявлены', 'bad', highlightId);
 }
@@ -141,12 +153,14 @@ function dealProgressFact(view: CallPageAnalysisView): Fact {
 
 /**
  * Итог чек-листа и разбор: разбор в несколько строк (по блоку на строку) —
- * с новой строки после итога, одна строка — через точку.
+ * с новой строки после итога, одна строка — через точку. Своей кнопки у
+ * строки нет: места в разговоре — у пунктов (items, focus-v3.4).
  */
 function checklistFact(
     label: string,
     done: boolean | null,
     analysis: string | null,
+    items: CallPageFactItemDto[],
 ): Fact {
     if (done === null) return null;
     const glue = analysis?.includes('\n') ? '.\n' : '. ';
@@ -154,12 +168,15 @@ function checklistFact(
         label,
         joined([done ? 'выполнен' : 'не выполнен', analysis], glue),
         done ? 'good' : 'bad',
+        null,
+        items,
     );
 }
 
 export function buildCallPageFacts(
     view: CallPageAnalysisView,
     highlightIds: CallPageFactHighlightIds = NO_FACT_HIGHLIGHTS,
+    items: CallPagePointItems = NO_POINT_ITEMS,
 ): CallPageFactDto[] {
     const facts: Fact[] = [
         fact(
@@ -182,7 +199,7 @@ export function buildCallPageFacts(
             callPageTitleOf('sentiment', view.sentiment),
             SENTIMENT_TONES[view.sentiment ?? ''] ?? 'neutral',
         ),
-        needsFact(view, highlightIds.needs),
+        needsFact(view, highlightIds.needs, items.needs),
         view.presentationDone === null
             ? null
             : fact(
@@ -217,8 +234,18 @@ export function buildCallPageFacts(
         view.questionsCount === null
             ? null
             : fact('Вопросов менеджера', String(view.questionsCount)),
-        checklistFact('Чек-лист ХВОСТ', view.hvostDone, view.hvostAnalysis),
-        checklistFact('Чек-лист 5К', view.fiveKDone, view.fiveKAnalysis),
+        checklistFact(
+            'Чек-лист ХВОСТ',
+            view.hvostDone,
+            view.hvostAnalysis,
+            items.hvost,
+        ),
+        checklistFact(
+            'Чек-лист 5К',
+            view.fiveKDone,
+            view.fiveKAnalysis,
+            items.fiveK,
+        ),
         fact('Сверка с отчётом менеджера', view.reportComparison),
         fact('Речь менеджера', view.speechAnalysis),
     ];

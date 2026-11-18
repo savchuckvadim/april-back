@@ -19,6 +19,10 @@ import {
     normalizeFiveKAnalysisText,
     normalizeHvostAnalysisText,
 } from '@lib/call-lib/call-report/checklist-text';
+import {
+    readChecklistPlaces,
+    readNeedItems,
+} from './call-page-evidence.reader';
 import type {
     CallPageAnalysisView,
     CallPageCheckpointView,
@@ -60,6 +64,9 @@ function sectionOf(item: Json): CallPageSectionView | null {
         asWas: text(item.asWas),
         weaknesses: text(item.weaknesses),
         alternatives: asStringArray(item.alternatives),
+        // Цитата-доказательство и секунда (focus-v3.4); прежний разбор — null.
+        quote: text(item.quote),
+        startSec: seconds(item.startSec),
     };
 }
 
@@ -194,7 +201,12 @@ const present = <T>(items: (T | null)[]): T[] =>
 
 type CallPageChecklists = Pick<
     CallPageAnalysisView,
-    'hvostDone' | 'hvostAnalysis' | 'fiveKDone' | 'fiveKAnalysis'
+    | 'hvostDone'
+    | 'hvostAnalysis'
+    | 'fiveKDone'
+    | 'fiveKAnalysis'
+    | 'hvostEvidence'
+    | 'fiveKEvidence'
 >;
 
 /**
@@ -208,6 +220,8 @@ function checklistsOf(source: Json): CallPageChecklists {
             hvostAnalysis: null,
             fiveKDone: null,
             fiveKAnalysis: null,
+            hvostEvidence: [],
+            fiveKEvidence: [],
         };
     }
     return {
@@ -217,6 +231,9 @@ function checklistsOf(source: Json): CallPageChecklists {
         hvostAnalysis: text(normalizeHvostAnalysisText(source.hvostAnalysis)),
         fiveKDone: asBoolean(source.fiveKDone),
         fiveKAnalysis: text(normalizeFiveKAnalysisText(source.fiveKAnalysis)),
+        // Места пунктов в разговоре (focus-v3.4); прежний разбор — пусто.
+        hvostEvidence: readChecklistPlaces(source.hvostEvidence),
+        fiveKEvidence: readChecklistPlaces(source.fiveKEvidence),
     };
 }
 
@@ -246,6 +263,7 @@ export function readCallPageAnalysis(
         outcome: text(source.outcome),
         needsFound: asBoolean(source.needsFound),
         needs: asStringArray(source.needs),
+        needItems: readNeedItems(source.needItems),
         needsStartSec: asNumber(source.needsStartSec),
         presentationDone: asBoolean(source.presentationDone),
         presentationStartSec: asNumber(source.presentationStartSec),

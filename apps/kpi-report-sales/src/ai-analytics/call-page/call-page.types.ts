@@ -4,6 +4,7 @@
  * event-sales). Типы свои: приложение не импортирует DTO другого приложения,
  * а нагрузка — произвольный JSON, поля читаются терпимо к пропускам.
  */
+import type { TranscriptAnchor } from '@lib/call-lib/call-report/transcript-anchor';
 
 export interface CallPageSectionView {
     section: string;
@@ -14,6 +15,25 @@ export interface CallPageSectionView {
     asWas: string | null;
     weaknesses: string | null;
     alternatives: string[];
+    /** Цитата-доказательство оценки (focus-v3.4); null — нет или прежний разбор. */
+    quote: string | null;
+    /** Секунда цитаты, проверенная приёмом разбора; null — места нет. */
+    startSec: number | null;
+}
+
+/** Потребность клиента с местом в разговоре (focus-v3.4). */
+export interface CallPageNeedItemView {
+    need: string;
+    quote: string | null;
+    startSec: number | null;
+}
+
+/** Место пункта «хвоста» или блока 5К, раскрытого в разговоре (focus-v3.4). */
+export interface CallPageChecklistPlaceView {
+    /** Ключ пункта: как в hvostSteps / fiveKItems. */
+    key: string;
+    quote: string;
+    startSec: number | null;
 }
 
 export interface CallPageObjectionView {
@@ -121,6 +141,8 @@ export interface CallPageAnalysisView {
     outcome: string | null;
     needsFound: boolean | null;
     needs: string[];
+    /** Потребности с местом в разговоре; прежний разбор — пусто. */
+    needItems: CallPageNeedItemView[];
     /** Когда началось выяснение потребностей; null — нет или не размечено. */
     needsStartSec: number | null;
     presentationDone: boolean | null;
@@ -138,6 +160,9 @@ export interface CallPageAnalysisView {
     hvostAnalysis: string | null;
     fiveKDone: boolean | null;
     fiveKAnalysis: string | null;
+    /** Места пунктов «хвоста» и 5К; прежний разбор — пусто. */
+    hvostEvidence: CallPageChecklistPlaceView[];
+    fiveKEvidence: CallPageChecklistPlaceView[];
     reportComparison: string | null;
     speechAnalysis: string | null;
     nextStep: CallPageNextStepView | null;
@@ -165,16 +190,8 @@ export interface CallPageSegmentView {
     text: string;
 }
 
-/** Привязка места разбора к расшифровке: цитата и (если есть) время. */
-export interface CallPageAnchor {
-    quote: string | null;
-    startSec: number | null;
-    endSec: number | null;
-}
-
-export interface CallPageAnchorMatch {
-    /** Номера реплик по возрастанию; пусто — место в расшифровке не найдено. */
-    segmentIndexes: number[];
-    /** Куда поставить запись; null — времени нет. */
-    startSec: number | null;
-}
+/**
+ * Привязка места разбора к расшифровке: цитата и (если есть) время. Поиск
+ * места — общий с приёмом разбора (@lib/call-lib/call-report/transcript-anchor).
+ */
+export type CallPageAnchor = TranscriptAnchor;
