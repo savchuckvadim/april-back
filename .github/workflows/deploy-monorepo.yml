@@ -272,10 +272,15 @@ jobs:
                       }
 
                       for app in $APPS; do
-                        echo "📦 pull + up: $app"
+                        # Время каждого шага в логе — видно, что тормозит: скачивание или старт.
+                        t0=$(date +%s)
+                        echo "📦 pull + up: $app ($(date +%T))"
                         $COMPOSE pull "$app"
+                        t1=$(date +%s)
                         $COMPOSE up -d --no-deps "$app"
                         wait_healthy "$app"
+                        t2=$(date +%s)
+                        echo "⏱ $app: скачивание $((t1 - t0)) с, запуск $((t2 - t1)) с"
                       done
 
                       docker image prune -f || true
