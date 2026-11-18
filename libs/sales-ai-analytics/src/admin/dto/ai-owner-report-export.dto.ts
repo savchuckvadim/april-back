@@ -5,8 +5,8 @@
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { IsBooleanFlag } from '@lib/core/decorators/dto/boolean-flag.decorator';
 import {
-    IsBoolean,
     IsIn,
     IsNotEmpty,
     IsOptional,
@@ -23,9 +23,6 @@ import type { OwnerReportPeriodKind } from '../../model/owner-report/owner-repor
 
 const trimLower = ({ value }: { value: unknown }): unknown =>
     typeof value === 'string' ? value.trim().toLowerCase() : value;
-
-const toBoolean = ({ value }: { value: unknown }): unknown =>
-    value === 'true' ? true : value === 'false' ? false : value;
 
 /** Портал и период выгрузки — общее у запуска, состояния и файла. */
 export class AiOwnerReportExportTargetDto {
@@ -68,8 +65,7 @@ export class AiOwnerReportExportStartDto extends AiOwnerReportExportTargetDto {
         example: true,
     })
     @IsOptional()
-    @Transform(toBoolean)
-    @IsBoolean()
+    @IsBooleanFlag()
     forceRefresh?: boolean;
 }
 

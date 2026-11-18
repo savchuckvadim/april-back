@@ -1945,6 +1945,76 @@ exports.Prisma.RenewalOfferLinkScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SiteMediaScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  kind: 'kind',
+  title: 'title',
+  caption: 'caption',
+  alt: 'alt',
+  fileName: 'fileName',
+  darkFileName: 'darkFileName',
+  posterFileName: 'posterFileName',
+  mime: 'mime',
+  sizeBytes: 'sizeBytes',
+  width: 'width',
+  height: 'height',
+  durationSec: 'durationSec',
+  embedProvider: 'embedProvider',
+  embedUrl: 'embedUrl',
+  embedId: 'embedId',
+  uploadedBy: 'uploadedBy'
+};
+
+exports.Prisma.SiteArticleScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  section: 'section',
+  type: 'type',
+  slug: 'slug',
+  status: 'status',
+  sort: 'sort',
+  publishedRevisionId: 'publishedRevisionId',
+  publishedAt: 'publishedAt',
+  publishedBy: 'publishedBy',
+  meta: 'meta',
+  createdBy: 'createdBy',
+  updatedBy: 'updatedBy'
+};
+
+exports.Prisma.SiteArticleRevisionScalarFieldEnum = {
+  id: 'id',
+  articleId: 'articleId',
+  number: 'number',
+  source: 'source',
+  contentFormat: 'contentFormat',
+  eyebrow: 'eyebrow',
+  title: 'title',
+  description: 'description',
+  seoTitle: 'seoTitle',
+  seoDescription: 'seoDescription',
+  blocks: 'blocks',
+  baseCodeHash: 'baseCodeHash',
+  comment: 'comment',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SiteArticleMediaScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  articleId: 'articleId',
+  mediaId: 'mediaId',
+  role: 'role',
+  slot: 'slot',
+  sort: 'sort',
+  caption: 'caption',
+  createdBy: 'createdBy'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3049,6 +3119,59 @@ exports.Prisma.RenewalOfferLinkOrderByRelevanceFieldEnum = {
   adjustmentLabel: 'adjustmentLabel',
   createdBy: 'createdBy'
 };
+
+exports.Prisma.SiteMediaOrderByRelevanceFieldEnum = {
+  id: 'id',
+  kind: 'kind',
+  title: 'title',
+  caption: 'caption',
+  alt: 'alt',
+  fileName: 'fileName',
+  darkFileName: 'darkFileName',
+  posterFileName: 'posterFileName',
+  mime: 'mime',
+  embedProvider: 'embedProvider',
+  embedUrl: 'embedUrl',
+  embedId: 'embedId',
+  uploadedBy: 'uploadedBy'
+};
+
+exports.Prisma.SiteArticleOrderByRelevanceFieldEnum = {
+  id: 'id',
+  section: 'section',
+  type: 'type',
+  slug: 'slug',
+  status: 'status',
+  publishedRevisionId: 'publishedRevisionId',
+  publishedBy: 'publishedBy',
+  createdBy: 'createdBy',
+  updatedBy: 'updatedBy'
+};
+
+exports.Prisma.SiteArticleRevisionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  articleId: 'articleId',
+  source: 'source',
+  contentFormat: 'contentFormat',
+  eyebrow: 'eyebrow',
+  title: 'title',
+  description: 'description',
+  seoTitle: 'seoTitle',
+  seoDescription: 'seoDescription',
+  baseCodeHash: 'baseCodeHash',
+  comment: 'comment',
+  createdBy: 'createdBy'
+};
+
+exports.Prisma.SiteArticleMediaOrderByRelevanceFieldEnum = {
+  id: 'id',
+  articleId: 'articleId',
+  mediaId: 'mediaId',
+  role: 'role',
+  slot: 'slot',
+  caption: 'caption',
+  createdBy: 'createdBy'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -3226,7 +3349,11 @@ exports.Prisma.ModelName = {
   OfferLetter: 'OfferLetter',
   ContractTemplate: 'ContractTemplate',
   SupplyReportTemplate: 'SupplyReportTemplate',
-  RenewalOfferLink: 'RenewalOfferLink'
+  RenewalOfferLink: 'RenewalOfferLink',
+  SiteMedia: 'SiteMedia',
+  SiteArticle: 'SiteArticle',
+  SiteArticleRevision: 'SiteArticleRevision',
+  SiteArticleMedia: 'SiteArticleMedia'
 };
 
 /**

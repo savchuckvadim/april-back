@@ -12,7 +12,10 @@ import { SupportApiModule } from './support-api/support-api.module';
 import { SupportTelegramAppModule } from './support-telegram/support-telegram-app.module';
 import { CabinetTelegramWebhookModule } from '@lib/cabinet';
 import { SiteLeadModule } from './site-lead/site-lead.module';
-import { SiteMediaPublicModule } from '@lib/site-content';
+import {
+    SiteArticlesPublicModule,
+    SiteMediaPublicModule,
+} from '@lib/site-content';
 
 /**
  * Корневой модуль приложения bot.
@@ -57,6 +60,9 @@ import { SiteMediaPublicModule } from '@lib/site-content';
         SiteLeadModule,
         // Картинки и видео сайта: список для ISR и файлы под /media сайта (09.11.2026)
         SiteMediaPublicModule,
+        // Статьи сайта (17.11.2026): опубликованный текст и медиа по местам
+        // для разделов ai, process-sales, articles; без таблиц — «статьи нет».
+        SiteArticlesPublicModule,
     ],
     providers: [GlobalExceptionFilter],
 })

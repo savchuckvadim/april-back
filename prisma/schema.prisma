@@ -1494,22 +1494,22 @@ model timezones {
 }
 
 model User {
-  id                        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  name                      String    @db.VarChar(255)
-  surname                   String    @db.VarChar(255)
-  email                     String?   @unique(map: "users_email_unique") @db.VarChar(255)
-  photo                     String?   @db.VarChar(255)
-  role_id                   BigInt    @db.UnsignedBigInt
-  email_verified_at         DateTime? @db.Timestamp(0)
-  password                  String    @db.VarChar(255)
-  two_factor_secret         String?   @db.Text
-  two_factor_recovery_codes String?   @db.Text
-  remember_token            String?   @db.VarChar(100)
-  created_at                DateTime? @db.Timestamp(0)
-  updated_at                DateTime? @db.Timestamp(0)
-  client_id                 BigInt?   @db.UnsignedBigInt
-  bitrix_id                 String?   @db.VarChar(255)
-  clients                   Client?   @relation("ClientUsers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
+  id                        BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  name                      String            @db.VarChar(255)
+  surname                   String            @db.VarChar(255)
+  email                     String?           @unique(map: "users_email_unique") @db.VarChar(255)
+  photo                     String?           @db.VarChar(255)
+  role_id                   BigInt            @db.UnsignedBigInt
+  email_verified_at         DateTime?         @db.Timestamp(0)
+  password                  String            @db.VarChar(255)
+  two_factor_secret         String?           @db.Text
+  two_factor_recovery_codes String?           @db.Text
+  remember_token            String?           @db.VarChar(100)
+  created_at                DateTime?         @db.Timestamp(0)
+  updated_at                DateTime?         @db.Timestamp(0)
+  client_id                 BigInt?           @db.UnsignedBigInt
+  bitrix_id                 String?           @db.VarChar(255)
+  clients                   Client?           @relation("ClientUsers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
   portalUsers               PortalUser[]
   telegramBindings          TelegramBinding[]
 
@@ -2735,4 +2735,133 @@ model RenewalOfferLink {
   @@index([createdAt], map: "renewal_offer_links_created_at_index")
   @@index([clientName], map: "renewal_offer_links_client_name_index")
   @@map("renewal_offer_links")
+}
+
+/// МЕДИАТЕКА САЙТА (миграция online/database/migrations/2026_11_18_100000_create_site_media_table.php):
+/// картинки, ролики MP4 на нашем сервере и внешние видео для статей всех
+/// разделов. Файл — storage/public/site-media/library/<id>.<отпечаток>.<расш>,
+/// постер — <id>.poster.<…>, тёмный вариант — <id>-dark.<…>.
+/// kind: 'image' | 'video' | 'embed'; embedProvider: 'youtube' | 'rutube' | 'vk'
+/// — перечни в коде (@lib/site-content). Кадры /platform таблицей не описываются.
+/// Медиа, стоящее в статье, не удаляется (restrict в SiteArticleMedia).
+model SiteMedia {
+  id             String    @id @db.Char(36)
+  createdAt      DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime? @map("updated_at") @db.Timestamp(0)
+  /// 'image' | 'video' | 'embed'
+  kind           String    @db.VarChar(16)
+  /// Служебное название в медиатеке; клиент его не видит
+  title          String?   @db.VarChar(255)
+  /// Подпись по умолчанию; статья может поставить свою
+  caption        String?   @db.VarChar(500)
+  alt            String?   @db.VarChar(500)
+  fileName       String?   @map("file_name") @db.VarChar(100)
+  /// Вариант картинки для тёмной темы; NULL — один на обе темы
+  darkFileName   String?   @map("dark_file_name") @db.VarChar(100)
+  posterFileName String?   @map("poster_file_name") @db.VarChar(100)
+  mime           String?   @db.VarChar(64)
+  sizeBytes      Int?      @map("size_bytes") @db.UnsignedInt
+  width          Int?      @db.UnsignedSmallInt
+  height         Int?      @db.UnsignedSmallInt
+  durationSec    Int?      @map("duration_sec") @db.UnsignedInt
+  /// 'youtube' | 'rutube' | 'vk'; адрес встраивания сайт собирает сам по embedId
+  embedProvider  String?   @map("embed_provider") @db.VarChar(16)
+  embedUrl       String?   @map("embed_url") @db.VarChar(500)
+  embedId        String?   @map("embed_id") @db.VarChar(64)
+  uploadedBy     String?   @map("uploaded_by") @db.VarChar(128)
+
+  usages SiteArticleMedia[]
+
+  @@index([kind, createdAt], map: "site_media_kind_created_index")
+  @@map("site_media")
+}
+
+/// СТАТЬЯ САЙТА (миграция online/database/migrations/2026_11_18_100100_create_site_articles_tables.php),
+/// общая для всех разделов. section: 'ai' | 'process-sales' | 'articles' | …;
+/// type: 'chapter' | 'article' | 'guide' | 'news' | 'case'; status: 'draft' |
+/// 'published' | 'unpublished' | 'archived' — перечни в коде (@lib/site-content).
+/// Глава из кода (type = 'chapter') без опубликованной версии — сайт показывает
+/// текст из кода. Черновик — последняя версия с номером больше опубликованной.
+/// Мягкого удаления нет: архив статусом, адрес остаётся занятым.
+model SiteArticle {
+  id        String    @id @db.Char(36)
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+  section   String    @db.VarChar(32)
+  type      String    @db.VarChar(32)
+  /// Путь внутри раздела: 'theory/call-analysis'; обзор раздела — 'index'
+  slug      String    @db.VarChar(191)
+  status    String    @default("draft") @db.VarChar(16)
+  sort      Int       @default(500)
+
+  publishedRevisionId String?   @map("published_revision_id") @db.Char(36)
+  publishedAt         DateTime? @map("published_at") @db.Timestamp(0)
+  publishedBy         String?   @map("published_by") @db.VarChar(128)
+  /// Дополнительные свойства без своей колонки (метки, для кого статья): состав — в коде
+  meta                Json?
+  createdBy           String?   @map("created_by") @db.VarChar(128)
+  updatedBy           String?   @map("updated_by") @db.VarChar(128)
+
+  publishedRevision SiteArticleRevision?  @relation("SiteArticlePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "site_articles_published_revision_id_foreign")
+  revisions         SiteArticleRevision[] @relation("SiteArticleRevisions")
+  media             SiteArticleMedia[]
+
+  @@unique([section, slug], map: "site_articles_section_slug_unique")
+  @@index([section, status, sort], map: "site_articles_section_status_sort_index")
+  @@index([publishedRevisionId], map: "site_articles_published_revision_index")
+  @@map("site_articles")
+}
+
+/// Версия текста статьи — неизменна. source: 'admin' | 'code' | 'restore';
+/// contentFormat: 'theory-v1' | 'how-v1'. Блоки проверяет Nest по формату.
+/// Миграция 2026_11_18_100100.
+model SiteArticleRevision {
+  id             String    @id @db.Char(36)
+  articleId      String    @map("article_id") @db.Char(36)
+  /// Номер версии внутри статьи; защита от одновременной правки
+  number         Int       @db.UnsignedInt
+  source         String    @default("admin") @db.VarChar(16)
+  contentFormat  String    @map("content_format") @db.VarChar(32)
+  eyebrow        String?   @db.VarChar(255)
+  title          String    @db.VarChar(255)
+  description    String?   @db.Text
+  seoTitle       String?   @map("seo_title") @db.VarChar(255)
+  seoDescription String?   @map("seo_description") @db.VarChar(500)
+  blocks         Json
+  /// Отпечаток главы из кода, на которой сделана правка
+  baseCodeHash   String?   @map("base_code_hash") @db.VarChar(16)
+  comment        String?   @db.VarChar(255)
+  createdBy      String?   @map("created_by") @db.VarChar(128)
+  createdAt      DateTime? @map("created_at") @db.Timestamp(0)
+
+  article     SiteArticle   @relation("SiteArticleRevisions", fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "site_article_revisions_article_id_foreign")
+  publishedIn SiteArticle[] @relation("SiteArticlePublishedRevision")
+
+  @@unique([articleId, number], map: "site_article_revisions_article_number_unique")
+  @@map("site_article_revisions")
+}
+
+/// Где в статье стоит медиа: role 'cover' (slot = 'cover') | 'inline' (slot —
+/// id блока-скрина) | 'gallery' (slot NULL, порядок sort). Связь не
+/// версионируется: замена кадра видна на сайте без публикации текста.
+/// Миграция 2026_11_18_100100.
+model SiteArticleMedia {
+  id        String    @id @db.Char(36)
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+  articleId String    @map("article_id") @db.Char(36)
+  mediaId   String    @map("media_id") @db.Char(36)
+  role      String    @db.VarChar(16)
+  slot      String?   @db.VarChar(64)
+  sort      Int       @default(500)
+  /// Подпись в этой статье; NULL — подпись медиа по умолчанию
+  caption   String?   @db.VarChar(500)
+  createdBy String?   @map("created_by") @db.VarChar(128)
+
+  article SiteArticle @relation(fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "site_article_media_article_id_foreign")
+  media   SiteMedia   @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "site_article_media_media_id_foreign")
+
+  @@unique([articleId, role, slot], map: "site_article_media_article_role_slot_unique")
+  @@index([mediaId], map: "site_article_media_media_id_index")
+  @@map("site_article_media")
 }

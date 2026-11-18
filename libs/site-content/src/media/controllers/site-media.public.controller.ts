@@ -11,6 +11,10 @@ import {
 import type { Response } from 'express';
 import { SITE_MEDIA_FORMATS } from '../domain/media-format';
 import {
+    isClosedMediaSection,
+    SITE_MEDIA_CLOSED_SECTION_MESSAGES,
+} from '../domain/site-media.sections';
+import {
     SiteMediaFileParamsDto,
     SiteMediaListDto,
     SiteMediaSectionParamsDto,
@@ -57,9 +61,18 @@ export class SiteMediaPublicController {
     @ApiBadRequestResponse({
         description: 'Раздел не по шаблону (латиница, цифры, дефисы).',
     })
+    @ApiNotFoundResponse({
+        description:
+            'Раздел закрыт для перечня (медиатека статей): адреса её файлов сайт получает из ответа статьи.',
+    })
     async list(
         @Param() { section }: SiteMediaSectionParamsDto,
     ): Promise<SiteMediaListDto> {
+        if (isClosedMediaSection(section)) {
+            throw new NotFoundException(
+                SITE_MEDIA_CLOSED_SECTION_MESSAGES.publicList,
+            );
+        }
         return SiteMediaListDto.of(await this.media.list(section));
     }
 

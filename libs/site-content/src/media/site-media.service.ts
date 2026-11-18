@@ -3,45 +3,28 @@ import {
     Injectable,
     Logger,
     NotFoundException,
-    PayloadTooLargeException,
 } from '@nestjs/common';
+import { SITE_MEDIA_FORMATS } from './domain/media-format';
+import { parseMediaFileName } from './domain/media-file-name';
 import {
-    SITE_MEDIA_FORMATS,
-    sniffMediaFormat,
-    type SiteMediaExtension,
-} from './domain/media-format';
-import {
-    buildMediaFileName,
-    mediaContentHash,
-    parseMediaFileName,
-} from './domain/media-file-name';
+    outdatedMediaFiles,
+    prepareMediaFile,
+    type PreparedMediaFile,
+    type SlotMediaFile,
+} from './domain/media-upload.prepare';
 import { collectSiteMedia } from './domain/site-media-collect';
+import { SITE_MEDIA_MESSAGES } from './domain/site-media.messages';
 import {
     SITE_MEDIA_KEY_MAX_LENGTH,
     SITE_MEDIA_KEY_PATTERN,
-    SITE_MEDIA_MAX_BYTES,
     type SiteMediaItem,
     type SiteMediaPutInput,
     type SiteMediaResolvedFile,
-    type SiteMediaRole,
-    type SiteMediaUpload,
+    type SiteMediaStaged,
 } from './domain/site-media.types';
 import { SiteMediaStorage } from './site-media.storage';
 
-export const SITE_MEDIA_MESSAGES = {
-    nothingUploaded: 'Нужен файл кадра или постер',
-    unsupported:
-        'Подходят картинки PNG, JPG, WebP и видео MP4 (H.264). Фото с iPhone (HEIC) и ролики MOV пересохраните в эти форматы',
-    imageTooLarge: 'Картинка больше 10 МБ — сохраните в WebP или JPG',
-    videoTooLarge:
-        'Видео больше 80 МБ — сожмите (например, HandBrake: 1080p, H.264)',
-    posterNotImage: 'Постер — это картинка PNG, JPG или WebP',
-    posterForImage: 'Постер бывает только у видео',
-    posterWithoutVideo: 'Постер ставится к видео: сначала загрузите ролик',
-    slotEmpty: 'На этом месте ничего не загружено',
-    posterMissing: 'У этого места нет постера',
-    badKey: 'Раздел и место кадра — латиница в нижнем регистре, цифры и дефисы',
-} as const;
+export { SITE_MEDIA_MESSAGES } from './domain/site-media.messages';
 
 /** Раздел и место идут в путь на диске: проверяем и здесь, а не только в DTO. */
 const isMediaKey = (key: string): boolean =>
@@ -53,10 +36,9 @@ const assertKeys = (...keys: string[]): void => {
     }
 };
 
-interface PreparedFile {
-    name: string;
-    content: Buffer;
-    extension: SiteMediaExtension;
+interface PreparedInput {
+    main?: PreparedMediaFile;
+    poster?: PreparedMediaFile;
 }
 
 /**
@@ -66,6 +48,9 @@ interface PreparedFile {
  * Новый файл пишется раньше, чем удаляются старые: при сбое посередине
  * место остаётся со старым кадром, а не пустым. Кадр и постер видео
  * меняются независимо: замена ролика не трогает постер.
+ *
+ * `put` убирает прежние файлы сразу (кадры /platform). `stage` + `discard`
+ * — для медиатеки: прежние файлы убираются только после правки строки базы.
  */
 @Injectable()
 export class SiteMediaService {
@@ -85,43 +70,10 @@ export class SiteMediaService {
         slot: string,
         input: SiteMediaPutInput,
     ): Promise<SiteMediaItem> {
-        assertKeys(section, slot);
-        if (!input.file && !input.poster) {
-            throw new BadRequestException(SITE_MEDIA_MESSAGES.nothingUploaded);
-        }
-        const main = input.file
-            ? this.prepare(slot, 'main', input.file)
-            : undefined;
-        const poster = input.poster
-            ? this.prepare(slot, 'poster', input.poster)
-            : undefined;
-        if (
-            main &&
-            poster &&
-            SITE_MEDIA_FORMATS[main.extension].kind !== 'video'
-        ) {
-            throw new BadRequestException(SITE_MEDIA_MESSAGES.posterForImage);
-        }
-
+        const { main, poster } = this.prepareInput(section, slot, input);
         return this.exclusive(`${section}/${slot}`, async () => {
-            const before = await this.slotFiles(section, slot);
-            if (!main) {
-                const current = await this.find(section, slot);
-                if (current?.kind !== 'video') {
-                    throw new BadRequestException(
-                        SITE_MEDIA_MESSAGES.posterWithoutVideo,
-                    );
-                }
-            }
-
-            for (const file of [main, poster]) {
-                if (file)
-                    await this.storage.write(section, file.name, file.content);
-            }
-            await this.storage.remove(
-                section,
-                this.outdated(before, main, poster),
-            );
+            const staged = await this.writeSlot(section, slot, main, poster);
+            await this.storage.remove(section, staged.outdated);
 
             const item = await this.find(section, slot);
             if (!item) {
@@ -134,6 +86,28 @@ export class SiteMediaService {
             );
             return item;
         });
+    }
+
+    /**
+     * Запись без уборки: новые файлы на диске, прежние на месте. Что убрать
+     * потом — решает вызывающий (`discard` по `outdated` или по `created`).
+     */
+    async stage(
+        section: string,
+        slot: string,
+        input: SiteMediaPutInput,
+    ): Promise<SiteMediaStaged> {
+        const { main, poster } = this.prepareInput(section, slot, input);
+        return this.exclusive(`${section}/${slot}`, () =>
+            this.writeSlot(section, slot, main, poster),
+        );
+    }
+
+    /** Убрать файлы раздела по именам; имена не медиа (`../`, чужие) пропускаются. */
+    async discard(section: string, names: readonly string[]): Promise<void> {
+        assertKeys(section);
+        const safe = names.filter(name => parseMediaFileName(name) !== null);
+        if (safe.length > 0) await this.storage.remove(section, safe);
     }
 
     async removePoster(section: string, slot: string): Promise<SiteMediaItem> {
@@ -188,6 +162,63 @@ export class SiteMediaService {
         };
     }
 
+    /** Проверки до очереди: ключи, наличие файла, формат и потолки. */
+    private prepareInput(
+        section: string,
+        slot: string,
+        input: SiteMediaPutInput,
+    ): PreparedInput {
+        assertKeys(section, slot);
+        if (!input.file && !input.poster) {
+            throw new BadRequestException(SITE_MEDIA_MESSAGES.nothingUploaded);
+        }
+        const main = input.file
+            ? prepareMediaFile(slot, 'main', input.file)
+            : undefined;
+        const poster = input.poster
+            ? prepareMediaFile(slot, 'poster', input.poster)
+            : undefined;
+        if (
+            main &&
+            poster &&
+            SITE_MEDIA_FORMATS[main.extension].kind !== 'video'
+        ) {
+            throw new BadRequestException(SITE_MEDIA_MESSAGES.posterForImage);
+        }
+        return { main, poster };
+    }
+
+    /** Запись новых файлов места (внутри очереди места); прежние не трогаются. */
+    private async writeSlot(
+        section: string,
+        slot: string,
+        main: PreparedMediaFile | undefined,
+        poster: PreparedMediaFile | undefined,
+    ): Promise<SiteMediaStaged> {
+        const before = await this.slotFiles(section, slot);
+        if (!main) {
+            const current = await this.find(section, slot);
+            if (current?.kind !== 'video') {
+                throw new BadRequestException(
+                    SITE_MEDIA_MESSAGES.posterWithoutVideo,
+                );
+            }
+        }
+        for (const file of [main, poster]) {
+            if (file)
+                await this.storage.write(section, file.name, file.content);
+        }
+        const existed = new Set(before.map(file => file.name));
+        return {
+            ...(main ? { file: main.name } : {}),
+            ...(poster ? { poster: poster.name } : {}),
+            created: [main, poster]
+                .flatMap(file => (file ? [file.name] : []))
+                .filter(name => !existed.has(name)),
+            outdated: outdatedMediaFiles(before, main, poster),
+        };
+    }
+
     private async find(
         section: string,
         slot: string,
@@ -199,73 +230,13 @@ export class SiteMediaService {
     private async slotFiles(
         section: string,
         slot: string,
-    ): Promise<{ name: string; role: SiteMediaRole }[]> {
+    ): Promise<SlotMediaFile[]> {
         return (await this.storage.list(section)).flatMap(file => {
             const parsed = parseMediaFileName(file.name);
             return parsed?.slot === slot
                 ? [{ name: file.name, role: parsed.role }]
                 : [];
         });
-    }
-
-    /**
-     * Что убрать после записи: прежний кадр, если пришёл новый; прежний
-     * постер, если пришёл новый или место стало картинкой (у картинки
-     * постера не бывает).
-     */
-    private outdated(
-        before: readonly { name: string; role: SiteMediaRole }[],
-        main: PreparedFile | undefined,
-        poster: PreparedFile | undefined,
-    ): string[] {
-        const becameImage =
-            main !== undefined &&
-            SITE_MEDIA_FORMATS[main.extension].kind === 'image';
-        return before
-            .filter(file =>
-                file.role === 'main'
-                    ? main !== undefined && file.name !== main.name
-                    : (poster !== undefined && file.name !== poster.name) ||
-                      becameImage,
-            )
-            .map(file => file.name);
-    }
-
-    /** Формат по содержимому, потолок по виду, имя с отпечатком. */
-    private prepare(
-        slot: string,
-        role: SiteMediaRole,
-        upload: SiteMediaUpload,
-    ): PreparedFile {
-        const extension = sniffMediaFormat(upload.buffer);
-        if (!extension) {
-            throw new BadRequestException(
-                role === 'poster'
-                    ? SITE_MEDIA_MESSAGES.posterNotImage
-                    : SITE_MEDIA_MESSAGES.unsupported,
-            );
-        }
-        const { kind } = SITE_MEDIA_FORMATS[extension];
-        if (role === 'poster' && kind !== 'image') {
-            throw new BadRequestException(SITE_MEDIA_MESSAGES.posterNotImage);
-        }
-        if (upload.buffer.length > SITE_MEDIA_MAX_BYTES[kind]) {
-            throw new PayloadTooLargeException(
-                kind === 'video'
-                    ? SITE_MEDIA_MESSAGES.videoTooLarge
-                    : SITE_MEDIA_MESSAGES.imageTooLarge,
-            );
-        }
-        return {
-            name: buildMediaFileName(
-                slot,
-                role,
-                mediaContentHash(upload.buffer),
-                extension,
-            ),
-            content: upload.buffer,
-            extension,
-        };
     }
 
     private exclusive<T>(key: string, work: () => Promise<T>): Promise<T> {

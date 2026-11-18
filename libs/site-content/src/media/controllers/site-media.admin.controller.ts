@@ -1,6 +1,7 @@
 import {
     Controller,
     Delete,
+    ForbiddenException,
     Get,
     Param,
     Put,
@@ -12,12 +13,17 @@ import {
     ApiBadRequestResponse,
     ApiBody,
     ApiConsumes,
+    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiPayloadTooLargeResponse,
     ApiTags,
 } from '@nestjs/swagger';
+import {
+    isClosedMediaSection,
+    SITE_MEDIA_CLOSED_SECTION_MESSAGES,
+} from '../domain/site-media.sections';
 import {
     SITE_MEDIA_MAX_UPLOAD_BYTES,
     type SiteMediaUpload,
@@ -42,6 +48,19 @@ const firstUpload = (
     files: Express.Multer.File[] | undefined,
 ): SiteMediaUpload | undefined =>
     files?.[0] ? { buffer: files[0].buffer } : undefined;
+
+/** Файлами закрытых разделов (медиатека статей) управляют их собственные ручки. */
+const assertOpenSection = (section: string): void => {
+    if (isClosedMediaSection(section)) {
+        throw new ForbiddenException(SITE_MEDIA_CLOSED_SECTION_MESSAGES.admin);
+    }
+};
+
+const ClosedSectionResponse = (): MethodDecorator =>
+    ApiForbiddenResponse({
+        description:
+            'Раздел медиатеки статей (library): его файлы меняются в разделе «Медиатека».',
+    });
 
 /**
  * Картинки и видео сайта в админке: что загружено на места кадров, загрузка,
@@ -100,10 +119,12 @@ export class SiteMediaAdminController {
     @ApiPayloadTooLargeResponse({
         description: 'Картинка больше 10 МБ или видео больше 80 МБ.',
     })
+    @ClosedSectionResponse()
     async put(
         @Param() { section, slot }: SiteMediaSlotParamsDto,
         @UploadedFiles() files: SiteMediaUploadFiles | undefined,
     ): Promise<SiteMediaItemDto> {
+        assertOpenSection(section);
         const item = await this.media.put(section, slot, {
             file: firstUpload(files?.file),
             poster: firstUpload(files?.poster),
@@ -124,9 +145,11 @@ export class SiteMediaAdminController {
     @ApiNotFoundResponse({
         description: 'На месте ничего не загружено или у видео нет постера.',
     })
+    @ClosedSectionResponse()
     async removePoster(
         @Param() { section, slot }: SiteMediaSlotParamsDto,
     ): Promise<SiteMediaItemDto> {
+        assertOpenSection(section);
         return SiteMediaItemDto.from(
             await this.media.removePoster(section, slot),
         );
@@ -143,9 +166,11 @@ export class SiteMediaAdminController {
         description: 'Файлы места удалены.',
     })
     @ApiNotFoundResponse({ description: 'На месте ничего не загружено.' })
+    @ClosedSectionResponse()
     async remove(
         @Param() { section, slot }: SiteMediaSlotParamsDto,
     ): Promise<SiteMediaDeletedDto> {
+        assertOpenSection(section);
         await this.media.remove(section, slot);
         return { deleted: true };
     }
