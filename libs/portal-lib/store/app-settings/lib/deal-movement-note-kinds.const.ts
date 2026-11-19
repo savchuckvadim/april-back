@@ -28,13 +28,18 @@ export const DEAL_MOVEMENT_NOTE_KIND_OPTIONS: readonly PortalAppSettingOption[] 
         },
     ];
 
-/** По умолчанию — комментарий (решение 17.11.2026). */
+/**
+ * По умолчанию — служебная запись журнала (решение 19.11.2026): проверка
+ * 18.11.2026 на сделке april-garant 34862 показала, что она НЕ сдвигает
+ * «последнюю активность» сделки, а комментарий — сдвигает. Значения,
+ * уже сохранённые на порталах, не меняются.
+ */
 export const DEAL_MOVEMENT_DEFAULT_NOTE_KIND: DealMovementNoteKind =
-    DEAL_MOVEMENT_NOTE_KIND.comment;
+    DEAL_MOVEMENT_NOTE_KIND.logMessage;
 
 const NOTE_KINDS: readonly string[] = Object.values(DEAL_MOVEMENT_NOTE_KIND);
 
-/** Значение настройки → вид записи; пусто и мусор — по умолчанию. */
+/** Значение настройки → вид записи; пусто и мусор — служебная запись журнала. */
 export const toDealMovementNoteKind = (raw: unknown): DealMovementNoteKind =>
     typeof raw === 'string' && NOTE_KINDS.includes(raw)
         ? (raw as DealMovementNoteKind)
