@@ -61,6 +61,16 @@ export abstract class InnerDealRepository {
         dealId: number,
     ): Promise<BxDocumentDeal[]>;
     /**
+     * Удаляет строки варианта комплекта конкретной сделки (по smartId) и
+     * возвращает, сколько строк удалено. Строку самой сделки (smartId IS NULL)
+     * и библиотечные заготовки (dealId IS NULL) не задевает.
+     */
+    abstract deleteVariantSnapshots(
+        domain: string,
+        dealId: number,
+        variantSmartId: number,
+    ): Promise<number>;
+    /**
      * Библиотека заготовок портала: избранное и акции (kind favorite|promotion,
      * легаси-избранное isFavorite без kind) + глобальные акции (portalId IS NULL).
      * Видимость по пользователю фильтрует сервис.

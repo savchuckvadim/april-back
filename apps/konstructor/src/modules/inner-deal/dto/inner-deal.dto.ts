@@ -6,6 +6,7 @@ import {
     IsNotEmpty,
     IsOptional,
     IsString,
+    Min,
     ValidateNested,
 } from 'class-validator';
 import { ComplectCompositionDto } from './complect-composition.dto';
@@ -386,4 +387,28 @@ export class InnerDealVariantFindQueryDto extends InnerDealVariantListQueryDto {
     @IsInt()
     @Type(() => Number)
     variantSmartId: number;
+}
+
+/** Запрос удаления варианта комплекта. */
+export class InnerDealVariantDeleteQueryDto extends InnerDealVariantListQueryDto {
+    @ApiProperty({
+        type: Number,
+        example: 5001,
+        minimum: 1,
+        description:
+            'Элемент смарта «Варианты комплекта». Нулевой и пустой идентификатор отклоняются',
+    })
+    @IsInt()
+    @Min(1)
+    @Type(() => Number)
+    variantSmartId: number;
+}
+
+export class InnerDealVariantDeleteResponseDto {
+    @ApiProperty({
+        type: Boolean,
+        description:
+            'true — строка варианта в базе была и удалена; false — строки уже не было (на результат это не влияет, вариант в базе отсутствует)',
+    })
+    deleted: boolean;
 }

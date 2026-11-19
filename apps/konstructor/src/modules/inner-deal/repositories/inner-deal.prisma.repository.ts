@@ -74,6 +74,17 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
             orderBy: { id: 'asc' },
         });
     }
+    async deleteVariantSnapshots(
+        domain: string,
+        dealId: number,
+        variantSmartId: number,
+    ): Promise<number> {
+        // фильтр по конкретному smartId: строка самой сделки (smartId IS NULL) сюда не попадёт
+        const result = await this.prisma.bxDocumentDeal.deleteMany({
+            where: { domain, dealId, smartId: variantSmartId },
+        });
+        return result.count;
+    }
     async listLibrary(portalId: bigint | null): Promise<BxDocumentDeal[]> {
         const portalRows = portalId
             ? [
