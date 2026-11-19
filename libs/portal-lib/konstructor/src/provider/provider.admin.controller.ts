@@ -131,13 +131,15 @@ export class ProviderAdminController {
     @ApiOperation({
         summary: 'Обновить реквизиты',
         description:
-            'Частично обновляет реквизиты (rqs) по id. ' +
-            'Обновляются только переданные поля. Если запись не найдена — 404.',
+            'Частично обновляет реквизиты (rqs) по id и, если передан ' +
+            '`withTax`, признак «Работает с НДС» их поставщика (agents) — ' +
+            'одной транзакцией. Обновляются только переданные поля. ' +
+            'Если запись не найдена — 404.',
     })
     @ApiParam({ name: 'id', type: Number, example: 12 })
     @ApiBody({
         type: UpdateRqDto,
-        description: 'Поля реквизитов для обновления.',
+        description: 'Поля реквизитов и признак НДС для обновления.',
     })
     @ApiOkResponse({
         type: RqResponseDto,

@@ -135,6 +135,15 @@ export class RqInput {
 }
 
 /**
+ * Правка реквизитов (rqs): любые поля реквизитов и признак работы с НДС
+ * поставщика, которому они принадлежат (`agents.withTax`). Переданное
+ * записывается, остальное не меняется.
+ */
+export interface RqUpdateInput extends Partial<RqInput> {
+    withTax?: boolean;
+}
+
+/**
  * Данные для создания поставщика (agents) вместе с его реквизитами (rqs).
  */
 export class CreateProviderWithRqInput {

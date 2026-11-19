@@ -4,7 +4,7 @@ import {
     CreateProviderWithRqInput,
     ProviderEntityWithRq,
     RqEntity,
-    RqInput,
+    RqUpdateInput,
 } from './provider.entity';
 @Injectable()
 export class ProviderService {
@@ -28,7 +28,7 @@ export class ProviderService {
         return await this.providerRepository.createWithRq(input);
     }
 
-    async updateRq(id: number, data: Partial<RqInput>): Promise<RqEntity> {
+    async updateRq(id: number, data: RqUpdateInput): Promise<RqEntity> {
         const rq = await this.providerRepository.updateRq(id, data);
         if (!rq) {
             throw new NotFoundException(`Реквизиты с id=${id} не найдены`);
