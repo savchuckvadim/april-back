@@ -18,6 +18,7 @@ import {
     PERIOD_DIGEST_DEFAULT_KINDS,
     PERIOD_DIGEST_KIND_OPTIONS,
 } from './lib/period-digest-kinds.const';
+import { TRANSCRIPTION_CHUNKING_DEFAULTS } from './lib/transcription-chunking.const';
 
 /**
  * Перехват клиента: с какой стадии «ОП Основная» сделку коллеги НЕ забирать
@@ -2399,6 +2400,48 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'лучше», стало 45 % — «без изменений».',
             type: 'number',
             default: 10,
+        }),
+        // --- Разборы звонков: резка длинных записей на куски (19.11.2026).
+        // Читает маршрутизатор распознавания (@lib/call-lib, chunking):
+        // toTranscriptionChunking — границы и значения по умолчанию.
+        callTranscriptionChunksEnabled: setting({
+            code: 'call_transcription_chunks_enabled',
+            name: 'Разборы звонков: резать длинные звонки на куски',
+            description:
+                'Длинный звонок (от порога «Длинный звонок — от» в настройках ' +
+                'AI портала) режется на куски по несколько минут, и куски ' +
+                'распознают бесплатные сервисы портала — VibeCode, свой ' +
+                'Whisper. Платный Яндекс распознаёт только кусок, который не ' +
+                'распознал никто другой. Целиком час записи бесплатные ' +
+                'сервисы не успевают распознать, кусками — успевают. ' +
+                'Выключено — длинный звонок, как раньше, целиком уходит ' +
+                'распознавателю длинных звонков (обычно Яндексу). По ' +
+                'умолчанию выключено.',
+            type: 'boolean',
+            default: TRANSCRIPTION_CHUNKING_DEFAULTS.enabled,
+        }),
+        callTranscriptionChunkMinutes: setting({
+            code: 'call_transcription_chunk_minutes',
+            name: 'Разборы звонков: длина куска, минут',
+            description:
+                'Сколько минут записи в одном куске. Короче — каждый кусок ' +
+                'распознаётся быстрее и реже срывается, но стыков больше. ' +
+                'Соседние куски перекрываются на несколько секунд, повтор ' +
+                'на стыке убирается. Последний кусок короче трети длины ' +
+                'приклеивается к предыдущему. От 2 до 10, по умолчанию 5.',
+            type: 'number',
+            default: TRANSCRIPTION_CHUNKING_DEFAULTS.chunkMinutes,
+        }),
+        callTranscriptionChunkParallel: setting({
+            code: 'call_transcription_chunk_parallel',
+            name: 'Разборы звонков: сколько кусков одновременно',
+            description:
+                'Сколько кусков одного звонка распознаются одновременно. ' +
+                'Больше — звонок готов быстрее, но бесплатный сервис чаще ' +
+                'отвечает «слишком много запросов», и кусок уходит ' +
+                'запасному. От 1 до 6, по умолчанию 3.',
+            type: 'number',
+            default: TRANSCRIPTION_CHUNKING_DEFAULTS.parallel,
         }),
     },
     [EnumPortalAppCode.konstructor]: {

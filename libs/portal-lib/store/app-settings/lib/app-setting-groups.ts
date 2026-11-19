@@ -260,6 +260,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'следующего события.',
         links: [LINK.callGroup, LINK.tasks],
     },
+    call_analysis: {
+        title: 'Разборы звонков',
+        description:
+            'Как записи звонков переводятся в текст для AI-разбора: длинные ' +
+            'звонки — кусками через бесплатные сервисы, платный Яндекс — ' +
+            'только для куска, который не распознал никто.',
+        links: [LINK.aiSettings],
+    },
     reject_revive: {
         title: 'Реанимация отказников',
         description:
@@ -456,6 +464,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             // post_fail_* — спутники «Пост-отказной даты» (with_post_fail).
             prefixes: ['with_', 'post_fail_'],
         },
+        { group: 'call_analysis', prefixes: ['call_transcription_'] },
         { group: 'reject_revive', prefixes: ['reject_revive_'] },
         { group: 'deal_audit', prefixes: ['deal_audit_'] },
         { group: 'deal_movement', prefixes: ['deal_movement_'] },
