@@ -14,6 +14,7 @@ import { TranscriptionService } from './services/transcription.service';
 import { FileStorageService } from './services/file-storage.service';
 import { OnlineClientModule } from '@lib/online';
 import { TranscriptionStoreModule } from './transcription-store.module';
+import { YandexSubmissionModule } from './provider/yandex-submission.module';
 
 @Module({
     imports: [
@@ -26,6 +27,8 @@ import { TranscriptionStoreModule } from './transcription-store.module';
         OnlineClientModule,
         // Репозиторий + TranscriptionStoreService (CRUD по транскрибациям).
         TranscriptionStoreModule,
+        // Страж платных отправок в Яндекс — и для старого пути POST /transcription.
+        YandexSubmissionModule,
     ],
     // Открытого CRUD по расшифровкам (`transcription-store`) в приложениях
     // нет: он отдавал, менял и удалял расшифровки без проверки (16.11.2026).

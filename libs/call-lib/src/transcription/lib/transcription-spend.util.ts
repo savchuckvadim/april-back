@@ -166,6 +166,13 @@ export interface SpendTotals {
     yandexCalls: number;
     yandexMinutes: number;
     unknownDurationCalls: number;
+    /**
+     * Отправок в Яндекс по счётчику стража (Redis), включая повторы одного
+     * звонка; null — счётчика за срез нет (yandex-submission-stats.util).
+     */
+    yandexSubmissions: number | null;
+    /** Минут записей во всех отправках в Яндекс; null — счётчика нет. */
+    yandexSubmittedMinutes: number | null;
 }
 
 interface ProviderSums {
@@ -218,7 +225,10 @@ export function spendByProvider(
     });
 }
 
-/** Итог среза по уже сведённым распознавателям. */
+/**
+ * Итог среза по уже сведённым распознавателям. Отправки в Яндекс — из
+ * другого источника (счётчик в Redis): здесь null, накладывает сервис.
+ */
 export function spendTotals(
     providers: readonly SpendByProvider[],
 ): SpendTotals {
@@ -232,6 +242,8 @@ export function spendTotals(
         yandexCalls: yandex?.calls ?? 0,
         yandexMinutes: yandex?.minutes ?? 0,
         unknownDurationCalls: sum(item => item.unknownDurationCalls),
+        yandexSubmissions: null,
+        yandexSubmittedMinutes: null,
     };
 }
 

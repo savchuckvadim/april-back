@@ -20,13 +20,18 @@ export class FileStorageService {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    /** Ключ записи в Object Storage (старый путь POST /transcription). */
+    objectKeyOf(fileName: string, domain: string, userId: string): string {
+        return `transcription/audio/${domain}/${userId}/${fileName}`;
+    }
+
     async getFileUrl(
         fileName: string,
         domain: string,
         userId: string,
     ): Promise<string | null> {
         try {
-            const s3Key = `transcription/audio/${domain}/${userId}/${fileName}`;
+            const s3Key = this.objectKeyOf(fileName, domain, userId);
 
             // Проверяем S3
             const existsInS3 =
@@ -132,7 +137,7 @@ export class FileStorageService {
             }
 
             // Upload to S3 with retries
-            const s3Key = `transcription/audio/${domain}/${userId}/${fileName}`;
+            const s3Key = this.objectKeyOf(fileName, domain, userId);
             for (let i = 0; i < this.maxRetries; i++) {
                 try {
                     return await this.yandexStorageService.uploadFile(

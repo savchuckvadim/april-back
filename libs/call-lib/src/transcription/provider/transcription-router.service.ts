@@ -13,7 +13,11 @@ import {
     type WhisperEndpoint,
 } from '../services/whisper-compatible-transcription.service';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
+import { readYandexSlotWaitMs } from '../lib/yandex-stt-budget.util';
 import { YandexCallRecognizer } from './yandex-call-recognizer';
+import { yandexBufferInput } from './yandex-call-input.util';
+import { YandexSlot } from './yandex-slot';
+import { YandexSubmissionGuard } from './yandex-submission-guard.service';
 import { TranscriptionSegmentsWatch } from './transcription-segments-watch';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
@@ -43,6 +47,11 @@ export interface TranscribeCallInput {
     domain: string;
     /** Длительность звонка в секундах (из voximplant) — основа маршрутизации. */
     durationSec?: number;
+    /**
+     * Ключ звонка для стража отправок в Яндекс (dedupKey конвейера): по нему
+     * замок, лимит отправок и сохранённый номер операции. Нет — по хэшу записи.
+     */
+    callKey?: string;
 }
 
 export interface TranscribeCallResult {
@@ -109,13 +118,16 @@ export class TranscriptionRouterService {
      * Пер-провайдерные лимитеры одновременности: очередь call-report
      * обрабатывает несколько звонков параллельно, но каждый транскрибатор
      * держит не больше своего лимита одновременных запросов
-     * (env TRANSCRIPTION_YANDEX_CONCURRENCY / TRANSCRIPTION_VIBECODE_CONCURRENCY).
+     * (env TRANSCRIPTION_VIBECODE_CONCURRENCY; у Яндекса — YandexSlot с
+     * TRANSCRIPTION_YANDEX_CONCURRENCY и пределом ожидания слота).
      */
-    private readonly yandexLimiter: Semaphore;
     private readonly vibecodeLimiter: Semaphore;
     /** Свой Whisper — обычно один GPU: по умолчанию одна запись за раз. */
     private readonly whisperLimiter: Semaphore;
-    /** Yandex-путь: S3, число каналов по заголовку MP3, повтор по ответу Яндекса. */
+    /**
+     * Yandex-путь: замок и лимит стража, слот процесса с пределом ожидания,
+     * S3, число каналов по заголовку MP3, повтор по ответу Яндекса.
+     */
     private readonly yandexRecognizer: YandexCallRecognizer;
     /** Текст без таймкодов — в журнал и раз в час в телеграм. */
     private readonly segmentsWatch = new TranscriptionSegmentsWatch(
@@ -130,12 +142,25 @@ export class TranscriptionRouterService {
         private readonly yandexStorage: YandexStorageService,
         private readonly whisper: WhisperCompatibleTranscriptionService,
         private readonly portalAiSettings: PortalAiSettingsService,
+        yandexGuard: YandexSubmissionGuard,
     ) {
-        this.yandexRecognizer = new YandexCallRecognizer(
-            yandexStorage,
-            yandexTranscription,
-            this.logger,
-        );
+        this.yandexRecognizer = new YandexCallRecognizer({
+            storage: yandexStorage,
+            yandex: yandexTranscription,
+            guard: yandexGuard,
+            logger: this.logger,
+            slot: new YandexSlot(
+                parseConcurrency(
+                    this.configService.get<string>(
+                        'TRANSCRIPTION_YANDEX_CONCURRENCY',
+                    ),
+                    2,
+                ),
+                readYandexSlotWaitMs(key =>
+                    this.configService.get<string>(key),
+                ),
+            ),
+        });
         this.whisperLimiter = new Semaphore(
             parseConcurrency(
                 this.configService.get<string>(
@@ -150,14 +175,6 @@ export class TranscriptionRouterService {
         this.yandexMinSec = Number(
             this.configService.get<string>('TRANSCRIPTION_YANDEX_MIN_SEC') ??
                 600,
-        );
-        this.yandexLimiter = new Semaphore(
-            parseConcurrency(
-                this.configService.get<string>(
-                    'TRANSCRIPTION_YANDEX_CONCURRENCY',
-                ),
-                2,
-            ),
         );
         this.vibecodeLimiter = new Semaphore(
             parseConcurrency(
@@ -312,12 +329,12 @@ export class TranscriptionRouterService {
         };
     }
 
-    /** Yandex-путь под лимитером: S3 → распознавание с числом каналов по MP3 (YandexCallRecognizer). */
+    /** Yandex-путь: страж, слот, S3 и распознавание (YandexCallRecognizer). */
     private async transcribeYandex(
         input: TranscribeCallInput,
     ): Promise<YandexTranscriptionDetailed> {
-        return this.yandexLimiter.run(() =>
-            this.yandexRecognizer.recognize(input),
+        return this.yandexRecognizer.recognize(
+            yandexBufferInput(input, this.yandexStorage),
         );
     }
 }

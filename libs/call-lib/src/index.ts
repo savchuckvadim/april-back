@@ -10,6 +10,11 @@ export * from './transcription/services/transcription-call-state.service';
 export * from './transcription/provider/transcription-provider.module';
 export * from './transcription/provider/transcription-router.service';
 export * from './transcription/provider/transcription-prefs.util';
+export * from './transcription/provider/yandex-submission.errors';
+export {
+    transcribeJobTimeoutMs,
+    yandexTranscribeBudgetMs,
+} from './transcription/lib/yandex-stt-budget.util';
 export * from './transcription/services/whisper-compatible-transcription.service';
 export * from './transcription/types/transcription-pipeline.types';
 export * from './transcription/types/transcript-segment.types';

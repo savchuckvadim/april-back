@@ -109,6 +109,9 @@ describe('transcription-spend.util — расход на распознаван�
             yandexCalls: 4,
             yandexMinutes: 60,
             unknownDurationCalls: 1,
+            // Отправки — из счётчика в Redis, накладывает сервис.
+            yandexSubmissions: null,
+            yandexSubmittedMinutes: null,
         });
     });
 
@@ -128,6 +131,8 @@ describe('transcription-spend.util — расход на распознаван�
             yandexCalls: 0,
             yandexMinutes: 0,
             unknownDurationCalls: 0,
+            yandexSubmissions: null,
+            yandexSubmittedMinutes: null,
         });
     });
 

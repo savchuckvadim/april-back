@@ -1,22 +1,52 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RedisService } from '@lib/core/redis/redis.service';
+import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
 import { FileStorageService } from './file-storage.service';
 import { StreamingTranscriptionService } from './streaming-transcription.service';
 import { OnlineTranscriptionService } from '@lib/online';
 import { TranscriptionStoreService } from './transcription.store.service';
+import {
+    YandexCallRecognizer,
+    type YandexCallInput,
+} from '../provider/yandex-call-recognizer';
+import { YandexSubmissionGuard } from '../provider/yandex-submission-guard.service';
+
+/** Файл старого пути POST /transcription: откуда скачать и чей он. */
+interface LegacyAudioFile {
+    fileUrl: string;
+    fileName: string;
+    domain: string;
+    userId: string;
+    duration: string;
+}
 
 @Injectable()
 export class TranscriptionService {
     private readonly logger = new Logger(TranscriptionService.name);
+    /**
+     * Отправка в Яндекс — через стража, как у конвейера call-report
+     * (19.11.2026): замок файла, лимит отправок, продолжение сохранённой
+     * операции вместо повторной оплаты, удаление записи после ответа.
+     */
+    private readonly yandexRecognizer: YandexCallRecognizer;
 
     constructor(
         private readonly redisService: RedisService,
         private readonly fileStorageService: FileStorageService,
-        private readonly streamingTranscriptionService: StreamingTranscriptionService,
+        streamingTranscriptionService: StreamingTranscriptionService,
         private readonly onlineClient: OnlineTranscriptionService,
         private readonly transcriptionStoreService: TranscriptionStoreService,
-    ) {}
+        yandexStorage: YandexStorageService,
+        yandexGuard: YandexSubmissionGuard,
+    ) {
+        this.yandexRecognizer = new YandexCallRecognizer({
+            storage: yandexStorage,
+            yandex: streamingTranscriptionService,
+            guard: yandexGuard,
+            logger: this.logger,
+        });
+    }
 
     async transcribe(
         fileUrl: string,
@@ -82,43 +112,15 @@ export class TranscriptionService {
             this.logger.log(
                 `Transcription online: ${JSON.stringify(transcriptionOnline)}`,
             );
-            // Пытаемся получить URL файла из хранилища
-            let fileUri = await this.fileStorageService.getFileUrl(
-                fileName,
-                domain,
-                userId,
-            );
-
-            // Если файла нет в хранилище, скачиваем и сохраняем
-            if (!fileUri) {
-                this.logger.log(
-                    'File not found in storage, downloading from URL',
-                );
-                fileUri = await this.fileStorageService.downloadAndSaveFile(
+            const { text } = await this.yandexRecognizer.recognize(
+                this.yandexInput({
                     fileUrl,
                     fileName,
                     domain,
                     userId,
-                );
-                if (!fileUri) {
-                    await this.updateStatus(
-                        taskId,
-                        'error',
-                        'Failed to download or save file',
-                    );
-                    return null;
-                }
-            }
-
-            // Start transcription using S3 URI
-            const operationId =
-                await this.streamingTranscriptionService.transcribeAudio(
-                    fileUri,
-                );
-            const text =
-                await this.streamingTranscriptionService.getTranscriptionResult(
-                    operationId,
-                );
+                    duration,
+                }),
+            );
 
             if (text) {
                 await this.updateStatus(
@@ -195,6 +197,52 @@ export class TranscriptionService {
             );
             return null;
         }
+    }
+
+    /**
+     * Вход Яндекс-пути для файла по ссылке: ключ звонка для стража — ключ
+     * записи в Object Storage; запись берётся из хранилища или скачивается
+     * только когда отправка действительно нужна.
+     */
+    private yandexInput(file: LegacyAudioFile): YandexCallInput {
+        const objectKey = this.fileStorageService.objectKeyOf(
+            file.fileName,
+            file.domain,
+            file.userId,
+        );
+        const durationSec = Number(file.duration);
+        return {
+            call: {
+                key: `legacy:${objectKey}`,
+                domain: file.domain,
+                label: `${file.fileName} (POST /transcription)`,
+                durationSec:
+                    Number.isFinite(durationSec) && durationSec > 0
+                        ? durationSec
+                        : undefined,
+            },
+            channels: null,
+            upload: async () => {
+                let uri = await this.fileStorageService.getFileUrl(
+                    file.fileName,
+                    file.domain,
+                    file.userId,
+                );
+                if (!uri) {
+                    this.logger.log(
+                        'File not found in storage, downloading from URL',
+                    );
+                    uri = await this.fileStorageService.downloadAndSaveFile(
+                        file.fileUrl,
+                        file.fileName,
+                        file.domain,
+                        file.userId,
+                    );
+                }
+                if (!uri) throw new Error('Failed to download or save file');
+                return { objectKey, uri };
+            },
+        };
     }
 
     private async updateStatus(

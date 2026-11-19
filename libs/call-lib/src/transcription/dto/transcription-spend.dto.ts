@@ -131,6 +131,28 @@ export class TranscriptionSpendTotalsDto implements SpendTotals {
         example: 0,
     })
     unknownDurationCalls: number;
+
+    @ApiProperty({
+        description:
+            'Отправок записей в Яндекс по счётчику отправок, включая повторы одного звонка: ' +
+            'Яндекс берёт деньги за каждую. Больше «звонков, распознанных Яндексом» — звонки ' +
+            'уходили и оплачивались повторно. null — счётчика за этот срез нет: дни до его ' +
+            'запуска (19.11.2026), дни старше 120 суток и разрез по сотрудникам.',
+        type: Number,
+        nullable: true,
+        example: 415,
+    })
+    yandexSubmissions: number | null;
+
+    @ApiProperty({
+        description:
+            'Минут записей во всех отправках в Яндекс по тому же счётчику (длительность по ' +
+            'телефонии, один знак после запятой); null — счётчика за срез нет.',
+        type: Number,
+        nullable: true,
+        example: 5410.7,
+    })
+    yandexSubmittedMinutes: number | null;
 }
 
 /** Строка сводки: один портал за месяц. */

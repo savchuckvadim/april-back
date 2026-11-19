@@ -1,4 +1,5 @@
 import { TranscriptionRouterService } from '../provider/transcription-router.service';
+import { makeGuard } from './yandex-fake-redis.fixture';
 
 /**
  * Заглушки зависимостей роутера транскрибации — общие для спек роутера и
@@ -29,6 +30,7 @@ export const makeYandex = () => ({
 
 export const makeStorage = () => ({
     uploadFile: jest.fn().mockResolvedValue('https://s3/audio.mp3'),
+    deleteFile: jest.fn().mockResolvedValue(undefined),
 });
 
 export const ENV_WHISPER = {
@@ -64,6 +66,8 @@ export const makeRouter = (
         storage?: ReturnType<typeof makeStorage>;
         whisper?: ReturnType<typeof makeWhisper>;
         portalSettings?: ReturnType<typeof makePortalSettings>;
+        /** Страж Яндекса поверх Redis в памяти; общий — чтобы смоделировать повторный запуск. */
+        guarded?: ReturnType<typeof makeGuard>;
     },
 ) => {
     const vibecode = deps?.vibecode ?? makeVibecode();
@@ -72,6 +76,7 @@ export const makeRouter = (
     const whisper = deps?.whisper ?? makeWhisper();
     const portalSettings = deps?.portalSettings ?? makePortalSettings();
     const keyResolver = makeKeyResolver();
+    const guarded = deps?.guarded ?? makeGuard();
     const router = new TranscriptionRouterService(
         makeConfig(values) as never,
         vibecode as never,
@@ -80,6 +85,7 @@ export const makeRouter = (
         storage as never,
         whisper as never,
         portalSettings as never,
+        guarded.guard,
     );
     return {
         router,
@@ -89,6 +95,7 @@ export const makeRouter = (
         keyResolver,
         whisper,
         portalSettings,
+        guarded,
     };
 };
 
