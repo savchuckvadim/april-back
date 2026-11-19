@@ -8,10 +8,17 @@ import {
 import { SupportDialogMemory } from '../domain/support-dialog.types';
 import { dialog, message, minutesAfter, THRESHOLDS } from './support-fixtures';
 
+/** Память «уже объявлен»; по умолчанию сообщено всё до ожидаемого сообщения. */
 const announced = (
     waitingFor: number | null = null,
     levels: SupportDialogMemory['levels'] = [],
-): SupportDialogMemory => ({ announced: true, waitingFor, levels });
+    lastClientMessageId: number | null = waitingFor ?? 0,
+): SupportDialogMemory => ({
+    announced: true,
+    waitingFor,
+    levels,
+    lastClientMessageId,
+});
 
 describe('findPendingClientMessage', () => {
     it('ждёт с ПЕРВОГО неотвеченного сообщения клиента, повторы отсчёт не сдвигают', () => {
@@ -73,6 +80,7 @@ describe('decideSupportDialog', () => {
         );
         expect(decision.signal?.kind).toBe('new_dialog');
         expect(decision.signal?.pending?.id).toBe(10);
+        expect(decision.signal?.fresh.map(m => m.id)).toEqual([10]);
         expect(decision.memory).toEqual(announced(10, []));
     });
 
@@ -158,10 +166,10 @@ describe('decideSupportDialog', () => {
             THRESHOLDS,
         );
         expect(decision.signal).toBeNull();
-        expect(decision.memory).toEqual(announced(null, []));
+        expect(decision.memory).toEqual(announced(null, [], 10));
     });
 
-    it('клиент написал снова после ответа — отсчёт и уровни заново', () => {
+    it('клиент написал снова после ответа — сразу «клиент написал», отсчёт и уровни заново', () => {
         const reopened = dialog([
             message(10, 'client', 0),
             message(11, 'staff', 12),
@@ -173,8 +181,9 @@ describe('decideSupportDialog', () => {
             minutesAfter(25),
             THRESHOLDS,
         );
-        expect(early.signal).toBeNull();
-        expect(early.memory).toEqual(announced(12, []));
+        expect(early.signal?.kind).toBe('client_message');
+        expect(early.signal?.fresh.map(m => m.id)).toEqual([12]);
+        expect(early.memory).toEqual(announced(12, [], 12));
 
         const reminded = decideSupportDialog(
             reopened,
@@ -200,6 +209,94 @@ describe('decideSupportDialog', () => {
     });
 });
 
+describe('decideSupportDialog: каждое сообщение клиента — в Telegram', () => {
+    it('клиент дописал без ответа — «клиент написал» на каждое новое, повторов нет', () => {
+        const first = decideSupportDialog(
+            dialog([message(10, 'client', 0), message(12, 'client', 3)]),
+            announced(10, [], 10),
+            minutesAfter(4),
+            THRESHOLDS,
+        );
+        expect(first.signal?.kind).toBe('client_message');
+        expect(first.signal?.fresh.map(m => m.id)).toEqual([12]);
+        expect(first.signal?.pending?.id).toBe(10);
+        expect(first.memory).toEqual(announced(10, [], 12));
+
+        const thread = dialog([
+            message(10, 'client', 0),
+            message(12, 'client', 3),
+            message(13, 'client', 5),
+            message(14, 'client', 6),
+        ]);
+        const second = decideSupportDialog(
+            thread,
+            first.memory,
+            minutesAfter(7),
+            THRESHOLDS,
+        );
+        expect(second.signal?.fresh.map(m => m.id)).toEqual([13, 14]);
+
+        const quiet = decideSupportDialog(
+            thread,
+            second.memory,
+            minutesAfter(8),
+            THRESHOLDS,
+        );
+        expect(quiet.signal).toBeNull();
+    });
+
+    it('сотрудник успел ответить — сообщение клиента всё равно уходит', () => {
+        const decision = decideSupportDialog(
+            dialog([
+                message(10, 'client', 0),
+                message(12, 'client', 3),
+                message(13, 'staff', 4),
+            ]),
+            announced(10, [], 10),
+            minutesAfter(5),
+            THRESHOLDS,
+        );
+        expect(decision.signal?.kind).toBe('client_message');
+        expect(decision.signal?.fresh.map(m => m.id)).toEqual([12]);
+        expect(decision.memory).toEqual(announced(null, [], 12));
+    });
+
+    it('напоминание везёт новые сообщения с собой — отдельного «клиент написал» нет', () => {
+        const thread = dialog([
+            message(10, 'client', 0),
+            message(12, 'client', 8),
+        ]);
+        const reminded = decideSupportDialog(
+            thread,
+            announced(10, [], 10),
+            minutesAfter(10),
+            THRESHOLDS,
+        );
+        expect(reminded.signal?.kind).toBe('waiting');
+        expect(reminded.signal?.fresh.map(m => m.id)).toEqual([12]);
+        expect(reminded.memory).toEqual(announced(10, ['remind'], 12));
+
+        const next = decideSupportDialog(
+            thread,
+            reminded.memory,
+            minutesAfter(12),
+            THRESHOLDS,
+        );
+        expect(next.signal).toBeNull();
+    });
+
+    it('память до выкладки (без поля) — точка отсчёта без рассылки', () => {
+        const decision = decideSupportDialog(
+            dialog([message(10, 'client', 0), message(12, 'client', 3)]),
+            announced(10, [], null),
+            minutesAfter(4),
+            THRESHOLDS,
+        );
+        expect(decision.signal).toBeNull();
+        expect(decision.memory).toEqual(announced(10, [], 12));
+    });
+});
+
 describe('isSameMemory', () => {
     it('сравнивает память без учёта порядка уровней', () => {
         expect(
@@ -210,5 +307,8 @@ describe('isSameMemory', () => {
         ).toBe(true);
         expect(isSameMemory(null, announced())).toBe(false);
         expect(isSameMemory(announced(1), announced(2))).toBe(false);
+        expect(isSameMemory(announced(1, [], 1), announced(1, [], 3))).toBe(
+            false,
+        );
     });
 });
