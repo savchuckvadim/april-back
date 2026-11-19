@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3 } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 
 interface S3Error extends Error {
@@ -130,6 +130,20 @@ export class YandexStorageService {
             });
             throw error;
         }
+    }
+
+    /**
+     * Удалить объект из бакета (запись звонка после ответа Яндекса — чтобы
+     * не платить за хранение). Ошибка пробрасывается: решает вызывающий.
+     */
+    async deleteFile(key: string): Promise<void> {
+        await this.s3Client.send(
+            new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+        );
+        this.logger.debug('File deleted from S3:', {
+            bucket: this.bucket,
+            key,
+        });
     }
 
     async downloadFile(key: string): Promise<Buffer> {

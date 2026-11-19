@@ -7,7 +7,23 @@ import {
     yandexWordsOf,
 } from '../lib/segments.mapper';
 import { detectStereoEcho } from '../lib/stereo-echo.util';
+import {
+    readYandexSttTolerance,
+    yandexBackoffMs,
+    type YandexSttTolerance,
+} from '../lib/yandex-stt-budget.util';
+import {
+    isTransientYandexError,
+    YandexOperationFailedError,
+    YandexOperationPendingError,
+    YandexSttHttpError,
+    type YandexSttPhase,
+} from '../lib/yandex-stt.errors';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
+
+// Ошибки Яндекса живут в lib/yandex-stt.errors (их читает и страж
+// отправок); ре-экспорт — чтобы потребители сервиса не меняли импорты.
+export * from '../lib/yandex-stt.errors';
 
 export interface IYAChanks {
     /** Номер канала записи ('1', '2'); моно — один канал. */
@@ -27,9 +43,6 @@ export interface IYAResponse {
     /** Операция завершилась ошибкой на стороне Яндекса. */
     error?: { code?: number; message?: string };
 }
-
-/** Фаза обращения к Яндексу — для текста ошибки и логов. */
-export type YandexSttPhase = 'submit' | 'poll';
 
 /** Каналов в записи для спецификации Яндекса: моно или стерео телефонии. */
 export type YandexChannelCount = 1 | 2;
@@ -75,68 +88,20 @@ export function orderChunksByTime(chunks: IYAChanks[]): IYAChanks[] {
         .map(entry => entry.chunk);
 }
 
-/**
- * Ошибка HTTP Яндекса: код, requestId (по нему поддержка Яндекса находит
- * инцидент) и фаза. По `transient` роутер решает, переключаться ли на
- * запасной провайдер: 5xx и 429 — временное, 4xx (нет прав, плохой запрос)
- * повторять бессмысленно. `status === null` — сетевая ошибка (обрыв,
- * «fetch failed») — тоже временная.
- *
- * Появилась после ночи 28.10.2026: Яндекс отдавал 500 на опросе операций,
- * а первый же не-200 ответ ронял 35-минутное ожидание целиком.
- */
-export class YandexSttHttpError extends Error {
-    readonly name = 'YandexSttHttpError';
-
-    constructor(
-        readonly status: number | null,
-        readonly requestId: string | null,
-        readonly phase: YandexSttPhase,
-        message: string,
-    ) {
-        super(message);
-    }
-
-    get transient(): boolean {
-        return (
-            this.status === null || this.status >= 500 || this.status === 429
-        );
-    }
-}
-
-const NETWORK_ERROR_RE =
-    /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|socket hang up|UND_ERR/i;
-
-/** Временная ли ошибка пути Яндекса (HTTP 5xx/429 или сеть) — повтор и запасной путь уместны. */
-export const isTransientYandexError = (error: unknown): boolean => {
-    if (error instanceof YandexSttHttpError) return error.transient;
-    return error instanceof Error && NETWORK_ERROR_RE.test(error.message);
-};
-
 /** requestId из тела ошибки Яндекса (details[].requestId). */
 const extractRequestId = (body: string): string | null => {
     const match = body.match(/"requestId"\s*:\s*"([^"]+)"/);
     return match ? match[1] : null;
 };
 
-/** Терпимость к сбоям Яндекса (env, см. apps/event-sales/.env.example). */
-interface YandexSttTolerance {
-    pollDelayMs: number;
-    pollMaxAttempts: number;
-    /** Сколько ПОДРЯД временных сбоев терпим до отказа — на отправке и на опросе. */
-    transientRetries: number;
-    retryBaseMs: number;
-}
-
-const DEFAULT_TOLERANCE: YandexSttTolerance = {
-    pollDelayMs: 3000,
-    pollMaxAttempts: 700,
-    transientRetries: 5,
-    retryBaseMs: 2000,
-};
-
-/** Потолок паузы между повторами при удвоении. */
-const RETRY_MAX_MS = 30_000;
+/**
+ * Отправку повторяем, только если Яндекс ОТВЕТИЛ ошибкой (5xx, 429): по
+ * такому ответу операции нет. Сетевой обрыв после отправки двусмыслен —
+ * Яндекс мог принять запись и выставить счёт, повтор оплатил бы её второй
+ * раз (19.11.2026: один звонок уходил в Яндекс по нескольку раз).
+ */
+const canResubmit = (error: unknown): boolean =>
+    error instanceof YandexSttHttpError && error.status !== null;
 
 @Injectable()
 export class StreamingTranscriptionService {
@@ -157,30 +122,16 @@ export class StreamingTranscriptionService {
             throw new Error('YA_FOLDER_ID is not set');
         }
         this.folderId = folderId;
-        this.tolerance = {
-            pollDelayMs: this.numberSetting(
-                'YANDEX_STT_POLL_DELAY_MS',
-                DEFAULT_TOLERANCE.pollDelayMs,
-            ),
-            pollMaxAttempts: this.numberSetting(
-                'YANDEX_STT_POLL_MAX_ATTEMPTS',
-                DEFAULT_TOLERANCE.pollMaxAttempts,
-            ),
-            transientRetries: this.numberSetting(
-                'YANDEX_STT_TRANSIENT_RETRIES',
-                DEFAULT_TOLERANCE.transientRetries,
-            ),
-            retryBaseMs: this.numberSetting(
-                'YANDEX_STT_RETRY_BASE_MS',
-                DEFAULT_TOLERANCE.retryBaseMs,
-            ),
-        };
+        this.tolerance = readYandexSttTolerance(key =>
+            this.configService.get<string>(key),
+        );
     }
 
     /**
-     * Отправка аудио на распознавание; временные сбои повторяются с паузой.
-     * `channels` — число каналов записи (по заголовку MP3, mp3ChannelCount):
-     * Яндекс отвергает запись, если оно не совпадает со спецификацией.
+     * Отправка аудио на распознавание; повтор — только на ответ Яндекса
+     * 5xx/429 (см. canResubmit). `channels` — число каналов записи (по
+     * заголовку MP3, mp3ChannelCount): Яндекс отвергает запись, если оно не
+     * совпадает со спецификацией.
      */
     async transcribeAudio(
         fileUri: string,
@@ -218,7 +169,7 @@ export class StreamingTranscriptionService {
                 return data.id;
             } catch (error) {
                 failures += 1;
-                if (this.giveUp(error, failures)) {
+                if (!canResubmit(error) || this.giveUp(error, failures)) {
                     this.logger.error(
                         `Отправка аудио в Яндекс не удалась: ${(error as Error).message}`,
                         { fileUri, failures },
@@ -280,7 +231,7 @@ export class StreamingTranscriptionService {
             await this.sleep(this.tolerance.pollDelayMs);
         }
 
-        throw new Error(
+        throw new YandexOperationPendingError(
             `Яндекс не завершил распознавание операции ${operationId} за отведённое время`,
         );
     }
@@ -291,7 +242,7 @@ export class StreamingTranscriptionService {
         data: IYAResponse,
     ): YandexTranscriptionDetailed {
         if (data.error) {
-            throw new Error(
+            throw new YandexOperationFailedError(
                 `Яндекс завершил операцию ${operationId} ошибкой: ` +
                     `${data.error.code ?? '?'} ${data.error.message ?? ''}`.trim(),
             );
@@ -414,10 +365,7 @@ export class StreamingTranscriptionService {
         reason: string,
         context: Record<string, string>,
     ): Promise<void> {
-        const delay = Math.min(
-            this.tolerance.retryBaseMs * 2 ** (failures - 1),
-            RETRY_MAX_MS,
-        );
+        const delay = yandexBackoffMs(this.tolerance, failures);
         this.logger.warn(
             `${reason} — повтор ${failures}/${this.tolerance.transientRetries} через ${delay} мс`,
             context,
@@ -427,11 +375,5 @@ export class StreamingTranscriptionService {
 
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    private numberSetting(key: string, fallback: number): number {
-        const raw = this.configService.get<string>(key);
-        const value = raw === undefined || raw === '' ? NaN : Number(raw);
-        return Number.isFinite(value) && value >= 0 ? value : fallback;
     }
 }

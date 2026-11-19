@@ -1,8 +1,12 @@
 import { Logger } from '@nestjs/common';
 import {
+    YandexOperationFailedError,
+    YandexOperationPendingError,
     YandexSttHttpError,
     channelsRequiredByYandex,
     isTransientYandexError,
+    isYandexOperationAlive,
+    isYandexOperationNotFound,
 } from '../services/streaming-transcription.service';
 import { makeService, ok } from './streaming-transcription.fixture';
 
@@ -118,14 +122,21 @@ describe('StreamingTranscriptionService — терпимость к сбоям �
             expect(fetchMock).toHaveBeenCalledTimes(3);
         });
 
-        it('сетевой обрыв считается временным и повторяется', async () => {
+        // 19.11.2026: обрыв мог случиться уже после того, как Яндекс принял
+        // запись и выставил счёт, — повтор оплатил бы звонок второй раз.
+        it('сетевой обрыв при отправке — без повтора (Яндекс мог принять запись), ошибка временная', async () => {
             fetchMock
                 .mockRejectedValueOnce(new TypeError('fetch failed'))
                 .mockResolvedValueOnce(ok({ id: 'op-2' }));
 
-            await expect(
-                makeService().transcribeAudio('https://s3/a.mp3'),
-            ).resolves.toBe('op-2');
+            const error: unknown = await makeService()
+                .transcribeAudio('https://s3/a.mp3')
+                .catch((caught: unknown) => caught);
+            expect((error as Error).message).toContain(
+                'сеть при отправке аудио',
+            );
+            expect(isTransientYandexError(error)).toBe(true);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -274,32 +285,41 @@ describe('StreamingTranscriptionService — терпимость к сбоям �
                 }),
             );
 
-            await expect(
-                makeService().getTranscriptionDetailed('op-1'),
-            ).rejects.toThrow(
+            const promise = makeService().getTranscriptionDetailed('op-1');
+            await expect(promise).rejects.toThrow(
                 'Яндекс завершил операцию op-1 ошибкой: 3 audio too short',
+            );
+            await expect(promise).rejects.toBeInstanceOf(
+                YandexOperationFailedError,
             );
         });
 
-        it('404 операции — постоянная ошибка, без повторов', async () => {
+        it('404 операции — постоянная ошибка, без повторов; страж видит «операция не найдена»', async () => {
             fetchMock.mockResolvedValueOnce(http(404, '{}', 'Not Found'));
 
-            await expect(
-                makeService().getTranscriptionDetailed('op-1'),
-            ).rejects.toThrow('HTTP 404 Not Found при опросе операции op-1');
+            const error: unknown = await makeService()
+                .getTranscriptionDetailed('op-1')
+                .catch((caught: unknown) => caught);
+            expect((error as Error).message).toContain(
+                'HTTP 404 Not Found при опросе операции op-1',
+            );
+            expect(isYandexOperationNotFound(error)).toBe(true);
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it('не завершилась за отведённые опросы — таймаут', async () => {
+        it('не завершилась за отведённые опросы — таймаут; операция считается живой', async () => {
             fetchMock.mockImplementation(() =>
                 Promise.resolve(ok({ done: false })),
             );
 
-            await expect(
-                makeService({
-                    YANDEX_STT_POLL_MAX_ATTEMPTS: '3',
-                }).getTranscriptionDetailed('op-1'),
-            ).rejects.toThrow('за отведённое время');
+            const error: unknown = await makeService({
+                YANDEX_STT_POLL_MAX_ATTEMPTS: '3',
+            })
+                .getTranscriptionDetailed('op-1')
+                .catch((caught: unknown) => caught);
+            expect((error as Error).message).toContain('за отведённое время');
+            expect(error).toBeInstanceOf(YandexOperationPendingError);
+            expect(isYandexOperationAlive(error)).toBe(true);
             expect(fetchMock).toHaveBeenCalledTimes(3);
         });
     });
