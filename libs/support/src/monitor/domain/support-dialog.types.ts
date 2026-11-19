@@ -73,10 +73,18 @@ export interface SupportDialogMemory {
     waitingFor: number | null;
     /** Какие уровни ожидания по нему уже разосланы. */
     levels: SupportWaitLevel[];
+    /**
+     * Последнее сообщение клиента, о котором уже сообщили (0 — ни одного).
+     * null — память записана до появления поля: такт берёт текущее
+     * последнее сообщение за точку отсчёта и ничего не шлёт, иначе после
+     * выкладки все открытые диалоги разом прислали бы всю переписку.
+     */
+    lastClientMessageId: number | null;
 }
 
 export const SUPPORT_SIGNAL_KINDS = [
     'new_dialog',
+    'client_message',
     'waiting',
     'escalation',
 ] as const;
@@ -90,6 +98,8 @@ export interface SupportSignal {
     pending: SupportMessage | null;
     /** Сколько минут клиент ждёт ответа; 0 — не ждёт. */
     waitedMinutes: number;
+    /** Сообщения клиента, о которых ещё не сообщали (по возрастанию id). */
+    fresh: SupportMessage[];
 }
 
 /** Итог правила по одному диалогу. */

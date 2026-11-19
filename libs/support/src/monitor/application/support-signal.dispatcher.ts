@@ -74,13 +74,17 @@ export class SupportSignalDispatcher {
         options: SupportMonitorOptions,
         channels: SupportChannels,
     ): Promise<SupportSignalReport> {
-        const bellDelivered = channels.bell
-            ? await channels.bell.notify(
-                  bellRecipientsFor(signal, options),
-                  formatSupportBell(signal, lineDomain),
-                  supportBellTag(lineDomain, signal.dialog.sessionId),
-              )
-            : 0;
+        // «Клиент написал» — зеркало реплик клиента только в Telegram:
+        // колокольчик на каждое сообщение превратился бы в шум.
+        const mirror = signal.kind === 'client_message';
+        const bellDelivered =
+            channels.bell && !mirror
+                ? await channels.bell.notify(
+                      bellRecipientsFor(signal, options),
+                      formatSupportBell(signal, lineDomain),
+                      supportBellTag(lineDomain, signal.dialog.sessionId),
+                  )
+                : 0;
         const telegramDelivered = channels.telegram
             ? await this.telegram.send(
                   formatSupportTelegram(signal, lineDomain),
@@ -89,7 +93,11 @@ export class SupportSignalDispatcher {
         return toSignalReport(signal, lineDomain, {
             bellDelivered,
             telegramDelivered,
-            remembered: bellDelivered > 0 || telegramDelivered,
+            // Telegram у портала выключен — зеркалить некуда: запоминаем,
+            // иначе каждый просмотр повторял бы то же «не доставлено».
+            remembered: mirror
+                ? telegramDelivered || !channels.telegram
+                : bellDelivered > 0 || telegramDelivered,
         });
     }
 }

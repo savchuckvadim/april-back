@@ -45,6 +45,11 @@ export function parseSupportMemory(
             levels: Array.isArray(value.levels)
                 ? value.levels.filter(isWaitLevel)
                 : [],
+            // Нет поля — запись до «зеркала» сообщений: точка отсчёта.
+            lastClientMessageId:
+                typeof value.lastClientMessageId === 'number'
+                    ? value.lastClientMessageId
+                    : null,
         };
     } catch {
         return null;

@@ -7,9 +7,12 @@ import {
 
 /** Сколько символов сообщения клиента цитировать в оповещении. */
 export const SUPPORT_QUOTE_MAX_LENGTH = 300;
+/** Сколько новых сообщений клиента цитировать в одном оповещении. */
+export const SUPPORT_FRESH_MAX_QUOTES = 5;
 
 const TITLE_ICON: Record<SupportSignalKind, string> = {
     new_dialog: '🆕',
+    client_message: '💬',
     waiting: '⏳',
     escalation: '🔴',
 };
@@ -46,6 +49,10 @@ const titleOf = (signal: SupportSignal): string => {
     switch (signal.kind) {
         case 'new_dialog':
             return 'Новый вопрос в поддержке';
+        case 'client_message':
+            return signal.waitedMinutes > 0
+                ? `Клиент написал — ждёт ответа ${wait}`
+                : 'Клиент написал';
         case 'waiting':
             return `Клиент ждёт ответа ${wait}`;
         case 'escalation':
@@ -65,6 +72,20 @@ const truncate = (text: string): string =>
         ? `${text.slice(0, SUPPORT_QUOTE_MAX_LENGTH).trimEnd()}…`
         : text;
 
+/** Цитата сообщения (вложение без текста уже подписано при разборе). */
+const quoteOf = (message: SupportMessage): string =>
+    `«${truncate(message.text)}»`;
+
+/** Последние новые сообщения цитатами; сколько не влезло — строкой выше. */
+function freshQuotes(messages: readonly SupportMessage[]): string[] {
+    const shown = messages.slice(-SUPPORT_FRESH_MAX_QUOTES);
+    const skipped = messages.length - shown.length;
+    return [
+        ...(skipped > 0 ? [`…и ещё ${skipped} сообщ. раньше`] : []),
+        ...shown.map(quoteOf),
+    ];
+}
+
 const clientLine = (dialog: SupportDialog): string =>
     dialog.client.portal
         ? `Клиент: ${dialog.client.name}, портал ${dialog.client.portal}`
@@ -78,8 +99,19 @@ const operatorLine = (dialog: SupportDialog): string => {
 /** Строки тела без заголовка и ссылки — общие для обоих каналов. */
 function bodyLines(signal: SupportSignal): string[] {
     const lines = [clientLine(signal.dialog)];
+    if (signal.kind === 'client_message') {
+        lines.push(...freshQuotes(signal.fresh));
+        lines.push(operatorLine(signal.dialog));
+        return lines;
+    }
     const quoted = quotedMessage(signal);
-    if (quoted) lines.push(`«${truncate(quoted.text)}»`);
+    if (quoted) lines.push(quoteOf(quoted));
+    // Напоминание: что клиент дописал после цитаты — тем же сообщением.
+    const more =
+        signal.kind === 'new_dialog'
+            ? []
+            : signal.fresh.filter(message => message.id !== quoted?.id);
+    if (more.length) lines.push('Дописал:', ...freshQuotes(more));
     if (signal.kind === 'new_dialog' && signal.waitedMinutes > 0) {
         lines.push(`Ждёт ответа ${formatWaitDuration(signal.waitedMinutes)}`);
     }

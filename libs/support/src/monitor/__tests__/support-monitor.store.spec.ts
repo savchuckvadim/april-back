@@ -22,7 +22,18 @@ describe('parseSupportMemory', () => {
             parseSupportMemory(
                 '{"announced":true,"waitingFor":10,"levels":["remind","x"]}',
             ),
-        ).toEqual({ announced: true, waitingFor: 10, levels: ['remind'] });
+        ).toEqual({
+            announced: true,
+            waitingFor: 10,
+            levels: ['remind'],
+            // запись до «зеркала» сообщений — точка отсчёта
+            lastClientMessageId: null,
+        });
+        expect(
+            parseSupportMemory(
+                '{"announced":true,"waitingFor":null,"levels":[],"lastClientMessageId":42}',
+            )?.lastClientMessageId,
+        ).toBe(42);
     });
 
     it('испорченная запись — как будто памяти нет', () => {
@@ -39,10 +50,11 @@ describe('SupportMonitorStore', () => {
             announced: true,
             waitingFor: null,
             levels: [],
+            lastClientMessageId: 0,
         });
         expect(redis.set).toHaveBeenCalledWith(
             'support-monitor:dry:april-dev.bitrix24.ru:session:71',
-            '{"announced":true,"waitingFor":null,"levels":[]}',
+            '{"announced":true,"waitingFor":null,"levels":[],"lastClientMessageId":0}',
             'EX',
             604800,
         );

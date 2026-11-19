@@ -24,6 +24,7 @@ const signal = (overrides: Partial<SupportSignal> = {}): SupportSignal => {
         dialog: dialog([pending]),
         pending,
         waitedMinutes: 0,
+        fresh: [pending],
         ...overrides,
     };
 };
@@ -138,6 +139,78 @@ describe('formatSupportTelegram', () => {
         expect(text).toContain(
             '<a href="https://april-dev.bitrix24.ru/online/?IM_DIALOG=chat769">Открыть диалог</a>',
         );
+    });
+});
+
+describe('«Клиент написал» — зеркало реплик клиента', () => {
+    const first = message(10, 'client', 0, 'Не открывается отчёт');
+
+    it('новые сообщения цитатами, без цитаты первого вопроса', () => {
+        const fresh = [
+            message(12, 'client', 3, 'Пробовал перезайти'),
+            message(13, 'client', 4, 'Не помогло'),
+        ];
+        const text = formatSupportTelegram(
+            signal({
+                kind: 'client_message',
+                pending: first,
+                waitedMinutes: 4,
+                fresh,
+            }),
+            LINE,
+        );
+        expect(text.split('\n')).toEqual([
+            '💬 <b>Клиент написал — ждёт ответа 4 мин</b>',
+            'Клиент: Савчук Вадим, портал alfacentr.bitrix24.ru',
+            '«Пробовал перезайти»',
+            '«Не помогло»',
+            'Оператор: Муравьева Юлия',
+            '<a href="https://april-dev.bitrix24.ru/online/?IM_DIALOG=chat769">Открыть диалог</a>',
+        ]);
+    });
+
+    it('ответили, клиент написал снова — без «ждёт ответа»', () => {
+        const text = formatSupportTelegram(
+            signal({
+                kind: 'client_message',
+                pending: null,
+                waitedMinutes: 0,
+                fresh: [message(12, 'client', 3, 'Спасибо!')],
+            }),
+            LINE,
+        );
+        expect(text).toContain('💬 <b>Клиент написал</b>');
+        expect(text).toContain('«Спасибо!»');
+    });
+
+    it('много сообщений за просмотр — последние пять и сколько пропущено', () => {
+        const fresh = Array.from({ length: 7 }, (_, index) =>
+            message(20 + index, 'client', index, `строка ${index + 1}`),
+        );
+        const lines = formatSupportTelegram(
+            signal({
+                kind: 'client_message',
+                pending: fresh[0] ?? null,
+                fresh,
+            }),
+            LINE,
+        ).split('\n');
+        expect(lines).toContain('…и ещё 2 сообщ. раньше');
+        expect(lines).toContain('«строка 7»');
+        expect(lines).not.toContain('«строка 2»');
+    });
+
+    it('напоминание показывает, что клиент дописал', () => {
+        const text = formatSupportTelegram(
+            signal({
+                kind: 'waiting',
+                pending: first,
+                waitedMinutes: 10,
+                fresh: [message(12, 'client', 8, 'Есть кто?')],
+            }),
+            LINE,
+        );
+        expect(text).toContain('«Не открывается отчёт»\nДописал:\n«Есть кто?»');
     });
 });
 

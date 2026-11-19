@@ -54,12 +54,28 @@ export function reachedWaitLevels(
     return levels;
 }
 
-const signalOf = (
-    kind: SupportSignalKind,
-    dialog: SupportDialog,
-    pending: SupportMessage | null,
-    waitedMinutes: number,
-): SupportSignal => ({ kind, dialog, pending, waitedMinutes });
+/** Последнее сообщение клиента в переписке; 0 — клиент ещё не писал. */
+export function lastClientMessageIdOf(
+    messages: readonly SupportMessage[],
+): number {
+    return messages.reduce(
+        (last, message) =>
+            message.role === 'client' && message.id > last ? message.id : last,
+        0,
+    );
+}
+
+/** Уровень ожидания, который пора разослать: срочный важнее напоминания. */
+function dueWaitLevel(
+    reached: readonly SupportWaitLevel[],
+    sent: readonly SupportWaitLevel[],
+): SupportWaitLevel | null {
+    if (reached.includes('escalate') && !sent.includes('escalate')) {
+        return 'escalate';
+    }
+    if (reached.includes('remind') && !sent.includes('remind')) return 'remind';
+    return null;
+}
 
 /**
  * Что разослать по диалогу сейчас и что запомнить.
@@ -67,8 +83,12 @@ const signalOf = (
  * - Новый диалог — оповещение сразу. Если клиент к этому моменту уже ждёт
  *   дольше порогов (первый просмотр после простоя), пройденные уровни
  *   считаются разосланными: одно сообщение вместо трёх подряд.
+ * - Каждое новое сообщение клиента в уже известном диалоге — оповещение
+ *   «клиент написал» (Telegram как зеркало реплик клиента), отвечали ему
+ *   или нет.
  * - Клиент ждёт ответа — напоминание, потом срочный повтор; каждый уровень
- *   один раз на одно неотвеченное сообщение.
+ *   один раз на одно неотвеченное сообщение. Новые сообщения клиента,
+ *   пришедшие к этому моменту, едут в том же оповещении.
  * - Ответ сотрудника гасит ожидание; следующее сообщение клиента
  *   запускает отсчёт и уровни заново.
  * - За один просмотр по диалогу — не больше одного оповещения: если
@@ -84,50 +104,62 @@ export function decideSupportDialog(
     const waitedMinutes = waitedMinutesOf(pending, now);
     const reached = reachedWaitLevels(waitedMinutes, thresholds);
     const waitingFor = pending?.id ?? null;
-    const sent =
-        memory && memory.waitingFor === waitingFor && waitingFor !== null
-            ? memory.levels
-            : [];
+    const lastClientId = lastClientMessageIdOf(dialog.messages);
+    const signalOf = (
+        kind: SupportSignalKind,
+        fresh: SupportMessage[],
+    ): SupportSignal => ({ kind, dialog, pending, waitedMinutes, fresh });
 
     if (!memory?.announced) {
         return {
-            signal: signalOf('new_dialog', dialog, pending, waitedMinutes),
-            memory: { announced: true, waitingFor, levels: reached },
-        };
-    }
-
-    if (!pending) {
-        return {
-            signal: null,
-            memory: { announced: true, waitingFor: null, levels: [] },
-        };
-    }
-
-    if (reached.includes('escalate') && !sent.includes('escalate')) {
-        return {
-            signal: signalOf('escalation', dialog, pending, waitedMinutes),
+            signal: signalOf(
+                'new_dialog',
+                dialog.messages.filter(message => message.role === 'client'),
+            ),
             memory: {
                 announced: true,
                 waitingFor,
-                levels: ['remind', 'escalate'],
+                levels: reached,
+                lastClientMessageId: lastClientId,
             },
         };
     }
 
-    if (reached.includes('remind') && !sent.includes('remind')) {
+    // Память до появления поля — точка отсчёта без рассылки.
+    const seen = memory.lastClientMessageId ?? lastClientId;
+    const fresh = dialog.messages.filter(
+        message => message.role === 'client' && message.id > seen,
+    );
+    const sent =
+        memory.waitingFor === waitingFor && waitingFor !== null
+            ? memory.levels
+            : [];
+    const due = pending ? dueWaitLevel(reached, sent) : null;
+    const levels: SupportWaitLevel[] =
+        due === 'escalate'
+            ? ['remind', 'escalate']
+            : due === 'remind'
+              ? [...sent, 'remind']
+              : sent;
+    const nextMemory: SupportDialogMemory = {
+        announced: true,
+        waitingFor,
+        levels,
+        lastClientMessageId: fresh.length ? lastClientId : seen,
+    };
+
+    if (due) {
         return {
-            signal: signalOf('waiting', dialog, pending, waitedMinutes),
-            memory: {
-                announced: true,
-                waitingFor,
-                levels: [...sent, 'remind'],
-            },
+            signal: signalOf(
+                due === 'escalate' ? 'escalation' : 'waiting',
+                fresh,
+            ),
+            memory: nextMemory,
         };
     }
-
     return {
-        signal: null,
-        memory: { announced: true, waitingFor, levels: sent },
+        signal: fresh.length ? signalOf('client_message', fresh) : null,
+        memory: nextMemory,
     };
 }
 
@@ -140,6 +172,7 @@ export function isSameMemory(
     return (
         left.announced === right.announced &&
         left.waitingFor === right.waitingFor &&
+        left.lastClientMessageId === right.lastClientMessageId &&
         left.levels.length === right.levels.length &&
         left.levels.every(level => right.levels.includes(level))
     );

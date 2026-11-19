@@ -28,6 +28,7 @@ const signal: SupportSignal = {
     dialog: dialog([pending]),
     pending,
     waitedMinutes: 12,
+    fresh: [],
 };
 
 function setup({ telegramConfigured = true, telegramSent = true } = {}) {
@@ -174,6 +175,55 @@ describe('SupportSignalDispatcher', () => {
     it('ни один канал не принял — не запоминаем', async () => {
         const { dispatcher } = setup({ telegramSent: false });
         const report = await dispatcher.dispatch(signal, LINE, options(), {
+            bell: null,
+            telegram: true,
+        });
+        expect(report.remembered).toBe(false);
+    });
+});
+
+describe('SupportSignalDispatcher: «Клиент написал»', () => {
+    const mirror: SupportSignal = {
+        ...signal,
+        kind: 'client_message',
+        fresh: [message(12, 'client', 3, 'Есть кто?')],
+    };
+
+    it('только в Telegram — колокольчик на каждое сообщение не звонит', async () => {
+        const { dispatcher, telegram, systemAdd } = setup();
+        const channels = await dispatcher.openChannels(options(), []);
+        const report = await dispatcher.dispatch(
+            mirror,
+            LINE,
+            options(),
+            channels,
+        );
+        expect(systemAdd).not.toHaveBeenCalled();
+        expect(telegram.send).toHaveBeenCalledWith(
+            expect.stringContaining('«Есть кто?»'),
+        );
+        expect(report).toEqual(
+            expect.objectContaining({
+                bellDelivered: 0,
+                telegramDelivered: true,
+                remembered: true,
+            }),
+        );
+    });
+
+    it('Telegram у портала выключен — запоминаем, чтобы не повторять каждый просмотр', async () => {
+        const { dispatcher, telegram } = setup();
+        const report = await dispatcher.dispatch(mirror, LINE, options(), {
+            bell: null,
+            telegram: false,
+        });
+        expect(telegram.send).not.toHaveBeenCalled();
+        expect(report.remembered).toBe(true);
+    });
+
+    it('Telegram не принял — не запоминаем, следующий просмотр повторит', async () => {
+        const { dispatcher } = setup({ telegramSent: false });
+        const report = await dispatcher.dispatch(mirror, LINE, options(), {
             bell: null,
             telegram: true,
         });

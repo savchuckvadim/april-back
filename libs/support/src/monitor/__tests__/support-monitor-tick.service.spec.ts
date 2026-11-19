@@ -90,6 +90,7 @@ describe('SupportMonitorTickService.run', () => {
             announced: true,
             waitingFor: 10,
             levels: [],
+            lastClientMessageId: 10,
         });
         expect(report.signals.map(s => s.kind)).toEqual([
             'new_dialog',
@@ -133,8 +134,24 @@ describe('SupportMonitorTickService.run', () => {
 
     it('без оповещений каналы не открываются, неизменная память не перезаписывается', async () => {
         const memories = new Map<number, SupportDialogMemory>([
-            [71, { announced: true, waitingFor: 10, levels: [] }],
-            [72, { announced: true, waitingFor: 20, levels: ['remind'] }],
+            [
+                71,
+                {
+                    announced: true,
+                    waitingFor: 10,
+                    levels: [],
+                    lastClientMessageId: 10,
+                },
+            ],
+            [
+                72,
+                {
+                    announced: true,
+                    waitingFor: 20,
+                    levels: ['remind'],
+                    lastClientMessageId: 20,
+                },
+            ],
         ]);
         const { service, store, dispatcher } = setup(memories);
         const report = await service.run(LINE, options(), minutesAfter(5));
@@ -147,6 +164,7 @@ describe('SupportMonitorTickService.run', () => {
             announced: true,
             waitingFor: null,
             levels: [],
+            lastClientMessageId: 20,
         });
     });
 
@@ -159,8 +177,24 @@ describe('SupportMonitorTickService.run', () => {
 
     it('клиент ждёт 10 минут — напоминание', async () => {
         const memories = new Map<number, SupportDialogMemory>([
-            [71, { announced: true, waitingFor: 10, levels: [] }],
-            [72, { announced: true, waitingFor: null, levels: [] }],
+            [
+                71,
+                {
+                    announced: true,
+                    waitingFor: 10,
+                    levels: [],
+                    lastClientMessageId: 10,
+                },
+            ],
+            [
+                72,
+                {
+                    announced: true,
+                    waitingFor: null,
+                    levels: [],
+                    lastClientMessageId: 20,
+                },
+            ],
         ]);
         const { service, dispatcher } = setup(memories);
         await service.run(LINE, options(), minutesAfter(11));

@@ -92,7 +92,8 @@ export class SupportDialogReportDto implements SupportDialogReport {
 export class SupportSignalReportDto implements SupportSignalReport {
     @ApiProperty({
         description:
-            'Вид оповещения: new_dialog — новый диалог, waiting — клиент ждёт ' +
+            'Вид оповещения: new_dialog — новый диалог, client_message — клиент ' +
+            'написал в открытый диалог (только Telegram), waiting — клиент ждёт ' +
             'ответа (напоминание), escalation — ждёт долго (срочный повтор).',
         type: String,
         enum: SUPPORT_SIGNAL_KINDS,
