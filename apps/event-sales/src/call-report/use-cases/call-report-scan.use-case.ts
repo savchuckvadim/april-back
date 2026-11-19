@@ -5,6 +5,7 @@ import { BitrixOwnerTypeId } from '@lib/bitrix';
 import {
     buildDedupKey,
     CallAnalysisBitrixService,
+    transcribeJobTimeoutMs,
     TranscriptionStoreService,
 } from '@lib/call-lib';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
@@ -170,9 +171,12 @@ export class CallReportScanUseCase {
             options?.minDurationSec ?? registryMinDurationSec();
         const windowHours = options?.windowHours ?? 25;
         const maxPerRun = options?.maxPerRun ?? 10;
-        const jobTimeoutMs = this.envNumber(
-            'CALL_REPORT_JOB_TIMEOUT_MS',
-            45 * 60_000,
+        // Не меньше полного ожидания Яндекса (слот + опрос): Bull по таймауту
+        // не останавливает обработчик, а запускает вторую попытку рядом с
+        // первой — та отправляла звонок в Яндекс повторно (19.11.2026).
+        const jobTimeoutMs = transcribeJobTimeoutMs(
+            key => this.configService.get<string>(key),
+            this.envNumber('CALL_REPORT_JOB_TIMEOUT_MS', 45 * 60_000),
         );
 
         const sinceIso = new Date(

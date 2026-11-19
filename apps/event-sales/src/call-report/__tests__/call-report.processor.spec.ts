@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+import { YandexCallBusyError, YandexSubmitLimitError } from '@lib/call-lib';
 import { LlmUnavailableError } from '@lib/llm-gateway';
 import { CallReportProcessor } from '../queue/call-report.processor';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
@@ -191,6 +193,46 @@ describe('CallReportProcessor (стадии)', () => {
         ).rejects.toThrow('transcribe down');
         expect(dispatcher.dispatch).not.toHaveBeenCalled();
     });
+
+    // 19.11.2026: второе задание того же звонка (ретрай Bull, повторный
+    // скан) — лишнее: распознаёт первое, оно же поставит ANALYZE.
+    it.each([
+        [
+            'звонок уже распознаёт другой запуск',
+            new YandexCallBusyError('test.bitrix24.ru:101 (call.mp3)'),
+            'уже идёт',
+        ],
+        [
+            'лимит отправок в Яндекс исчерпан (тревогу дал страж)',
+            new YandexSubmitLimitError(
+                'test.bitrix24.ru:101 (call.mp3)',
+                3,
+                72,
+            ),
+            'нужна проверка',
+        ],
+    ])(
+        'TRANSCRIBE: %s — задание закрывается без тревоги, ретрая и ANALYZE',
+        async (_case, refusal, text) => {
+            const { processor, pipeline, dispatcher } = makeDeps();
+            const error = jest
+                .spyOn(Logger.prototype, 'error')
+                .mockImplementation(() => undefined);
+            const warn = jest
+                .spyOn(Logger.prototype, 'warn')
+                .mockImplementation(() => undefined);
+            pipeline.executeTranscribe.mockRejectedValue(refusal);
+
+            await expect(
+                processor.handleTranscribe(makeJob(PAYLOAD)),
+            ).resolves.toBeUndefined();
+            expect(dispatcher.dispatch).not.toHaveBeenCalled();
+            expect(error).not.toHaveBeenCalled();
+            expect(warn).toHaveBeenCalledWith(expect.stringContaining(text));
+            error.mockRestore();
+            warn.mockRestore();
+        },
+    );
 
     it('ANALYZE со transcriptionId запускает только стадию анализа', async () => {
         const { processor, pipeline } = makeDeps();

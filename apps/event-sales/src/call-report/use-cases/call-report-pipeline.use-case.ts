@@ -11,10 +11,12 @@ import {
     CALL_RESUME_TYPE,
     CallAnalysisBitrixService,
     CallReportEntityType,
+    isTranscribedRow,
     TranscriptionPipelineView,
     TranscriptionRouterService,
     TranscriptionStoreService,
     AiService,
+    YandexCallBusyError,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 import { AI_FIRST_PASS_DISABLED } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
@@ -183,11 +185,26 @@ export class CallReportPipelineUseCase {
      * Стадия 1 — транскрибация: upsert строки → аудио из Bitrix →
      * Yandex/Vibecode → персист текста и менеджера. Ошибка → строка в
      * status='error' (звонок снова виден дедупу) и проброс в Bull.
+     * Звонок уже распознан (done с текстом) — сохранённый текст, без
+     * повторного распознавания: ретрай задания и ручной /analyze больше не
+     * платят Яндексу второй раз (19.11.2026).
      */
     async executeTranscribe(
         payload: CallReportJobPayload,
     ): Promise<CallReportTranscribeResult> {
         const dedupKey = buildDedupKey(payload.domain, payload.activityId);
+        const existing =
+            await this.transcriptionStore.findPipelineByDedupKey(dedupKey);
+        if (isTranscribedRow(existing)) {
+            this.logger.log(
+                `Стадия TRANSCRIBE: ${payload.domain}, activity ${payload.activityId} уже распознан ` +
+                    `(строка ${existing.id}, ${existing.provider ?? '—'}) — беру сохранённый текст`,
+            );
+            return {
+                transcriptionId: existing.id,
+                provider: existing.provider ?? 'unknown',
+            };
+        }
         const row = await this.transcriptionStore.startPipeline({
             dedupKey,
             domain: payload.domain,
@@ -230,6 +247,8 @@ export class CallReportPipelineUseCase {
                     fileName: audioFile.fileName,
                     domain: payload.domain,
                     durationSec: payload.durationSec,
+                    // Страж Яндекса: замок, лимит и номер операции — по звонку.
+                    callKey: dedupKey,
                 });
 
             // Менеджер звонка — ТОТ, КТО ЗВОНИЛ (из телефонии). Ответственный
@@ -264,9 +283,13 @@ export class CallReportPipelineUseCase {
             );
             return { transcriptionId: row.id, provider };
         } catch (error) {
-            await this.transcriptionStore
-                .finishPipeline(row.id, { status: 'error' })
-                .catch(() => undefined);
+            // Звонок распознаёт другой запуск (замок стража Яндекса) —
+            // строка его, ошибкой её не помечаем.
+            if (!(error instanceof YandexCallBusyError)) {
+                await this.transcriptionStore
+                    .finishPipeline(row.id, { status: 'error' })
+                    .catch(() => undefined);
+            }
             throw error;
         }
     }

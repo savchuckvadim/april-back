@@ -11,6 +11,8 @@ import {
     CallTypeRegistryService,
     TranscriptionStoreService,
     TranscriptionPipelineView,
+    YandexCallBusyError,
+    YandexSubmitLimitError,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
 import { CALL_ANALYSIS_FOCUS_PARTS } from '../../agent-gate/dto/agent-analysis-request.dto';
@@ -244,6 +246,17 @@ export class CallReportProcessor {
             const result = await this.pipeline.executeTranscribe(job.data);
             await this.dispatchAnalyze(job.data, result.transcriptionId);
         } catch (error) {
+            // Звонок уже распознаёт другой запуск (замок стража Яндекса): он
+            // сам сохранит текст и поставит ANALYZE — это задание лишнее.
+            // Лимит отправок исчерпан: тревогу один раз уже дал страж,
+            // строка в error. В обоих случаях — без тревоги и ретрая Bull.
+            if (
+                error instanceof YandexCallBusyError ||
+                error instanceof YandexSubmitLimitError
+            ) {
+                this.logger.warn(`TRANSCRIBE пропущен: ${error.message}`);
+                return;
+            }
             this.reportFailure('TRANSCRIBE', job, error as Error);
             throw error;
         }

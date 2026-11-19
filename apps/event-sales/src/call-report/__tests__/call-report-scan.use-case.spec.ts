@@ -1,3 +1,5 @@
+import { yandexTranscribeBudgetMs } from '@lib/call-lib';
+import { YANDEX_SLOT_WAIT_DEFAULT_MS } from '@lib/call-lib/transcription/lib/yandex-stt-budget.util';
 import { findParam, registryMinDurationSec } from '@lib/sales-ai-analytics';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { VoximplantCallsService } from '../services/voximplant-calls.service';
@@ -190,6 +192,26 @@ describe('CallReportScanUseCase', () => {
         const result = await useCase.execute(DOMAIN);
         expect(result.truncated).toBe(true);
         expect(result.totalByFilter).toBe(5000);
+    });
+
+    // 19.11.2026: Bull по таймауту не останавливает обработчик, а запускает
+    // вторую попытку рядом с первой — та отправляла звонок в Яндекс повторно.
+    it('таймаут задания TRANSCRIBE больше ожидания Яндекса: опрос 700 × 3 с плюс ожидание слота', async () => {
+        const { useCase, dispatcher } = makeDeps({ rows: [row(101)] });
+        await useCase.execute(DOMAIN);
+        const [, , , , options] = dispatcher.dispatch.mock.calls[0] as [
+            unknown,
+            unknown,
+            unknown,
+            unknown,
+            { timeout: number; attempts: number },
+        ];
+        const pollBudgetMs = 700 * 3000;
+        const slotWaitMs = YANDEX_SLOT_WAIT_DEFAULT_MS;
+        expect(options.timeout).toBeGreaterThan(pollBudgetMs + slotWaitMs);
+        expect(options.timeout).toBe(yandexTranscribeBudgetMs(() => undefined));
+        // Прежние 45 минут (env по умолчанию) были меньше ожидания Яндекса.
+        expect(options.timeout).toBeGreaterThan(45 * 60_000);
     });
 
     it('createSmartItem едет в payload джоба — cron доводит звонок до карточки', async () => {

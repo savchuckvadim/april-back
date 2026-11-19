@@ -1,3 +1,4 @@
+import { YandexCallBusyError } from '@lib/call-lib';
 import { CallReportPipelineUseCase } from '../use-cases/call-report-pipeline.use-case';
 
 const PAYLOAD = {
@@ -67,6 +68,8 @@ const makeDeps = (overrides?: {
                   .mockResolvedValue({ text: 'текст', provider: 'yandex' }),
     };
     const store = {
+        // Строки ещё нет — звонок распознаётся (19.11.2026: done берётся готовым).
+        findPipelineByDedupKey: jest.fn().mockResolvedValue(null),
         startPipeline: jest.fn().mockResolvedValue({ id: '42' }),
         finishPipeline: jest.fn().mockResolvedValue({ id: '42' }),
         // Стадия ANALYZE перечитывает текст из БД по transcriptionId.
@@ -519,6 +522,77 @@ describe('CallReportPipelineUseCase', () => {
             'No audio files',
         );
         expect(store.finishPipeline).toHaveBeenCalledWith('42', {
+            status: 'error',
+        });
+    });
+});
+
+/**
+ * 19.11.2026: звонок уже распознан — ретрай задания и ручной /analyze не
+ * отправляют его в Яндекс второй раз; отказ стража «уже идёт» не портит
+ * строку, которую ведёт другой запуск.
+ */
+describe('CallReportPipelineUseCase: повторный запуск распознанного звонка', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    it('строка done с текстом — сохранённый текст, без Битрикса, роутера и новой строки', async () => {
+        const { useCase, store, router, bitrix } = makeDeps();
+        store.findPipelineByDedupKey.mockResolvedValue({
+            id: '77',
+            status: 'done',
+            text: 'готовый текст',
+            provider: 'yandex',
+        });
+
+        await expect(useCase.executeTranscribe(PAYLOAD)).resolves.toEqual({
+            transcriptionId: '77',
+            provider: 'yandex',
+        });
+        expect(store.findPipelineByDedupKey).toHaveBeenCalledWith(
+            'test.bitrix24.ru:101',
+        );
+        expect(router.transcribe).not.toHaveBeenCalled();
+        expect(store.startPipeline).not.toHaveBeenCalled();
+        expect(bitrix.activity.getAllFresh).not.toHaveBeenCalled();
+    });
+
+    it('ручной /analyze (execute) по распознанному звонку — анализ по сохранённому тексту', async () => {
+        const { useCase, store, router } = makeDeps();
+        store.findPipelineByDedupKey.mockResolvedValue({
+            id: '42',
+            status: 'done',
+            text: 'текст',
+            provider: 'yandex',
+        });
+        const result = await useCase.execute(PAYLOAD);
+        expect(router.transcribe).not.toHaveBeenCalled();
+        expect(result.transcriptionId).toBe('42');
+    });
+
+    it('done без текста или строка в error — распознаётся заново; ключ звонка уходит стражу', async () => {
+        for (const existing of [
+            { id: '77', status: 'done', text: '  ', provider: 'yandex' },
+            { id: '77', status: 'error', text: null, provider: null },
+        ]) {
+            const { useCase, store, router } = makeDeps();
+            store.findPipelineByDedupKey.mockResolvedValue(existing);
+            await useCase.executeTranscribe(PAYLOAD);
+            expect(router.transcribe).toHaveBeenCalledWith(
+                expect.objectContaining({ callKey: 'test.bitrix24.ru:101' }),
+            );
+            expect(store.startPipeline).toHaveBeenCalled();
+        }
+    });
+
+    it('звонок уже распознаёт другой запуск — строка не помечается ошибкой, отказ пробрасывается', async () => {
+        const { useCase, store, router } = makeDeps();
+        router.transcribe.mockRejectedValue(
+            new YandexCallBusyError('test.bitrix24.ru:101 (call.mp3)'),
+        );
+        await expect(useCase.executeTranscribe(PAYLOAD)).rejects.toBeInstanceOf(
+            YandexCallBusyError,
+        );
+        expect(store.finishPipeline).not.toHaveBeenCalledWith('42', {
             status: 'error',
         });
     });

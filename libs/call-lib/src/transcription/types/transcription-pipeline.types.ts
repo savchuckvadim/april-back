@@ -52,6 +52,17 @@ export function buildDedupKey(
     return `${domain}:${String(activityId)}`;
 }
 
+/**
+ * Звонок уже распознан: строка done с непустым текстом. Повторный запуск
+ * (ретрай задания, ручной /analyze) берёт сохранённый текст и не платит
+ * за распознавание второй раз (19.11.2026).
+ */
+export function isTranscribedRow<
+    T extends { status: string | null; text: string | null },
+>(row: T | null | undefined): row is T & { text: string } {
+    return row?.status === 'done' && Boolean(row.text?.trim());
+}
+
 /** Данные для upsert строки при старте обработки звонка конвейером. */
 export interface TranscriptionPipelineUpsertInput {
     dedupKey: string;
