@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    Post,
+    Query,
+} from '@nestjs/common';
 import {
     ApiBody,
     ApiOkResponse,
@@ -16,6 +24,8 @@ import {
     InnerDealSettingsDto,
     InnerDealSnapshotDto,
     InnerDealUpsertDto,
+    InnerDealVariantDeleteQueryDto,
+    InnerDealVariantDeleteResponseDto,
     InnerDealVariantFindQueryDto,
     InnerDealVariantListQueryDto,
 } from '../dto/inner-deal.dto';
@@ -126,6 +136,30 @@ export class InnerDealController {
         @Body() body: InnerDealUpsertDto,
     ): Promise<InnerDealSnapshotDto> {
         return toInnerDealSnapshotDto(await this.service.upsertSnapshot(body));
+    }
+
+    @Delete('variant')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Удалить вариант комплекта сделки',
+        description:
+            'Удаляет слепок варианта (строки с этим variantSmartId у сделки). Строка самой сделки не затрагивается. Если в настройках сделки этот вариант отмечен открытым в конструкторе, отметка снимается. Элемент смарта в Битриксе удаляет фронт отдельным вызовом. Пустой или нулевой variantSmartId даёт 400.',
+    })
+    @ApiOkResponse({
+        type: InnerDealVariantDeleteResponseDto,
+        description:
+            'deleted:false — строки варианта в базе уже не было, остальные последствия те же.',
+    })
+    async removeVariant(
+        @Query() query: InnerDealVariantDeleteQueryDto,
+    ): Promise<InnerDealVariantDeleteResponseDto> {
+        return {
+            deleted: await this.service.deleteVariant(
+                query.domain,
+                query.dealId,
+                query.variantSmartId,
+            ),
+        };
     }
 
     @Post('settings')

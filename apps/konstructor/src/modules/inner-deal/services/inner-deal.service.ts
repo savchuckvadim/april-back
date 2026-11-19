@@ -1,6 +1,10 @@
 import { BxDocumentDeal } from 'generated/prisma';
 import { InnerDealRepository } from '../repositories/inner-deal.repository';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InnerDealUpsertDto } from '../dto/inner-deal.dto';
 import { ComplectCompositionDto } from '../dto/complect-composition.dto';
 import {
@@ -9,7 +13,10 @@ import {
     InnerDealCopyResult,
     InnerDealCopySource,
 } from '../lib/inner-deal-copy';
-import { serializeComplectComposition } from '../type/complect-composition.type';
+import {
+    parseComplectComposition,
+    serializeComplectComposition,
+} from '../type/complect-composition.type';
 
 @Injectable()
 export class InnerDealService {
@@ -65,6 +72,63 @@ export class InnerDealService {
             dealId,
             variantSmartId,
         );
+    }
+
+    /**
+     * Удаление варианта комплекта: строка(и) слепка этого варианта у сделки.
+     *
+     * Строку самой сделки не трогаем никогда: ключ удаления — конкретный
+     * `smartId`. Пустой или нулевой идентификатор отклоняется до обращения к
+     * базе. Если настройки сделки указывают на удаляемый вариант как на
+     * открытый в конструкторе, ссылка очищается: иначе конструктор после
+     * перезагрузки пошёл бы открывать несуществующий вариант.
+     *
+     * Элемент смарта в Битриксе удаляет фронт: у бэка конструктора нет auth
+     * портала.
+     *
+     * @returns true — строка варианта была и удалена; false — её уже не было.
+     */
+    async deleteVariant(
+        domain: string,
+        dealId: number,
+        variantSmartId: number,
+    ): Promise<boolean> {
+        if (!Number.isInteger(variantSmartId) || variantSmartId <= 0) {
+            throw new BadRequestException(
+                'variantSmartId обязателен и должен быть положительным числом',
+            );
+        }
+
+        const removed = await this.innerDealRepository.deleteVariantSnapshots(
+            domain,
+            dealId,
+            variantSmartId,
+        );
+        await this.clearOpenVariantPointer(domain, dealId, variantSmartId);
+        return removed > 0;
+    }
+
+    /** Снимает `openVariantSmartId` в настройках сделки, если он указывает на variantSmartId. */
+    private async clearOpenVariantPointer(
+        domain: string,
+        dealId: number,
+        variantSmartId: number,
+    ): Promise<void> {
+        const dealRow = await this.innerDealRepository.findSnapshot(
+            domain,
+            dealId,
+            null,
+        );
+        const composition = parseComplectComposition(dealRow?.settings);
+        if (!dealRow || composition?.openVariantSmartId !== variantSmartId) {
+            return;
+        }
+        await this.innerDealRepository.update(dealRow.id, {
+            settings: serializeComplectComposition({
+                ...composition,
+                openVariantSmartId: null,
+            }),
+        });
     }
 
     /**
