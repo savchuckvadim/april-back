@@ -15,6 +15,11 @@ import { interactiveCallContextMiddleware } from '../call-context/call-context.m
 import { APP_ROLE_ENV, AppRole, resolveAppRole } from './app-role';
 import { applyStandbyMode } from './standby-mode';
 import { createGlobalValidationPipe } from './global-validation-pipe';
+import {
+    APRIL_INTERNAL_KEY_HEADER,
+    APRIL_INTERNAL_KEY_SCHEME_DESCRIPTION,
+    APRIL_INTERNAL_KEY_SECURITY,
+} from '../internal-key/internal-key.const';
 
 export interface BootstrapOptions {
     /** Имя приложения — для Swagger-заголовка/тега и логов. */
@@ -115,6 +120,17 @@ export async function bootstrapApp(
         .setVersion(process.env.SWAGGER_VERSION ?? '1.0')
         .addTag(options.name)
         .addBearerAuth()
+        // Ручки «только для служебных вызовов» (@InternalKeyProtected):
+        // ключ вводится один раз кнопкой Authorize.
+        .addApiKey(
+            {
+                type: 'apiKey',
+                in: 'header',
+                name: APRIL_INTERNAL_KEY_HEADER,
+                description: APRIL_INTERNAL_KEY_SCHEME_DESCRIPTION,
+            },
+            APRIL_INTERNAL_KEY_SECURITY,
+        )
         .build();
     const documentOptions: SwaggerDocumentOptions = {
         operationIdFactory: (controllerKey: string, methodKey: string) =>

@@ -13,3 +13,4 @@ export * from './health/dto/health-response.dto';
 export * from './event-silence';
 export { SuccessResponseDto, ErrorResponseDto } from './dto/app.dto';
 export * from './call-context';
+export * from './internal-key';
