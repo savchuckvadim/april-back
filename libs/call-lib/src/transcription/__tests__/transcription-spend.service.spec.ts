@@ -9,6 +9,7 @@ import type {
 } from '../repository/transcription-spend.repository';
 import { TranscriptionSpendService } from '../services/transcription-spend.service';
 import { YandexSttPriceService } from '../services/yandex-stt-price.service';
+import type { YandexSubmissionDay } from '../lib/yandex-submission-stats.util';
 
 const NOW = new Date('2026-11-13T12:00:00Z');
 
@@ -36,6 +37,8 @@ function setup(options: {
     portalIds?: Map<string, number>;
     /** Месячные лимиты Яндекса порталов: домен → рубли. */
     budgets?: Record<string, number>;
+    /** Счётчик отправок в Яндекс: день → портал → отправки; Error — Redis недоступен. */
+    submissions?: Map<string, YandexSubmissionDay> | Error;
 }) {
     const aggregate = jest.fn(
         (
@@ -78,12 +81,34 @@ function setup(options: {
             ),
         ),
     };
+    const submissions =
+        options.submissions ?? new Map<string, YandexSubmissionDay>();
+    const submissionStats = {
+        byDays: jest.fn((days: readonly string[]) =>
+            submissions instanceof Error
+                ? Promise.reject(submissions)
+                : Promise.resolve(
+                      new Map(
+                          [...submissions].filter(([day]) =>
+                              days.includes(day),
+                          ),
+                      ),
+                  ),
+        ),
+    };
     const service = new TranscriptionSpendService(
         repository,
         new YandexSttPriceService({ get: () => undefined } as never, settings),
         portalAiSettings as never,
+        submissionStats as never,
     );
-    return { service, aggregate, repository, portalAiSettings };
+    return {
+        service,
+        aggregate,
+        repository,
+        portalAiSettings,
+        submissionStats,
+    };
 }
 
 describe('TranscriptionSpendService — расход на распознавание', () => {
@@ -266,5 +291,121 @@ describe('TranscriptionSpendService — расход на распознаван
             expect.objectContaining({ domain: 'a.bitrix24.ru' }),
             'domain',
         );
+    });
+});
+
+/**
+ * 19.11.2026: таблица расхода видела звонок один раз, а Яндекс брал деньги
+ * за каждую отправку. Рядом со звонками — отправки из счётчика стража.
+ */
+describe('TranscriptionSpendService — отправки в Яндекс из счётчика', () => {
+    const day = (
+        entries: Record<string, [number, number]>,
+    ): YandexSubmissionDay =>
+        new Map(
+            Object.entries(entries).map(([domain, [submissions, seconds]]) => [
+                domain,
+                { submissions, seconds },
+            ]),
+        );
+
+    beforeEach(() => {
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(
+            () => undefined,
+        );
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('сводка: у портала отправок больше звонков — видно повторы; портал только с отправками тоже в списке', async () => {
+        const { service } = setup({
+            byGroup: {
+                domain: [row('gsr.bitrix24.ru', 'yandex', 2, 1800)],
+            },
+            submissions: new Map([
+                [
+                    '2026-11-03',
+                    day({
+                        'gsr.bitrix24.ru': [4, 3600],
+                        'lost.bitrix24.ru': [2, 1200],
+                    }),
+                ],
+                ['2026-10-30', day({ 'gsr.bitrix24.ru': [9, 9000] })],
+            ]),
+        });
+
+        const summary = await service.summary('2026-11', NOW);
+
+        const byDomain = new Map(summary.portals.map(p => [p.domain, p]));
+        expect(byDomain.get('gsr.bitrix24.ru')?.totals).toMatchObject({
+            yandexCalls: 2,
+            yandexSubmissions: 4,
+            yandexSubmittedMinutes: 60,
+        });
+        // Отправлял, а распознанных звонков в базе нет — деньги без результата.
+        expect(byDomain.get('lost.bitrix24.ru')).toMatchObject({
+            providers: [],
+            totals: { calls: 0, yandexSubmissions: 2 },
+        });
+        // Октябрь в ноябрьскую сводку не попадает.
+        expect(summary.totals).toMatchObject({ yandexSubmissions: 6 });
+    });
+
+    it('портал: отправки по дням, за месяц и за прошлый месяц; день только с отправками — отдельной строкой', async () => {
+        const { service } = setup({
+            byGroup: {
+                domain: [row('a', 'yandex', 1, 600)],
+                day: [row('2026-11-12', 'yandex', 1, 600)],
+            },
+            submissions: new Map([
+                ['2026-11-12', day({ 'a.bitrix24.ru': [3, 1800] })],
+                ['2026-11-13', day({ 'a.bitrix24.ru': [1, 600] })],
+                ['2026-10-20', day({ 'a.bitrix24.ru': [2, 1200] })],
+            ]),
+        });
+
+        const portal = await service.portal('a.bitrix24.ru', '2026-11', NOW);
+
+        expect(portal.totals).toMatchObject({
+            yandexCalls: 1,
+            yandexSubmissions: 4,
+        });
+        expect(portal.previousTotals).toMatchObject({ yandexSubmissions: 2 });
+        expect(
+            portal.days.map(d => [
+                d.day,
+                d.totals.yandexCalls,
+                d.totals.yandexSubmissions,
+            ]),
+        ).toEqual([
+            ['2026-11-12', 1, 3],
+            ['2026-11-13', 0, 1],
+        ]);
+        // По сотрудникам счётчика нет.
+        expect(
+            portal.users.every(u => u.totals.yandexSubmissions === null),
+        ).toBe(true);
+    });
+
+    it('счётчика за месяц нет — null (данных нет), а не ноль', async () => {
+        const { service } = setup({
+            byGroup: { domain: [row('a.bitrix24.ru', 'yandex', 1, 600)] },
+        });
+        const summary = await service.summary('2026-11', NOW);
+        expect(summary.portals[0].totals.yandexSubmissions).toBeNull();
+        expect(summary.totals.yandexSubmittedMinutes).toBeNull();
+    });
+
+    it('Redis недоступен — страница собирается, отправки не показаны', async () => {
+        const { service } = setup({
+            byGroup: { domain: [row('a.bitrix24.ru', 'yandex', 1, 600)] },
+            submissions: new Error('redis down'),
+        });
+        const summary = await service.summary('2026-11', NOW);
+        expect(summary.portals[0].totals).toMatchObject({
+            yandexCalls: 1,
+            yandexSubmissions: null,
+        });
+        const portal = await service.portal('a.bitrix24.ru', '2026-11', NOW);
+        expect(portal.totals.yandexSubmissions).toBeNull();
     });
 });

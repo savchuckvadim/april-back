@@ -20,6 +20,13 @@ import {
     TranscriptionSpendRepository,
 } from '../repository/transcription-spend.repository';
 import { YandexSttPriceService } from './yandex-stt-price.service';
+import {
+    spendMonthDays,
+    submissionKeys,
+    withSubmissions,
+    type YandexSubmissionDay,
+} from '../lib/yandex-submission-stats.util';
+import { YandexSubmissionStatsRepository } from '../repository/yandex-submission-stats.repository';
 
 /** Сколько самых длинных звонков Яндекса показывать у портала. */
 export const SPEND_TOP_CALLS = 20;
@@ -38,6 +45,8 @@ export interface YandexMonthSpend {
  * одного портала за месяц (админка), расход портала за текущий месяц
  * (оповещение о лимите). Только чтение базы; цена минуты Яндекса — из
  * «Настроек приложения», месячный лимит портала — из настроек AI портала.
+ * Рядом со звонками — отправки в Яндекс из счётчика стража (Redis): их
+ * больше, чем звонков, — звонки уходили и оплачивались повторно.
  */
 @Injectable()
 export class TranscriptionSpendService {
@@ -47,6 +56,7 @@ export class TranscriptionSpendService {
         private readonly repository: TranscriptionSpendRepository,
         private readonly price: YandexSttPriceService,
         private readonly portalAiSettings: PortalAiSettingsService,
+        private readonly submissionStats: YandexSubmissionStatsRepository,
     ) {}
 
     /** Сводка по всем порталам за месяц: самые дорогие первыми. */
@@ -55,22 +65,32 @@ export class TranscriptionSpendService {
         now = new Date(),
     ): Promise<TranscriptionSpendSummaryDto> {
         const range = spendMonthRange(month, now);
-        const [kopecks, rows, budgets] = await Promise.all([
+        const days = spendMonthDays(range);
+        const [kopecks, rows, budgets, sent] = await Promise.all([
             this.price.kopecksPerMinute(),
             this.repository.aggregate(range, 'domain'),
             this.budgets(),
+            this.submissions(days),
         ]);
         const groups = spendGroups(rows, row => row.key, kopecks);
-        const ids = await this.repository.portalIds(
-            [...groups.keys()].filter(Boolean),
-        );
-        const portals: TranscriptionSpendPortalRowDto[] = [...groups].map(
-            ([domain, group]) => ({
+        // Портал мог только отправлять в Яндекс, не получив ни одной
+        // расшифровки, — его строка тоже нужна.
+        const domains = [
+            ...new Set([...groups.keys(), ...submissionKeys(sent, days)]),
+        ];
+        const ids = await this.repository.portalIds(domains.filter(Boolean));
+        const portals: TranscriptionSpendPortalRowDto[] = domains.map(
+            domain => ({
                 domain,
                 portalId: ids.get(domain) ?? null,
                 yandexBudgetRub: budgets.get(domain) ?? null,
-                totals: group.totals,
-                providers: group.providers,
+                totals: withSubmissions(
+                    groups.get(domain)?.totals ?? spendTotals([]),
+                    sent,
+                    days,
+                    domain,
+                ),
+                providers: groups.get(domain)?.providers ?? [],
             }),
         );
         portals.sort(
@@ -80,7 +100,11 @@ export class TranscriptionSpendService {
         return {
             month: range.month,
             kopecksPerMinute: kopecks,
-            totals: spendTotals(spendByProvider(rows, kopecks)),
+            totals: withSubmissions(
+                spendTotals(spendByProvider(rows, kopecks)),
+                sent,
+                days,
+            ),
             portals,
         };
     }
@@ -94,6 +118,8 @@ export class TranscriptionSpendService {
         const range = spendMonthRange(month, now);
         const previous = spendMonthRange(range.month, now, -1);
         const slice: SpendSlice = { ...range, domain };
+        const monthDays = spendMonthDays(range);
+        const previousDays = spendMonthDays(previous);
         const [
             kopecks,
             providerRows,
@@ -102,6 +128,7 @@ export class TranscriptionSpendService {
             userRows,
             calls,
             yandexBudgetRub,
+            sent,
         ] = await Promise.all([
             this.price.kopecksPerMinute(),
             this.repository.aggregate(slice, 'domain'),
@@ -110,12 +137,27 @@ export class TranscriptionSpendService {
             this.repository.aggregate(slice, 'user'),
             this.repository.longestYandexCalls(slice, SPEND_TOP_CALLS),
             this.budgetOf(domain),
+            this.submissions([...previousDays, ...monthDays]),
         ]);
 
         const providers = spendByProvider(providerRows, kopecks);
-        const days = [...spendGroups(dayRows, row => row.key, kopecks)]
-            .map(([day, group]) => ({ day, totals: group.totals }))
-            .sort((a, b) => a.day.localeCompare(b.day));
+        const dayGroups = spendGroups(dayRows, row => row.key, kopecks);
+        const days = [
+            ...new Set([
+                ...dayGroups.keys(),
+                ...submissionKeys(sent, monthDays, domain),
+            ]),
+        ]
+            .sort((a, b) => a.localeCompare(b))
+            .map(day => ({
+                day,
+                totals: withSubmissions(
+                    dayGroups.get(day)?.totals ?? spendTotals([]),
+                    sent,
+                    [day],
+                    domain,
+                ),
+            }));
 
         const names = new Map(userRows.map(row => [row.key, row.label]));
         const users: TranscriptionSpendUserDto[] = [
@@ -138,8 +180,18 @@ export class TranscriptionSpendService {
             domain,
             kopecksPerMinute: kopecks,
             yandexBudgetRub,
-            totals: spendTotals(providers),
-            previousTotals: spendTotals(spendByProvider(previousRows, kopecks)),
+            totals: withSubmissions(
+                spendTotals(providers),
+                sent,
+                monthDays,
+                domain,
+            ),
+            previousTotals: withSubmissions(
+                spendTotals(spendByProvider(previousRows, kopecks)),
+                sent,
+                previousDays,
+                domain,
+            ),
             providers,
             days,
             users,
@@ -167,6 +219,23 @@ export class TranscriptionSpendService {
             month: range.month,
             totals: spendTotals(spendByProvider(rows, kopecks)),
         };
+    }
+
+    /**
+     * Счётчик отправок в Яндекс по дням. Сбой Redis страницу не роняет —
+     * отправки просто не показаны (null).
+     */
+    private async submissions(
+        days: readonly string[],
+    ): Promise<Map<string, YandexSubmissionDay>> {
+        try {
+            return await this.submissionStats.byDays(days);
+        } catch (error) {
+            this.logger.warn(
+                `Счётчик отправок в Яндекс не прочитан: ${(error as Error).message}`,
+            );
+            return new Map();
+        }
     }
 
     /**

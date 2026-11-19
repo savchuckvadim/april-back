@@ -10,9 +10,10 @@ import { TranscriptionAdminPageService } from './services/transcription-admin-pa
  * и расхода на распознавание (`admin/transcription-spend`).
  * Импортирует лёгкий {@link TranscriptionStoreModule} ради
  * `TranscriptionStoreService` (репозиторий + Prisma) и
- * {@link TranscriptionSpendModule} ради расчёта расхода; регистрирует только
- * админ-контроллеры — без Redis/очереди/Yandex и её воркера. Подключать в
- * приложении админки, а НЕ в event-sales. Список и расход — только чтение.
+ * {@link TranscriptionSpendModule} ради расчёта расхода (Redis — только
+ * чтение счётчика отправок в Яндекс); регистрирует только админ-контроллеры —
+ * без очереди, Yandex-клиентов и воркера. Подключать в приложении админки, а
+ * НЕ в event-sales. Список и расход — только чтение.
  */
 @Module({
     imports: [TranscriptionStoreModule, TranscriptionSpendModule],
