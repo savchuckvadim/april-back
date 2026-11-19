@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import type { CallPageLinkService } from '@lib/call-lib';
+import type { CallPageLeadService, CallPageLinkService } from '@lib/call-lib';
 import type { RequesterAccess } from '../../domain/access/perimeter.util';
 import type { CallClientTitlesService } from '../call-client-titles.service';
 import type { CallListIndexLoader } from '../calls-list-index.loader';
@@ -58,12 +58,30 @@ function harness() {
             ),
         ),
     };
+    const leads = {
+        urlsFor: jest.fn(
+            (
+                _d: string,
+                ids: readonly string[],
+                viewer: { userId: string; role: string },
+            ) =>
+                Promise.resolve(
+                    new Map(
+                        ids.map(id => [
+                            id,
+                            `https://site/call/${id}/lead/${viewer.role}-${viewer.userId}`,
+                        ]),
+                    ),
+                ),
+        ),
+    };
     const useCase = new CallsListUseCase(
         loader as unknown as CallListIndexLoader,
         clients as unknown as CallClientTitlesService,
         links as unknown as CallPageLinkService,
+        leads as unknown as CallPageLeadService,
     );
-    return { useCase, loader, clients, links };
+    return { useCase, loader, clients, links, leads };
 }
 
 describe('CallsListUseCase', () => {
@@ -76,7 +94,7 @@ describe('CallsListUseCase', () => {
     });
 
     it('руководителю — только его менеджеры; страница, итог и фасеты', async () => {
-        const { useCase, clients, links } = harness();
+        const { useCase, clients, links, leads } = harness();
 
         const result = await useCase.execute(
             dtoOf({ page: 1, pageSize: 2 }),
@@ -95,12 +113,16 @@ describe('CallsListUseCase', () => {
         ]);
         // Клиенты и ссылки — только на строки страницы.
         expect(clients.titlesFor).toHaveBeenCalledWith(DOMAIN, ['4', '3']);
-        expect(links.urlsFor).toHaveBeenCalledWith(DOMAIN, ['4', '3']);
+        expect(leads.urlsFor).toHaveBeenCalledWith(DOMAIN, ['4', '3'], {
+            userId: '10',
+            role: 'leader',
+        });
+        expect(links.urlsFor).not.toHaveBeenCalled();
         const [first, second] = result.items;
         expect(first).toMatchObject({
             managerName: 'Иванова Мария',
             client: 'Клиент 4',
-            url: 'https://site/call/4',
+            url: 'https://site/call/4/lead/leader-10',
             reviews: { count: 0, mine: null },
         });
         expect(second.reviews).toMatchObject({
@@ -110,10 +132,13 @@ describe('CallsListUseCase', () => {
         });
     });
 
-    it('суперпользователю видны все менеджеры', async () => {
+    it('суперпользователю видны все менеджеры, ключ — с ролью superuser', async () => {
         const { useCase } = harness();
         const result = await useCase.execute(dtoOf(), SUPER);
         expect(result.total).toBe(4);
+        expect(result.items[0].url).toBe(
+            'https://site/call/4/lead/superuser-10',
+        );
         expect(result.facets.managers.map(manager => manager.id)).toEqual([
             '447',
             '512',
@@ -143,5 +168,16 @@ describe('CallsListUseCase', () => {
         });
         const row = result.items.find(item => item.transcriptionId === '3');
         expect(row?.reviews).toMatchObject({ count: 1, mine: null });
+    });
+
+    it('id пользователя не число — обычные ссылки без личного ключа', async () => {
+        const { useCase, links, leads } = harness();
+        const result = await useCase.execute(
+            dtoOf({ requesterUserId: 'abc' }),
+            SUPER,
+        );
+        expect(leads.urlsFor).not.toHaveBeenCalled();
+        expect(links.urlsFor).toHaveBeenCalledTimes(1);
+        expect(result.items[0].url).toBe('https://site/call/4');
     });
 });

@@ -55,6 +55,8 @@ export * from './call-page/call-page-link.module';
 export * from './call-page/call-page-link.admin.module';
 export * from './call-page/call-page-link.service';
 export * from './call-page/call-page-link.util';
+export * from './call-page/call-page-lead.service';
+export * from './call-page/call-page-lead.util';
 export * from './ai/ai.admin.module';
 export * from './yandex/yandex.module';
 export * from './yandex/yandex-storage.service';

@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { CallPageLinkService } from '@lib/call-lib';
+import { CallPageLeadService, CallPageLinkService } from '@lib/call-lib';
 import {
     normalizeUserId,
     type RequesterAccess,
@@ -43,6 +43,7 @@ export class CallsListUseCase {
         private readonly index: CallListIndexLoader,
         private readonly clients: CallClientTitlesService,
         private readonly links: CallPageLinkService,
+        private readonly leads: CallPageLeadService,
     ) {}
 
     async execute(
@@ -60,11 +61,11 @@ export class CallsListUseCase {
         );
         const rows = pageOfRows(matched, query.page, query.pageSize);
         const ids = rows.map(row => row.transcriptionId);
+        const requesterId = normalizeUserId(dto.requesterUserId);
         const [clients, urls] = await Promise.all([
             this.clients.titlesFor(dto.domain, ids),
-            this.urlsFor(dto.domain, ids),
+            this.urlsFor(dto.domain, ids, requesterId, access),
         ]);
-        const requesterId = normalizeUserId(dto.requesterUserId);
         return {
             items: rows.map(row =>
                 presentCallListItem(row, {
@@ -81,10 +82,22 @@ export class CallsListUseCase {
         };
     }
 
+    /**
+     * Личные ссылки руководителя с правом на отзыв (7 дней): все строки
+     * списка — менеджеров из его периметра, значит право есть на каждую.
+     * Роль в ключе — суперпользователь или руководитель; на сохранении она
+     * всё равно перепроверяется. Id пользователя не число — обычные ссылки.
+     */
     private urlsFor(
         domain: string,
         ids: readonly string[],
+        requesterId: string | null,
+        access: RequesterAccess,
     ): Promise<Map<string, string>> {
-        return this.links.urlsFor(domain, ids);
+        if (requesterId === null) return this.links.urlsFor(domain, ids);
+        return this.leads.urlsFor(domain, ids, {
+            userId: requesterId,
+            role: access.isSuperUser === true ? 'superuser' : 'leader',
+        });
     }
 }
