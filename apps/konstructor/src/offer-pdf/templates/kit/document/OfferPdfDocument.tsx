@@ -15,7 +15,8 @@ import {
 } from './document.util';
 import type { OfferPdfChrome } from './offer-pdf-chrome';
 import { OfferSections } from './OfferSections';
-import { priceFitsLetterSheet } from './sheet-fit.util';
+import { priceFitsLetterSheet, priceStartsOwnSheet } from './sheet-fit.util';
+import { withSurfaceBottom } from './surface.styles';
 
 export interface OfferPdfDocumentProps {
     model: OfferPdfDocumentModel;
@@ -39,6 +40,8 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
 }) => {
     const { data, settings } = model;
     const base = baseStyles(theme);
+    // карточки писем и разделов: нижнее поле меняется только перерисовкой
+    const cardTheme = withSurfaceBottom(theme, frame?.surfaceBottom);
     const { Cover, Promo } = chrome;
     const pages = offerDocumentPages(settings, chrome);
     const letterOnSheets = !pages.letterInPromo;
@@ -54,6 +57,7 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
             letterOnSheets &&
             settings.isPriceFirst &&
             priceFitsLetterSheet(model, theme),
+        priceStartsSheet: priceStartsOwnSheet(model, theme),
     }).filter(isPrintable);
 
     return (
@@ -80,7 +84,7 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                     }
                     frame={frame}
                 >
-                    <Promo model={model} theme={theme} />
+                    <Promo model={model} theme={cardTheme} />
                 </ChromePage>
             ) : null}
             {flows.map((flow, index) => (
@@ -92,11 +96,11 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                     frame={frame}
                 >
                     {flow.withLetter ? (
-                        <OfferLetter model={model} theme={theme} />
+                        <OfferLetter model={model} theme={cardTheme} />
                     ) : null}
                     <OfferSections
                         model={model}
-                        theme={theme}
+                        theme={cardTheme}
                         keys={flow.keys}
                     />
                 </ChromePage>

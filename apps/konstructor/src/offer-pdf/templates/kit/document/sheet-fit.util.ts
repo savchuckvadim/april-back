@@ -1,15 +1,45 @@
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { estimateLetterHeight } from '../letter/letter-fit.util';
 import { estimatePriceBlockHeight } from '../price/price-fit.util';
+import { SMALL_TABLE_ROWS } from '../price/price.layout';
 import { A4, type OfferPdfTheme } from '../theme/offer-pdf-theme';
 
 /** Доля листа, которую разрешаем занять письму с ценами: запас на шапку и подвал стиля */
 const SHEET_SHARE = 0.9;
 
+/**
+ * Доля вместимости листа, начиная с которой таблица цен считается большой и
+ * открывает новый лист (priceStartsOwnSheet). Оценка высоты завышена на
+ * 20–30 % (замер 19.11.2026: три строки с подписью поставки занимают на листе
+ * 230–240 пунктов, по оценке 275–310). 0,4 вместимости — это 234–246 пунктов
+ * оценки, около 190–200 пунктов в натуре: ниже этой планки таблица в четыре
+ * строки с короткими названиями без подписи поставки продолжает лист после
+ * наполнения, выше — уходит на новый целиком. Строки с подписью поставки
+ * (обычный вид КП) дают на 4 строки 52–57 % вместимости, на 5 строк — 59–64 %,
+ * на 14 строк — больше целого листа.
+ */
+const PRICE_OWN_SHEET_SHARE = 0.4;
+
 /** Сколько содержимого помещается на одном листе темы */
 export const sheetCapacity = (theme: OfferPdfTheme): number =>
     (A4.height - theme.page.paddingTop - theme.page.paddingBottom) *
     SHEET_SHARE;
+
+/** Высота раздела «Стоимость» этого КП по оценке до раскладки */
+const estimatePrice = (
+    model: OfferPdfDocumentModel,
+    theme: OfferPdfTheme,
+): number => {
+    const { data, settings } = model;
+    return estimatePriceBlockHeight(theme, {
+        rows: data.ProductRows ?? [],
+        withCaption: Boolean(
+            data.GeneralProductByContractName || data.GeneralProductName,
+        ),
+        withTotals: Boolean(data.TotalRow?.[0]),
+        salePhrase: settings.salePhrase,
+    });
+};
 
 /**
  * Встанет ли раздел «Стоимость» на лист письма целиком. Письмо и цены бывают
@@ -20,15 +50,21 @@ export const sheetCapacity = (theme: OfferPdfTheme): number =>
 export const priceFitsLetterSheet = (
     model: OfferPdfDocumentModel,
     theme: OfferPdfTheme,
-): boolean => {
-    const { data, settings } = model;
-    const price = estimatePriceBlockHeight(theme, {
-        rows: data.ProductRows ?? [],
-        withCaption: Boolean(
-            data.GeneralProductByContractName || data.GeneralProductName,
-        ),
-        withTotals: Boolean(data.TotalRow?.[0]),
-        salePhrase: settings.salePhrase,
-    });
-    return estimateLetterHeight(theme, model) + price <= sheetCapacity(theme);
-};
+): boolean =>
+    estimateLetterHeight(theme, model) + estimatePrice(model, theme) <=
+    sheetCapacity(theme);
+
+/**
+ * Большая ли таблица цен. Цен бывает очень много: большая таблица открывает
+ * новый лист после наполнения и идёт целиком (решение владельца 19.11.2026).
+ * Короткая продолжает лист наполнения. Таблицу до SMALL_TABLE_ROWS строк
+ * react-pdf не рвёт и сам переносит целиком, когда внизу листа нет места:
+ * она остаётся при наполнении, как бы высоко её ни оценили. Дальше решает
+ * оценка высоты против доли листа PRICE_OWN_SHEET_SHARE.
+ */
+export const priceStartsOwnSheet = (
+    model: OfferPdfDocumentModel,
+    theme: OfferPdfTheme,
+): boolean =>
+    (model.data.ProductRows ?? []).length > SMALL_TABLE_ROWS &&
+    estimatePrice(model, theme) > sheetCapacity(theme) * PRICE_OWN_SHEET_SHARE;

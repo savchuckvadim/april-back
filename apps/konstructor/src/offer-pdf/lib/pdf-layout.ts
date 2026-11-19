@@ -35,6 +35,12 @@ export interface LayoutNode {
 export interface OfferPdfPageFrame {
     paddingTop: number;
     paddingBottom: number;
+    /**
+     * Нижнее поле карточек разделов вместо поля темы. Включается перерисовкой,
+     * когда нижнее поле карточки не поместилось на листе и ушло на следующий
+     * один (findTextlessPages): без него хвост карточки печатается пустым листом.
+     */
+    surfaceBottom?: number;
 }
 
 export interface PdfRender {
@@ -218,4 +224,80 @@ export const fitPageFrame = (layout: LayoutNode): OfferPdfPageFrame | null => {
         return null;
     }
     return { paddingTop, paddingBottom };
+};
+
+/** Есть ли в узле видимый текст */
+const hasText = (node: LayoutNode): boolean =>
+    node.type === 'TEXT'
+        ? (node.lines ?? []).some(line => line.string.trim() !== '')
+        : (node.children ?? []).some(hasText);
+
+interface BodyLeaf {
+    node: LayoutNode;
+    top: number;
+    bottom: number;
+}
+
+/** Листовые блоки вне fixed-блоков (шапка, подвал и оформление не в счёт), в координатах листа */
+const bodyLeaves = (node: LayoutNode, offsetTop = 0): BodyLeaf[] => {
+    if (!node.box || node.props?.fixed) return [];
+    const top = offsetTop + node.box.top;
+    const children = node.children ?? [];
+    if (!children.length || node.type === 'TEXT') {
+        return [{ node, top, bottom: top + node.box.height }];
+    }
+    return children.flatMap(child => bodyLeaves(child, top));
+};
+
+/** Лист, на котором нет текста: в раскладке лежат только пустые блоки */
+export interface TextlessPage {
+    /** Номер листа с единицы */
+    page: number;
+    top: number;
+    bottom: number;
+    /**
+     * Запас на предыдущем листе между низом его содержимого и нижним полем.
+     * Нижнее поле карточки не больше этого запаса помещается там же и на
+     * новый лист не уходит.
+     */
+    slack: number;
+}
+
+/**
+ * Листы без текста. react-pdf делит карточку по высоте с нижним полем: если
+ * текст внутри уместился, а поле нет, поле уезжает на следующий лист одно, и
+ * в документе появляется пустой лист с хвостом карточки. Титульник (лист без
+ * полей) пропускается.
+ */
+export const findTextlessPages = (layout: LayoutNode): TextlessPage[] => {
+    const pages = pageNodesOf(layout);
+    return pages.flatMap((page, index) => {
+        if (isBareSheet(page)) return [];
+        const leaves = (page.children ?? []).flatMap(child =>
+            bodyLeaves(child),
+        );
+        if (!leaves.length || leaves.some(leaf => hasText(leaf.node))) {
+            return [];
+        }
+        const previous = pages[index - 1];
+        const previousBottom = previous
+            ? Math.max(
+                  0,
+                  ...(previous.children ?? [])
+                      .flatMap(child => bodyLeaves(child))
+                      .map(leaf => leaf.bottom),
+              )
+            : 0;
+        const limit =
+            (previous?.box?.height ?? 0) -
+            (previous?.style?.paddingBottom ?? 0);
+        return [
+            {
+                page: index + 1,
+                top: Math.min(...leaves.map(leaf => leaf.top)),
+                bottom: Math.max(...leaves.map(leaf => leaf.bottom)),
+                slack: previous ? Math.max(0, limit - previousBottom) : 0,
+            },
+        ];
+    });
 };

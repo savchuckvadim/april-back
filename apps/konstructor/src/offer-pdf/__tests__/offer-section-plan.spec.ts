@@ -1,15 +1,32 @@
 import { OFFER_PDF_DEFAULT_SETTINGS } from '../model/offer-pdf-settings';
 import { offerSheetFlows } from '../templates/kit/document/document.util';
+import {
+    priceStartsOwnSheet,
+    sheetCapacity,
+} from '../templates/kit/document/sheet-fit.util';
 import { estimatePriceBlockHeight } from '../templates/kit/price/price-fit.util';
 import { CLASSIC_THEME } from '../templates/classic/classic.theme';
+import { PEARL_THEME } from '../templates/pearl/pearl.theme';
+import {
+    createOfferPdfModelFixture,
+    createOfferRenderDataFixture,
+} from './fixtures/offer-pdf-model.fixture';
 
 const settings = (patch: Partial<typeof OFFER_PDF_DEFAULT_SETTINGS> = {}) => ({
     ...OFFER_PDF_DEFAULT_SETTINGS,
     ...patch,
 });
 
-const onSheets = { letterOnSheets: true, priceFitsLetter: false };
-const onPromo = { letterOnSheets: false, priceFitsLetter: false };
+const onSheets = {
+    letterOnSheets: true,
+    priceFitsLetter: false,
+    priceStartsSheet: false,
+};
+const onPromo = {
+    letterOnSheets: false,
+    priceFitsLetter: false,
+    priceStartsSheet: false,
+};
 
 describe('потоки листов с разделами КП', () => {
     it('письмо с подписью — на своих листах, наполнение с ценой открывают новый лист', () => {
@@ -31,7 +48,7 @@ describe('потоки листов с разделами КП', () => {
     it('«сначала цена», таблица помещается под письмом: цена и подпись на листе письма', () => {
         expect(
             offerSheetFlows(settings({ isPriceFirst: true }), {
-                letterOnSheets: true,
+                ...onSheets,
                 priceFitsLetter: true,
             }),
         ).toEqual([
@@ -60,6 +77,122 @@ describe('потоки листов с разделами КП', () => {
             { withLetter: false, keys: ['price'] },
             { withLetter: false, keys: ['infoblocks'] },
         ]);
+    });
+});
+
+describe('большая таблица цен открывает новый лист', () => {
+    const bigPrice = { priceStartsSheet: true };
+
+    it('цена после наполнения уходит в свой поток: наполнение и цена не делят лист', () => {
+        expect(
+            offerSheetFlows(settings(), { ...onSheets, ...bigPrice }),
+        ).toEqual([
+            { withLetter: true, keys: ['stamps'] },
+            { withLetter: false, keys: ['infoblocks'] },
+            { withLetter: false, keys: ['price'] },
+        ]);
+        expect(
+            offerSheetFlows(settings({ withStamps: false }), {
+                ...onSheets,
+                ...bigPrice,
+            }),
+        ).toEqual([
+            { withLetter: true, keys: [] },
+            { withLetter: false, keys: ['infoblocks'] },
+            { withLetter: false, keys: ['price'] },
+        ]);
+    });
+
+    it('письмо на промо-странице: цена всё равно открывает свой лист', () => {
+        expect(
+            offerSheetFlows(settings(), { ...onPromo, ...bigPrice }),
+        ).toEqual([
+            { withLetter: false, keys: ['infoblocks'] },
+            { withLetter: false, keys: ['price'] },
+        ]);
+    });
+
+    it('короткая таблица продолжает лист наполнения', () => {
+        expect(offerSheetFlows(settings(), onSheets)).toEqual([
+            { withLetter: true, keys: ['stamps'] },
+            { withLetter: false, keys: ['infoblocks', 'price'] },
+        ]);
+    });
+
+    it('«сначала цена»: порядок разделов не меняется, лист письма решает priceFitsLetter', () => {
+        const priceFirst = settings({ isPriceFirst: true });
+        expect(
+            offerSheetFlows(priceFirst, {
+                ...onSheets,
+                ...bigPrice,
+                priceFitsLetter: true,
+            }),
+        ).toEqual([
+            { withLetter: true, keys: ['price', 'stamps'] },
+            { withLetter: false, keys: ['infoblocks'] },
+        ]);
+        expect(
+            offerSheetFlows(priceFirst, { ...onSheets, ...bigPrice }),
+        ).toEqual([
+            { withLetter: true, keys: [] },
+            { withLetter: false, keys: ['price', 'stamps'] },
+            { withLetter: false, keys: ['infoblocks'] },
+        ]);
+    });
+});
+
+describe('когда таблица цен большая', () => {
+    const base = createOfferRenderDataFixture();
+    const modelOf = (rows: number, name?: string) =>
+        createOfferPdfModelFixture({
+            data: createOfferRenderDataFixture({
+                ProductRows: Array.from({ length: rows }, () => ({
+                    ...base.ProductRows[0],
+                    ...(name ? { ProductName: name } : {}),
+                })),
+            }),
+        });
+
+    it('одна-три строки продолжают лист наполнения в любой теме', () => {
+        for (const theme of [CLASSIC_THEME, PEARL_THEME]) {
+            for (const rows of [1, 2, 3]) {
+                expect(priceStartsOwnSheet(modelOf(rows), theme)).toBe(false);
+            }
+        }
+    });
+
+    it('три строки с очень длинными названиями не рвутся сами и остаются при наполнении', () => {
+        const long = 'ГАРАНТ-Профессионал. Комплект с названием '.repeat(6);
+        expect(priceStartsOwnSheet(modelOf(3, long), CLASSIC_THEME)).toBe(
+            false,
+        );
+    });
+
+    it('четыре строки с подписью поставки и больше уходят на новый лист', () => {
+        for (const theme of [CLASSIC_THEME, PEARL_THEME]) {
+            for (const rows of [4, 5, 9, 14]) {
+                expect(priceStartsOwnSheet(modelOf(rows), theme)).toBe(true);
+            }
+        }
+    });
+
+    it('планка — 40 % вместимости листа: таблица ниже неё продолжает лист', () => {
+        const rows = Array.from({ length: 4 }, () => ({
+            ...base.ProductRows[0],
+            ProductName: 'Гарант',
+            SupplyNameMarketing: '',
+        }));
+        const shortRows = createOfferPdfModelFixture({
+            data: createOfferRenderDataFixture({ ProductRows: rows }),
+        });
+        const estimate = estimatePriceBlockHeight(CLASSIC_THEME, {
+            rows,
+            withCaption: true,
+            withTotals: true,
+            salePhrase: null,
+        });
+        expect(estimate).toBeLessThan(sheetCapacity(CLASSIC_THEME) * 0.4);
+        expect(priceStartsOwnSheet(shortRows, CLASSIC_THEME)).toBe(false);
     });
 });
 

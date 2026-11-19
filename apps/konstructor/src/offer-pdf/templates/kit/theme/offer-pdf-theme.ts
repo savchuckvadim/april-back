@@ -58,6 +58,11 @@ export interface OfferPdfTheme {
         readonly background: string;
         readonly radius: number;
         readonly padding: number;
+        /**
+         * Нижнее поле карточки; не задано — padding. Рисуется перерисовкой
+         * (OfferPdfPageFrame.surfaceBottom), темы его не задают.
+         */
+        readonly bottomPadding?: number;
         readonly borderColor?: string;
     };
     /** Наполнение без описаний: названия в две колонки (как во вордовских шаблонах) */
