@@ -5,6 +5,7 @@ export * from './lib/deal-audit-digest-channels.const';
 export * from './lib/deal-movement-note-kinds.const';
 export * from './lib/deal-movement-digest-modes.const';
 export * from './lib/period-digest-kinds.const';
+export * from './lib/transcription-chunking.const';
 export * from './portal-app-settings.repository';
 export { PortalAppSettingsService } from './portal-app-settings.service';
 export type { PortalAppSettingsResolved } from './portal-app-settings.service';
