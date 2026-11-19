@@ -1,4 +1,5 @@
 import {
+    findTextlessPages,
     isDecoration,
     type LayoutBox,
     type LayoutNode,
@@ -18,7 +19,8 @@ export type LayoutIssueKind =
     | 'fixed-out-of-page'
     | 'orphan-heading'
     | 'orphan-totals'
-    | 'text-overlap';
+    | 'text-overlap'
+    | 'textless-page';
 
 export interface LayoutIssue {
     page: number;
@@ -247,6 +249,16 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
             });
         }
     });
+
+    // лист без текста: хвост карточки с нижним полем, не влезшим на предыдущий лист
+    for (const tail of findTextlessPages(root)) {
+        issues.push({
+            page: tail.page,
+            kind: 'textless-page',
+            text: '',
+            detail: `на листе нет текста, только пустые блоки ${tail.top.toFixed(1)}–${tail.bottom.toFixed(1)}; запас на предыдущем листе ${tail.slack.toFixed(1)}`,
+        });
+    }
 
     return { pages, issues };
 };

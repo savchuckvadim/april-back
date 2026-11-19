@@ -11,6 +11,9 @@ export const surfaceStyles = themedStyles(({ surface }) =>
                   backgroundColor: surface.background,
                   borderRadius: surface.radius,
                   padding: surface.padding,
+                  ...(surface.bottomPadding === undefined
+                      ? {}
+                      : { paddingBottom: surface.bottomPadding }),
                   ...(surface.borderColor
                       ? { borderWidth: 0.75, borderColor: surface.borderColor }
                       : {}),
@@ -18,6 +21,18 @@ export const surfaceStyles = themedStyles(({ surface }) =>
             : {},
     }),
 );
+
+/**
+ * Тема с другим нижним полем карточек. Без карточек или без значения — та же
+ * тема: обычный вывод не меняется ни на байт.
+ */
+export const withSurfaceBottom = (
+    theme: OfferPdfTheme,
+    bottom: number | undefined,
+): OfferPdfTheme =>
+    theme.surface && bottom !== undefined
+        ? { ...theme, surface: { ...theme.surface, bottomPadding: bottom } }
+        : theme;
 
 /**
  * Стиль корня раздела на карточке. Без карточек возвращает тот же объект

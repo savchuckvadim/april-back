@@ -127,7 +127,12 @@ const main = async (): Promise<void> => {
         const frame = result.frame
             ? ` (поля подобраны: ${result.frame.paddingTop}/${result.frame.paddingBottom})`
             : '';
-        console.log(formatAudit(`${name}${frame}`, report));
+        // хвост карточки уходил на пустой лист: документ перерисован с другим нижним полем
+        const tail =
+            result.surfaceBottom === null
+                ? ''
+                : ` (нижнее поле карточек ${result.surfaceBottom})`;
+        console.log(formatAudit(`${name}${frame}${tail}`, report));
     }
     console.log(problems ? `\nПроблем: ${problems}` : '\nПроблем нет');
     process.exitCode = problems ? 1 : 0;

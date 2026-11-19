@@ -7,11 +7,18 @@ jest.mock('@react-pdf/renderer', () =>
 );
 
 import {
+    findTextlessPages,
     fitPageFrame,
     measurePageChrome,
     PAGE_FRAME_GAP,
     type LayoutNode,
 } from '../lib/pdf-layout';
+import {
+    surfaceStyles,
+    withSurfaceBottom,
+} from '../templates/kit/document/surface.styles';
+import { PEARL_THEME } from '../templates/pearl/pearl.theme';
+import { CLASSIC_THEME } from '../templates/classic/classic.theme';
 
 /**
  * Поля страницы под шапку и подвал: react-pdf не раздвигает текст под
@@ -194,5 +201,88 @@ describe('поля страницы под шапку и подвал', () => {
             measurePageChrome({ type: 'DOCUMENT', children: [] }),
         ).toBeNull();
         expect(fitPageFrame({ type: 'DOCUMENT', children: [] })).toBeNull();
+    });
+});
+
+/**
+ * Хвост карточки: текст уместился на лист, а нижнее поле карточки нет и ушло
+ * на следующий лист одно — в документе лист без текста.
+ */
+describe('листы без текста', () => {
+    const text = (top: number, height: number): LayoutNode => ({
+        type: 'TEXT',
+        box: { top, left: 0, width: 400, height },
+        lines: [{ string: 'Сумма прописью' }],
+    });
+    const sheet = (
+        children: LayoutNode[],
+        padding: { top?: number; bottom?: number } = { top: 92, bottom: 66 },
+    ): LayoutNode => ({
+        type: 'PAGE',
+        box: { top: 0, left: 0, width: 595, height: 842 },
+        style: { paddingTop: padding.top, paddingBottom: padding.bottom },
+        children,
+    });
+    const card = (top: number, height: number, ...rest: LayoutNode[]) => ({
+        type: 'VIEW',
+        box: { top, left: 44, width: 507, height },
+        children: rest,
+    });
+    const header: LayoutNode = {
+        type: 'VIEW',
+        props: { fixed: true },
+        box: { top: 26, left: 44, width: 507, height: 40 },
+        children: [text(0, 12)],
+    };
+    const document = (...pages: LayoutNode[]): LayoutNode => ({
+        type: 'DOCUMENT',
+        children: pages,
+    });
+
+    it('находит лист с одним пустым хвостом карточки и запас предыдущего листа', () => {
+        const full = sheet([
+            header,
+            card(92, 684, { ...card(0, 680, text(0, 680)) }),
+        ]);
+        const tail = sheet([header, card(92, 15)]);
+        expect(findTextlessPages(document(full, tail))).toEqual([
+            { page: 2, top: 92, bottom: 107, slack: 4 },
+        ]);
+    });
+
+    it('лист с текстом, титульник без полей и лист из одних fixed-блоков не считаются', () => {
+        const withText = sheet([header, card(92, 200, text(0, 20))]);
+        const cover = sheet([card(0, 842)], {});
+        const fixedOnly = sheet([header]);
+        expect(findTextlessPages(document(cover, withText, fixedOnly))).toEqual(
+            [],
+        );
+    });
+
+    it('текст в fixed-блоках (шапка, подвал) листом с текстом не делает', () => {
+        const tail = sheet([header, card(92, 15)]);
+        expect(findTextlessPages(document(tail))).toHaveLength(1);
+    });
+});
+
+describe('нижнее поле карточек', () => {
+    it('без значения тема остаётся той же, без карточек тоже', () => {
+        expect(withSurfaceBottom(PEARL_THEME, undefined)).toBe(PEARL_THEME);
+        expect(withSurfaceBottom(CLASSIC_THEME, 0)).toBe(CLASSIC_THEME);
+    });
+
+    it('со значением карточка получает своё нижнее поле, остальные поля темы', () => {
+        const trimmed = withSurfaceBottom(PEARL_THEME, 3);
+        expect(trimmed.surface?.bottomPadding).toBe(3);
+        expect(trimmed.surface?.padding).toBe(PEARL_THEME.surface?.padding);
+        const card = surfaceStyles(trimmed).card;
+        expect(card).toMatchObject({
+            padding: PEARL_THEME.surface?.padding,
+            paddingBottom: 3,
+        });
+        // стиль обычной карточки нижнего поля не задаёт
+        expect(surfaceStyles(PEARL_THEME).card).not.toHaveProperty(
+            'paddingBottom',
+        );
     });
 });
