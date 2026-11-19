@@ -278,7 +278,7 @@ export class AnalyzeCallDto {
     @ApiPropertyOptional({
         description:
             'Прямой режим: длительность звонка в секундах — влияет на выбор ' +
-            'транскрибатора (длинные → Yandex, короткие → Vibecode Whisper). ' +
+            'транскрибатора (длинные → Yandex, короткие → VibeCode). ' +
             'В режиме подбора длительность берётся из voximplant.',
         example: 720,
         type: Number,

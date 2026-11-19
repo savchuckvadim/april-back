@@ -10,7 +10,7 @@
 Контур 1 (наш бэк, apps/event-sales, автоматика):
   cron 30 мин → voximplant.statistic.get (длинные звонки)
     → дедуп (transcriptions.dedup_key) → очередь CALL_REPORT
-    → транскрибация (длинные → Yandex, короткие → Vibecode Whisper)
+    → транскрибация (длинные → Yandex, короткие → VibeCode)
     → GigaChat RAG (resume + recomendation)
     → БД (transcriptions + ais) + резюме в таймлайн сделки
 

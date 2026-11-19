@@ -72,7 +72,7 @@ const nonEmpty = (
 
 /**
  * Маршрутизатор транскрибации: длинные звонки → Yandex SpeechKit
- * (надёжен на больших записях, но дорогой), короткие → Vibecode Whisper
+ * (надёжен на больших записях, но дорогой), короткие → VibeCode
  * (дёшево). Порог — env TRANSCRIPTION_YANDEX_MIN_SEC; режим можно
  * зафиксировать через TRANSCRIPTION_PROVIDER (auto|yandex|vibecode).
  *
@@ -273,7 +273,7 @@ export class TranscriptionRouterService {
         };
     }
 
-    /** Vibecode-путь: буфер напрямую в Whisper с пер-портальным ключом. */
+    /** Vibecode-путь: буфер напрямую в VibeCode с пер-портальным ключом. */
     private async transcribeVibecode(
         input: TranscribeCallInput,
         model: string | null,

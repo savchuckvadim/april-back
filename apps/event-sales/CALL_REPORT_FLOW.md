@@ -104,7 +104,7 @@ Bitrix телефония ──► cron 30 мин ──► сканер voximp
 5. **Транскрибация** (`TranscriptionRouterService`, libs/call-lib): маршрут по
    длительности — **длинные (≥ `TRANSCRIPTION_YANDEX_MIN_SEC`, 600с) → Yandex
    SpeechKit** (дорогой, но надёжен на больших записях; S3 +
-   longRunningRecognize), **короткие → Vibecode Whisper** (дёшево). Так
+   longRunningRecognize), **короткие → VibeCode** (дёшево). Так
    мощности распараллеливаются, а бюджет расходуется по делу. При ошибке
    Vibecode — одноразовый fallback на Yandex. Режим можно зафиксировать:
    `TRANSCRIPTION_PROVIDER=auto|yandex|vibecode`.

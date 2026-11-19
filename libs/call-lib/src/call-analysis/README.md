@@ -4,7 +4,7 @@ AI-анализ телефонных звонков из CRM Bitrix24: тран�
 
 ## Что делает модуль
 
-Берёт записи звонков из активностей (`activity`) сделки в Bitrix24, расшифровывает их через **Vibecode Whisper**, прогоняет расшифровку через **BitrixGPT** для извлечения структурированного результата (резюме, итог, настроение клиента, договорённости и т.д.), и возвращает обратно в Bitrix:
+Берёт записи звонков из активностей (`activity`) сделки в Bitrix24, расшифровывает их через **VibeCode**, прогоняет расшифровку через **BitrixGPT** для извлечения структурированного результата (резюме, итог, настроение клиента, договорённости и т.д.), и возвращает обратно в Bitrix:
 
 1. **Комментарий в таймлайне сделки** — форматированное BBCode-сообщение с резюме и расшифровкой
 2. **Задача на подтверждение** для ответственного — с чек-листом (был ли звонок результативным, запланирован ли следующий контакт, подтверждение данных AI)
@@ -17,7 +17,7 @@ AI-анализ телефонных звонков из CRM Bitrix24: тран�
 ```
 call-analysis/
 ├── clients/
-│   └── vibecode.client.ts          # HTTP-клиент Vibecode (Whisper + LLM)
+│   └── vibecode.client.ts          # HTTP-клиент VibeCode (транскрибация + LLM)
 ├── services/
 │   └── call-analysis-bitrix.service.ts  # обёртка над BitrixService (НЕ @Injectable)
 ├── use-cases/
@@ -116,7 +116,7 @@ Env-переменной ключа нет (BITRIX_VIBE_TEST выпилен 2026
 `CallAnalysisUseCase.processAudioFile()` для каждого аудиофайла выполняет:
 
 1. `bx.downloadAudioBuffer(downloadUrl)` — скачивание файла (требует предварительного `batch.file.get` для получения свежего `DOWNLOAD_URL`)
-2. `vibecode.transcribeAudio(buffer, fileName)` — расшифровка через Whisper
+2. `vibecode.transcribeAudio(buffer, fileName)` — расшифровка моделью VibeCode (bitrix/bitrixgpt-5.6-transcribe)
 3. `vibecode.analyzeTranscript(transcript)` — JSON-структурированный анализ через BitrixGPT
 4. `bx.saveAnalysisToTimeline(...)` — комментарий в таймлайн сделки
 5. `bx.createConfirmationTask(...)` — задача с чек-листом для ответственного
@@ -158,7 +158,7 @@ export class MyModule {}
 
 - **Время выполнения**: транскрибация ~30 секунд аудио = 5–15 секунд. На батче из 3+ звонков HTTP-запрос может занять несколько минут — для боевого использования рекомендуется обернуть в очередь (`QueueNames.CALL_ANALYSIS` уже зарезервировано).
 - **Размер аудио**: модуль скачивает файл целиком в Buffer. Для очень длинных звонков (>50 MB) это может потребовать много памяти.
-- **Цена**: Whisper-модель бесплатна, BitrixGPT тарифицируется по токенам — см. кабинет Vibecode.
+- **Цена**: модель транскрибации VibeCode бесплатна, BitrixGPT тарифицируется по токенам — см. кабинет Vibecode.
 - **Язык анализа**: system-prompt и `enum`-значения зафиксированы на русском. Для другого языка нужно править `CALL_ANALYSIS_SCHEMA` и `ANALYSIS_SYSTEM_PROMPT` в `vibecode.client.ts`.
 - **Webhook от Bitrix** (`ONVOXIMPLANTCALLEND`) не подключён — пока только ручной триггер через REST.
 

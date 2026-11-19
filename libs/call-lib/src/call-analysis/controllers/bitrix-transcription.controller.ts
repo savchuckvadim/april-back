@@ -37,7 +37,7 @@ export class BitrixTranscriptionController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary:
-            'Запустить транскрибацию аудиофайла через Bitrix Vibecode Whisper. Возвращает taskId для поллинга.',
+            'Запустить транскрибацию аудиофайла через Bitrix VibeCode. Возвращает taskId для поллинга.',
     })
     @ApiOkResponse({
         description:
