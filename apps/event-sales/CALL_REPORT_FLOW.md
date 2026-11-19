@@ -205,6 +205,9 @@ Bitrix телефония ──► cron 30 мин ──► сканер voximp
 Ручные ручки (смоук/наполнение до включения крона): `POST /call-report/scan`,
 `POST /call-report/analyze`, `POST /call-report/revise` (ручной прогон
 ревизора на ограниченных данных), `POST /call-report/install-smart`.
+Все они (и `/call-report/analytics/*`, `/transcription`,
+`/transcription-bitrix`, `/call-analysis/deal|activity`) — только для
+служебных вызовов, служебный ключ: заголовок `x-april-internal-key` = `APRIL_INTERNAL_API_KEY` из корневого .env. При `APRIL_INTERNAL_GUARD_MODE=enforce` без ключа — 403; в `report` (по умолчанию) вызов проходит, но пишется в журнал строкой «internal-key (report)».
 
 ## 4. Agent API (apps/event-sales/src/agent-gate) — внешний API, не обязательный
 

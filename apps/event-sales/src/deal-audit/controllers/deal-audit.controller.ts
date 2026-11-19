@@ -13,6 +13,7 @@ import { DealAuditScheduler } from '../deal-audit.scheduler';
 import { DealAuditSettingsService } from '../services/deal-audit-settings.service';
 import { DealAuditService } from '../services/deal-audit.service';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
 /**
  * Ручной прогон аудита сделок.
@@ -21,8 +22,12 @@ import { BackgroundCalls } from '@lib/core/call-context';
  * вслепую нельзя. Ручка даёт посмотреть ПОЛНЫЙ результат прогона (кого и
  * почему помечает) при выключенной записи — и только потом владелец
  * включает крон в админке.
+ *
+ * Только для служебных вызовов (ключ `x-april-internal-key`): прогон
+ * размечает сделки и шлёт сводки. Админка запускает его очередью.
  */
 @ApiTags('Deal audit')
+@InternalKeyProtected()
 @BackgroundCalls()
 @Controller('deal-audit')
 export class DealAuditController {

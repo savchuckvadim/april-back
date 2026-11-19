@@ -78,7 +78,8 @@ export const DUPLICATE_REPORT_ENTRY: HookCatalogEntry = {
             method: 'POST',
             path: '/api/duplicate-report/run-now',
             description:
-                'Прогнать отчёт сейчас, вне расписания и независимо от «включён»: в фоне, ответ { started, message }, итог в Telegram. dryRun: true — только посчитать; false — поставить задачи даже при «только считать»; previewUserId — весь отчёт одной задачей одному сотруднику без закрытия недели.',
+                'Прогнать отчёт сейчас, вне расписания и независимо от «включён»: в фоне, ответ { started, message }, итог в Telegram. dryRun: true — только посчитать; false — поставить задачи даже при «только считать»; previewUserId — весь отчёт одной задачей одному сотруднику без закрытия недели.' +
+                ' Служебный вызов: заголовок x-april-internal-key (в режиме APRIL_INTERNAL_GUARD_MODE=enforce без него 403).',
             example: '{ "domain": "example.bitrix24.ru", "dryRun": true }',
         },
     ],

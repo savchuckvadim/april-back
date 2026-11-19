@@ -77,6 +77,8 @@ OAuth access_token с авто-refresh, без online-API. Для legacy-пор�
 
 ## 2. Порядок подключения и проверка каждого шага
 
+> Ручки `POST /call-report/*` ниже — служебный ключ: заголовок `x-april-internal-key` = `APRIL_INTERNAL_API_KEY` из корневого .env. При `APRIL_INTERNAL_GUARD_MODE=enforce` без ключа — 403; в `report` (по умолчанию) вызов проходит, но пишется в журнал строкой «internal-key (report)».
+
 1. **Ключ и права.** Пересоздать вебхук от администратора → проверить:
    `POST /call-report/scan {domain, windowHours: 2, maxPerRun: 1}` —
    `found > 0` означает, что телефония читается.

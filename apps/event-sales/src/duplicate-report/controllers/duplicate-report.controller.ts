@@ -6,6 +6,7 @@ import {
     DuplicateReportRunNowResponseDto,
 } from '../dto/duplicate-report-run-now.dto';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
 /**
  * Ручной прогон еженедельного отчёта по дублям сделок.
@@ -13,8 +14,12 @@ import { BackgroundCalls } from '@lib/core/call-context';
  * Зачем при существующем кроне: включать задачи руководителям вслепую
  * нельзя. Ручка прогоняет отчёт сейчас — «только посчитать» (цифры в
  * Telegram) или по-настоящему — и владелец решает, включать ли крон.
+ *
+ * Только для служебных вызовов (ключ `x-april-internal-key`): прогон
+ * ставит задачи руководителям по всему порталу.
  */
 @ApiTags('Duplicate report')
+@InternalKeyProtected()
 @BackgroundCalls()
 @Controller('duplicate-report')
 export class DuplicateReportController {

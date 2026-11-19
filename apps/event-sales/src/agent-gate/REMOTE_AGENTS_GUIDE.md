@@ -227,7 +227,10 @@ POST /event-sales/flow (переходное состояние — по утв�
 
 ```
 POST /api/call-report/install-smart  { "domain": "april-garant.bitrix24.ru" }
+x-april-internal-key: <APRIL_INTERNAL_API_KEY>
 ```
+
+Ручки `/api/call-report/*` — служебный ключ: заголовок `x-april-internal-key` = `APRIL_INTERNAL_API_KEY` из корневого .env. При `APRIL_INTERNAL_GUARD_MODE=enforce` без ключа — 403; в `report` (по умолчанию) вызов проходит, но пишется в журнал строкой «internal-key (report)». Ключ агента (`x-agent-api-key`) сюда не подходит.
 
 Состав полей будет меняться — это нормально: добавьте поле в конфиг и
 повторите вызов, добавятся только отсутствующие. Элементы видны вкладкой
@@ -315,6 +318,7 @@ crontab на сервере:
    `{domain, activityId, dealId}` → проверить строку в transcriptions,
    две ais-записи GigaChat, резюме в таймлайне сделки.
 4. Ручной скан: `POST /api/call-report/scan {domain}` → проверить очередь.
+   Шаги 2–4 — с заголовком `x-april-internal-key` (служебный ключ).
 5. С сервера агента: `GET /api/agent/calls` c ключом → увидеть звонок,
    забрать пакет, сделать тестовый push-back → проверить элемент смарта
    на карточке сделки.

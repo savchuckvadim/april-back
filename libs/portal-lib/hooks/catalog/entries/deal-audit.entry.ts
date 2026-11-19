@@ -87,7 +87,8 @@ export const DEAL_AUDIT_ENTRY: HookCatalogEntry = {
             method: 'POST',
             path: '/api/deal-audit/run',
             description:
-                'Считает признаки по открытым сделкам воронки ОП и возвращает полный разбор: сколько проверено, сколько забытых, разбивка по статусам, сделки с расшифровкой. Синхронно — на большой воронке десятки секунд.',
+                'Считает признаки по открытым сделкам воронки ОП и возвращает полный разбор: сколько проверено, сколько забытых, разбивка по статусам, сделки с расшифровкой. Синхронно — на большой воронке десятки секунд.' +
+                ' Служебный вызов: заголовок x-april-internal-key (в режиме APRIL_INTERNAL_GUARD_MODE=enforce без него 403).',
             example:
                 '{ "domain": "example.bitrix24.ru", "dryRun": true, "maxDeals": 50, "dealIds": [1234] }',
         },
@@ -96,7 +97,8 @@ export const DEAL_AUDIT_ENTRY: HookCatalogEntry = {
             method: 'POST',
             path: '/api/deal-audit/run-now',
             description:
-                'Прогон портала как у ночного крона, сейчас и в фоне: разметка и сводки по настройкам портала; ответ { started, message }, итог — в Telegram. Лок общий с кроном, метка периода обновляется.',
+                'Прогон портала как у ночного крона, сейчас и в фоне: разметка и сводки по настройкам портала; ответ { started, message }, итог — в Telegram. Лок общий с кроном, метка периода обновляется.' +
+                ' Служебный вызов: заголовок x-april-internal-key (в режиме APRIL_INTERNAL_GUARD_MODE=enforce без него 403).',
             example: '{ "domain": "example.bitrix24.ru" }',
         },
     ],

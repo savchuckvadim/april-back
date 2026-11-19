@@ -22,8 +22,14 @@ import { KnowledgeUploadBodyDto } from '../dto/knowledge-upload-body.dto';
 import { KnowledgeListQueryDto } from '../dto/knowledge-list-query.dto';
 import { KnowledgeDocument } from '../domain/types/knowledge.type';
 import { KnowledgeUploadResult } from '../infrastructure/knowledge/knowledge-storage.service';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
+/**
+ * База знаний RAG: загрузка попадает в подсказки модели всем разборам
+ * портала. Только для служебных вызовов; людям — admin/ai-rag/knowledge.
+ */
 @ApiTags('AI RAG Knowledge')
+@InternalKeyProtected()
 @Controller('ai-rag/knowledge')
 export class AiRagKnowledgeController {
     constructor(private readonly knowledgeStorage: KnowledgeStorageService) {}

@@ -2,8 +2,11 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { LlmOrchestratorService } from '../application/llm-orchestrator.service';
 import { AiRagRequestDto } from '../dto/ai-rag-request.dto';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
+/** Генерация моделью по базе знаний (платно) — только для служебных вызовов. */
 @ApiTags('AI RAG')
+@InternalKeyProtected()
 @Controller('ai-rag')
 export class AiRagController {
     constructor(private readonly llmOrchestrator: LlmOrchestratorService) {}

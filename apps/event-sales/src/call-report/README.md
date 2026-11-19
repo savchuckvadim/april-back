@@ -49,6 +49,8 @@ agent-gate.
 | `POST /call-report/scan` | ручной скан домена (аналог cron-тика) |
 | `POST /call-report/analyze` | синхронный анализ: прямой режим (activityId) или подбор последних записей (dealId/userId + limit/maxDurationSec) |
 
+Все ручки тега — только для служебных вызовов: служебный ключ: заголовок `x-april-internal-key` = `APRIL_INTERNAL_API_KEY` из корневого .env. При `APRIL_INTERNAL_GUARD_MODE=enforce` без ключа — 403; в `report` (по умолчанию) вызов проходит, но пишется в журнал строкой «internal-key (report)».
+
 Отчёты — отдельный тег «Call Report Analytics»
 (`/call-report/analytics/*`), см. README модуля отчётов.
 

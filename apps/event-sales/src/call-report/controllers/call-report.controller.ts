@@ -30,6 +30,7 @@ import {
     ReviseCallsResponseDto,
 } from '../dto/call-report-response.dto';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
 const REVISOR_DEFAULT_WINDOW_HOURS = 24;
 const REVISOR_DEFAULT_MAX_ENTITIES = 20;
@@ -37,8 +38,14 @@ const REVISOR_DEFAULT_MAX_ENTITIES = 20;
 /**
  * AI-отчётность по звонкам: установка смарта-витрины, ручной скан
  * и ручной анализ одного звонка (смоук). Автоматика — CallReportScheduler.
+ *
+ * Все ручки — только для служебных вызовов (ключ `x-april-internal-key`):
+ * они запускают распознавание, разбор моделью и запись в Битрикс клиента,
+ * а фронты и роботы их не вызывают (guard с 19.11.2026; блокирует только
+ * в режиме APRIL_INTERNAL_GUARD_MODE=enforce).
  */
 @ApiTags('Call Report')
+@InternalKeyProtected()
 @BackgroundCalls()
 @Controller('call-report')
 export class CallReportController {

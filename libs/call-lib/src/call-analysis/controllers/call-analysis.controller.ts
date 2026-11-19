@@ -10,6 +10,7 @@ import { CallSalesAnalysisDto } from '../dto/call-sales-analysis.dto';
 import { TaskWebhookDto } from '../dto/task-webhook.dto';
 import { TaskCompleteResultDto } from '../dto/task-complete-result.dto';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
 @ApiTags('AI-анализ звонков')
 @BackgroundCalls()
@@ -20,7 +21,9 @@ export class CallAnalysisController {
         private readonly taskCompleteUseCase: TaskCompleteUseCase,
     ) {}
 
+    // Распознавание + разбор моделью + задачи в Битрикс — только служебно.
     @Post('deal')
+    @InternalKeyProtected()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Анализировать последние звонки по сделке' })
     @ApiOkResponse({
@@ -35,6 +38,7 @@ export class CallAnalysisController {
     }
 
     @Post('activity')
+    @InternalKeyProtected()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Анализировать конкретную активность-звонок' })
     @ApiOkResponse({
@@ -47,6 +51,7 @@ export class CallAnalysisController {
         return this.useCase.forActivity(dto);
     }
 
+    // Событие Битрикса ONTASKUPDATE: робот ключ не передаёт — без guard.
     @Post('webhook/task-complete')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({

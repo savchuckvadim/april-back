@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CallReportAnalyticsService } from '../call-report-analytics.service';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 import {
     CallReportAnalyticsCacheResetDto,
     CallReportAnalyticsQueryDto,
@@ -22,7 +23,12 @@ import {
  * Модуль переносим: контроллер приезжает в любой app импортом
  * CallReportAnalyticsModule (см. README модуля).
  */
+/**
+ * Отчёты по разборам звонков портала (оценки менеджеров, возражения) и
+ * сброс их кэша. Фронты их не вызывают — только служебные вызовы.
+ */
 @ApiTags('Call Report Analytics')
+@InternalKeyProtected()
 @Controller('call-report/analytics')
 export class CallReportAnalyticsController {
     constructor(private readonly analytics: CallReportAnalyticsService) {}

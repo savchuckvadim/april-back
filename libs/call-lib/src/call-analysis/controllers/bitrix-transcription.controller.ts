@@ -21,8 +21,11 @@ import {
 import { StartBitrixTranscriptionUseCase } from '../use-cases/start-bitrix-transcription.use-case';
 import { GetBitrixTranscriptionResultUseCase } from '../use-cases/get-bitrix-transcription-result.use-case';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
+/** Распознавание через VibeCode по запросу — только для служебных вызовов. */
 @ApiTags('Транскрибация (Bitrix Vibecode)')
+@InternalKeyProtected()
 @BackgroundCalls()
 @Controller('transcription-bitrix')
 export class BitrixTranscriptionController {

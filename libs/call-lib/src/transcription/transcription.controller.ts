@@ -7,8 +7,16 @@ import {
 import { StartTranscriptionUseCase } from './use-cases/start-transcription.use-case';
 import { GetTranscriptionResultUseCase } from './use-cases/get-transcription-result.use-case';
 import { BackgroundCalls } from '@lib/core/call-context';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
+/**
+ * Старое распознавание аудио по ссылке (Яндекс — платно). Только для
+ * служебных вызовов: фронты его не вызывают, конвейер звонков зовёт
+ * сервисы напрямую. Контроллер едет в event-sales, admin и pbx-install
+ * (через CallReportSmartModule) — guard действует везде.
+ */
 @ApiTags('transcription')
+@InternalKeyProtected()
 @BackgroundCalls()
 @Controller('transcription')
 export class TranscriptionController {

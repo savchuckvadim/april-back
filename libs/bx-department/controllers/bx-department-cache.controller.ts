@@ -5,8 +5,11 @@ import {
     BxDepartmentCacheResetRequestDto,
     BxDepartmentCacheResetResponseDto,
 } from '../dto/bx-department-cache.dto';
+import { InternalKeyProtected } from '@lib/core/internal-key';
 
+/** Сброс кэша отделов (без домена — по всем порталам) — только служебно. */
 @ApiTags('Bitrix Domain Department')
+@InternalKeyProtected()
 @Controller('bx/department/cache')
 export class BxDepartmentCacheController {
     constructor(private readonly service: BxDepartmentCacheService) {}
