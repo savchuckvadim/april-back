@@ -173,13 +173,14 @@ describe('CallListIndexLoader', () => {
         return { loader, calls, feedback, cache, pbx };
     }
 
-    it('ключ кэша — портал и период, срок — 5 минут', async () => {
+    it('ключ кэша — портал и период, срок — 5 минут, только Redis', async () => {
         const { loader, cache } = harness();
         await loader.load('gsr.bitrix24.ru', '2026-11-01', '2026-11-19');
         expect(cache.remember).toHaveBeenCalledWith(
             'sales-ai-analytics:v1:gsr.bitrix24.ru:call-list:v1:2026-11-01_2026-11-19',
             300,
             expect.any(Function),
+            { volatile: true },
         );
         expect(buildCallListKey('d', 'a', 'b')).toBe(
             'sales-ai-analytics:v1:d:call-list:v1:a_b',

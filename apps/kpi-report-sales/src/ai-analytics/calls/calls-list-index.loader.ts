@@ -58,10 +58,13 @@ export class CallListIndexLoader {
         to: string,
         now: Date = new Date(),
     ): Promise<CallListIndex> {
+        // Только Redis: выборка за 92 дня крупного портала весит мегабайты,
+        // а живёт 5 минут — строка в app_cache тут лишняя нагрузка на БД.
         const { value } = await this.cache.remember(
             buildCallListKey(domain, from, to),
             CALLS_LIST_TTL_SECONDS,
             () => this.build(domain, from, to, now),
+            { volatile: true },
         );
         return value;
     }
