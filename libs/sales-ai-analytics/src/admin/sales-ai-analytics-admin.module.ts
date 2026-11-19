@@ -20,6 +20,8 @@ import { SalesAiAnalyticsLaunchModule } from './launch/sales-ai-analytics-launch
 import { SalesAiAnalyticsAuditModule } from './sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsOpsModule } from './sales-ai-analytics-ops.module';
 import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
+import { AiAnalyticsCallReviewsAdminController } from './call-reviews/call-reviews.admin.controller';
+import { SalesAiAnalyticsCallReviewsModule } from './call-reviews/sales-ai-analytics-call-reviews.module';
 
 /**
  * Админ-слой AI-аналитики ОП (план, 6.1; Фаза 3, П5): только контроллеры
@@ -53,6 +55,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         SalesAiAnalyticsLaunchModule,
         // «Обновить всё по порядку»: сервисы и воркер тиков (только apps/admin)
         SalesAiAnalyticsRefreshModule,
+        // «Отзывы о разборах»: список отзывов руководителей и сводка
+        SalesAiAnalyticsCallReviewsModule,
     ],
     controllers: [
         AiAnalyticsAuditAdminController,
@@ -81,6 +85,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsDealMovementAdminController,
         // Итоги периода по менеджерам (этап 7.4): подсчёт и состояние
         AiAnalyticsPeriodDigestAdminController,
+        // Отзывы руководителей о разборах звонков (этап 4, 19.11.2026)
+        AiAnalyticsCallReviewsAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

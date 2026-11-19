@@ -40,6 +40,8 @@ import { AiAnalyticsRefreshAdminController } from '../controllers/refresh.admin.
 import { AiAnalyticsDealMovementAdminController } from '../controllers/deal-movement.admin.controller';
 import { AiAnalyticsPeriodDigestAdminController } from '../controllers/period-digest.admin.controller';
 import { SalesAiAnalyticsRefreshModule } from '../refresh/sales-ai-analytics-refresh.module';
+import { AiAnalyticsCallReviewsAdminController } from '../call-reviews/call-reviews.admin.controller';
+import { SalesAiAnalyticsCallReviewsModule } from '../call-reviews/sales-ai-analytics-call-reviews.module';
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
@@ -68,6 +70,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsRefreshAdminController,
     AiAnalyticsDealMovementAdminController,
     AiAnalyticsPeriodDigestAdminController,
+    AiAnalyticsCallReviewsAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>
@@ -287,6 +290,9 @@ describe('раскол модулей (ai/rules/app-api-surface.md)', () => {
             [],
         );
         expect(
+            metadataOf('controllers', SalesAiAnalyticsCallReviewsModule),
+        ).toEqual([]);
+        expect(
             metadataOf('controllers', SalesAiAnalyticsRetentionCronModule),
         ).toEqual([]);
         expect(metadataOf('controllers', SalesAiAnalyticsAdminModule)).toEqual(
@@ -294,13 +300,14 @@ describe('раскол модулей (ai/rules/app-api-surface.md)', () => {
         );
     });
 
-    it('admin-модуль импортирует ровно пять сервисных модулей', () => {
+    it('admin-модуль импортирует ровно шесть сервисных модулей', () => {
         expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toEqual([
             SalesAiAnalyticsAuditModule,
             SalesAiAnalyticsProbeModule,
             SalesAiAnalyticsOpsModule,
             SalesAiAnalyticsLaunchModule,
             SalesAiAnalyticsRefreshModule,
+            SalesAiAnalyticsCallReviewsModule,
         ]);
     });
 

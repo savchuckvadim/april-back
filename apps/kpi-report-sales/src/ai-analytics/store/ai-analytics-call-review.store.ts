@@ -2,26 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { AiEntityDto, AiService } from '@lib/call-lib';
 import {
     AI_ANALYTICS_FEEDBACK_TYPE,
-    AI_ANALYTICS_SNAPSHOT_STATUS,
     callReviewObjectOf,
-    parseCallReviewPayload,
+    parseCallReviewRecord,
     type AiAnalyticsCallReviewPayload,
+    type AiAnalyticsCallReviewRecord,
 } from '@lib/sales-ai-analytics';
-import { normalizeUserId } from '../domain/access/perimeter.util';
-import {
-    AiAnalyticsFeedbackStore,
-    parseFeedbackPayload,
-} from './ai-analytics-feedback.store';
+import { AiAnalyticsFeedbackStore } from './ai-analytics-feedback.store';
 
-/** Актуальный отзыв руководителя о разборе звонка. */
-export interface AiCallReviewRecord extends AiAnalyticsCallReviewPayload {
-    id: string;
-    createdAt: Date;
-    /** Bitrix-id автора. */
-    authorId: string;
-    transcriptionId: string;
-    managerId: string | null;
-}
+/** Актуальный отзыв руководителя о разборе звонка (разбор строки — в lib). */
+export type AiCallReviewRecord = AiAnalyticsCallReviewRecord;
 
 /** Что пишем: звонок, автор и сам отзыв. */
 export interface AiCallReviewSaveInput {
@@ -33,26 +22,15 @@ export interface AiCallReviewSaveInput {
     review: AiAnalyticsCallReviewPayload;
 }
 
-/** Запись `ais` → отзыв; чужой вид или форма — null. */
+/**
+ * Запись `ais` → отзыв; чужой вид или форма — null. Общий разбор
+ * `parseCallReviewRecord` библиотеки: им же читают админ-список отзывов и
+ * ежедневная сводка в Telegram.
+ */
 export function toCallReviewRecord(
     record: AiEntityDto,
 ): AiCallReviewRecord | null {
-    if (record.status === AI_ANALYTICS_SNAPSHOT_STATUS.superseded) return null;
-    const feedback = parseFeedbackPayload(record.user_result);
-    if (feedback?.kind !== 'call_review') return null;
-    const review = parseCallReviewPayload(feedback.payload);
-    const authorId = normalizeUserId(feedback.requesterUserId);
-    const transcriptionId =
-        feedback.transcriptionId ?? (record.transcription_id || null);
-    if (review === null || authorId === null || !transcriptionId) return null;
-    return {
-        ...review,
-        id: record.id,
-        createdAt: record.createdAt,
-        authorId,
-        transcriptionId,
-        managerId: feedback.managerId,
-    };
+    return parseCallReviewRecord(record);
 }
 
 /**
