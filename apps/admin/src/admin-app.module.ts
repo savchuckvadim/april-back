@@ -69,6 +69,7 @@ import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaire
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 import { MaintenanceModule } from './maintenance';
+import { OfferLettersAdminModule } from './konstructor/offer-letters/offer-letters-admin.module';
 import { HooksAdminModule } from '@lib/portal-lib/hooks';
 import { SupportMonitorAdminModule } from '@lib/support';
 import { LogsAdminModule } from '@lib/logger/query';
@@ -196,6 +197,10 @@ import {
         // created_at/updated_at, из-за которых python-сервис не мог разобрать
         // модель портала.
         MaintenanceModule,
+        // Письма КП: CRUD писем портала и личных писем менеджеров, письмо по
+        // умолчанию на область (ноябрь 2026). Временный перенос из легаси —
+        // в MaintenanceModule.
+        OfferLettersAdminModule,
         // Каталог хуков и автоматики ОП: теория, параметры, готовность
         // портала (поля, стадии, настройки) и мониторинг операций.
         HooksAdminModule,
