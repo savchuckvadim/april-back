@@ -156,6 +156,27 @@ export class AppCacheService {
     }
 
     /**
+     * Только Redis, без строки в app_cache: для коротких (минуты) и тяжёлых
+     * значений, которым не нужна регидрация после перезапуска Redis. Запись
+     * в БД стоила бы upsert многомегабайтного JSON на каждый промах
+     * (выборка «Разборов звонков», 19.11.2026). Ключ Redis тот же, что у
+     * set(), поэтому get() и reset() работают как обычно; на промахе Redis
+     * get() заглянет в БД, строки там нет — промах.
+     */
+    async setVolatile(
+        opts: AppCacheRef & { data: unknown; ttlSeconds: number },
+    ): Promise<void> {
+        await this.redisService
+            .getClient()
+            .set(
+                this.redisKeyOf(opts),
+                JSON.stringify(opts.data),
+                'EX',
+                opts.ttlSeconds,
+            );
+    }
+
+    /**
      * Laravel-style «запомнить»: вернуть из кэша, а на промахе — вычислить
      * фабрикой, положить и вернуть. Удобен для миграции существующих кэшей.
      */

@@ -18,6 +18,8 @@ import { AiAnalyticsOverviewController } from './ai-analytics-overview.controlle
 import { AiAnalyticsController } from './ai-analytics.controller';
 import { AiAnalyticsBriefModule } from './brief/ai-analytics-brief.module';
 import { AiAnalyticsCallPageModule } from './call-page/ai-analytics-call-page.module';
+import { AiAnalyticsCallsModule } from './calls/ai-analytics-calls.module';
+import { AiAnalyticsCallReviewsDigestModule } from './call-reviews/ai-analytics-call-reviews-digest.module';
 import { AiAnalyticsCorePbxModule } from './core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from './core/ai-analytics-core.module';
 import { AiAnalyticsAuditScheduler } from './cron/ai-analytics-audit.scheduler';
@@ -128,6 +130,10 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         AiAnalyticsReviewModule,
         AiAnalyticsOwnerReportModule,
         AiAnalyticsCallPageModule,
+        // Раздел «Разборы звонков» отчёта KPI (19.11.2026).
+        AiAnalyticsCallsModule,
+        // Сводка отзывов руководителей о разборах в Telegram, 09:00 МСК.
+        AiAnalyticsCallReviewsDigestModule,
     ],
     controllers: [
         AiAnalyticsController,

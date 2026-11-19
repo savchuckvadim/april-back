@@ -11,6 +11,8 @@ import { AiAnalyticsAboutModule } from '../about/ai-analytics-about.module';
 import { AiAnalyticsModule } from '../ai-analytics.module';
 import { AiAnalyticsBriefModule } from '../brief/ai-analytics-brief.module';
 import { AiAnalyticsCallPageModule } from '../call-page/ai-analytics-call-page.module';
+import { AiAnalyticsCallsModule } from '../calls/ai-analytics-calls.module';
+import { AiAnalyticsCallReviewsDigestModule } from '../call-reviews/ai-analytics-call-reviews-digest.module';
 import {
     AI_ANALYTICS_CORE_PBX_PROVIDERS,
     AiAnalyticsCorePbxModule,
@@ -117,8 +119,12 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsStyleController',
     // Страница разбора звонка: две открытые ручки по ссылке-пропуску.
     'CallPageController',
+    // Личная страница руководителя: отзывы по звонку и свой отзыв.
+    'CallPageLeadController',
     // Ссылки на страницы разбора для списков витрины — под сессией портала.
     'CallPageLinksController',
+    // Раздел «Разборы звонков» отчёта KPI — под сессией портала.
+    'CallsListController',
 ];
 
 /** Модули фичи, в которых объявлены провайдеры (для проверки дублей). */
@@ -141,6 +147,8 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsReviewModule,
     AiAnalyticsOwnerReportModule,
     AiAnalyticsCallPageModule,
+    AiAnalyticsCallsModule,
+    AiAnalyticsCallReviewsDigestModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;

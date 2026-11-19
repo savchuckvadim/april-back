@@ -9,6 +9,8 @@ import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { AiAnalyticsRefreshAdminController } from '../controllers/refresh.admin.controller';
 import { SalesAiAnalyticsRefreshModule } from '../refresh/sales-ai-analytics-refresh.module';
+import { AiAnalyticsCallReviewsAdminController } from '../call-reviews/call-reviews.admin.controller';
+import { SalesAiAnalyticsCallReviewsModule } from '../call-reviews/sales-ai-analytics-call-reviews.module';
 
 /**
  * Статическая проверка DI-графа админ-слоя AI-аналитики: каждая
@@ -152,5 +154,15 @@ describe('DI-граф админ-слоя AI-аналитики', () => {
         expect(
             metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
         ).toContain(AiAnalyticsRefreshAdminController);
+    });
+
+    it('«отзывы о разборах»: сервисы получают записи, расшифровки и ссылки; модуль без контроллеров, контроллер — в админ-модуле', () => {
+        expect(missingIn(SalesAiAnalyticsCallReviewsModule)).toEqual([]);
+        expect(
+            metadataOf(SalesAiAnalyticsCallReviewsModule, 'controllers'),
+        ).toEqual([]);
+        expect(
+            metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
+        ).toContain(AiAnalyticsCallReviewsAdminController);
     });
 });

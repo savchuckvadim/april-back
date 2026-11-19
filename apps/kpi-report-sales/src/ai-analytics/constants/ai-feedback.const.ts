@@ -40,8 +40,9 @@ export type AiAnalyticsReactionKind =
 /**
  * Служебные виды: их пишут push-контур (digest_sent / agenda_sent),
  * алерты event-sales (alert_sent), слепая проверка руководителя
- * (rop_mark) и журнал советов конвейера (recommendation_issued, Фаза 4).
- * В пользовательский список обратной связи они не попадают.
+ * (rop_mark), журнал советов конвейера (recommendation_issued, Фаза 4) и
+ * отзыв руководителя о разборе (call_review — только через личную страницу
+ * разбора). В пользовательский список обратной связи они не попадают.
  */
 export const AI_ANALYTICS_SERVICE_FEEDBACK_KINDS = [
     'alert_sent',
@@ -49,6 +50,7 @@ export const AI_ANALYTICS_SERVICE_FEEDBACK_KINDS = [
     'agenda_sent',
     'rop_mark',
     'recommendation_issued',
+    'call_review',
 ] as const satisfies readonly AiAnalyticsFeedbackKind[];
 
 /**
@@ -83,7 +85,8 @@ export const AI_ANALYTICS_LEADER_ONLY_FEEDBACK_KINDS = [
 
 /**
  * Какие секции кэша устаревают после записи реакции: «Отработано» по
- * алерту меняет пульс, несогласие — блок несогласий повестки. Остальные
+ * алерту меняет пульс, несогласие — блок несогласий повестки, отзыв
+ * руководителя о разборе — выборку раздела «Разборы звонков». Остальные
  * виды кэш витрины не трогают.
  */
 export const AI_ANALYTICS_FEEDBACK_RESET_SCOPES: Partial<
@@ -92,4 +95,5 @@ export const AI_ANALYTICS_FEEDBACK_RESET_SCOPES: Partial<
     alert_handled: ['pulse'],
     disagree: ['agenda'],
     recommendation_done: ['overview'],
+    call_review: ['call-list'],
 };

@@ -69,6 +69,8 @@ export const AI_ANALYTICS_CACHE_SECTIONS = {
     STAGE_HISTORY: 'stage-history',
     /** Производственный календарь портала (calendar.settings.get). */
     CALENDAR: 'calendar',
+    /** Раздел «Разборы звонков»: выборка периода с отзывами руководителей. */
+    CALL_LIST: 'call-list',
 } as const;
 
 export const AI_ANALYTICS_WS_EVENTS = {

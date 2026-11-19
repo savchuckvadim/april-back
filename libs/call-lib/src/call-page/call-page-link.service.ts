@@ -100,11 +100,32 @@ export class CallPageLinkService {
         transcriptionIds: readonly string[],
     ): Promise<Map<string, string>> {
         const urls = new Map<string, string>();
-        const secret = this.secret();
-        if (secret === null || transcriptionIds.length === 0) return urls;
+        if (this.secret() === null || transcriptionIds.length === 0) {
+            return urls;
+        }
         const site = await this.site();
         if (site === null) return urls;
+        const tokens = await this.tokensFor(domain, transcriptionIds);
+        for (const [transcriptionId, token] of tokens) {
+            urls.set(transcriptionId, callPageUrl(site, token));
+        }
+        return urls;
+    }
 
+    /**
+     * Ссылки-пропуска (без адреса сайта) сразу для нескольких звонков
+     * портала: отзывы ссылок читаются одним узким запросом. Нужны там, где
+     * к ссылке звонка добавляется хвост — личная страница руководителя.
+     * Номер не годится для ссылки — звонок остаётся без неё; нет секрета —
+     * пустой набор.
+     */
+    async tokensFor(
+        domain: string,
+        transcriptionIds: readonly string[],
+    ): Promise<Map<string, string>> {
+        const tokens = new Map<string, string>();
+        const secret = this.secret();
+        if (secret === null || transcriptionIds.length === 0) return tokens;
         const revocations = await this.aiService.findByDomainTypesInPeriod(
             domain,
             [CALL_PAGE_LINK_TYPE],
@@ -121,12 +142,9 @@ export class CallPageLinkService {
                     ),
                 ),
             );
-            // Номер не годится для ссылки — звонок остаётся без неё.
-            if (token !== null) {
-                urls.set(transcriptionId, callPageUrl(site, token));
-            }
+            if (token !== null) tokens.set(transcriptionId, token);
         }
-        return urls;
+        return tokens;
     }
 
     /**

@@ -41,19 +41,45 @@ export class AiAnalyticsCacheService {
     }
 
     /**
+     * Только Redis (без строки в app_cache) — для коротких тяжёлых выборок;
+     * сброс по resetByPattern работает так же.
+     */
+    async setVolatileJson<T>(
+        key: string,
+        value: T,
+        ttlSeconds: number,
+    ): Promise<void> {
+        const ref = this.parseKey(key);
+        if (!ref) return;
+        await this.appCache.setVolatile({
+            app: AI_ANALYTICS_CACHE_PREFIX,
+            domain: ref.domain,
+            key: ref.key,
+            data: value,
+            ttlSeconds,
+        });
+    }
+
+    /**
      * Чтение с вычислением при промахе (fail-open на записи: ошибка кэша
-     * не должна ронять ответ — значение уже посчитано).
+     * не должна ронять ответ — значение уже посчитано). `volatile` — только
+     * Redis, без записи в БД (короткие тяжёлые выборки).
      */
     async remember<T>(
         key: string,
         ttlSeconds: number,
         compute: () => Promise<T>,
+        options: { volatile?: boolean } = {},
     ): Promise<{ value: T; fromCache: boolean }> {
         const cached = await this.getJson<T>(key);
         if (cached !== null) return { value: cached, fromCache: true };
         const value = await compute();
         try {
-            await this.setJson(key, value, ttlSeconds);
+            if (options.volatile) {
+                await this.setVolatileJson(key, value, ttlSeconds);
+            } else {
+                await this.setJson(key, value, ttlSeconds);
+            }
         } catch (error) {
             this.logger.warn(
                 `Кэш ${key} не записан: ${(error as Error).message}`,

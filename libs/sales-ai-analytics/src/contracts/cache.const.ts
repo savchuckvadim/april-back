@@ -33,6 +33,8 @@ export const AI_ANALYTICS_CACHE_SCOPES = [
     'calendar',
     // Отчёт собственнику за период (06.11.2026).
     'owner-report',
+    // Раздел «Разборы звонков»: выборка периода с отзывами (19.11.2026).
+    'call-list',
 ] as const;
 export type AiAnalyticsCacheScope = (typeof AI_ANALYTICS_CACHE_SCOPES)[number];
 

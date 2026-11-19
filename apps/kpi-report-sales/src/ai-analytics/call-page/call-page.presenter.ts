@@ -5,7 +5,7 @@
  * ссылки), приходит готовым.
  */
 import { methodologyDisplayTitle, type TranscriptSegment } from '@lib/call-lib';
-import { callTypeTitleOf, objectionTitleOf } from '@lib/sales-ai-analytics';
+import { objectionTitleOf } from '@lib/sales-ai-analytics';
 import {
     CALL_PAGE_CHECKPOINT_STATUS_TITLES,
     CALL_PAGE_CHECKPOINT_STATUSES,
@@ -20,6 +20,7 @@ import {
 } from './call-page-sections.presenter';
 import {
     callPageTitleOf,
+    callTypeTitle,
     objectionHandlingOf,
     objectionOutcomeTitleOf,
 } from './call-page-titles.util';
@@ -63,13 +64,6 @@ function durationOf(source: CallPageSource): number | null {
     if (Number.isFinite(stored) && stored > 0) return Math.round(stored);
     const last = source.call.segments?.[source.call.segments.length - 1];
     return last ? Math.round(last.endSec) : null;
-}
-
-/** Подпись типа звонка; кода нет в справочнике — null (код не показываем). */
-function callTypeTitle(callType: string | null): string | null {
-    if (callType === null) return null;
-    const title = callTypeTitleOf(callType);
-    return title === callType ? null : title;
 }
 
 function scoreOf(view: CallPageAnalysisView): CallPageScoreDto {
