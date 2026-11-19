@@ -40,7 +40,7 @@ export function mp3ChannelCount(buffer: Buffer): Mp3ChannelCount | null {
 }
 
 /** Размер тега ID3v2 в начале файла вместе с заголовком и footer; 0 — тега нет. */
-function id3v2Size(buffer: Buffer): number {
+export function id3v2Size(buffer: Buffer): number {
     if (buffer.length < 10 || buffer.toString('latin1', 0, 3) !== 'ID3') {
         return 0;
     }
