@@ -12,6 +12,7 @@ import { AiAnalyticsModule } from '../ai-analytics.module';
 import { AiAnalyticsBriefModule } from '../brief/ai-analytics-brief.module';
 import { AiAnalyticsCallPageModule } from '../call-page/ai-analytics-call-page.module';
 import { AiAnalyticsCallsModule } from '../calls/ai-analytics-calls.module';
+import { AiAnalyticsCallReviewsDigestModule } from '../call-reviews/ai-analytics-call-reviews-digest.module';
 import {
     AI_ANALYTICS_CORE_PBX_PROVIDERS,
     AiAnalyticsCorePbxModule,
@@ -147,6 +148,7 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsOwnerReportModule,
     AiAnalyticsCallPageModule,
     AiAnalyticsCallsModule,
+    AiAnalyticsCallReviewsDigestModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;
