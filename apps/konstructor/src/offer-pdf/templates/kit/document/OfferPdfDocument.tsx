@@ -15,7 +15,7 @@ import {
 } from './document.util';
 import type { OfferPdfChrome } from './offer-pdf-chrome';
 import { OfferSections } from './OfferSections';
-import { priceFitsLetterSheet } from './sheet-fit.util';
+import { priceFitsLetterSheet, priceStartsOwnSheet } from './sheet-fit.util';
 
 export interface OfferPdfDocumentProps {
     model: OfferPdfDocumentModel;
@@ -54,6 +54,7 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
             letterOnSheets &&
             settings.isPriceFirst &&
             priceFitsLetterSheet(model, theme),
+        priceStartsSheet: priceStartsOwnSheet(model, theme),
     }).filter(isPrintable);
 
     return (

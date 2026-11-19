@@ -44,6 +44,16 @@ const manyRows = Array.from({ length: 9 }, (_, index) => ({
     ProductName: `ГАРАНТ-Профессионал. Комплект ${index + 1} с длинным названием для переноса строки`,
 }));
 
+/**
+ * Цен очень много: большая таблица после наполнения открывает новый лист
+ * и идёт с его верха целиком (priceStartsOwnSheet).
+ */
+const fourteenRows = Array.from({ length: 14 }, (_, index) => ({
+    ...base.ProductRows[0],
+    ProductNumber: String(index + 1),
+    ProductName: `ГАРАНТ-Профессионал. Комплект ${index + 1}`,
+}));
+
 const longCompany = {
     MyCompanyName: 'ООО «Гарант-Сервис Воронеж, Липецк, Тамбов и Белгород»',
     MyCompanyFullName:
@@ -236,6 +246,14 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             data: createOfferRenderDataFixture({
                 infoblocksByGroups: withRegions(35),
             }),
+        },
+    },
+    // 14 цен после наполнения (обычный порядок): «Стоимость» открывает лист
+    {
+        name: '15-many-prices-after-infoblocks',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({ ProductRows: fourteenRows }),
         },
     },
 ];

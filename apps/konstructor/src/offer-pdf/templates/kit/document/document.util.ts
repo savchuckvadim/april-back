@@ -62,6 +62,8 @@ export interface OfferSheetFlowsInput {
     letterOnSheets: boolean;
     /** Таблица цен помещается на лист письма целиком (расчёт до раскладки) */
     priceFitsLetter: boolean;
+    /** Таблица цен большая: после наполнения открывает новый лист (расчёт до раскладки) */
+    priceStartsSheet: boolean;
 }
 
 /**
@@ -69,7 +71,10 @@ export interface OfferSheetFlowsInput {
  * - письмо с подписью занимает свои листы, наполнение всегда открывает новый;
  * - при «сначала цена» таблица цен встаёт на лист письма, только если
  *   помещается там целиком; иначе письмо остаётся одно, цена с подписью
- *   открывают следующий лист.
+ *   открывают следующий лист;
+ * - при обычном порядке большая таблица цен (priceStartsSheet) открывает после
+ *   наполнения новый лист и идёт целиком (19.11.2026); короткая продолжает
+ *   лист наполнения.
  *
  * Каждый поток — отдельный <Page>, как титульник и промо-страница.
  * Принудительный разрыв внутри одного потока (свойство `break`) не годится:
@@ -78,7 +83,7 @@ export interface OfferSheetFlowsInput {
  */
 export const offerSheetFlows = (
     settings: OfferPdfSettings,
-    { letterOnSheets, priceFitsLetter }: OfferSheetFlowsInput,
+    { letterOnSheets, priceFitsLetter, priceStartsSheet }: OfferSheetFlowsInput,
 ): OfferSheetFlow[] => {
     const order = offerSectionOrder(settings, !letterOnSheets);
     const index = order.indexOf('infoblocks');
@@ -91,6 +96,14 @@ export const offerSheetFlows = (
     } else if (before.length > 0) {
         flows.push({ withLetter: false, keys: before });
     }
-    flows.push({ withLetter: false, keys: order.slice(index) });
+    const rest = order.slice(index);
+    // цена после наполнения: большая таблица открывает свой поток-лист
+    const priceAt = rest.indexOf('price');
+    if (priceStartsSheet && priceAt > 0) {
+        flows.push({ withLetter: false, keys: rest.slice(0, priceAt) });
+        flows.push({ withLetter: false, keys: rest.slice(priceAt) });
+    } else {
+        flows.push({ withLetter: false, keys: rest });
+    }
     return flows;
 };
