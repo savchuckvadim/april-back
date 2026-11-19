@@ -2,9 +2,10 @@ import type {
     AiTranscriptionSlot,
     PortalTranscriptionRoute,
 } from '@lib/portal-lib/store/ai-settings/portal-transcription-route.types';
-import type {
-    TranscriptionProvider,
-    TranscriptionRouterMode,
+import {
+    TRANSCRIPTION_PROVIDERS,
+    type TranscriptionProvider,
+    type TranscriptionRouterMode,
 } from './transcription-provider.types';
 
 /** Шаг маршрута: транскрибатор и модель (null — его модель по умолчанию). */
@@ -83,6 +84,21 @@ export const transcriptionStepName = (step: TranscriptionStep): string =>
         ? `${PROVIDER_LOG_NAME[step.provider]} (${step.model})`
         : PROVIDER_LOG_NAME[step.provider];
 
+/**
+ * Транскрибатор по имени шага из журнала («Vibecode (модель)» → VibeCode):
+ * так подписаны куски длинного звонка в прогрессе. Чужое имя — null.
+ */
+export function transcriptionProviderOfStepName(
+    name: string,
+): TranscriptionProvider | null {
+    return (
+        TRANSCRIPTION_PROVIDERS.find(provider => {
+            const label = PROVIDER_LOG_NAME[provider];
+            return name === label || name.startsWith(`${label} (`);
+        }) ?? null
+    );
+}
+
 const stepKey = (step: TranscriptionStep): string =>
     `${step.provider}|${step.model ?? ''}`;
 
@@ -101,6 +117,19 @@ export const transcriptionLongMinSec = (
 ): number => route?.longMinSec ?? defaultLongMinSec;
 
 /**
+ * Длинный ли звонок: длительность от порога «Длинный звонок — от»;
+ * неизвестная длительность — короткий. По этому признаку план ставит
+ * Яндекс первым, а роутер режет звонок на куски.
+ */
+export const isLongTranscriptionCall = (
+    durationSec: number | undefined,
+    route: PortalTranscriptionRoute | null,
+    defaultLongMinSec: number,
+): boolean =>
+    durationSec !== undefined &&
+    durationSec >= transcriptionLongMinSec(route, defaultLongMinSec);
+
+/**
  * План распознавания одного звонка — чистая функция, одна на роутер и на
  * чек-лист админки, чтобы «что действует» считалось одинаково.
  *
@@ -115,10 +144,11 @@ export function planTranscription(
     input: TranscriptionPlanInput,
 ): TranscriptionPlan {
     const { route, mode, whisperConfigured } = input;
-    const isLong =
-        input.durationSec !== undefined &&
-        input.durationSec >=
-            transcriptionLongMinSec(route, input.defaultLongMinSec);
+    const isLong = isLongTranscriptionCall(
+        input.durationSec,
+        route,
+        input.defaultLongMinSec,
+    );
     const base = modeChain(mode, isLong, whisperConfigured).map(
         (provider): TranscriptionStep => ({ provider, model: null }),
     );

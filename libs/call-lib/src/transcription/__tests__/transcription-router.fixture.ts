@@ -1,3 +1,6 @@
+import type { RedisService } from '@lib/core/redis/redis.service';
+import { ChunkedTranscriptionService } from '../chunking/chunked-transcription.service';
+import type { TranscriptionChunkingPlan } from '../chunking/transcription-chunking-settings.service';
 import { TranscriptionRouterService } from '../provider/transcription-router.service';
 import { makeGuard } from './yandex-fake-redis.fixture';
 
@@ -58,6 +61,19 @@ export const makePortalSettings = (
     getByDomain: jest.fn().mockResolvedValue(record),
 });
 
+/** Настройки резки портала: по умолчанию выключена, как у портала без строки. */
+export const makeChunkingSettings = (
+    plan: Partial<TranscriptionChunkingPlan> = {},
+) => ({
+    resolve: jest.fn().mockResolvedValue({
+        enabled: false,
+        chunkSec: 300,
+        parallel: 3,
+        overlapSec: 10,
+        ...plan,
+    }),
+});
+
 export const makeRouter = (
     values: Record<string, string>,
     deps?: {
@@ -68,6 +84,9 @@ export const makeRouter = (
         portalSettings?: ReturnType<typeof makePortalSettings>;
         /** Страж Яндекса поверх Redis в памяти; общий — чтобы смоделировать повторный запуск. */
         guarded?: ReturnType<typeof makeGuard>;
+        chunkingSettings?: ReturnType<typeof makeChunkingSettings>;
+        /** Redis прогресса кусков; нет — резка без прогресса. */
+        chunkRedis?: RedisService;
     },
 ) => {
     const vibecode = deps?.vibecode ?? makeVibecode();
@@ -77,6 +96,7 @@ export const makeRouter = (
     const portalSettings = deps?.portalSettings ?? makePortalSettings();
     const keyResolver = makeKeyResolver();
     const guarded = deps?.guarded ?? makeGuard();
+    const chunkingSettings = deps?.chunkingSettings ?? makeChunkingSettings();
     const router = new TranscriptionRouterService(
         makeConfig(values) as never,
         vibecode as never,
@@ -86,6 +106,8 @@ export const makeRouter = (
         whisper as never,
         portalSettings as never,
         guarded.guard,
+        chunkingSettings as never,
+        new ChunkedTranscriptionService(deps?.chunkRedis),
     );
     return {
         router,
@@ -96,6 +118,7 @@ export const makeRouter = (
         whisper,
         portalSettings,
         guarded,
+        chunkingSettings,
     };
 };
 

@@ -18,18 +18,22 @@ export const callReportObjectKey = (domain: string, fileName: string): string =>
     `transcription/audio/${domain}/call-report/${fileName}`;
 
 /**
- * Ключ звонка без dedupKey: тот же звонок — та же запись, значит тот же
- * хэш; замок и лимит стража работают и для такого вызова.
+ * Ключ звонка: dedupKey конвейера, а без него — хэш записи (тот же звонок —
+ * та же запись, значит тот же хэш): замок и лимит стража, прогресс кусков
+ * длинного звонка работают и для такого вызова.
  */
-const bufferCallKey = (domain: string, buffer: Buffer): string =>
-    `${domain}:file:${createHash('sha1').update(buffer).digest('hex')}`;
+export const transcriptionCallKey = (
+    call: Pick<YandexBufferCall, 'callKey' | 'domain' | 'buffer'>,
+): string =>
+    call.callKey ??
+    `${call.domain}:file:${createHash('sha1').update(call.buffer).digest('hex')}`;
 
 /** Вход Яндекс-пути для записи в памяти: загрузка в Object Storage — по требованию. */
 export function yandexBufferInput(
     call: YandexBufferCall,
     storage: Pick<YandexStorageService, 'uploadFile'>,
 ): YandexCallInput {
-    const key = call.callKey ?? bufferCallKey(call.domain, call.buffer);
+    const key = transcriptionCallKey(call);
     const objectKey = callReportObjectKey(call.domain, call.fileName);
     return {
         call: {

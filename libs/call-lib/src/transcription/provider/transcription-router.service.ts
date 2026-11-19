@@ -14,8 +14,18 @@ import {
 } from '../services/whisper-compatible-transcription.service';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
 import { readYandexSlotWaitMs } from '../lib/yandex-stt-budget.util';
+import { ChunkedTranscriptionService } from '../chunking/chunked-transcription.service';
+import { TranscriptionChunkingSettingsService } from '../chunking/transcription-chunking-settings.service';
+import { ChunkedRouteRunner } from './chunked-route-runner';
+import type {
+    TranscribeCallInput,
+    TranscribeCallResult,
+} from './transcription-call.types';
 import { YandexCallRecognizer } from './yandex-call-recognizer';
-import { yandexBufferInput } from './yandex-call-input.util';
+import {
+    transcriptionCallKey,
+    yandexBufferInput,
+} from './yandex-call-input.util';
 import { YandexSlot } from './yandex-slot';
 import { YandexSubmissionGuard } from './yandex-submission-guard.service';
 import { TranscriptionSegmentsWatch } from './transcription-segments-watch';
@@ -23,7 +33,6 @@ import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/porta
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
     parseTranscriptionRouterMode,
-    type TranscriptionProvider,
     type TranscriptionRouterMode,
 } from './transcription-provider.types';
 import {
@@ -32,34 +41,17 @@ import {
     type TranscriptionPrefs,
 } from './transcription-prefs.util';
 import {
+    isLongTranscriptionCall,
     planTranscription,
     transcriptionStepName as stepName,
     type TranscriptionStep,
 } from './transcription-route.util';
 
-// Коды провайдеров и режимов живут отдельно (их читает и чек-лист админки);
-// ре-экспорт — чтобы потребители роутера не меняли импорты.
+// Коды провайдеров и режимов, вход и итог звонка живут отдельно (их читают
+// чек-лист админки и резка длинных звонков); ре-экспорт — чтобы потребители
+// роутера не меняли импорты.
 export * from './transcription-provider.types';
-
-export interface TranscribeCallInput {
-    buffer: Buffer;
-    fileName: string;
-    domain: string;
-    /** Длительность звонка в секундах (из voximplant) — основа маршрутизации. */
-    durationSec?: number;
-    /**
-     * Ключ звонка для стража отправок в Яндекс (dedupKey конвейера): по нему
-     * замок, лимит отправок и сохранённый номер операции. Нет — по хэшу записи.
-     */
-    callKey?: string;
-}
-
-export interface TranscribeCallResult {
-    text: string;
-    provider: TranscriptionProvider;
-    /** Сегменты с таймкодами (П6); null — провайдер их не дал. */
-    segments: TranscriptSegment[] | null;
-}
+export * from './transcription-call.types';
 
 /**
  * Передавать ли звонок следующему после сбоя. Яндекс, стоящий ОСНОВНЫМ,
@@ -108,6 +100,10 @@ const nonEmpty = (
  * «запасные», «для скорости», «для точности» с моделью у каждой. Кого и в
  * каком порядке пробовать, считает чистая функция `planTranscription`
  * (она же в чек-листе админки); здесь план только исполняется.
+ *
+ * Длинный звонок при включённой резке портала (19.11.2026) идёт кусками:
+ * роутер только решает «резать или нет», куски ведёт ChunkedRouteRunner —
+ * шагами этого же плана, бесплатные первыми, Яндекс последним.
  */
 @Injectable()
 export class TranscriptionRouterService {
@@ -133,6 +129,8 @@ export class TranscriptionRouterService {
     private readonly segmentsWatch = new TranscriptionSegmentsWatch(
         this.logger,
     );
+    /** Длинный звонок кусками через шаги плана. */
+    private readonly chunkedRunner: ChunkedRouteRunner;
 
     constructor(
         private readonly configService: ConfigService,
@@ -143,7 +141,15 @@ export class TranscriptionRouterService {
         private readonly whisper: WhisperCompatibleTranscriptionService,
         private readonly portalAiSettings: PortalAiSettingsService,
         yandexGuard: YandexSubmissionGuard,
+        private readonly chunkingSettings: TranscriptionChunkingSettingsService,
+        chunked: ChunkedTranscriptionService,
     ) {
+        this.chunkedRunner = new ChunkedRouteRunner({
+            chunked,
+            guard: yandexGuard,
+            segmentsWatch: this.segmentsWatch,
+            logger: this.logger,
+        });
         this.yandexRecognizer = new YandexCallRecognizer({
             storage: yandexStorage,
             yandex: yandexTranscription,
@@ -200,7 +206,45 @@ export class TranscriptionRouterService {
         this.logger.log(
             `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${steps.map(stepName).join(' → ')}`,
         );
+        const chunked = await this.transcribeChunked(input, steps, prefs);
+        return chunked ?? this.runPlan(input, steps, prefs);
+    }
 
+    /**
+     * Длинный звонок при включённой резке портала — кусками. null — резка не
+     * применяется (короткий звонок, резка выключена, не MP3, нет бесплатного
+     * распознавателя): звонок целиком идёт планом. Ошибка куска пробрасывается
+     * как ошибка звонка — без Яндекса на весь звонок: повтор продолжит куски.
+     */
+    private async transcribeChunked(
+        input: TranscribeCallInput,
+        steps: readonly TranscriptionStep[],
+        prefs: TranscriptionPrefs,
+    ): Promise<TranscribeCallResult | null> {
+        const long = isLongTranscriptionCall(
+            input.durationSec,
+            prefs.route,
+            this.yandexMinSec,
+        );
+        if (!long) return null;
+        const settings = await this.chunkingSettings.resolve(input.domain);
+        if (!settings.enabled) return null;
+        return this.chunkedRunner.run({
+            call: input,
+            callKey: transcriptionCallKey(input),
+            steps,
+            whisperConfigured: prefs.whisper !== null,
+            settings,
+            runStep: (step, part) => this.runStep(step, part, prefs),
+        });
+    }
+
+    /** Звонок целиком: шаги плана по очереди, запасной — по правилам canFallBack. */
+    private async runPlan(
+        input: TranscribeCallInput,
+        steps: readonly TranscriptionStep[],
+        prefs: TranscriptionPrefs,
+    ): Promise<TranscribeCallResult> {
         for (const [index, step] of steps.entries()) {
             try {
                 const result = await this.runStep(step, input, prefs);

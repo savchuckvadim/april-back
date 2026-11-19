@@ -1,7 +1,9 @@
 import type { PortalTranscriptionRoute } from '@lib/portal-lib/store/ai-settings/portal-transcription-route.types';
 import {
+    isLongTranscriptionCall,
     planTranscription,
     transcriptionLongMinSec,
+    transcriptionProviderOfStepName,
     transcriptionStepName,
     type TranscriptionPlanInput,
 } from '../provider/transcription-route.util';
@@ -230,5 +232,30 @@ describe('transcriptionStepName', () => {
         expect(transcriptionStepName({ provider: 'yandex', model: null })).toBe(
             'Yandex',
         );
+    });
+});
+
+describe('transcriptionProviderOfStepName', () => {
+    it('имя шага из журнала → транскрибатор; чужое имя — null', () => {
+        expect(transcriptionProviderOfStepName('Yandex')).toBe('yandex');
+        expect(transcriptionProviderOfStepName('Vibecode (fast)')).toBe(
+            'bitrix-vibecode',
+        );
+        expect(transcriptionProviderOfStepName('свой Whisper (turbo)')).toBe(
+            'local-whisper',
+        );
+        expect(transcriptionProviderOfStepName('Vibecodex')).toBeNull();
+        expect(transcriptionProviderOfStepName('VibeCode')).toBeNull();
+    });
+});
+
+describe('isLongTranscriptionCall', () => {
+    it('от порога маршрута, а без него — от порога приложения; без длительности — короткий', () => {
+        expect(isLongTranscriptionCall(600, null, 600)).toBe(true);
+        expect(isLongTranscriptionCall(599, null, 600)).toBe(false);
+        expect(
+            isLongTranscriptionCall(400, route({ longMinSec: 300 }), 600),
+        ).toBe(true);
+        expect(isLongTranscriptionCall(undefined, null, 600)).toBe(false);
     });
 });

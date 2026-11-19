@@ -4,6 +4,7 @@ import { EgressProxyModule } from '@lib/egress-proxy';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { VibecodeModule } from '@lib/vibecode';
 import { YandexModule } from '@lib/call-lib/yandex/yandex.module';
+import { ChunkedTranscriptionModule } from '../chunking/chunked-transcription.module';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
 import { WhisperCompatibleTranscriptionService } from '../services/whisper-compatible-transcription.service';
 import { TranscriptionRouterService } from './transcription-router.service';
@@ -21,7 +22,8 @@ import { YandexSubmissionModule } from './yandex-submission.module';
 @Module({
     // PortalStoreModule — настройки AI портала (режим транскрибации, свой Whisper);
     // EgressProxyModule — зарубежный Whisper-сервис через исходящий прокси;
-    // YandexSubmissionModule — страж платных отправок в Яндекс (замок, лимит, номер операции)
+    // YandexSubmissionModule — страж платных отправок в Яндекс (замок, лимит, номер операции);
+    // ChunkedTranscriptionModule — резка длинных звонков на куски и её настройки портала
     imports: [
         ConfigModule,
         YandexModule,
@@ -29,6 +31,7 @@ import { YandexSubmissionModule } from './yandex-submission.module';
         PortalStoreModule,
         EgressProxyModule,
         YandexSubmissionModule,
+        ChunkedTranscriptionModule,
     ],
     providers: [
         StreamingTranscriptionService,
