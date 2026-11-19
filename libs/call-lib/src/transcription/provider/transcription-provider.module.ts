@@ -10,7 +10,7 @@ import { TranscriptionRouterService } from './transcription-router.service';
 
 /**
  * Модуль маршрутизатора транскрибации для автоконвейера call-report:
- * выбирает Yandex SpeechKit или Vibecode Whisper по длительности звонка.
+ * выбирает Yandex SpeechKit или VibeCode по длительности звонка.
  *
  * VibeCode-часть (клиент + резолвер пер-портального ключа) — из
  * библиотеки @lib/vibecode; модуль её ре-экспортирует, чтобы потребители

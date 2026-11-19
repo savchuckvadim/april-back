@@ -27,7 +27,7 @@ CallReportScheduler (cron 30 мин, Redis-lock)
             └─ CallReportProcessor.handleTranscribe
                  └─ CallReportPipelineUseCase.executeTranscribe:
                       аудио из Bitrix → TranscriptionRouter (Yandex ≥10мин /
-                      VibeCode Whisper) → transcriptions (текст, менеджер)
+                      VibeCode) → transcriptions (текст, менеджер)
                  └─ ставит джоб CALL_REPORT_ANALYZE
                       └─ CallReportProcessor.handleAnalyze
                            └─ CallReportPipelineUseCase.executeAnalyze:

@@ -169,7 +169,7 @@ export const AI_GUIDE_PORTAL_AI_SETTING_TITLES: Readonly<
     whisperModel: 'Модель своего Whisper портала',
     whisperApiKey: 'Ключ своего Whisper портала (хранится зашифрованным)',
     vibecodeTranscriptionModel:
-        'Модель транскрибации VibeCode (с 16.11.2026 вместо Whisper — bitrix/bitrixgpt-5.6-transcribe)',
+        'Модель транскрибации VibeCode (по умолчанию bitrix/bitrixgpt-5.6-transcribe)',
     transcriptionRoute:
         'Маршрут распознавания: кто длинные, кто короткие, запасные, для скорости и для точности',
     factsCatchupNightlyBudgetRub:

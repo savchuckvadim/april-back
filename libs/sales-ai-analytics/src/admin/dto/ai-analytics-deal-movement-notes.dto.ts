@@ -25,7 +25,7 @@ export class AiAnalyticsDealMovementNotesDto
             'Вид записи: comment — комментарий, log_message — служебная ' +
             'запись журнала; null — запись выключена.',
         enum: Object.values(DEAL_MOVEMENT_NOTE_KIND),
-        example: DEAL_MOVEMENT_NOTE_KIND.comment,
+        example: DEAL_MOVEMENT_NOTE_KIND.logMessage,
         type: String,
         nullable: true,
     })

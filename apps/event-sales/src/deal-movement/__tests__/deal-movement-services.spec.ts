@@ -10,10 +10,10 @@ import { dealRow } from './deal-movement.fixture';
 
 const DOMAIN = 'garant.bitrix24.ru';
 
-/** Запись в ленту по умолчанию — выключена, комментарий, 100 и 50. */
+/** Запись в ленту по умолчанию — выключена, запись журнала, 100 и 50. */
 const NOTES_OFF = {
     dealMovementWriteNotes: false,
-    dealMovementNoteKind: 'comment',
+    dealMovementNoteKind: 'log_message',
     dealMovementMaxNotes: 100,
     dealMovementMaxTexts: 50,
 };
@@ -41,7 +41,7 @@ describe('настройки движения сделок', () => {
             maxDeals: 10_000,
             notes: {
                 write: false,
-                kind: 'comment',
+                kind: 'log_message',
                 maxNotes: 100,
                 maxTexts: 50,
             },
@@ -101,13 +101,21 @@ describe('настройки движения сделок', () => {
             maxNotes: 0,
             maxTexts: 50,
         });
+        // Сохранённый на портале комментарий остаётся комментарием.
+        expect(
+            toDealMovementOptions({
+                ...base,
+                ...NOTES_OFF,
+                dealMovementNoteKind: 'comment',
+            }).notes.kind,
+        ).toBe('comment');
         expect(
             toDealMovementOptions({
                 ...base,
                 ...NOTES_OFF,
                 dealMovementNoteKind: 'чат',
             }).notes.kind,
-        ).toBe('comment');
+        ).toBe('log_message');
     });
 
     it('ростер крона — порталы с включённым флагом', async () => {

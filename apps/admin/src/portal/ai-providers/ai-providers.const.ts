@@ -17,7 +17,7 @@ export const TRANSCRIPTION_PROVIDER_TITLES: Readonly<
     Record<TranscriptionProvider, string>
 > = {
     yandex: 'Яндекс SpeechKit',
-    'bitrix-vibecode': 'VibeCode Битрикса (Whisper)',
+    'bitrix-vibecode': 'VibeCode Битрикса',
     'local-whisper':
         'Whisper-совместимый сервис (свой сервер или облако по ключу)',
 };

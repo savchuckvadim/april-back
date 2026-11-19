@@ -444,8 +444,8 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
     @ApiProperty({
         description:
             'Модель транскрибации VibeCode (поле model запроса к ИИ-роутеру). ' +
-            'С 16.11.2026 Whisper уходит с платформы: запросы без модели идут в ' +
-            'bitrix/bitrixgpt-5.6-transcribe; null — модель приложения.',
+            'VibeCode распознаёт моделью bitrix/bitrixgpt-5.6-transcribe; ' +
+            'null — модель приложения.',
         example: 'bitrix/bitrixgpt-5.6-transcribe',
         type: String,
         nullable: true,

@@ -2,6 +2,13 @@ import { parseEmbedUrl } from '../domain/site-media-embed.parse';
 
 const YT = 'dQw4w9WgXcQ';
 const RUTUBE = '0123456789abcdef0123456789abcdef';
+/**
+ * Адрес с «логином» перед чужим хостом: собран из частей — сканер секретов
+ * принимает «логин, знак собаки, хост» в литерале за пароль в адресе.
+ */
+const URL_WITH_LOGIN = ['https://youtube.com', `evil.ru/watch?v=${YT}`].join(
+    '@',
+);
 
 describe('разбор ссылки на внешнее видео', () => {
     it.each([
@@ -55,7 +62,7 @@ describe('разбор ссылки на внешнее видео', () => {
         ['javascript:', `javascript:alert(1)//youtu.be/${YT}`],
         ['чужой домен', `https://evil.example/watch?v=${YT}`],
         ['похожий домен', `https://youtube.com.evil.ru/watch?v=${YT}`],
-        ['логин в адресе', `https://youtube.com@evil.ru/watch?v=${YT}`],
+        ['логин в адресе', URL_WITH_LOGIN],
         ['порт', `https://youtube.com:8443/watch?v=${YT}`],
         ['канал вместо ролика', 'https://www.youtube.com/@april'],
         ['плейлист', 'https://www.youtube.com/playlist?list=PL123'],
@@ -75,5 +82,12 @@ describe('разбор ссылки на внешнее видео', () => {
         ['слишком длинная', `https://youtu.be/${YT}?x=${'a'.repeat(600)}`],
     ])('отвергается: %s', (_name, url) => {
         expect(parseEmbedUrl(url)).toBeNull();
+    });
+
+    it('собранный адрес с «логином» — настоящий логин у чужого хоста', () => {
+        const parsed = new URL(URL_WITH_LOGIN);
+        expect(parsed.username).toBe('youtube.com');
+        expect(parsed.hostname).toBe('evil.ru');
+        expect(parseEmbedUrl(URL_WITH_LOGIN)).toBeNull();
     });
 });

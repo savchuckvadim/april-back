@@ -3,6 +3,7 @@ import {
     PORTAL_APP_SETTINGS_SCHEMA,
 } from '../portal-app-settings.schema';
 import {
+    DEAL_MOVEMENT_DEFAULT_NOTE_KIND,
     DEAL_MOVEMENT_NOTE_KIND,
     DEAL_MOVEMENT_NOTE_KIND_OPTIONS,
     toDealMovementNoteKind,
@@ -50,7 +51,10 @@ describe('движение сделок: настройки записи в ле
         );
         expect(SETTINGS.dealMovementWriteNotes.default).toBe(false);
         expect(SETTINGS.dealMovementNoteKind.default).toBe(
-            DEAL_MOVEMENT_NOTE_KIND.comment,
+            DEAL_MOVEMENT_NOTE_KIND.logMessage,
+        );
+        expect(DEAL_MOVEMENT_DEFAULT_NOTE_KIND).toBe(
+            DEAL_MOVEMENT_NOTE_KIND.logMessage,
         );
         expect(SETTINGS.dealMovementMaxNotes.default).toBe(100);
         expect(SETTINGS.dealMovementMaxTexts.default).toBe(50);
@@ -68,18 +72,32 @@ describe('движение сделок: настройки записи в ле
         }
     });
 
-    it('значение настройки → вид записи; пусто и мусор — комментарий', () => {
+    it('значение настройки → вид записи; пусто и мусор — служебная запись журнала', () => {
         expect(toDealMovementNoteKind('log_message')).toBe(
             DEAL_MOVEMENT_NOTE_KIND.logMessage,
         );
+        // Сохранённый на портале комментарий остаётся комментарием.
         expect(toDealMovementNoteKind('comment')).toBe(
             DEAL_MOVEMENT_NOTE_KIND.comment,
         );
         expect(toDealMovementNoteKind('')).toBe(
-            DEAL_MOVEMENT_NOTE_KIND.comment,
+            DEAL_MOVEMENT_NOTE_KIND.logMessage,
+        );
+        expect(toDealMovementNoteKind(undefined)).toBe(
+            DEAL_MOVEMENT_NOTE_KIND.logMessage,
         );
         expect(toDealMovementNoteKind(42)).toBe(
-            DEAL_MOVEMENT_NOTE_KIND.comment,
+            DEAL_MOVEMENT_NOTE_KIND.logMessage,
+        );
+    });
+
+    it('описание настройки: что запись журнала не сдвигает активность, а комментарий сдвигает', () => {
+        const { description } = SETTINGS.dealMovementNoteKind;
+        expect(description).toContain('не сдвигает «последнюю активность»');
+        expect(description).toContain('сдвигает «последнюю активность»');
+        expect(description).toContain('18.11.2026');
+        expect(description).toContain(
+            'По умолчанию — служебная запись журнала',
         );
     });
 });
