@@ -14,6 +14,17 @@ export interface RequesterAccess {
 }
 
 /**
+ * Bitrix-id в той форме, что и в периметре (`visibleManagerIds`): строка
+ * без ведущих нулей и пробелов; не целое положительное — null.
+ */
+export function normalizeUserId(
+    value: string | null | undefined,
+): string | null {
+    const id = Number(String(value ?? '').trim());
+    return Number.isInteger(id) && id > 0 ? String(id) : null;
+}
+
+/**
  * Виден ли менеджер в периметре. Строки без менеджера (managerId = null)
  * видны только тем, кто видит всех — иначе менеджер мог бы увидеть чужой
  * звонок, обработанный до сохранения менеджера.

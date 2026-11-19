@@ -18,6 +18,17 @@ import {
     CALL_REPORT_UPSELL_ITEMS,
     type CallReportObjectionReaction,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { callTypeTitleOf } from '@lib/sales-ai-analytics';
+
+/**
+ * Подпись типа звонка; кода нет в справочнике — null (код не показываем).
+ * Одна для страницы звонка и раздела «Разборы звонков».
+ */
+export function callTypeTitle(callType: string | null): string | null {
+    if (callType === null) return null;
+    const title = callTypeTitleOf(callType);
+    return title === callType ? null : title;
+}
 
 interface CodeItem {
     CODE: string;

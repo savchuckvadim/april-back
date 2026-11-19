@@ -49,6 +49,8 @@ export * from './contracts/versions.types';
 export * from './contracts/feedback.types';
 export * from './contracts/snapshot.types';
 export * from './contracts/audit-snapshot.types';
+// Отзыв руководителя о разборе звонка (вид call_review, 19.11.2026).
+export * from './contracts/call-review.types';
 
 // Аудит данных (Фаза 0): оркестратор, Prisma-адаптер, типы отчёта и
 // календарь окна. Разбор CLI-аргументов и расчёты — по глубоким путям

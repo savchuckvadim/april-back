@@ -173,6 +173,7 @@ describe('feedback.types', () => {
             'rop_mark',
             'recommendation_issued',
             'recommendation_done',
+            'call_review',
         ]);
     });
 

@@ -15,6 +15,9 @@ export const AI_ANALYTICS_FEEDBACK_PROVIDER = 'ai-analytics';
  * журнал советов Фазы 4: `recommendation_issued` пишет конвейер при
  * показе совета (дедуп по менеджеру, ключу совета и месяцу),
  * `recommendation_done` ставит пользователь кнопкой «Сделано» (план §10, L5).
+ * `call_review` — отзыв руководителя о разборе звонка (19.11.2026): один
+ * актуальный на автора и звонок, пишется только ручками личной страницы
+ * разбора, нагрузка — `AiAnalyticsCallReviewPayload` (call-review.types).
  */
 export const AI_ANALYTICS_FEEDBACK_KINDS = [
     'view',
@@ -28,6 +31,7 @@ export const AI_ANALYTICS_FEEDBACK_KINDS = [
     'rop_mark',
     'recommendation_issued',
     'recommendation_done',
+    'call_review',
 ] as const;
 
 export type AiAnalyticsFeedbackKind =

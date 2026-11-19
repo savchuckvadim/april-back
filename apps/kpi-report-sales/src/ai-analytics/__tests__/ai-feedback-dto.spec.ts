@@ -35,6 +35,7 @@ describe('AiFeedbackRequestDto: только виды реакций польз�
         expect([...SERVICE_KINDS].sort()).toEqual([
             'agenda_sent',
             'alert_sent',
+            'call_review',
             'digest_sent',
             'recommendation_issued',
             'rop_mark',
