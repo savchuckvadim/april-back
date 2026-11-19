@@ -118,6 +118,8 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsStyleController',
     // Страница разбора звонка: две открытые ручки по ссылке-пропуску.
     'CallPageController',
+    // Личная страница руководителя: отзывы по звонку и свой отзыв.
+    'CallPageLeadController',
     // Ссылки на страницы разбора для списков витрины — под сессией портала.
     'CallPageLinksController',
     // Раздел «Разборы звонков» отчёта KPI — под сессией портала.
