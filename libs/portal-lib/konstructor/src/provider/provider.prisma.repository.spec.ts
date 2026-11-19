@@ -166,6 +166,58 @@ describe('ProviderPrismaRepository', () => {
             expect(result).toBeNull();
             expect(prisma.rqs.update).not.toHaveBeenCalled();
         });
+
+        it('без withTax признак НДС поставщика не пишется', async () => {
+            prisma.rqs.findUnique.mockResolvedValue(makeRq());
+            prisma.rqs.update.mockResolvedValue(makeRq({ name: 'Новое имя' }));
+            prisma.agents.findUnique.mockResolvedValue(
+                makeAgent({ withTax: true }),
+            );
+
+            await repository.updateRq(9, { name: 'Новое имя' });
+
+            expect(prisma.agents.update).not.toHaveBeenCalled();
+        });
+
+        it('withTax пишется в поставщика реквизитов и приходит в ответе', async () => {
+            prisma.rqs.findUnique.mockResolvedValue(makeRq());
+            prisma.rqs.update.mockResolvedValue(makeRq());
+            prisma.agents.update.mockResolvedValue(
+                makeAgent({ withTax: false }),
+            );
+
+            const result = await repository.updateRq(9, { withTax: false });
+
+            expect(prisma.agents.update).toHaveBeenCalledWith({
+                where: { id: BigInt(5) },
+                data: { withTax: false, updated_at: expect.any(Date) as Date },
+            });
+            expect(result?.withTax).toBe(false);
+        });
+
+        it('withTax не попадает в поля реквизитов', async () => {
+            prisma.rqs.findUnique.mockResolvedValue(makeRq());
+            prisma.rqs.update.mockResolvedValue(makeRq());
+            prisma.agents.update.mockResolvedValue(makeAgent());
+
+            await repository.updateRq(9, { name: 'Имя', withTax: true });
+
+            const updateCalls = prisma.rqs.update.mock.calls as Array<
+                [{ data: Record<string, unknown> }]
+            >;
+            expect(updateCalls[0][0].data).not.toHaveProperty('withTax');
+            expect(updateCalls[0][0].data.name).toBe('Имя');
+        });
+
+        it('реквизиты и признак НДС пишутся одной транзакцией', async () => {
+            prisma.rqs.findUnique.mockResolvedValue(makeRq());
+            prisma.rqs.update.mockResolvedValue(makeRq());
+            prisma.agents.update.mockResolvedValue(makeAgent());
+
+            await repository.updateRq(9, { withTax: true });
+
+            expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('delete', () => {

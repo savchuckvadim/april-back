@@ -5,7 +5,7 @@ import {
     CreateProviderWithRqInput,
     ProviderEntityWithRq,
     RqEntity,
-    RqInput,
+    RqUpdateInput,
 } from './provider.entity';
 import {
     createProviderEntityWithRqFromPrisma,
@@ -120,21 +120,31 @@ export class ProviderPrismaRepository implements ProviderRepository {
 
     async updateRq(
         id: number | bigint,
-        data: Partial<RqInput>,
+        data: RqUpdateInput,
     ): Promise<RqEntity | null> {
         const existing = await this.prisma.rqs.findUnique({ where: { id } });
         if (!existing) return null;
 
-        const rq = await this.prisma.rqs.update({
-            where: { id },
-            data: mapRqInputToData(data),
+        const { withTax, ...rqData } = data;
+        // Реквизиты и признак НДС поставщика пишутся вместе: частичной записи
+        // (реквизиты обновились, НДС нет) быть не должно.
+        const { rq, agent } = await this.prisma.$transaction(async tx => {
+            const updatedRq = await tx.rqs.update({
+                where: { id },
+                data: mapRqInputToData(rqData),
+            });
+            if (!updatedRq.agentId) return { rq: updatedRq, agent: null };
+            const updatedAgent =
+                withTax === undefined
+                    ? await tx.agents.findUnique({
+                          where: { id: updatedRq.agentId },
+                      })
+                    : await tx.agents.update({
+                          where: { id: updatedRq.agentId },
+                          data: { withTax, updated_at: new Date() },
+                      });
+            return { rq: updatedRq, agent: updatedAgent };
         });
-
-        const agent = rq.agentId
-            ? await this.prisma.agents.findUnique({
-                  where: { id: rq.agentId },
-              })
-            : null;
 
         return createRqEntity(rq, agent?.withTax ?? false);
     }

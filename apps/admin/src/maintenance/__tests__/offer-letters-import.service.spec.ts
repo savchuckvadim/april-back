@@ -1,62 +1,7 @@
-import {
-    CreateOfferLetterData,
-    LegacyOfferLetter,
-    legacyLetterOf,
-    OfferLetterEntity,
-    OfferLetterRepository,
-} from '@lib/portal-lib/konstructor';
+import { LegacyOfferLetter, legacyLetterOf } from '@lib/portal-lib/konstructor';
+import { MemoryOfferLetterRepository } from '@lib/portal-lib/konstructor/offer-letter/__tests__/memory-offer-letter.repository';
 import { OfferLetterImportStatusEnum } from '../dto/offer-letters-import.dto';
 import { OfferLettersImportService } from '../services/offer-letters-import.service';
-
-/** Репозиторий в памяти: легаси-письма заданы, созданное копится в rows */
-class MemoryOfferLetterRepository implements OfferLetterRepository {
-    readonly rows: OfferLetterEntity[] = [];
-
-    constructor(private readonly legacy: LegacyOfferLetter[]) {}
-
-    findByPortal(portalId: number): Promise<OfferLetterEntity[]> {
-        return Promise.resolve(
-            this.rows.filter(row => row.portalId === portalId),
-        );
-    }
-
-    findPortalDefault(): Promise<OfferLetterEntity | null> {
-        return Promise.resolve(null);
-    }
-
-    findImportedLegacyFieldIds(fieldIds: number[]): Promise<number[]> {
-        return Promise.resolve(
-            this.rows.flatMap(row =>
-                row.legacyFieldId !== null &&
-                fieldIds.includes(row.legacyFieldId)
-                    ? [row.legacyFieldId]
-                    : [],
-            ),
-        );
-    }
-
-    create(data: CreateOfferLetterData): Promise<OfferLetterEntity> {
-        const row: OfferLetterEntity = {
-            id: `letter-${this.rows.length + 1}`,
-            portalId: data.portalId,
-            bxUserId: data.bxUserId,
-            name: data.name,
-            text: data.text,
-            isDefault: data.isDefault,
-            isActive: data.isActive ?? true,
-            sort: data.sort ?? 0,
-            legacyFieldId: data.legacyFieldId ?? null,
-            createdAt: null,
-            updatedAt: null,
-        };
-        this.rows.push(row);
-        return Promise.resolve(row);
-    }
-
-    findLegacyPortalLetters(): Promise<LegacyOfferLetter[]> {
-        return Promise.resolve(this.legacy);
-    }
-}
 
 const letter = (
     portalId: number,

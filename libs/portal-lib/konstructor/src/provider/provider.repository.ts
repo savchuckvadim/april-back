@@ -2,7 +2,7 @@ import {
     CreateProviderWithRqInput,
     ProviderEntityWithRq,
     RqEntity,
-    RqInput,
+    RqUpdateInput,
 } from './provider.entity';
 
 export abstract class ProviderRepository {
@@ -18,10 +18,14 @@ export abstract class ProviderRepository {
     ): Promise<ProviderEntityWithRq>;
 
     // ---- Update ----
-    /** Обновляет реквизиты (rqs) по id. Возвращает null, если запись не найдена. */
+    /**
+     * Обновляет реквизиты (rqs) по id и, если передан `withTax`, признак
+     * работы с НДС поставщика (agents) одной транзакцией. Возвращает null,
+     * если запись не найдена.
+     */
     abstract updateRq(
         id: number,
-        data: Partial<RqInput>,
+        data: RqUpdateInput,
     ): Promise<RqEntity | null>;
 
     // ---- Delete ----

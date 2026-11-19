@@ -1,12 +1,22 @@
+/**
+ * Область письма: письма портала (`bxUserId = null`) или личные письма одного
+ * менеджера. Письмо по умолчанию своё в каждой области.
+ */
+export interface OfferLetterScope {
+    portalId: number;
+    /** null — письма портала; задан — личные письма менеджера */
+    bxUserId: number | null;
+}
+
 /** Текст сопроводительного письма КП (`offer_letters`). */
-export class OfferLetterEntity {
+export class OfferLetterEntity implements OfferLetterScope {
     /** uuid */
     id: string;
     portalId: number;
     /** null — письмо портала; задан — личное письмо менеджера */
     bxUserId: number | null;
     name: string;
-    /** Разметка прежняя: `<color>`, `<red>`, `<bold>` */
+    /** Разметка прежняя: `<color>`, `<red>`, `<bold>` (см. `lib/offer-letter-markup.util`) */
     text: string;
     isDefault: boolean;
     isActive: boolean;

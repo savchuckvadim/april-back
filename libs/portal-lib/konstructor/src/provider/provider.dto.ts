@@ -12,6 +12,7 @@ import {
     ProviderEntityWithRq,
     RqEntity,
     RqInput,
+    RqUpdateInput,
 } from './provider.entity';
 import {
     PROVIDER_TYPE_VALUES,
@@ -503,12 +504,26 @@ export class CreateProviderWithRqDto implements CreateProviderWithRqInput {
 }
 
 /**
- * Данные для частичного обновления реквизитов (`rqs`).
- * Все поля опциональны — обновляются только переданные.
+ * Данные для частичного обновления реквизитов (`rqs`) и признака работы с НДС
+ * их поставщика. Все поля опциональны — обновляются только переданные.
  */
 export class UpdateRqDto
     extends PartialType(CreateRqDto)
-    implements Partial<RqInput> {}
+    implements RqUpdateInput
+{
+    @ApiProperty({
+        description:
+            'Признак «Работает с НДС» поставщика, которому принадлежат ' +
+            'реквизиты (agents.withTax): цены строк умножаются на 1.05. ' +
+            'Не передан — признак не меняется.',
+        example: true,
+        required: false,
+        type: Boolean,
+    })
+    @IsOptional()
+    @IsBoolean()
+    withTax?: boolean;
+}
 
 /** Ответ с реквизитами поставщика. */
 export class RqResponseDto extends RqEntity {}

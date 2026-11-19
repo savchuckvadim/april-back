@@ -1,10 +1,15 @@
 import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
-import { LegacyOfferLetter, OfferLetterEntity } from './offer-letter.entity';
+import {
+    LegacyOfferLetter,
+    OfferLetterEntity,
+    OfferLetterScope,
+} from './offer-letter.entity';
 import {
     CreateOfferLetterData,
     OfferLetterRepository,
+    UpdateOfferLetterData,
 } from './offer-letter.repository';
 import { createOfferLetterEntityFromPrisma } from './lib/offer-letter-entity.util';
 import {
@@ -22,6 +27,18 @@ export class OfferLetterPrismaRepository implements OfferLetterRepository {
             orderBy: [{ sort: 'asc' }, { createdAt: 'asc' }],
         });
         return rows.map(createOfferLetterEntityFromPrisma);
+    }
+
+    async findById(id: string): Promise<OfferLetterEntity | null> {
+        const row = await this.prisma.offerLetter.findUnique({ where: { id } });
+        return row ? createOfferLetterEntityFromPrisma(row) : null;
+    }
+
+    async portalExists(portalId: number): Promise<boolean> {
+        const count = await this.prisma.portal.count({
+            where: { id: BigInt(portalId) },
+        });
+        return count > 0;
     }
 
     async findPortalDefault(domain: string): Promise<OfferLetterEntity | null> {
@@ -49,9 +66,14 @@ export class OfferLetterPrismaRepository implements OfferLetterRepository {
     }
 
     async create(data: CreateOfferLetterData): Promise<OfferLetterEntity> {
+        // У Laravel-таблицы нет значений по умолчанию для timestamps: без них
+        // created_at/updated_at остаются NULL
+        const now = new Date();
         const row = await this.prisma.offerLetter.create({
             data: {
                 id: randomUUID(),
+                createdAt: now,
+                updatedAt: now,
                 portalId: BigInt(data.portalId),
                 bxUserId: data.bxUserId,
                 name: data.name,
@@ -63,6 +85,64 @@ export class OfferLetterPrismaRepository implements OfferLetterRepository {
             },
         });
         return createOfferLetterEntityFromPrisma(row);
+    }
+
+    async update(
+        id: string,
+        data: UpdateOfferLetterData,
+    ): Promise<OfferLetterEntity | null> {
+        const existing = await this.prisma.offerLetter.findUnique({
+            where: { id },
+            select: { id: true },
+        });
+        if (!existing) return null;
+        const row = await this.prisma.offerLetter.update({
+            where: { id },
+            data: {
+                name: data.name,
+                text: data.text,
+                isActive: data.isActive,
+                sort: data.sort,
+                updatedAt: new Date(),
+            },
+        });
+        return createOfferLetterEntityFromPrisma(row);
+    }
+
+    async delete(id: string): Promise<boolean> {
+        const { count } = await this.prisma.offerLetter.deleteMany({
+            where: { id },
+        });
+        return count > 0;
+    }
+
+    async setScopeDefault(
+        scope: OfferLetterScope,
+        defaultId: string | null,
+    ): Promise<void> {
+        const where = {
+            portalId: BigInt(scope.portalId),
+            bxUserId: scope.bxUserId,
+        };
+        const now = new Date();
+        await this.prisma.$transaction([
+            this.prisma.offerLetter.updateMany({
+                where: {
+                    ...where,
+                    isDefault: true,
+                    ...(defaultId ? { id: { not: defaultId } } : {}),
+                },
+                data: { isDefault: false, updatedAt: now },
+            }),
+            ...(defaultId
+                ? [
+                      this.prisma.offerLetter.updateMany({
+                          where: { ...where, id: defaultId, isDefault: false },
+                          data: { isDefault: true, updatedAt: now },
+                      }),
+                  ]
+                : []),
+        ]);
     }
 
     async findLegacyPortalLetters(): Promise<LegacyOfferLetter[]> {
