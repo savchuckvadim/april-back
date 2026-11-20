@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+    DEAL_MOVEMENT_CALC_VERSION,
     DEAL_MOVEMENT_REQUESTERS,
     planDealMovementNight,
     type DealMovementNightPlan,
@@ -23,6 +24,7 @@ import {
 } from '../lib/deal-movement-run-status';
 import {
     dealMovementDayKey,
+    isDealMovementCalcChanged,
     isDealMovementStateStale,
 } from '../lib/deal-movement-schedule';
 import type {
@@ -135,13 +137,19 @@ export class DealMovementRunService {
         }
     }
 
-    /** Прошлое состояние; счёт устарел или его нет — базовая линия. */
+    /**
+     * Прошлое состояние; счёт устарел, его нет или он другой версии
+     * расчёта — базовая линия.
+     */
     private async previousState(ctx: RunContext): Promise<{
         previous: Map<string, DealMovementStateEntry> | null;
         baseline: boolean;
     }> {
         const lastRun = await this.runState.lastRun(ctx.domain);
-        if (isDealMovementStateStale(lastRun?.at ?? null, ctx.now)) {
+        if (
+            isDealMovementStateStale(lastRun?.at ?? null, ctx.now) ||
+            isDealMovementCalcChanged(lastRun, DEAL_MOVEMENT_CALC_VERSION)
+        ) {
             return { previous: null, baseline: true };
         }
         const previous = await this.stateStore.load(ctx.domain);
@@ -180,6 +188,8 @@ export class DealMovementRunService {
             openTotal: evaluation.openTotal,
             evaluated: evaluation.deals.length,
             capped: evaluation.capped,
+            stagesByHistory: evaluation.stagesByHistory,
+            workProbed: evaluation.workProbed,
             baseline: prior.baseline,
             warnings: evaluation.warnings,
             plan,
@@ -226,6 +236,7 @@ export class DealMovementRunService {
         await this.runState.markRun(ctx.domain, {
             day: ctx.day,
             at: ctx.now.toISOString(),
+            calc: DEAL_MOVEMENT_CALC_VERSION,
         });
         ctx.status.snapshotDay = ctx.day;
         ctx.status.phase = 'saved';

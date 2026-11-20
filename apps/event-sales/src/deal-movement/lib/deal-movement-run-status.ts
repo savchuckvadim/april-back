@@ -72,6 +72,10 @@ export function applyDealMovementPlan(
         readonly openTotal: number;
         readonly evaluated: number;
         readonly capped: boolean;
+        /** Ступеней со сроком по истории портала. */
+        readonly stagesByHistory: number;
+        /** Сделок, у которых читались звонки и дела Битрикса. */
+        readonly workProbed: number;
         readonly baseline: boolean;
         readonly warnings: readonly string[];
         readonly plan: Pick<
@@ -85,6 +89,8 @@ export function applyDealMovementPlan(
         openTotal: input.openTotal,
         evaluated: input.evaluated,
         capped: input.capped,
+        stagesByHistory: input.stagesByHistory,
+        workProbed: input.workProbed,
         baseline: input.baseline,
         firstSeen: input.plan.firstSeen,
         byStatus: input.plan.byStatus,

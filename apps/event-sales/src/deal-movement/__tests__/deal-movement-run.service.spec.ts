@@ -1,4 +1,7 @@
-import type { DealMovementStateEntry } from '@lib/sales-ai-analytics';
+import {
+    DEAL_MOVEMENT_CALC_VERSION,
+    type DealMovementStateEntry,
+} from '@lib/sales-ai-analytics';
 import { buildRun, DOMAIN, entry, NOW } from './deal-movement-run.fixture';
 
 describe('прогон движения сделок портала', () => {
@@ -56,6 +59,7 @@ describe('прогон движения сделок портала', () => {
         expect(runState.markRun).toHaveBeenCalledWith(DOMAIN, {
             day: '2026-11-18',
             at: NOW.toISOString(),
+            calc: DEAL_MOVEMENT_CALC_VERSION,
         });
         expect(runState.extend).toHaveBeenCalledWith(DOMAIN, 'token');
         expect(runState.unlock).toHaveBeenCalledWith(DOMAIN, 'token');
@@ -104,6 +108,23 @@ describe('прогон движения сделок портала', () => {
         expect(outcome).toMatchObject({
             kind: 'ran',
             status: { baseline: true, firstSeen: 2, changed: 0 },
+        });
+    });
+
+    it('счёт прошлой версии расчёта — базовая линия: прежние статусы значат другое', async () => {
+        const { service, stateStore, evaluator } = buildRun({
+            lastRunAt: '2026-11-16T23:30:00.000Z',
+            lastRunCalc: 'deal-movement-1.0.0',
+            previous: new Map([['1', entry('stuck')]]),
+        });
+
+        const outcome = await service.run(DOMAIN, 'count', 'nightly', NOW);
+
+        expect(stateStore.load).not.toHaveBeenCalled();
+        expect((evaluator.evaluate.mock.calls[0] as unknown[])[4]).toBeNull();
+        expect(outcome).toMatchObject({
+            kind: 'ran',
+            status: { baseline: true, changed: 0 },
         });
     });
 

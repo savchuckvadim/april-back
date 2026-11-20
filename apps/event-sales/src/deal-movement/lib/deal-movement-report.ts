@@ -3,7 +3,6 @@ import {
     DEAL_MOVEMENT_DIGEST_SKIP_TITLES,
     DEAL_MOVEMENT_RUN_MODE_TITLES,
     DEAL_MOVEMENT_SNAPSHOT_CHANGES_LIMIT,
-    DEAL_MOVEMENT_STATUS_TITLES,
     dealMovementDaysText,
     dealMovementReasonTexts,
     type DealMovementDigestSummary,
@@ -12,29 +11,33 @@ import {
     type DealMovementRunMode,
     type DealMovementRunStatus,
     type DealMovementSnapshotPayload,
-    type DealMovementStatus,
     type DealMovementVerdict,
 } from '@lib/sales-ai-analytics';
 import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
+import { dealMovementCountsText } from './deal-movement-digest.blocks';
 
 /**
  * Тексты итога ночи (нам в Telegram) и дневной снимок для ais. По-русски,
  * без кодов статусов (правило UI-текстов). Чистые функции.
  */
 
-/** Порядок статусов в итоге: от спокойных к тревожным, как читает человек. */
-const STATUS_ORDER: readonly DealMovementStatus[] = [
-    'moving',
-    'stuck',
-    'rolled_back',
-    'at_risk',
-];
-
-const countsLine = (byStatus: Record<DealMovementStatus, number>): string =>
-    STATUS_ORDER.map(
-        status =>
-            `${DEAL_MOVEMENT_STATUS_TITLES[status]} — ${byStatus[status]}`,
-    ).join(' · ');
+/**
+ * Откуда сроки и сколько сделок проверено по делам Битрикса — для
+ * присмотра за нагрузкой; у прогонов до 20.11.2026 строки нет.
+ */
+function sourcesLine(status: DealMovementRunStatus): string | null {
+    if (
+        status.stagesByHistory === undefined &&
+        status.workProbed === undefined
+    ) {
+        return null;
+    }
+    return (
+        `Сроки по истории портала — у стадий: ${status.stagesByHistory ?? 0}, ` +
+        `у остальных общий порог; звонки и дела Битрикса проверены у ` +
+        `сделок: ${status.workProbed ?? 0}`
+    );
+}
 
 const quietText = (notes: DealMovementNotesSummary): string =>
     `не чаще раза в ${dealMovementDaysText(DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES)} — ${notes.deferredQuiet}`;
@@ -90,12 +93,15 @@ export function formatDealMovementRun(status: DealMovementRunStatus): string {
     const lines = [
         `📊 Движение сделок · ${status.domain} · ${DEAL_MOVEMENT_RUN_MODE_TITLES[status.mode]}`,
         `Открытых сделок: ${status.openTotal}, оценено: ${status.evaluated}`,
-        countsLine(status.byStatus),
+        dealMovementCountsText(code => status.byStatus[code]),
         status.baseline
-            ? `Базовая линия: прошлого счёта нет или он старше трёх суток — ` +
-              `смены статуса не считались. Впервые увидели сделок: ${status.firstSeen}`
+            ? `Базовая линия: прошлого счёта нет, он старше трёх суток или ` +
+              `посчитан прошлой версией правил — смены статуса не считались. ` +
+              `Впервые увидели сделок: ${status.firstSeen}`
             : `Сменили статус за ночь: ${status.changed}, впервые увидели: ${status.firstSeen}`,
     ];
+    const sources = sourcesLine(status);
+    if (sources !== null) lines.push(sources);
     if (status.notes !== undefined) {
         lines.push(...dealMovementNotesLines(status.notes, status.mode));
     }
