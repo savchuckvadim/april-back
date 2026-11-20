@@ -224,6 +224,9 @@ describe('дневной снимок', () => {
             ],
             verdicts: new Map([['9041', verdict]]),
             notified: new Set(['9041']),
+            deals: [],
+            progressChecks: [],
+            progressCheckDays: 12,
         });
 
         expect(snapshot).toMatchObject({

@@ -6,6 +6,7 @@ import { DEAL_MOVEMENT_DEAL_SELECT } from '../constants/deal-movement.const';
 import { toDealMovementRow } from '../lib/deal-movement-deal-row';
 import {
     buildSalesBaseStageLookup,
+    salesBaseStageTitles,
     type SalesBaseStageLookup,
 } from '../lib/deal-movement-stages';
 import type { DealMovementDealRow } from '../types/deal-movement.types';
@@ -14,6 +15,8 @@ import type { DealMovementDealRow } from '../types/deal-movement.types';
 export interface DealMovementOpenDeals {
     readonly categoryId: number;
     readonly stages: SalesBaseStageLookup;
+    /** Код ступени лестницы → название стадии на портале (для витрины). */
+    readonly stageTitles: ReadonlyMap<string, string>;
     readonly rows: DealMovementDealRow[];
 }
 
@@ -47,7 +50,12 @@ export class DealMovementDealsReader {
             const row = toDealMovementRow(item, stages, timezone);
             if (row !== null) rows.push(row);
         }
-        return { categoryId: Number(category.bitrixId), stages, rows };
+        return {
+            categoryId: Number(category.bitrixId),
+            stages,
+            stageTitles: salesBaseStageTitles(category),
+            rows,
+        };
     }
 
     /** Воронки нет на портале — ошибка конфигурации, а не пустой счёт. */

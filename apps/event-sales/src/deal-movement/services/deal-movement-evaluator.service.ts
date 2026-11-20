@@ -3,12 +3,14 @@ import { PBXService } from '@/modules/pbx';
 import { resolveTimezoneByDomain } from '@lib/shared/lib/date';
 import type {
     DealMovementNightDeal,
+    DealMovementProgressCheck,
     DealMovementRunPhase,
     DealMovementStateEntry,
     DealMovementVerdict,
 } from '@lib/sales-ai-analytics';
 import { needsHistory } from '../lib/deal-movement-dossier.mapper';
 import { indexOpenDeals } from '../lib/deal-movement-calls.link';
+import { dealMovementProgressChecks } from '../lib/deal-movement-progress-checks';
 import {
     dealsNeedingWork,
     evaluateDealRows,
@@ -41,6 +43,10 @@ export interface DealMovementEvaluation {
     readonly stagesByHistory: number;
     /** У скольких сделок читались звонки и дела Битрикса. */
     readonly workProbed: number;
+    /** Код ступени лестницы → название стадии на портале. */
+    readonly stageTitles: ReadonlyMap<string, string>;
+    /** Проверка продвижения звонков 4–5 (витрина «честность оценок»). */
+    readonly progressChecks: DealMovementProgressCheck[];
     readonly warnings: string[];
 }
 
@@ -88,16 +94,16 @@ export class DealMovementEvaluator {
         await onPhase('history');
         const windowStartMs =
             now.getTime() - options.thresholds.windowDays * DAY_MS;
+        const historyRead = new Set(
+            evaluated
+                .filter(row => needsHistory(row, windowStartMs))
+                .map(row => row.dealId),
+        );
         const history = await new DealMovementHistoryReader(
             bitrix,
             open.categoryId,
             open.stages,
-        ).load(
-            evaluated
-                .filter(row => needsHistory(row, windowStartMs))
-                .map(row => row.dealId),
-            warnings,
-        );
+        ).load([...historyRead], warnings);
 
         await onPhase('calls');
         const callsByDeal = await this.calls.load(
@@ -146,6 +152,15 @@ export class DealMovementEvaluator {
             capped: carryOver.length > 0,
             stagesByHistory: stageNorms.size,
             workProbed: probe.length,
+            stageTitles: open.stageTitles,
+            progressChecks: dealMovementProgressChecks({
+                rows: evaluated,
+                transitions: history.transitions,
+                historyRead,
+                calls: callsByDeal,
+                now: base.now,
+                checkDays: options.thresholds.agreedStillDays,
+            }),
             warnings,
         };
     }

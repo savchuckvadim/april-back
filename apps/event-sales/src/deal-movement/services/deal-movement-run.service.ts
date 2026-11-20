@@ -13,7 +13,7 @@ import { resolveTimezoneByDomain, type ETimeZone } from '@lib/shared/lib/date';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
 import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
 import {
-    buildDealMovementSnapshot,
+    buildDealMovementNightRecords,
     formatDealMovementFailure,
     formatDealMovementRun,
 } from '../lib/deal-movement-report';
@@ -223,16 +223,23 @@ export class DealMovementRunService {
             onPhase: phase => this.progress(ctx, phase),
         });
         ctx.status.updatedAt = new Date().toISOString();
-        await this.snapshots.save(
-            ctx.domain,
-            buildDealMovementSnapshot({
-                status: ctx.status,
-                day: ctx.day,
-                changes: plan.changes,
-                verdicts: evaluation.verdicts,
-                notified,
-            }),
-        );
+        const records = buildDealMovementNightRecords({
+            status: ctx.status,
+            day: ctx.day,
+            plan,
+            evaluation,
+            notified,
+            checkDays: options.thresholds.agreedStillDays,
+        });
+        await this.snapshots.save(ctx.domain, records.snapshot);
+        // Список для витрины вторичен: сбой его записи счёт не роняет.
+        await this.snapshots
+            .saveProblemDeals(ctx.domain, records.problemDeals)
+            .catch((error: unknown) => {
+                ctx.status.warnings.push(
+                    `список проблемных сделок для витрины не сохранён: ${getErrorString(error)}`,
+                );
+            });
         await this.runState.markRun(ctx.domain, {
             day: ctx.day,
             at: ctx.now.toISOString(),

@@ -27,7 +27,7 @@ describe('прогон движения сделок: запись в ленту
 
         const outcome = await service.run(DOMAIN, 'count', 'nightly', NOW);
 
-        expect(order).toEqual(['state', 'notes', 'snapshot', 'mark']);
+        expect(order).toEqual(['state', 'notes', 'snapshot', 'deals', 'mark']);
         expect(notes.remaining).toHaveBeenCalledWith(
             DOMAIN,
             '2026-11-18',

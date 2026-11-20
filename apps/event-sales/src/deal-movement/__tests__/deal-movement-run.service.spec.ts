@@ -161,4 +161,33 @@ describe('прогон движения сделок портала', () => {
             error: 'Битрикс недоступен',
         });
     });
+
+    it('счёт пишет список проблемных сделок ночи; его сбой счёт не роняет', async () => {
+        const { service, runState, snapshots } = buildRun({
+            lastRunAt: '2026-11-16T23:30:00.000Z',
+            previous: new Map([
+                ['1', entry('moving')],
+                ['2', entry('moving')],
+            ]),
+        });
+        snapshots.saveProblemDeals.mockRejectedValueOnce(
+            new Error('строка слишком длинная'),
+        );
+
+        const outcome = await service.run(DOMAIN, 'count', 'nightly', NOW);
+
+        expect(outcome.kind).toBe('ran');
+        expect(snapshots.saveProblemDeals).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                day: '2026-11-18',
+                deals: [expect.objectContaining({ dealId: '1' })],
+            }),
+        );
+        expect(runState.markRun).toHaveBeenCalled();
+        const status = outcome.kind === 'ran' ? outcome.status : null;
+        expect(status?.warnings).toContain(
+            'список проблемных сделок для витрины не сохранён: строка слишком длинная',
+        );
+    });
 });
