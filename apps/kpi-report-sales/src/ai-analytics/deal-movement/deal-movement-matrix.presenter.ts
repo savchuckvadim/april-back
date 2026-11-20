@@ -22,7 +22,7 @@ import type {
     DealMovementMatrixBlockDto,
     DealMovementMatrixCellDto,
     DealMovementMatrixDto,
-} from './dto/deal-movement-calls.dto';
+} from './dto/deal-movement-matrix.dto';
 
 /** Пометка клетки: низкая оценка при продвижении 4–5. */
 export function cellFlagOf(

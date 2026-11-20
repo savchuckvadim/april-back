@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AiAnalyticsEnvelopeDto } from '../../dto/ai-response-envelope.dto';
-import {
-    DealMovementHonestyBlockDto,
-    DealMovementMatrixBlockDto,
-} from './deal-movement-calls.dto';
+import { DealMovementHonestyBlockDto } from './deal-movement-honesty.dto';
+import { DealMovementMatrixBlockDto } from './deal-movement-matrix.dto';
 import { DealMovementStatusesDto } from './deal-movement-statuses.dto';
 
 /** Обзор витрины «Движение сделок» за период. */

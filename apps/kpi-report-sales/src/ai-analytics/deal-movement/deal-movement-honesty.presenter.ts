@@ -25,7 +25,7 @@ import type {
 import type {
     DealMovementHonestyBlockDto,
     DealMovementHonestyDto,
-} from './dto/deal-movement-calls.dto';
+} from './dto/deal-movement-honesty.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
