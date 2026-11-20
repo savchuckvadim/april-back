@@ -43,6 +43,13 @@ import {
 } from '../dto/ai-analytics-deal-movement-probe.dto';
 import { AiAnalyticsDealMovementService } from '../services/ai-analytics-deal-movement.service';
 import { AiAnalyticsDealMovementProbeService } from '../services/ai-analytics-deal-movement-probe.service';
+import { DEAL_MOVEMENT_STATUSES } from '../../model/deal-movement/deal-movement.types';
+import { DEAL_MOVEMENT_STATUS_TITLES } from '../../model/deal-movement/deal-movement.texts';
+
+/** Статусы словами — для описания ручки (подписи — из одного места). */
+const DEAL_MOVEMENT_STATUS_LIST = DEAL_MOVEMENT_STATUSES.map(status =>
+    DEAL_MOVEMENT_STATUS_TITLES[status].toLowerCase(),
+).join(', ');
 
 /** Пути ручек движения сделок (один источник для контроллера и спек). */
 export const AI_ANALYTICS_DEAL_MOVEMENT_ROUTES = {
@@ -68,8 +75,8 @@ export class AiAnalyticsDealMovementAdminController {
         summary: 'Посчитать движение сделок портала',
         description:
             'Ставит прогон в очередь event-sales: статусы всех открытых ' +
-            'сделок «ОП Основная» (движется, застряла, откатилась, под ' +
-            'риском) по стадиям и разобранным звонкам. dryRun: true — ' +
+            `сделок «ОП Основная» (${DEAL_MOVEMENT_STATUS_LIST}) по ` +
+            'стадиям, звонкам и делам по сделке. dryRun: true — ' +
             'подсчёт без сохранения и без записи, итог (и сколько записей ' +
             'ушло бы в ленту) в состоянии прогона; dryRun: false — ' +
             'внеочередной счёт: состояние и снимок дня сохраняются. В ленты ' +

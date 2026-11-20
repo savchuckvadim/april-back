@@ -1,45 +1,66 @@
 import {
     DEAL_MOVEMENT_ALARM_STATUSES,
     dealMovementReasonTexts,
+    dueDealMovementReminder,
     isDealMovementAlarm,
+    isDealMovementWorsened,
     type DealMovementNightChange,
     type DealMovementNightDeal,
+    type DealMovementStateEntry,
     type DealMovementStatus,
 } from '@lib/sales-ai-analytics';
 import type { DealMovementDigestDeal } from '../types/deal-movement.types';
 
 /**
- * Сделки ночи → строки сводки руководителям. Чистые функции: кто «новый за
- * ночь», порядок важности, первые под риском по сумме.
+ * Сделки ночи → строки сводок руководителям. Чистые функции: кто «новая
+ * проблема», порядок важности, списки по сумме, напоминания по ступеням.
  */
 
 /**
- * Оценённые сделки ночи и смены статуса → сделки сводки. «Новая за ночь» —
- * сделка, которая этой ночью сменила статус на тревожный («застряла»,
- * «откатилась», «под риском»), в том числе с одного тревожного на другой.
+ * Оценённые сделки ночи, смены статуса и новое состояние → сделки сводки.
+ * «Новая проблема» (решение владельца 20.11.2026) — переход из «Движется»
+ * в любой проблемный статус или ухудшение («Без продвижения» → «Под
+ * риском» / «Без внимания», любой → «Вернулась назад»); улучшение — нет.
+ * Ступень напоминания — по сроку стадии и последней напомненной ступени
+ * из состояния.
  */
 export function buildDealMovementDigestDeals(
     deals: readonly DealMovementNightDeal[],
     changes: readonly DealMovementNightChange[],
+    state: ReadonlyMap<string, DealMovementStateEntry>,
 ): DealMovementDigestDeal[] {
     const newFrom = new Map<string, DealMovementStatus>();
     for (const change of changes) {
-        if (isDealMovementAlarm(change.to)) {
+        if (isDealMovementWorsened(change.from, change.to)) {
             newFrom.set(change.dealId, change.from);
         }
     }
-    return deals.map(deal => ({
-        dealId: deal.verdict.dealId,
-        title: deal.title,
-        assignedById: deal.assignedById,
-        amount: deal.amount,
-        status: deal.verdict.status,
-        newFrom: newFrom.get(deal.verdict.dealId) ?? null,
-        reasons: dealMovementReasonTexts(deal.verdict).join('; '),
-        daysInStage: deal.verdict.facts.daysInStage,
-        // Находку аудита добавляет сама рассылка (читает хранилище аудита).
-        audit: null,
-    }));
+    return deals.map(deal => {
+        const { dealId, status, facts } = deal.verdict;
+        const entry = state.get(dealId);
+        return {
+            dealId,
+            title: deal.title,
+            assignedById: deal.assignedById,
+            amount: deal.amount,
+            status,
+            newFrom: newFrom.get(dealId) ?? null,
+            reasons: dealMovementReasonTexts(deal.verdict).join('; '),
+            daysInStage: facts.daysInStage,
+            limit: {
+                stageLimitDays: facts.stageLimitDays,
+                stageLimitSource: facts.stageLimitSource,
+            },
+            changedAt: entry?.changedAt ?? null,
+            remindStep: dueDealMovementReminder(
+                status,
+                facts,
+                entry?.remindedStep ?? 0,
+            ),
+            // Находку аудита добавляет сама рассылка (читает хранилище аудита).
+            audit: null,
+        };
+    });
 }
 
 /**
@@ -56,7 +77,7 @@ export function withDealAuditNotes(
     }));
 }
 
-/** Важность тревожного статуса: откатилась, застряла, под риском. */
+/** Важность тревожного статуса — порядок правил. */
 const severityOf = (status: DealMovementStatus): number => {
     const index = (
         DEAL_MOVEMENT_ALARM_STATUSES as readonly DealMovementStatus[]
@@ -65,6 +86,15 @@ const severityOf = (status: DealMovementStatus): number => {
 };
 
 const amountOf = (deal: DealMovementDigestDeal): number => deal.amount ?? 0;
+
+/** По сумме, при равной — дольше в стадии, затем по номеру сделки. */
+const byAmount = (
+    a: DealMovementDigestDeal,
+    b: DealMovementDigestDeal,
+): number =>
+    amountOf(b) - amountOf(a) ||
+    b.daysInStage - a.daysInStage ||
+    Number(a.dealId) - Number(b.dealId);
 
 /** «Новые за ночь»: важные статусы первыми, внутри — по сумме. */
 export function newDealMovementDigestDeals(
@@ -82,24 +112,36 @@ export function newDealMovementDigestDeals(
         );
 }
 
+/** Первые N по сумме среди сделок, прошедших фильтр. */
+export function topDealMovementDigestDeals(
+    deals: readonly DealMovementDigestDeal[],
+    top: number,
+    keep: (deal: DealMovementDigestDeal) => boolean,
+): DealMovementDigestDeal[] {
+    return deals.filter(keep).sort(byAmount).slice(0, Math.max(0, top));
+}
+
 /**
  * «Под риском — первые N по сумме»: при равной сумме — у кого больше дней
  * в стадии. Сделки из «Новых за ночь» не повторяются.
  */
-export function topAtRiskDealMovementDigestDeals(
+export const topAtRiskDealMovementDigestDeals = (
     deals: readonly DealMovementDigestDeal[],
     top: number,
     shownAsNew: ReadonlySet<string>,
-): DealMovementDigestDeal[] {
-    return deals
-        .filter(
-            deal => deal.status === 'at_risk' && !shownAsNew.has(deal.dealId),
-        )
-        .sort(
-            (a, b) =>
-                amountOf(b) - amountOf(a) ||
-                b.daysInStage - a.daysInStage ||
-                Number(a.dealId) - Number(b.dealId),
-        )
-        .slice(0, Math.max(0, top));
-}
+): DealMovementDigestDeal[] =>
+    topDealMovementDigestDeals(
+        deals,
+        top,
+        deal => deal.status === 'at_risk' && !shownAsNew.has(deal.dealId),
+    );
+
+/** Статус сменился после момента (ISO); момента нет — не сменился. */
+export const changedSince = (
+    deal: DealMovementDigestDeal,
+    sinceMs: number,
+): boolean => {
+    if (deal.changedAt === null) return false;
+    const atMs = Date.parse(deal.changedAt);
+    return !Number.isNaN(atMs) && atMs > sinceMs;
+};

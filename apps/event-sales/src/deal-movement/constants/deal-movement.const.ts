@@ -37,6 +37,8 @@ export const DEAL_MOVEMENT_TTL_SEC = {
     nightCounter: 2 * DAY_SEC,
     /** Итог проверки записи в ленту — две недели. */
     probe: 14 * DAY_SEC,
+    /** Отметка сводки за период: дольше двух недель с запасом. */
+    periodDigest: 60 * DAY_SEC,
 } as const;
 
 /**
@@ -79,6 +81,45 @@ export const DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES = 3;
 export const DEAL_MOVEMENT_HISTORY = {
     dealsPerCommand: 50,
     maxRounds: 40,
+} as const;
+
+/**
+ * Работа по сделке из дел Битрикса (решение 20.11.2026): читается только
+ * у сделок, которым иначе досталось бы «Без внимания», — команда
+ * `crm.activity.list` на сделку (фильтр по привязкам: звонок, сделанный
+ * из карточки, записан на контакт или компанию и к сделке только
+ * привязан), одна страница свежих, пачками через ограничитель запросов.
+ */
+export const DEAL_MOVEMENT_WORK = {
+    /** Звонок короче стольких секунд — недозвон или сброс. */
+    missedCallMaxSec: 20,
+    /** Провайдер дела-зеркала задачи (задача, привязанная к сделке). */
+    taskProvider: 'CRM_TASKS_TASK',
+    /** Тип провайдера «звонок» (телефония Битрикса и внешняя). */
+    callProviderType: 'CALL',
+    /** Значение «да» полей-флагов дела (`COMPLETED`). */
+    yes: 'Y',
+    select: [
+        'ID',
+        'TYPE_ID',
+        'PROVIDER_ID',
+        'PROVIDER_TYPE_ID',
+        'CREATED',
+        'LAST_UPDATED',
+        'START_TIME',
+        'END_TIME',
+        'COMPLETED',
+    ],
+} as const;
+
+/**
+ * Срок стадии по истории портала (решение 20.11.2026): p90 дней в стадии
+ * по закрытым эпизодам уже прочитанной истории стадий; эпизодов меньше —
+ * общий порог настройки `deal_movement_stuck_days`.
+ */
+export const DEAL_MOVEMENT_STAGE_NORM = {
+    quantile: 0.9,
+    minEpisodes: 20,
 } as const;
 
 /** Расшифровок в одном запросе разборов к БД (решение 17.11.2026). */

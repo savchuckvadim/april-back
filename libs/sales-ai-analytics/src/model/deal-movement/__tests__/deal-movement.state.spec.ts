@@ -22,6 +22,10 @@ const verdict = (
     facts: {
         daysInStage: 3,
         stageLimitDays: 21,
+        stageLimitSource: 'default',
+        idleDays: null,
+        idleLookbackDays: 60,
+        recentWork: null,
         stepDate: null,
         lastProgress: null,
         daysSinceAgreed: null,
@@ -81,6 +85,7 @@ describe('план ночи движения сделок', () => {
         });
         expect(plan.byStatus).toEqual({
             rolled_back: 0,
+            abandoned: 0,
             stuck: 0,
             at_risk: 1,
             moving: 1,
@@ -197,6 +202,54 @@ describe('план ночи движения сделок', () => {
         expect([...plan.state.keys()].sort()).toEqual(['1', '2']);
         expect(plan.state.get('2')?.status).toBe('stuck');
         expect(plan.byStatus.stuck).toBe(0);
+    });
+
+    it('«Без внимания» в ленту не пишется: о нём «сказано» молча, запись не планируется', () => {
+        const plan = planDealMovementNight({
+            previous: new Map([
+                ['1', entry('stuck')],
+                ['2', entry('moving')],
+            ]),
+            deals: [deal('1', 'abandoned', 900), deal('2', 'stuck', 100)],
+            mode: 'notify',
+            limits: notifyLimits,
+            now: NOW,
+        });
+
+        expect(plan.toNotify).toEqual(['2']);
+        expect(plan.deferred).toBe(0);
+        expect(plan.state.get('1')).toMatchObject({
+            status: 'abandoned',
+            notifiedStatus: 'abandoned',
+            changedAt: NOW,
+            notifiedAt: null,
+        });
+        expect(plan.changes.map(change => change.to)).toEqual([
+            'abandoned',
+            'stuck',
+        ]);
+    });
+
+    it('ступень напоминания живёт, пока сделка в той же стадии; смена стадии — сброс', () => {
+        const plan = planDealMovementNight({
+            previous: new Map([
+                ['1', entry('stuck', { remindedStep: 3 })],
+                [
+                    '2',
+                    entry('stuck', { remindedStep: 2, stageCode: 'sales_new' }),
+                ],
+                ['3', entry('stuck')],
+            ]),
+            deals: [deal('1', 'stuck'), deal('2', 'stuck'), deal('3', 'stuck')],
+            mode: 'silent',
+            limits: DEAL_MOVEMENT_NIGHT_DEFAULTS,
+            now: NOW,
+        });
+
+        expect(plan.state.get('1')?.remindedStep).toBe(3);
+        expect(plan.state.get('2')?.remindedStep).toBe(0);
+        // Состояние до 20.11.2026 — без ступени: не напоминали.
+        expect(plan.state.get('3')?.remindedStep).toBe(0);
     });
 
     it('отметка записи: о текущем статусе сказали', () => {

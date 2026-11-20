@@ -12,6 +12,7 @@ import { ActiveStaffModule } from '../shared/active-staff/active-staff.module';
 import { DealMovementScheduler } from './deal-movement.scheduler';
 import { DealMovementRunProcessor } from './queue/deal-movement-run.processor';
 import { DealMovementCallsLoader } from './services/deal-movement-calls.loader';
+import { DealMovementDigestSchedule } from './services/deal-movement-digest.schedule';
 import { DealMovementDigestService } from './services/deal-movement-digest.service';
 import { DealMovementEvaluator } from './services/deal-movement-evaluator.service';
 import { DealMovementNightCounters } from './services/deal-movement-night-counters';
@@ -66,6 +67,7 @@ import { DealMovementTodoService } from './services/deal-movement-todo.service';
         DealMovementEvaluator,
         DealMovementTodoService,
         DealMovementNotesService,
+        DealMovementDigestSchedule,
         DealMovementDigestService,
         DealMovementPublishService,
         DealMovementRunService,

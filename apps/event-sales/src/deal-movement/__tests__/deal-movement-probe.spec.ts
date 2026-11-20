@@ -16,7 +16,7 @@ const timelineMock = (result: unknown = { logMessage: { id: 1 } }) => ({
 });
 
 describe('запись в ленту одной сделки', () => {
-    const note = { title: 'Движение сделки: Застряла', text: 'Текст' };
+    const note = { title: 'Движение сделки: Без продвижения', text: 'Текст' };
 
     it('комментарий — жирный заголовок и текст одним полем, без автоповтора', async () => {
         const timeline = timelineMock();
@@ -29,7 +29,7 @@ describe('запись в ленту одной сделки', () => {
             {
                 ENTITY_ID: 9041,
                 ENTITY_TYPE: 'deal',
-                COMMENT: '[b]Движение сделки: Застряла[/b]\n\nТекст',
+                COMMENT: '[b]Движение сделки: Без продвижения[/b]\n\nТекст',
             },
             { retries: 0 },
         );

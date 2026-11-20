@@ -22,6 +22,10 @@ const verdict: DealMovementVerdict = {
     facts: {
         daysInStage: 12,
         stageLimitDays: 21,
+        stageLimitSource: 'default',
+        idleDays: null,
+        idleLookbackDays: 60,
+        recentWork: null,
         stepDate: '2026-11-05',
         lastProgress: 3,
         daysSinceAgreed: null,

@@ -8,7 +8,11 @@ import { DealMovementNightCounters } from '../services/deal-movement-night-count
 import { DealMovementRunState } from '../services/deal-movement-run-state';
 import { DealMovementSnapshotStore } from '../services/deal-movement-snapshot.store';
 import { DealMovementStateStore } from '../services/deal-movement-state.store';
-import { encodeDealMovementEntry } from '../lib/deal-movement-state.codec';
+import {
+    decodeDealMovementEntry,
+    encodeDealMovementEntry,
+} from '../lib/deal-movement-state.codec';
+import { isDealMovementCalcChanged } from '../lib/deal-movement-schedule';
 
 const DOMAIN = 'garant.bitrix24.ru';
 
@@ -118,6 +122,68 @@ describe('состояние по сделкам в Redis', () => {
     });
 });
 
+describe('состояние по сделкам: напоминания и версия расчёта', () => {
+    it('несколько сделок — по полю хеша, остальное не трогается; пусто — ни одной команды', async () => {
+        const redis = redisWith();
+        const store = new DealMovementStateStore({
+            getClient: () => redis,
+        } as never);
+        const reminded = {
+            ...entry,
+            status: 'stuck' as const,
+            remindedStep: 2,
+        };
+
+        await store.saveEntries(DOMAIN, new Map([['9041', reminded]]));
+        await store.saveEntries(DOMAIN, new Map());
+
+        expect(redis.hset).toHaveBeenCalledTimes(1);
+        expect(redis.hset).toHaveBeenCalledWith(
+            DEAL_MOVEMENT_REDIS_KEYS.state(DOMAIN),
+            { '9041': encodeDealMovementEntry(reminded) },
+        );
+        expect(redis.del).not.toHaveBeenCalled();
+    });
+
+    it('ступень напоминания читается; у записей до 20.11.2026 её нет — 0', () => {
+        expect(
+            decodeDealMovementEntry(
+                encodeDealMovementEntry({ ...entry, remindedStep: 3 }),
+            )?.remindedStep,
+        ).toBe(3);
+        expect(
+            decodeDealMovementEntry(encodeDealMovementEntry(entry))
+                ?.remindedStep,
+        ).toBe(0);
+        // Новый статус «Без внимания» состояние понимает.
+        expect(
+            decodeDealMovementEntry(
+                encodeDealMovementEntry({ ...entry, status: 'abandoned' }),
+            )?.status,
+        ).toBe('abandoned');
+    });
+
+    it('счёт другой версии расчёта — базовая линия; первой метки нет — решает срок', () => {
+        const at = '2026-11-17T23:30:00.000Z';
+        expect(isDealMovementCalcChanged({ day: '2026-11-18', at }, 'v2')).toBe(
+            true,
+        );
+        expect(
+            isDealMovementCalcChanged(
+                { day: '2026-11-18', at, calc: 'v1' },
+                'v2',
+            ),
+        ).toBe(true);
+        expect(
+            isDealMovementCalcChanged(
+                { day: '2026-11-18', at, calc: 'v2' },
+                'v2',
+            ),
+        ).toBe(false);
+        expect(isDealMovementCalcChanged(null, 'v2')).toBe(false);
+    });
+});
+
 describe('счётчики ночи', () => {
     it('записи и подсказки за день портала: пусто — ноль, прибавка со сроком двое суток', async () => {
         const redis = redisWith({
@@ -159,6 +225,36 @@ describe('счётчики ночи', () => {
             'EX',
             2 * 24 * 60 * 60,
             'NX',
+        );
+    });
+
+    it('сводка за период: отметка последней — день и момент, срок 60 суток; битое — null', async () => {
+        const redis = redisWith({
+            get: jest
+                .fn()
+                .mockResolvedValueOnce(
+                    '{"day":"2026-11-16","at":"2026-11-15T23:27:00.000Z"}',
+                )
+                .mockResolvedValueOnce('{битое'),
+        });
+        const counters = new DealMovementNightCounters({
+            getClient: () => redis,
+        } as never);
+
+        expect(await counters.periodDigestMark(DOMAIN)).toEqual({
+            day: '2026-11-16',
+            at: '2026-11-15T23:27:00.000Z',
+        });
+        expect(await counters.periodDigestMark(DOMAIN)).toBeNull();
+        await counters.markPeriodDigest(DOMAIN, {
+            day: '2026-11-23',
+            at: '2026-11-22T23:27:00.000Z',
+        });
+        expect(redis.set).toHaveBeenCalledWith(
+            DEAL_MOVEMENT_REDIS_KEYS.digestLast(DOMAIN),
+            '{"day":"2026-11-23","at":"2026-11-22T23:27:00.000Z"}',
+            'EX',
+            60 * 24 * 60 * 60,
         );
     });
 });

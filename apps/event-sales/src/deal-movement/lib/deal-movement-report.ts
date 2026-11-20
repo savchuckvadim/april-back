@@ -3,38 +3,50 @@ import {
     DEAL_MOVEMENT_DIGEST_SKIP_TITLES,
     DEAL_MOVEMENT_RUN_MODE_TITLES,
     DEAL_MOVEMENT_SNAPSHOT_CHANGES_LIMIT,
-    DEAL_MOVEMENT_STATUS_TITLES,
+    DEAL_MOVEMENT_SNAPSHOT_FORM,
     dealMovementDaysText,
     dealMovementReasonTexts,
     type DealMovementDigestSummary,
+    type DealMovementDealsSnapshotPayload,
     type DealMovementNightChange,
+    type DealMovementNightDeal,
+    type DealMovementNightPlan,
     type DealMovementNotesSummary,
+    type DealMovementProgressCheck,
     type DealMovementRunMode,
     type DealMovementRunStatus,
     type DealMovementSnapshotPayload,
-    type DealMovementStatus,
     type DealMovementVerdict,
 } from '@lib/sales-ai-analytics';
 import { DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES } from '../constants/deal-movement.const';
+import { dealMovementCountsText } from './deal-movement-digest.blocks';
+import {
+    buildDealMovementProblemDeals,
+    dealMovementStatusSums,
+} from './deal-movement-night-records';
 
 /**
  * Тексты итога ночи (нам в Telegram) и дневной снимок для ais. По-русски,
  * без кодов статусов (правило UI-текстов). Чистые функции.
  */
 
-/** Порядок статусов в итоге: от спокойных к тревожным, как читает человек. */
-const STATUS_ORDER: readonly DealMovementStatus[] = [
-    'moving',
-    'stuck',
-    'rolled_back',
-    'at_risk',
-];
-
-const countsLine = (byStatus: Record<DealMovementStatus, number>): string =>
-    STATUS_ORDER.map(
-        status =>
-            `${DEAL_MOVEMENT_STATUS_TITLES[status]} — ${byStatus[status]}`,
-    ).join(' · ');
+/**
+ * Откуда сроки и сколько сделок проверено по делам Битрикса — для
+ * присмотра за нагрузкой; у прогонов до 20.11.2026 строки нет.
+ */
+function sourcesLine(status: DealMovementRunStatus): string | null {
+    if (
+        status.stagesByHistory === undefined &&
+        status.workProbed === undefined
+    ) {
+        return null;
+    }
+    return (
+        `Сроки по истории портала — у стадий: ${status.stagesByHistory ?? 0}, ` +
+        `у остальных общий порог; звонки и дела Битрикса проверены у ` +
+        `сделок: ${status.workProbed ?? 0}`
+    );
+}
 
 const quietText = (notes: DealMovementNotesSummary): string =>
     `не чаще раза в ${dealMovementDaysText(DEAL_MOVEMENT_MIN_DAYS_BETWEEN_NOTES)} — ${notes.deferredQuiet}`;
@@ -90,12 +102,15 @@ export function formatDealMovementRun(status: DealMovementRunStatus): string {
     const lines = [
         `📊 Движение сделок · ${status.domain} · ${DEAL_MOVEMENT_RUN_MODE_TITLES[status.mode]}`,
         `Открытых сделок: ${status.openTotal}, оценено: ${status.evaluated}`,
-        countsLine(status.byStatus),
+        dealMovementCountsText(code => status.byStatus[code]),
         status.baseline
-            ? `Базовая линия: прошлого счёта нет или он старше трёх суток — ` +
-              `смены статуса не считались. Впервые увидели сделок: ${status.firstSeen}`
+            ? `Базовая линия: прошлого счёта нет, он старше трёх суток или ` +
+              `посчитан прошлой версией правил — смены статуса не считались. ` +
+              `Впервые увидели сделок: ${status.firstSeen}`
             : `Сменили статус за ночь: ${status.changed}, впервые увидели: ${status.firstSeen}`,
     ];
+    const sources = sourcesLine(status);
+    if (sources !== null) lines.push(sources);
     if (status.notes !== undefined) {
         lines.push(...dealMovementNotesLines(status.notes, status.mode));
     }
@@ -117,7 +132,8 @@ export const formatDealMovementFailure = (
 /**
  * Дневной снимок счёта: итог, записи в ленту и смены статуса словами с
  * пометкой «записано в ленту». Причины — по вердикту ночи; смен больше
- * лимита — остаток числом.
+ * лимита — остаток числом. Форма 2 (20.11.2026): счёт и сумма по статусам
+ * всего и по ответственным, отметки проверки продвижения звонков.
  */
 export function buildDealMovementSnapshot(input: {
     status: DealMovementRunStatus;
@@ -126,9 +142,16 @@ export function buildDealMovementSnapshot(input: {
     verdicts: ReadonlyMap<string, DealMovementVerdict>;
     /** Сделки, которым запись в ленту ушла этим прогоном. */
     notified?: ReadonlySet<string>;
+    /** Оценённые сделки ночи — для счёта и суммы по ответственным. */
+    deals: readonly DealMovementNightDeal[];
+    /** Проверка продвижения звонков 4–5. */
+    progressChecks: readonly DealMovementProgressCheck[];
+    /** За сколько дней после звонка ждали переход стадии. */
+    progressCheckDays: number;
 }): DealMovementSnapshotPayload {
     const { status, day, changes, verdicts } = input;
     const notified = input.notified ?? new Set<string>();
+    const sums = dealMovementStatusSums(input.deals);
     return {
         day,
         mode: status.mode,
@@ -160,5 +183,56 @@ export function buildDealMovementSnapshot(input: {
             ? {}
             : { digest: { ...status.digest } }),
         warnings: [...status.warnings],
+        form: DEAL_MOVEMENT_SNAPSHOT_FORM,
+        totals: sums.totals,
+        byManager: sums.byManager,
+        progressChecks: input.progressChecks.map(check => ({ ...check })),
+        progressCheckDays: input.progressCheckDays,
+    };
+}
+
+/** Итог оценки ночи в объёме записей витрины. */
+export interface DealMovementNightRecordsEvaluation {
+    readonly deals: readonly DealMovementNightDeal[];
+    readonly verdicts: ReadonlyMap<string, DealMovementVerdict>;
+    readonly stageTitles: ReadonlyMap<string, string>;
+    readonly progressChecks: readonly DealMovementProgressCheck[];
+}
+
+/**
+ * Записи ночи в ais: дневной снимок и список проблемных сделок последней
+ * ночи (с какой ночи в статусе — по новому состоянию плана).
+ */
+export function buildDealMovementNightRecords(input: {
+    status: DealMovementRunStatus;
+    day: string;
+    plan: Pick<DealMovementNightPlan, 'changes' | 'state'>;
+    evaluation: DealMovementNightRecordsEvaluation;
+    notified: ReadonlySet<string>;
+    /** За сколько дней после звонка ждали переход стадии. */
+    checkDays: number;
+}): {
+    snapshot: DealMovementSnapshotPayload;
+    problemDeals: DealMovementDealsSnapshotPayload;
+} {
+    const { status, day, plan, evaluation } = input;
+    return {
+        snapshot: buildDealMovementSnapshot({
+            status,
+            day,
+            changes: plan.changes,
+            verdicts: evaluation.verdicts,
+            notified: input.notified,
+            deals: evaluation.deals,
+            progressChecks: evaluation.progressChecks,
+            progressCheckDays: input.checkDays,
+        }),
+        problemDeals: buildDealMovementProblemDeals({
+            deals: evaluation.deals,
+            state: plan.state,
+            stageTitles: evaluation.stageTitles,
+            day,
+            generatedAt: status.updatedAt,
+        }),
     };
 }

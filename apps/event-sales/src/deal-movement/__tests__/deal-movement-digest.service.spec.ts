@@ -5,6 +5,9 @@ import {
 } from '../../deal-audit/constants/deal-audit.const';
 import { DealAuditDigestDelivery } from '../../deal-audit/services/deal-audit-digest-delivery';
 import type { DealAuditFinding } from '../../deal-audit/services/deal-audit-findings.store';
+import type { DealMovementStateEntry } from '@lib/sales-ai-analytics';
+import type { DealMovementPeriodDigestMark } from '../lib/deal-movement-digest.schedule';
+import { DealMovementDigestSchedule } from '../services/deal-movement-digest.schedule';
 import { DealMovementDigestService } from '../services/deal-movement-digest.service';
 import type {
     DealMovementDigestDeal,
@@ -40,6 +43,9 @@ const deal = (
     newFrom: null,
     reasons: 'тревожных признаков нет',
     daysInStage: 3,
+    limit: { stageLimitDays: 21, stageLimitSource: 'default' },
+    changedAt: null,
+    remindStep: null,
     audit: null,
     ...fields,
 });
@@ -49,6 +55,7 @@ const NEW_STUCK = { status: 'stuck', newFrom: 'moving' } as const;
 const OPTIONS: DealMovementDigestOptions = {
     enabled: true,
     mode: 'new_only',
+    weekday: 1,
     top: 15,
 };
 
@@ -62,6 +69,8 @@ interface Setup {
     /** Находки аудита в Redis; Error — хранилище не прочиталось. */
     findings?: Map<string, DealAuditFinding> | Error;
     frequency?: 'weekly' | 'monthly';
+    /** Прошлая сводка за период; нет — не было. */
+    lastPeriod?: DealMovementPeriodDigestMark | null;
 }
 
 const build = (setup: Setup = {}) => {
@@ -121,7 +130,10 @@ const build = (setup: Setup = {}) => {
     };
     const counters = {
         claimDigest: jest.fn().mockResolvedValue(setup.claimed ?? true),
+        periodDigestMark: jest.fn().mockResolvedValue(setup.lastPeriod ?? null),
+        markPeriodDigest: jest.fn().mockResolvedValue(undefined),
     };
+    const stateStore = { saveEntries: jest.fn().mockResolvedValue(undefined) };
     const findings = {
         load:
             setup.findings instanceof Error
@@ -133,21 +145,25 @@ const build = (setup: Setup = {}) => {
         departments as never,
         staff as never,
         auditSettings as never,
-        counters as never,
         findings as never,
+        new DealMovementDigestSchedule(counters as never, stateStore as never),
     );
-    return { service, bitrix, departments, counters };
+    return { service, bitrix, departments, counters, stateStore };
 };
 
 /** Ночь движения сделок: 18.11 02:27 МСК. */
 const NOW = new Date('2026-11-17T23:27:00.000Z');
 
-const request = (deals: DealMovementDigestDeal[]) => ({
+const request = (
+    deals: DealMovementDigestDeal[],
+    state: ReadonlyMap<string, DealMovementStateEntry> = new Map(),
+) => ({
     domain: DOMAIN,
     day: DAY,
     now: NOW,
     options: OPTIONS,
     deals,
+    state,
 });
 
 /** Свежая находка аудита: ночь на понедельник 16.11. */
@@ -188,7 +204,7 @@ describe('сводка «Движение сделок» руководител�
         expect(message.MESSAGE).toContain('Движение сделок за 18.11');
         expect(message.MESSAGE).toContain('Иванов Пётр');
         expect(message.MESSAGE).toContain(
-            'Движется — 1 · Застряла — 1 · Откатилась — 0 · Под риском — 0',
+            'Движется — 1 · Без продвижения — 1 · Без внимания — 0 · Вернулась назад — 0 · Под риском — 0',
         );
         expect(warnings.join(' ')).toContain('получатели не работают');
     });
@@ -355,5 +371,177 @@ describe('доставка аудита сделок без своих мето�
             { TITLE: string },
         ];
         expect(task.TITLE).toBe('Забытые сделки — 2 · аудит сделок');
+    });
+});
+
+describe('сводка «Движение сделок» за период: раз в неделю и раз в две недели', () => {
+    /** Понедельник 23.11.2026, ночной счёт 02:27 МСК. */
+    const MONDAY = '2026-11-23';
+    const MONDAY_NOW = new Date('2026-11-22T23:27:00.000Z');
+    const weekly = (
+        deals: DealMovementDigestDeal[],
+        mode: 'weekly' | 'biweekly' = 'weekly',
+        day = MONDAY,
+        state: ReadonlyMap<string, DealMovementStateEntry> = new Map(),
+    ) => ({
+        ...request(deals, state),
+        day,
+        now: MONDAY_NOW,
+        options: { ...OPTIONS, mode, weekday: 1 },
+    });
+    const mark = (day: string): DealMovementPeriodDigestMark => ({
+        day,
+        at: `${day}T00:00:00.000Z`,
+    });
+    const stateEntry = (
+        fields: Partial<DealMovementStateEntry> = {},
+    ): DealMovementStateEntry => ({
+        status: 'stuck',
+        notifiedStatus: 'stuck',
+        reasons: ['stage_overdue'],
+        stageCode: 'sales_pres',
+        amount: 100_000,
+        assignedById: 7,
+        lastActivityAt: null,
+        changedAt: null,
+        notifiedAt: null,
+        checkedAt: '2026-11-22T23:27:00.000Z',
+        remindedStep: 0,
+        ...fields,
+    });
+
+    it('неделя — только в выбранный день: в другой день сводки нет, отметка не ставится', async () => {
+        const { service, counters, departments } = build();
+
+        const summary = await service.send(
+            weekly([deal('1', 7, { status: 'stuck' })], 'weekly', '2026-11-24'),
+            [],
+        );
+
+        expect(summary).toMatchObject({ skipped: 'not_due', sent: 0 });
+        expect(counters.markPeriodDigest).not.toHaveBeenCalled();
+        expect(counters.claimDigest).not.toHaveBeenCalled();
+        expect(departments.getFullDepartment).not.toHaveBeenCalled();
+    });
+
+    it('неделя — не чаще раза в 7 дней; отметка ставится до рассылки', async () => {
+        const early = build({ lastPeriod: mark('2026-11-17') });
+        expect(
+            await early.service.send(
+                weekly([deal('1', 7, { status: 'stuck' })]),
+                [],
+            ),
+        ).toMatchObject({ skipped: 'not_due' });
+
+        const due = build({ lastPeriod: mark('2026-11-16') });
+        const summary = await due.service.send(
+            weekly([deal('1', 7, { status: 'stuck' })]),
+            [],
+        );
+        expect(summary).toMatchObject({ skipped: null, sent: 1, reminders: 0 });
+        expect(due.counters.markPeriodDigest).toHaveBeenCalledWith(DOMAIN, {
+            day: MONDAY,
+            at: MONDAY_NOW.toISOString(),
+        });
+        const [message] = due.bitrix.message.add.mock.calls[0] as unknown as [
+            { MESSAGE: string },
+        ];
+        expect(message.MESSAGE).toContain(
+            'Движение сделок за неделю (с 16.11 по 23.11)',
+        );
+    });
+
+    it('две недели — раз в 14 дней; первой сводки ждать не нужно', async () => {
+        const week = build({ lastPeriod: mark('2026-11-16') });
+        expect(
+            await week.service.send(
+                weekly([deal('1', 7, { status: 'stuck' })], 'biweekly'),
+                [],
+            ),
+        ).toMatchObject({ skipped: 'not_due' });
+
+        const twoWeeks = build({ lastPeriod: mark('2026-11-09') });
+        expect(
+            await twoWeeks.service.send(
+                weekly([deal('1', 7, { status: 'stuck' })], 'biweekly'),
+                [],
+            ),
+        ).toMatchObject({ skipped: null, sent: 1 });
+
+        const first = build();
+        expect(
+            await first.service.send(
+                weekly([deal('1', 7, { status: 'stuck' })], 'biweekly'),
+                [],
+            ),
+        ).toMatchObject({ skipped: null, sent: 1 });
+    });
+
+    it('«Давно без продвижения»: показанная ступень запоминается в состоянии сделки', async () => {
+        const { service, bitrix, stateStore } = build();
+        const state = new Map([
+            ['1', stateEntry()],
+            ['2', stateEntry({ status: 'at_risk' })],
+        ]);
+
+        const summary = await service.send(
+            weekly(
+                [
+                    deal('1', 7, {
+                        status: 'stuck',
+                        daysInStage: 63,
+                        remindStep: 2,
+                        reasons: 'звонок 20.11, стадия не меняется 63 дня',
+                    }),
+                    deal('2', 8, { status: 'at_risk' }),
+                ],
+                'weekly',
+                MONDAY,
+                state,
+            ),
+            [],
+        );
+
+        expect(summary.reminders).toBe(1);
+        const [message] = bitrix.message.add.mock.calls[0] as unknown as [
+            { MESSAGE: string },
+        ];
+        expect(message.MESSAGE).toContain(
+            'Давно без продвижения — первые 1 по сумме',
+        );
+        expect(message.MESSAGE).toContain(
+            'в стадии 63 дня при пороге 21 день — дольше срока больше чем в 2 раза',
+        );
+        expect(stateStore.saveEntries).toHaveBeenCalledWith(
+            DOMAIN,
+            new Map([['1', stateEntry({ remindedStep: 2 })]]),
+        );
+    });
+
+    it('ежедневная сводка напоминаний не показывает и ступень не запоминает', async () => {
+        const { service, bitrix, stateStore } = build();
+
+        await service.send(
+            {
+                ...request(
+                    [
+                        deal('1', 7, {
+                            ...NEW_STUCK,
+                            daysInStage: 63,
+                            remindStep: 2,
+                        }),
+                    ],
+                    new Map([['1', stateEntry()]]),
+                ),
+                options: { ...OPTIONS, mode: 'daily' },
+            },
+            [],
+        );
+
+        const [message] = bitrix.message.add.mock.calls[0] as unknown as [
+            { MESSAGE: string },
+        ];
+        expect(message.MESSAGE).not.toContain('Давно без продвижения');
+        expect(stateStore.saveEntries).not.toHaveBeenCalled();
     });
 });

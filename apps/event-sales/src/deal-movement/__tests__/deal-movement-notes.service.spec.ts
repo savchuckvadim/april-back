@@ -27,6 +27,10 @@ const verdict = (
     facts: {
         daysInStage: 30,
         stageLimitDays: 21,
+        stageLimitSource: 'default',
+        idleDays: null,
+        idleLookbackDays: 60,
+        recentWork: null,
         stepDate: null,
         lastProgress: null,
         daysSinceAgreed: null,
@@ -150,7 +154,7 @@ describe('запись движения сделок в ленту', () => {
         const [first] = addTimelineComment.mock.calls[0] as unknown as [
             { COMMENT: string },
         ];
-        expect(first.COMMENT).toContain('Движение сделки: Застряла');
+        expect(first.COMMENT).toContain('Движение сделки: Без продвижения');
         expect(first.COMMENT).toContain('Что сделать:\n— Позвонить клиенту');
         expect([...outcome.written]).toEqual(['11', '12']);
         expect(stateStore.saveEntry).toHaveBeenCalledWith(

@@ -23,6 +23,11 @@ export interface DealMovementLastRun {
     readonly day: string;
     /** Момент счёта, ISO. */
     readonly at: string;
+    /**
+     * Версия расчёта (`DEAL_MOVEMENT_CALC_VERSION`); нет у меток до
+     * 20.11.2026.
+     */
+    readonly calc?: string;
 }
 
 /** День портала 'YYYY-MM-DD' — ключ «сегодня уже считали» и снимка. */
@@ -65,6 +70,16 @@ export const isDealMovementStateStale = (
     );
 };
 
+/**
+ * Счёт посчитан другой версией расчёта (или до версий): статусы прошлой
+ * ночи значат другое — базовая линия заново, без ложных «смен» статуса
+ * (20.11.2026: прежний «stuck» стал «Без внимания» и «Без продвижения»).
+ */
+export const isDealMovementCalcChanged = (
+    lastRun: DealMovementLastRun | null,
+    calc: string,
+): boolean => lastRun !== null && lastRun.calc !== calc;
+
 /** Метка из Redis → последний счёт; чужая форма — null. */
 export const parseDealMovementLastRun = (
     raw: string | null,
@@ -73,10 +88,9 @@ export const parseDealMovementLastRun = (
     try {
         const value: unknown = JSON.parse(raw);
         if (typeof value !== 'object' || value === null) return null;
-        const { day, at } = value as Record<string, unknown>;
-        return typeof day === 'string' && typeof at === 'string'
-            ? { day, at }
-            : null;
+        const { day, at, calc } = value as Record<string, unknown>;
+        if (typeof day !== 'string' || typeof at !== 'string') return null;
+        return typeof calc === 'string' ? { day, at, calc } : { day, at };
     } catch {
         return null;
     }

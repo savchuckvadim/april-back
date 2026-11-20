@@ -24,7 +24,7 @@ describe('прогон движения сделок: сводка руково�
 
         const outcome = await service.run(DOMAIN, 'count', 'nightly', NOW);
 
-        expect(order).toEqual(['state', 'digest', 'snapshot', 'mark']);
+        expect(order).toEqual(['state', 'digest', 'snapshot', 'deals', 'mark']);
         const [request] = digest.send.mock.calls[0] as unknown as [
             {
                 domain: string;

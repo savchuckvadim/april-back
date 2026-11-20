@@ -121,7 +121,9 @@ export class DealMovementPublishService {
                     deals: buildDealMovementDigestDeals(
                         input.evaluation.deals,
                         input.plan.changes,
+                        input.plan.state,
                     ),
+                    state: input.plan.state,
                 },
                 input.status.warnings,
             );

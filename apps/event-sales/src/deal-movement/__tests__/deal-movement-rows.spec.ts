@@ -1,7 +1,10 @@
 import type { IBXStageHistoryItem } from '@lib/bitrix/domain/crm/stage-history';
 import { toDealMovementRow } from '../lib/deal-movement-deal-row';
 import { resolveSalesBaseStage } from '../lib/deal-movement-stages';
+import { dealMovementStageNorms } from '../lib/deal-movement-stage-norms';
 import {
+    historyPointsByDeal,
+    stageDwellDays,
     toHistoryPoints,
     transitionsByDeal,
 } from '../lib/deal-movement-transitions';
@@ -107,7 +110,7 @@ describe('история стадий → переходы', () => {
             STAGES,
         );
 
-        const byDeal = transitionsByDeal(points);
+        const byDeal = transitionsByDeal(historyPointsByDeal(points));
 
         expect(byDeal.get(10)).toEqual([
             { at: '2026-11-05T07:00:00.000Z', fromOrder: 2, toOrder: 7 },
@@ -120,17 +123,91 @@ describe('история стадий → переходы', () => {
 
     it('закрытая стадия остаётся в истории: по ней модель узнаёт переоткрытие', () => {
         const byDeal = transitionsByDeal(
-            toHistoryPoints(
-                [
-                    historyItem(1, 20, 'C7:FAIL', '2026-11-01T10:00:00+03:00'),
-                    historyItem(2, 20, 'C7:COLD', '2026-11-10T10:00:00+03:00'),
-                ],
-                STAGES,
+            historyPointsByDeal(
+                toHistoryPoints(
+                    [
+                        historyItem(
+                            1,
+                            20,
+                            'C7:FAIL',
+                            '2026-11-01T10:00:00+03:00',
+                        ),
+                        historyItem(
+                            2,
+                            20,
+                            'C7:COLD',
+                            '2026-11-10T10:00:00+03:00',
+                        ),
+                    ],
+                    STAGES,
+                ),
             ),
         );
 
         expect(byDeal.get(20)).toEqual([
             { at: '2026-11-10T07:00:00.000Z', fromOrder: 12, toOrder: 2 },
         ]);
+    });
+});
+
+describe('срок стадии по истории портала', () => {
+    it('закрытые эпизоды стадий: дни до ухода со ступени; повтор ступени — один эпизод, текущая — не считается', () => {
+        const dwell = stageDwellDays(
+            historyPointsByDeal(
+                toHistoryPoints(
+                    [
+                        historyItem(
+                            1,
+                            30,
+                            'C7:COLD',
+                            '2026-10-01T10:00:00+03:00',
+                        ),
+                        historyItem(
+                            2,
+                            30,
+                            'C7:PRES',
+                            '2026-10-11T10:00:00+03:00',
+                        ),
+                        // Повтор той же стадии (смена воронки и обратно).
+                        historyItem(
+                            3,
+                            30,
+                            'C7:PRES',
+                            '2026-10-15T10:00:00+03:00',
+                        ),
+                        historyItem(
+                            4,
+                            30,
+                            'C7:SEND',
+                            '2026-10-31T10:00:00+03:00',
+                        ),
+                    ],
+                    STAGES,
+                ),
+            ),
+        );
+
+        expect(dwell.get(2)).toEqual([10]);
+        expect(dwell.get(4)).toEqual([20]);
+        // «Отправлены» — текущая, эпизод открыт.
+        expect(dwell.has(7)).toBe(false);
+    });
+
+    it('эпизодов достаточно — p90 вверх до целого дня; мало — срока нет (общий порог)', () => {
+        const days = Array.from({ length: 20 }, (_, index) => index + 1);
+        const norms = dealMovementStageNorms(
+            new Map([
+                [4, days],
+                [7, days.slice(0, 19)],
+                [5, Array.from({ length: 30 }, () => 0.2)],
+            ]),
+        );
+
+        // p90 ряда 1…20 (тип 7) = 18,1 → 19 дней.
+        expect(norms.get(4)).toEqual({ days: 19, episodes: 20 });
+        // 19 эпизодов < 20 — нет срока.
+        expect(norms.has(7)).toBe(false);
+        // Срок не меньше одного дня.
+        expect(norms.get(5)?.days).toBe(1);
     });
 });

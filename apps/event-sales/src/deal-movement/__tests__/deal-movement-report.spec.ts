@@ -1,4 +1,5 @@
 import {
+    DEAL_MOVEMENT_CALC_VERSION,
     dealMovementVerdict,
     type DealMovementRunStatus,
     type DealMovementStateEntry,
@@ -30,7 +31,13 @@ const status = (
     capped: false,
     baseline: false,
     firstSeen: 4,
-    byStatus: { moving: 7000, stuck: 1500, rolled_back: 12, at_risk: 500 },
+    byStatus: {
+        moving: 7000,
+        stuck: 400,
+        abandoned: 1100,
+        rolled_back: 12,
+        at_risk: 500,
+    },
     changed: 123,
     snapshotDay: '2026-11-18',
     warnings: [],
@@ -46,11 +53,21 @@ describe('итог ночи в Telegram', () => {
             [
                 '📊 Движение сделок · garant.bitrix24.ru · счёт с сохранением',
                 'Открытых сделок: 9012, оценено: 9012',
-                'Движется — 7000 · Застряла — 1500 · Откатилась — 12 · Под риском — 500',
+                'Движется — 7000 · Без продвижения — 400 · Без внимания — 1100 · Вернулась назад — 12 · Под риском — 500',
                 'Сменили статус за ночь: 123, впервые увидели: 4',
             ].join('\n'),
         );
-        expect(text).not.toMatch(/at_risk|rolled_back|dry-run/);
+        expect(text).not.toMatch(/at_risk|rolled_back|abandoned|dry-run/);
+    });
+
+    it('откуда сроки и сколько сделок проверено по делам Битрикса — строкой после смен', () => {
+        const text = formatDealMovementRun(
+            status({ stagesByHistory: 6, workProbed: 3200 }),
+        );
+
+        expect(text.split('\n')[4]).toBe(
+            'Сроки по истории портала — у стадий: 6, у остальных общий порог; звонки и дела Битрикса проверены у сделок: 3200',
+        );
     });
 
     it('базовая линия и предупреждения — отдельными строками', () => {
@@ -207,12 +224,15 @@ describe('дневной снимок', () => {
             ],
             verdicts: new Map([['9041', verdict]]),
             notified: new Set(['9041']),
+            deals: [],
+            progressChecks: [],
+            progressCheckDays: 12,
         });
 
         expect(snapshot).toMatchObject({
             day: '2026-11-18',
             mode: 'count',
-            calcVersion: 'deal-movement-1.0.0',
+            calcVersion: DEAL_MOVEMENT_CALC_VERSION,
             openTotal: 9012,
             evaluated: 9012,
             changesTotal: 1,
@@ -243,6 +263,7 @@ describe('запись состояния сделки в Redis', () => {
         changedAt: '2026-11-17T23:30:00.000Z',
         notifiedAt: null,
         checkedAt: '2026-11-17T23:30:00.000Z',
+        remindedStep: 2,
     };
 
     it('кодирование обратимо', () => {

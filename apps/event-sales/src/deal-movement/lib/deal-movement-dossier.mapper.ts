@@ -4,24 +4,39 @@ import type {
     DealMovementNightDeal,
     DealMovementTransition,
     DealMovementVerdict,
+    DealMovementWork,
 } from '@lib/sales-ai-analytics';
 import type { DealMovementDealRow } from '../types/deal-movement.types';
 
+/** Чего у досье может не быть: срок стадии по истории и дела Битрикса. */
+export interface DealMovementDossierExtra {
+    /** Срок стадии по истории портала, дней; null — истории мало. */
+    readonly stageNormDays: number | null;
+    /** Звонки, дела и задачи из Битрикса; пусто — не читались. */
+    readonly work: readonly DealMovementWork[];
+}
+
+const NO_EXTRA: DealMovementDossierExtra = { stageNormDays: null, work: [] };
+
 /**
- * Сделка, её переходы и разобранные звонки → досье правил статуса.
+ * Сделка, её переходы, разобранные звонки, срок стадии и дела → досье
+ * правил статуса.
  *
- * Что в этой волне сознательно пусто (решение 17.11.2026):
- * - срок стадии портала (p90) и вероятность продажи (θ) — null: «застряла»
- *   по порогу из настройки, правило по θ выключено;
- * - признак аудита сделок — null;
- * - задачи и дела Битрикса не читаются: контактом после договорённости
- *   считается разобранный звонок или ЛЮБАЯ активность по сделке позже её
- *   даты — поэтому последняя активность кладётся в `closedActivitiesAt`.
+ * - срок стадии — p90 по истории портала (20.11.2026), истории мало —
+ *   null: тогда общий порог настройки;
+ * - дела Битрикса — только у сделок, которым без них досталось бы «Без
+ *   внимания» (20.11.2026);
+ * - вероятность продажи (θ) — null: правило по θ выключено; признак
+ *   аудита сделок — null (решение 17.11.2026);
+ * - контактом после договорённости считается разобранный звонок или
+ *   ЛЮБАЯ активность по сделке позже её даты — поэтому последняя
+ *   активность кладётся в `closedActivitiesAt`.
  */
 export function buildDealMovementDossier(
     row: DealMovementDealRow,
     transitions: readonly DealMovementTransition[],
     calls: readonly DealMovementCall[],
+    extra: DealMovementDossierExtra = NO_EXTRA,
 ): DealMovementDossier {
     return {
         dealId: String(row.dealId),
@@ -30,11 +45,12 @@ export function buildDealMovementDossier(
         stageOrder: row.stageOrder,
         lastActivityAt: row.lastActivityAt,
         transitions,
-        stageNormDays: null,
+        stageNormDays: extra.stageNormDays,
         stageChance: null,
         amount: row.amount,
         calls,
         closedActivitiesAt: row.lastActivityAt ? [row.lastActivityAt] : [],
+        work: extra.work,
         forgotten: null,
     };
 }

@@ -31,7 +31,7 @@ export interface DealMovementNoteInput {
 export const DEAL_MOVEMENT_NOTE_TEXTS = {
     title: 'Движение сделки',
     closing:
-        'Статус посчитала программа по стадиям сделки и разобранным звонкам.',
+        'Статус посчитала программа по стадиям сделки, звонкам и делам по ней.',
 } as const;
 
 const bullets = (lines: readonly string[]): string[] =>

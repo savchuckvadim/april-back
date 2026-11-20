@@ -36,13 +36,12 @@ export function toHistoryPoints(
 }
 
 /**
- * Точки истории → переходы по сделкам: соседние точки одной сделки (по
- * времени, при равенстве — по id записи) дают переход «с ступени на
- * ступень». Повтор одной записи (пересечение страниц) схлопывается.
+ * Точки истории по сделкам: по времени (при равенстве — по id записи),
+ * повтор одной записи (пересечение страниц) схлопывается.
  */
-export function transitionsByDeal(
+export function historyPointsByDeal(
     points: readonly DealMovementHistoryPoint[],
-): Map<number, DealMovementTransition[]> {
+): Map<number, DealMovementHistoryPoint[]> {
     const byDeal = new Map<number, DealMovementHistoryPoint[]>();
     const seen = new Set<number>();
     for (const point of points) {
@@ -52,11 +51,21 @@ export function transitionsByDeal(
         list.push(point);
         byDeal.set(point.dealId, list);
     }
+    for (const list of byDeal.values()) {
+        list.sort((a, b) => a.at.localeCompare(b.at) || a.id - b.id);
+    }
+    return byDeal;
+}
+
+/**
+ * Точки истории → переходы по сделкам: соседние точки одной сделки дают
+ * переход «с ступени на ступень».
+ */
+export function transitionsByDeal(
+    byDeal: ReadonlyMap<number, readonly DealMovementHistoryPoint[]>,
+): Map<number, DealMovementTransition[]> {
     const result = new Map<number, DealMovementTransition[]>();
-    for (const [dealId, list] of byDeal) {
-        const sorted = [...list].sort(
-            (a, b) => a.at.localeCompare(b.at) || a.id - b.id,
-        );
+    for (const [dealId, sorted] of byDeal) {
         const transitions: DealMovementTransition[] = [];
         for (let index = 1; index < sorted.length; index++) {
             transitions.push({
@@ -68,4 +77,35 @@ export function transitionsByDeal(
         result.set(dealId, transitions);
     }
     return result;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Закрытые эпизоды стадий: сколько дней сделка простояла на ступени до
+ * ухода с неё (соседние точки одной ступени — один эпизод). Открытый
+ * эпизод (текущая стадия) длительности не имеет и не считается — как у
+ * фактов сроков AI-аналитики (`stageSlaFacts`). Ступень → дни эпизодов.
+ */
+export function stageDwellDays(
+    byDeal: ReadonlyMap<number, readonly DealMovementHistoryPoint[]>,
+): Map<number, number[]> {
+    const dwell = new Map<number, number[]>();
+    for (const sorted of byDeal.values()) {
+        let start: DealMovementHistoryPoint | null = null;
+        for (const point of sorted) {
+            if (start !== null && point.order === start.order) continue;
+            if (start !== null) {
+                const days =
+                    (Date.parse(point.at) - Date.parse(start.at)) / DAY_MS;
+                if (Number.isFinite(days) && days >= 0) {
+                    const list = dwell.get(start.order) ?? [];
+                    list.push(days);
+                    dwell.set(start.order, list);
+                }
+            }
+            start = point;
+        }
+    }
+    return dwell;
 }

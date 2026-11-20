@@ -46,6 +46,22 @@ export function buildSalesBaseStageLookup(
     return lookup;
 }
 
+/**
+ * Названия стадий портала по кодам ступеней лестницы — для строки списка
+ * проблемных сделок на витрине. Стадии без названия не попадают.
+ */
+export function salesBaseStageTitles(
+    category: Pick<IPCategory, 'stages'>,
+): Map<string, string> {
+    const titles = new Map<string, string>();
+    for (const ladder of PBX_DEAL_SALES_BASE_STAGES) {
+        const stage = category.stages.find(item => item.code === ladder.code);
+        const title = (stage?.title || stage?.name || '').trim();
+        if (title) titles.set(ladder.code, title);
+    }
+    return titles;
+}
+
 /** Ступень по STAGE_ID: полный ключ, иначе часть после `C{id}:`; чужая — null. */
 export function resolveSalesBaseStage(
     raw: unknown,

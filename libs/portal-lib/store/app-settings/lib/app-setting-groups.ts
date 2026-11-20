@@ -1,5 +1,6 @@
 import { EnumPortalAppCode } from '../portal-app-settings.schema';
 import { APP_SETTING_GROUP_DOCS } from './app-setting-group-docs';
+import { DEAL_MOVEMENT_STATUS_LABELS } from './deal-movement-status-titles.const';
 
 /**
  * Категории настроек для админки: у приложения сотня ключей, без групп
@@ -190,8 +191,17 @@ export const PORTAL_APP_SETTING_GROUPS = {
     deal_movement: {
         title: 'Движение сделок',
         description:
-            'Ночной счёт статусов открытых сделок ОП: движется, застряла, ' +
-            'откатилась, под риском. Включается на каждом портале отдельно.',
+            'Ночной счёт статусов открытых сделок ОП: ' +
+            [
+                DEAL_MOVEMENT_STATUS_LABELS.moving,
+                DEAL_MOVEMENT_STATUS_LABELS.stuck,
+                DEAL_MOVEMENT_STATUS_LABELS.abandoned,
+                DEAL_MOVEMENT_STATUS_LABELS.rolled_back,
+                DEAL_MOVEMENT_STATUS_LABELS.at_risk,
+            ]
+                .map(label => label.toLowerCase())
+                .join(', ') +
+            '. Включается на каждом портале отдельно.',
         links: [LINK.dealFields, LINK.aiSettings],
         highlight: {
             label: 'Новое',

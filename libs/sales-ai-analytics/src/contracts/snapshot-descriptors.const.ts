@@ -238,7 +238,20 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             'сделкам «ОП Основная» — сколько оценено, счёт по статусам, ' +
             'смены статуса за ночь словами. Пишет event-sales; состояние ' +
             'по сделкам — в Redis, не здесь. Повтор за тот же день ' +
-            'обновляет запись на месте.',
+            'обновляет запись на месте. С формы 2 (20.11.2026) — суммы по ' +
+            'статусам, разрез по ответственным и проверки продвижения звонков.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.dealMovementDeals]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.dealMovementDeals,
+        grain: 'portal-day',
+        keyFormat:
+            "'latest' — одна запись портала: последняя ночь (день — в нагрузке)",
+        retention: { unit: 'records', value: 1 },
+        description:
+            'Движение сделок: проблемные сделки последней ночи для витрины — ' +
+            'по ответственному и тревожному статусу не больше 30 крупных ' +
+            'по сумме (стадия, дни в стадии, срок, причины, с какой ночи). ' +
+            'Пишет event-sales; каждая ночь перезаписывает запись на месте.',
     },
     [AI_ANALYTICS_SNAPSHOT_TYPE.managerWeekDigest]: {
         type: AI_ANALYTICS_SNAPSHOT_TYPE.managerWeekDigest,

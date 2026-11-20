@@ -3,17 +3,39 @@
  * зерно portal-day, ключ 'YYYY-MM-DD' по поясу портала). Маленький:
  * итог ночи и смены статуса словами, без состояния по сделкам — оно живёт
  * в Redis (решение 17.11.2026). Чистые типы и проверка формы.
+ *
+ * Форма 2 (20.11.2026, витрина «Движение сделок»): суммы по статусам,
+ * разрез по ответственным и отметки проверки продвижения звонков. Список
+ * проблемных сделок — отдельной записью (`deal-movement-deals.types.ts`):
+ * снимки дня витрина читает за весь период, а список — только последний.
  */
-import {
-    DEAL_MOVEMENT_STATUSES,
-    type DealMovementStatus,
-} from '../model/deal-movement/deal-movement.types';
+import type { DealMovementProgressCheck } from '../model/deal-movement/deal-movement.progress-check';
+import type { DealMovementStatus } from '../model/deal-movement/deal-movement.types';
 import type { DealMovementDigestSummary } from './deal-movement-digest.types';
 import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 import {
     DEAL_MOVEMENT_RUN_MODES,
+    isDealMovementCountsLike,
     type DealMovementRunMode,
 } from './deal-movement-run.types';
+
+/**
+ * Форма снимка: 2 — с суммами, разрезом по ответственным и проверками
+ * продвижения (20.11.2026). У снимков формы 1 поля `form` нет.
+ */
+export const DEAL_MOVEMENT_SNAPSHOT_FORM = 2;
+
+/** Сколько сделок в статусе и на какую сумму (сделка без суммы — 0). */
+export interface DealMovementStatusSum {
+    count: number;
+    amountSum: number;
+}
+
+/** Счёт и сумма по каждому статусу. */
+export type DealMovementStatusSums = Record<
+    DealMovementStatus,
+    DealMovementStatusSum
+>;
 
 /** Не больше стольких смен в снимке: остаток — числом `changesTotal`. */
 export const DEAL_MOVEMENT_SNAPSHOT_CHANGES_LIMIT = 1000;
@@ -55,6 +77,23 @@ export interface DealMovementSnapshotPayload {
     /** Сводка руководителям за прогон; нет у снимков до части Б. */
     digest?: DealMovementDigestSummary;
     warnings: string[];
+    /** Форма снимка; нет — форма 1 (до 20.11.2026). */
+    form?: number;
+    /** Счёт и сумма по статусам всех оценённых сделок; нет у формы 1. */
+    totals?: DealMovementStatusSums;
+    /**
+     * Ответственный (Bitrix-id строкой) → счёт и сумма по статусам. Сделки
+     * без ответственного — только в `totals`. Нет у формы 1.
+     */
+    byManager?: Record<string, DealMovementStatusSums>;
+    /**
+     * Проверка продвижения: звонки с продвижением 4–5 и окончательный итог
+     * («стадия сдвинулась вперёд» / «не сдвинулась за N дней»). Нет у
+     * формы 1.
+     */
+    progressChecks?: DealMovementProgressCheck[];
+    /** За сколько дней после звонка ждали переход стадии; нет у формы 1. */
+    progressCheckDays?: number;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -65,17 +104,13 @@ export function isDealMovementSnapshotPayload(
     value: unknown,
 ): value is DealMovementSnapshotPayload {
     if (!isRecord(value)) return false;
-    const counts = value.byStatus;
     return (
         typeof value.day === 'string' &&
         (DEAL_MOVEMENT_RUN_MODES as readonly unknown[]).includes(value.mode) &&
         typeof value.openTotal === 'number' &&
         typeof value.evaluated === 'number' &&
         typeof value.changesTotal === 'number' &&
-        isRecord(counts) &&
-        DEAL_MOVEMENT_STATUSES.every(
-            status => typeof counts[status] === 'number',
-        ) &&
+        isDealMovementCountsLike(value.byStatus) &&
         Array.isArray(value.changes) &&
         Array.isArray(value.warnings)
     );

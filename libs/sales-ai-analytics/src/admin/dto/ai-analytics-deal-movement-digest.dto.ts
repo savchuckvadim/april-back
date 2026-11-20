@@ -24,7 +24,8 @@ export class AiAnalyticsDealMovementDigestDto
         description:
             'Почему не рассылалась: disabled — выключена, manual — ручной ' +
             'счёт (сводка только после ночного), already_sent — сегодня уже ' +
-            'уходила, no_recipients — получатели не заданы; null — рассылалась.',
+            'уходила, no_recipients — получатели не заданы, not_due — сводка ' +
+            'раз в неделю / две недели, а сегодня не её день; null — рассылалась.',
         enum: Object.values(DEAL_MOVEMENT_DIGEST_SKIP),
         example: null,
         type: String,
@@ -62,4 +63,14 @@ export class AiAnalyticsDealMovementDigestDto
         type: Number,
     })
     auditForgotten?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сводка за неделю или две: сколько сделок попало в блок «Давно ' +
+            'без продвижения» (в стадии вдвое, втрое… дольше срока, каждая ' +
+            'ступень — один раз); нет у ежедневных и пропущенных сводок.',
+        example: 9,
+        type: Number,
+    })
+    reminders?: number;
 }

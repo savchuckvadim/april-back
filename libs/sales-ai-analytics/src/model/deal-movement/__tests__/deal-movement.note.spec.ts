@@ -56,6 +56,10 @@ const verdict = (
     facts: {
         daysInStage: 23,
         stageLimitDays: 21,
+        stageLimitSource: 'default',
+        idleDays: null,
+        idleLookbackDays: 60,
+        recentWork: null,
         stepDate: '2026-11-05',
         lastProgress: null,
         daysSinceAgreed: null,
@@ -97,7 +101,10 @@ describe('запись в ленту сделки', () => {
             actions: null,
         });
         expect(note.text).not.toContain('Что сделать');
-        expect(note.text).toContain('в стадии 23 дня при сроке 21 день');
+        expect(note.text).toContain(
+            'стадия не меняется 23 дня при пороге 21 день',
+        );
+        expect(note.title).toBe('Движение сделки: Без продвижения');
     });
 
     it('«Движется» — без блока «Что сделать», даже если строки есть', () => {
@@ -107,17 +114,17 @@ describe('запись в ленту сделки', () => {
             actions: ['Позвонить клиенту'],
         });
         expect(note.title).toBe('Движение сделки: Движется');
-        expect(note.text).toContain('(было: Застряла)');
+        expect(note.text).toContain('(было: Без продвижения)');
         expect(note.text).not.toContain('Что сделать');
     });
 
     it('комментарий — заголовок первой строкой жирным (BB-код ленты)', () => {
         const text = dealMovementCommentText({
-            title: 'Движение сделки: Застряла',
-            text: 'Статус: Застряла (было: Движется).',
+            title: 'Движение сделки: Без продвижения',
+            text: 'Статус: Без продвижения (было: Движется).',
         });
         expect(text).toBe(
-            '[b]Движение сделки: Застряла[/b]\n\nСтатус: Застряла (было: Движется).',
+            '[b]Движение сделки: Без продвижения[/b]\n\nСтатус: Без продвижения (было: Движется).',
         );
     });
 });

@@ -1,4 +1,6 @@
 import {
+    DEAL_MOVEMENT_CALC_VERSION,
+    DEAL_MOVEMENT_DEFAULTS,
     dealMovementVerdict,
     type DealMovementNotesSummary,
     type DealMovementRunStatus,
@@ -49,6 +51,10 @@ export const evaluation = (): DealMovementEvaluation => {
         pointers: new Map(),
         carryOver: [],
         capped: false,
+        stagesByHistory: 0,
+        workProbed: 0,
+        stageTitles: new Map([['sales_pres', 'Презентация']]),
+        progressChecks: [],
         warnings: [],
     };
 };
@@ -81,6 +87,7 @@ export const NOTES_ON: DealMovementNotesOptions = { ...NOTES_OFF, write: true };
 export const DIGEST_OFF: DealMovementDigestOptions = {
     enabled: false,
     mode: 'new_only',
+    weekday: 1,
     top: 15,
 };
 export const DIGEST_ON: DealMovementDigestOptions = {
@@ -91,6 +98,8 @@ export const DIGEST_ON: DealMovementDigestOptions = {
 export interface RunSetup {
     lock?: string | null;
     lastRunAt?: string | null;
+    /** Версия расчёта в метке счёта; по умолчанию — нынешняя. */
+    lastRunCalc?: string;
     previous?: Map<string, DealMovementStateEntry>;
     evaluate?: jest.Mock;
     notes?: DealMovementNotesOptions;
@@ -122,13 +131,15 @@ export const buildRun = (setup: RunSetup = {}) => {
             );
             return Promise.resolve();
         }),
-        lastRun: jest
-            .fn()
-            .mockResolvedValue(
-                setup.lastRunAt
-                    ? { day: '2026-11-17', at: setup.lastRunAt }
-                    : null,
-            ),
+        lastRun: jest.fn().mockResolvedValue(
+            setup.lastRunAt
+                ? {
+                      day: '2026-11-17',
+                      at: setup.lastRunAt,
+                      calc: setup.lastRunCalc ?? DEAL_MOVEMENT_CALC_VERSION,
+                  }
+                : null,
+        ),
         markRun: jest.fn(() => {
             order.push('mark');
             return Promise.resolve();
@@ -145,6 +156,10 @@ export const buildRun = (setup: RunSetup = {}) => {
         save: jest.fn(() => {
             order.push('snapshot');
             return Promise.resolve('501');
+        }),
+        saveProblemDeals: jest.fn(() => {
+            order.push('deals');
+            return Promise.resolve('502');
         }),
     };
     const evaluator = {
@@ -164,6 +179,7 @@ export const buildRun = (setup: RunSetup = {}) => {
     };
     const settings = {
         resolve: jest.fn().mockResolvedValue({
+            thresholds: DEAL_MOVEMENT_DEFAULTS,
             notes: setup.notes ?? NOTES_OFF,
             digest: setup.digest ?? DIGEST_OFF,
         }),

@@ -4,6 +4,7 @@ import {
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingsService,
     toDealMovementDigestMode,
+    toDealMovementDigestWeekday,
     toDealMovementNoteKind,
     type PortalAppSettingsValues,
 } from '@lib/portal-lib/store/app-settings';
@@ -29,7 +30,8 @@ type EventSalesSettings = PortalAppSettingsValues<EnumPortalAppCode.eventSales>;
 /**
  * Настройки портала → параметры счёта. Чистая функция: пустое и мусор —
  * значения по умолчанию; окно звонков не короче окна событий, иначе
- * «звонков за окно нет» считалось бы по неполным данным.
+ * «звонков за окно нет» считалось бы по неполным данным. Тот же срок —
+ * у чтения звонков и дел Битрикса («ни звонков, ни дел N дней»).
  */
 export function toDealMovementOptions(
     settings: Pick<
@@ -49,6 +51,7 @@ export function toDealMovementOptions(
                 EventSalesSettings,
                 | 'dealMovementDigestEnabled'
                 | 'dealMovementDigestMode'
+                | 'dealMovementDigestWeekday'
                 | 'dealMovementDigestTop'
             >
         >,
@@ -57,6 +60,13 @@ export function toDealMovementOptions(
     const windowDays = positiveInt(
         settings.dealMovementWindowDays,
         defaults.windowDays,
+    );
+    const callsLookbackDays = Math.max(
+        windowDays,
+        positiveInt(
+            settings.dealMovementCallsLookbackDays,
+            defaults.callsLookbackDays,
+        ),
     );
     return {
         thresholds: {
@@ -70,14 +80,9 @@ export function toDealMovementOptions(
                 settings.dealMovementAgreedStillDays,
                 defaults.agreedStillDays,
             ),
+            workLookbackDays: callsLookbackDays,
         },
-        callsLookbackDays: Math.max(
-            windowDays,
-            positiveInt(
-                settings.dealMovementCallsLookbackDays,
-                defaults.callsLookbackDays,
-            ),
-        ),
+        callsLookbackDays,
         maxDeals: positiveInt(settings.dealMovementMaxDeals, defaults.maxDeals),
         notes: {
             // Только явное «да»: всё новое по умолчанию выключено.
@@ -96,6 +101,9 @@ export function toDealMovementOptions(
             // Только явное «да»: сводка руководителям по умолчанию выключена.
             enabled: settings.dealMovementDigestEnabled === true,
             mode: toDealMovementDigestMode(settings.dealMovementDigestMode),
+            weekday: toDealMovementDigestWeekday(
+                settings.dealMovementDigestWeekday,
+            ),
             top: positiveInt(
                 settings.dealMovementDigestTop,
                 defaults.digestTop,

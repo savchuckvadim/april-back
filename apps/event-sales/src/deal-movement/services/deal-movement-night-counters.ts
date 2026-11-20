@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { DEAL_MOVEMENT_REDIS_KEYS } from '@lib/sales-ai-analytics';
 import { DEAL_MOVEMENT_TTL_SEC } from '../constants/deal-movement.const';
+import {
+    parseDealMovementPeriodDigestMark,
+    type DealMovementPeriodDigestMark,
+} from '../lib/deal-movement-digest.schedule';
 
 /** Что считаем за день портала: записи в ленту и вызовы модели. */
 export const DEAL_MOVEMENT_NIGHT_COUNTERS = {
@@ -62,5 +66,36 @@ export class DealMovementNightCounters {
                 'NX',
             );
         return result === 'OK';
+    }
+
+    /** Последняя сводка за период (неделя / две недели); не было — null. */
+    async periodDigestMark(
+        domain: string,
+    ): Promise<DealMovementPeriodDigestMark | null> {
+        return parseDealMovementPeriodDigestMark(
+            await this.redisService
+                .getClient()
+                .get(DEAL_MOVEMENT_REDIS_KEYS.digestLast(domain)),
+        );
+    }
+
+    /**
+     * Отметка сводки за период — ДО рассылки, как у ежедневной: лучше
+     * потерять сводку при сбое, чем прислать её дважды. Прогоны портала
+     * идут под одним замком, поэтому «прочитать — сравнить — записать»
+     * без гонки.
+     */
+    async markPeriodDigest(
+        domain: string,
+        mark: DealMovementPeriodDigestMark,
+    ): Promise<void> {
+        await this.redisService
+            .getClient()
+            .set(
+                DEAL_MOVEMENT_REDIS_KEYS.digestLast(domain),
+                JSON.stringify(mark),
+                'EX',
+                DEAL_MOVEMENT_TTL_SEC.periodDigest,
+            );
     }
 }

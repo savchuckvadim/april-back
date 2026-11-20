@@ -1,9 +1,10 @@
 /**
  * Статус открытой сделки по досье. Правила — раздел 4 постановки с
- * уточнениями 17.11.2026; порядок проверки: откатилась → застряла → под
- * риском → движется, первое сработавшее. Чистые функции: момент расчёта
- * приходит параметром. Временная шкала и её выводы —
- * `deal-movement.timeline.ts`.
+ * уточнениями 17.11 и 20.11.2026; порядок проверки: вернулась назад →
+ * дольше срока в стадии (работы за окно нет — без внимания, есть — без
+ * продвижения) → под риском → движется, первое сработавшее. Чистые
+ * функции: момент расчёта приходит параметром. Временная шкала —
+ * `deal-movement.timeline.ts`, «работа по сделке» — `deal-movement.work.ts`.
  */
 import {
     daysFrom,
@@ -18,6 +19,7 @@ import {
     type DealMovementStepState,
     type DealMovementTimeline,
 } from './deal-movement.timeline';
+import { idleDaysOf, recentWorkOf } from './deal-movement.work';
 import {
     DEAL_MOVEMENT_DEFAULTS,
     type DealMovementDossier,
@@ -70,23 +72,6 @@ function riskReasons(
     return reasons;
 }
 
-/**
- * Работали ли со сделкой в окне: разобранный звонок или любая активность
- * по сделке (`LAST_ACTIVITY_TIME`). Разобраны не все звонки (пилот,
- * записи), поэтому одних звонков для «застряла» мало (решение 17.11.2026).
- */
-function workedInWindow(
-    dossier: DealMovementDossier,
-    timeline: DealMovementTimeline,
-): boolean {
-    if (timeline.calls.some(call => inWindow(timeline, call.atMs))) {
-        return true;
-    }
-    const activityMs =
-        dossier.lastActivityAt === null ? null : timeOf(dossier.lastActivityAt);
-    return activityMs !== null && inWindow(timeline, activityMs);
-}
-
 function movingReasons(
     timeline: DealMovementTimeline,
     step: DealMovementStepState,
@@ -125,9 +110,15 @@ export function dealMovementVerdict(
     const timeline = timelineOf(dossier, nowMs, thresholds.windowDays);
     const step = stepStateOf(timeline);
     const daysSinceAgreed = daysSinceAgreedOf(timeline);
+    const recentWork = recentWorkOf(dossier, timeline, thresholds.timeZone);
     const facts: DealMovementFacts = {
         daysInStage: daysFrom(dossier.stageEnteredAt, nowMs),
         stageLimitDays: dossier.stageNormDays ?? thresholds.stuckDefaultDays,
+        stageLimitSource:
+            dossier.stageNormDays === null ? 'default' : 'history',
+        idleDays: idleDaysOf(dossier, timeline),
+        idleLookbackDays: thresholds.workLookbackDays,
+        recentWork,
         stepDate: step.date,
         lastProgress: lastScoredCall(timeline)?.progress ?? null,
         daysSinceAgreed,
@@ -142,16 +133,17 @@ export function dealMovementVerdict(
         facts,
     });
 
-    // 1. Откатилась: ступень ниже самой высокой, на которой стояла в окне.
+    // 1. Вернулась назад: ступень ниже самой высокой, где стояла в окне.
     if (isRolledBack(timeline, dossier.stageOrder)) {
         return verdict('rolled_back', ['stage_back']);
     }
-    // 2. Застряла: в стадии дольше срока и работы за окно не было.
-    if (
-        facts.daysInStage > facts.stageLimitDays &&
-        !workedInWindow(dossier, timeline)
-    ) {
-        return verdict('stuck', ['stage_overdue']);
+    // 2. Дольше срока в стадии: работы за окно нет — «Без внимания»; есть
+    //    (звонки, недозвоны, дела, задачи, смена стадии), а стадия стоит —
+    //    «Без продвижения». «Последняя активность» сделки — не работа.
+    if (facts.daysInStage > facts.stageLimitDays) {
+        return recentWork === null
+            ? verdict('abandoned', ['no_work'])
+            : verdict('stuck', ['stage_overdue']);
     }
     // 3. Под риском: хотя бы один признак.
     const risks = riskReasons(
