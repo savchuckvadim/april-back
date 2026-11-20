@@ -7,6 +7,8 @@ import type {
 import type { DealMovementTransition } from '@lib/sales-ai-analytics';
 import { DEAL_MOVEMENT_HISTORY } from '../constants/deal-movement.const';
 import {
+    historyPointsByDeal,
+    stageDwellDays,
     toHistoryPoints,
     transitionsByDeal,
 } from '../lib/deal-movement-transitions';
@@ -14,6 +16,16 @@ import type { SalesBaseStageLookup } from '../lib/deal-movement-stages';
 
 /** Предел элементов на страницу списочных методов REST. */
 const PAGE_SIZE = 50;
+
+/** Прочитанная история: переходы по сделкам и дни закрытых эпизодов. */
+export interface DealMovementHistory {
+    readonly transitions: Map<number, DealMovementTransition[]>;
+    /**
+     * Ступень → дни закрытых эпизодов (вход для срока стадии по истории
+     * портала, 20.11.2026 — без лишних обращений к Битриксу).
+     */
+    readonly dwell: Map<number, number[]>;
+}
 
 /** Порция сделок одной команды и её курсор `>ID`. */
 interface HistoryChunk {
@@ -42,7 +54,8 @@ const itemsOf = (
  * История стадий выбранных сделок — полная, без окна по дате: откату нужна
  * ступень, на которой сделка стояла к началу окна, а она может быть
  * сколь угодно давней. Сделки берутся только те, что сдвигались за окно
- * (`needsHistory`), поэтому объём мал.
+ * (`needsHistory`), поэтому объём мал. Из той же истории — дни закрытых
+ * эпизодов стадий: срок стадии по истории портала.
  *
  * Пачка: команда на 50 сделок (`OWNER_ID` списком), раунд — по странице
  * на каждую незакрытую порцию, курсор `>ID` + `start: -1`. Команды копятся
@@ -63,7 +76,7 @@ export class DealMovementHistoryReader {
     async load(
         dealIds: readonly number[],
         warnings: string[],
-    ): Promise<Map<number, DealMovementTransition[]>> {
+    ): Promise<DealMovementHistory> {
         const chunks = this.chunksOf(dealIds);
         const items: IBXStageHistoryItem[] = [];
         for (let round = 0; round < DEAL_MOVEMENT_HISTORY.maxRounds; round++) {
@@ -91,7 +104,11 @@ export class DealMovementHistoryReader {
                 `история стадий дочитана не у всех сделок (порций: ${unfinished}) — откат у них мог не посчитаться`,
             );
         }
-        return transitionsByDeal(toHistoryPoints(items, this.stages));
+        const byDeal = historyPointsByDeal(toHistoryPoints(items, this.stages));
+        return {
+            transitions: transitionsByDeal(byDeal),
+            dwell: stageDwellDays(byDeal),
+        };
     }
 
     private chunksOf(dealIds: readonly number[]): HistoryChunk[] {

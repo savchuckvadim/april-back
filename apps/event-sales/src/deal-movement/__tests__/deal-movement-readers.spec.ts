@@ -111,7 +111,7 @@ describe('читатель истории стадий', () => {
         const dealIds = Array.from({ length: 60 }, (_, index) => index + 1);
         const warnings: string[] = [];
 
-        const transitions = await reader.load(dealIds, warnings);
+        const { transitions, dwell } = await reader.load(dealIds, warnings);
 
         expect(list).toHaveBeenNthCalledWith(1, 'movement_history_0', {
             entityTypeId: BitrixOwnerTypeId.DEAL,
@@ -146,12 +146,16 @@ describe('читатель истории стадий', () => {
         expect(transitions.get(2)).toEqual([
             expect.objectContaining({ fromOrder: 7, toOrder: 5 }),
         ]);
+        // Из той же истории — эпизод «Отправлены» сделки 2 закрыт переходом.
+        expect(dwell.get(7)).toHaveLength(1);
         expect(warnings).toEqual([]);
     });
 
     it('пустой список сделок — ни одного запроса', async () => {
         const { reader, callBatchWithConcurrency } = build([]);
-        expect((await reader.load([], [])).size).toBe(0);
+        const empty = await reader.load([], []);
+        expect(empty.transitions.size).toBe(0);
+        expect(empty.dwell.size).toBe(0);
         expect(callBatchWithConcurrency).not.toHaveBeenCalled();
     });
 

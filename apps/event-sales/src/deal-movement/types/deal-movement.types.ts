@@ -1,5 +1,6 @@
 import type {
     DealMovementCall,
+    DealMovementFacts,
     DealMovementRunStatus,
     DealMovementStatus,
     DealMovementThresholds,
@@ -20,11 +21,13 @@ export interface DealMovementNotesOptions {
     readonly maxTexts: number;
 }
 
-/** Сводка руководителям: включена ли, когда слать и сколько «под риском». */
+/** Сводка руководителям: включена ли, когда слать и длина списков. */
 export interface DealMovementDigestOptions {
     readonly enabled: boolean;
     readonly mode: DealMovementDigestMode;
-    /** Сделок под риском в сводке — самые крупные по сумме. */
+    /** День недели сводки за период (1 — понедельник … 7 — воскресенье). */
+    readonly weekday: number;
+    /** Сделок в каждом списке сводки — самые крупные по сумме. */
     readonly top: number;
 }
 
@@ -54,6 +57,18 @@ export interface DealMovementDigestDeal {
     /** Причины статуса словами, одной строкой. */
     readonly reasons: string;
     readonly daysInStage: number;
+    /** Срок стадии, с которым сравнивали, и откуда он. */
+    readonly limit: Pick<
+        DealMovementFacts,
+        'stageLimitDays' | 'stageLimitSource'
+    >;
+    /** Когда статус сменился последний раз, ISO; null — не менялся при нас. */
+    readonly changedAt: string | null;
+    /**
+     * Ступень «давно без продвижения», о которой пора напомнить в сводке за
+     * период (2 — вдвое дольше срока, …); null — не пора.
+     */
+    readonly remindStep: number | null;
     /**
      * Свежая находка аудита сделок словами («ещё и по аудиту: …»); null —
      * находки нет или она старая. Статус она не меняет.

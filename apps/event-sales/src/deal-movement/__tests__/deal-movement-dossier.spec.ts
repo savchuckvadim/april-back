@@ -31,6 +31,8 @@ describe('досье сделки для правил статуса', () => {
             calls: [],
             // Активность по сделке — контакт после договорённости.
             closedActivitiesAt: ['2026-11-16T09:00:00.000Z'],
+            // Дела Битрикса не читались.
+            work: [],
             forgotten: null,
         });
         expect(dealMovementVerdict(dossier, NOW).status).toBe('rolled_back');

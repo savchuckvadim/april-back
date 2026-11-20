@@ -8,7 +8,12 @@ import type {
 } from '@lib/sales-ai-analytics';
 import { needsHistory } from '../lib/deal-movement-dossier.mapper';
 import { indexOpenDeals } from '../lib/deal-movement-calls.link';
-import { evaluateDealRows } from '../lib/deal-movement-rows.evaluation';
+import {
+    dealsNeedingWork,
+    evaluateDealRows,
+    type DealMovementRowsInput,
+} from '../lib/deal-movement-rows.evaluation';
+import { dealMovementStageNorms } from '../lib/deal-movement-stage-norms';
 import type {
     DealMovementCallPointers,
     DealMovementDealRow,
@@ -17,6 +22,7 @@ import type {
 import { DealMovementCallsLoader } from './deal-movement-calls.loader';
 import { DealMovementDealsReader } from './deal-movement-deals.reader';
 import { DealMovementHistoryReader } from './deal-movement-history.reader';
+import { DealMovementWorkReader } from './deal-movement-work.reader';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -30,13 +36,19 @@ export interface DealMovementEvaluation {
     /** Открытые сделки сверх потолка: их прошлое состояние сохраняется. */
     readonly carryOver: string[];
     readonly capped: boolean;
+    /** Сколько ступеней получили срок по истории портала. */
+    readonly stagesByHistory: number;
+    /** У скольких сделок читались звонки и дела Битрикса. */
+    readonly workProbed: number;
     readonly warnings: string[];
 }
 
 /**
  * Оценка открытых сделок портала: досье собирает код, статус — чистые
- * правила библиотеки. Читает из Битрикса только сделки (целиком) и историю
- * стадий сдвинутых за окно; звонки — из нашей БД. Ничего не пишет.
+ * правила библиотеки. Читает из Битрикса сделки (целиком), историю стадий
+ * сдвинутых за окно (из неё же — срок стадии по истории портала) и звонки
+ * с делами — только у сделок, которым иначе досталось бы «Без внимания»;
+ * разобранные звонки — из нашей БД. Ничего не пишет.
  *
  * `@Injectable`, но инстанс Битрикса живёт только внутри вызова: в поля
  * кладём лишь PBXService и сервисы без bitrix-состояния (CLAUDE.md).
@@ -75,7 +87,7 @@ export class DealMovementEvaluator {
         await onPhase('history');
         const windowStartMs =
             now.getTime() - options.thresholds.windowDays * DAY_MS;
-        const transitions = await new DealMovementHistoryReader(
+        const history = await new DealMovementHistoryReader(
             bitrix,
             open.categoryId,
             open.stages,
@@ -96,22 +108,39 @@ export class DealMovementEvaluator {
             indexOpenDeals(open.rows),
         );
 
-        await onPhase('evaluated');
-        const { deals, verdicts, pointers } = evaluateDealRows({
+        const stageNorms = dealMovementStageNorms(history.dwell);
+        const base: DealMovementRowsInput = {
             rows: evaluated,
-            transitions,
+            transitions: history.transitions,
             calls: callsByDeal,
+            work: new Map(),
+            stageNorms,
             previous,
             now: now.toISOString(),
             thresholds: options.thresholds,
-        });
+        };
+        let result = evaluateDealRows(base);
+        // Звонки и дела Битрикса — только тем, кому грозит «Без внимания».
+        const probe = dealsNeedingWork(result.verdicts);
+        if (probe.length > 0) {
+            await onPhase('work');
+            const work = await new DealMovementWorkReader(bitrix).load(
+                probe,
+                now.getTime() - options.callsLookbackDays * DAY_MS,
+                warnings,
+            );
+            await onPhase('evaluated');
+            result = evaluateDealRows({ ...base, work });
+        } else {
+            await onPhase('evaluated');
+        }
         return {
             openTotal: open.rows.length,
-            deals,
-            verdicts,
-            pointers,
+            ...result,
             carryOver: carryOver.map(row => String(row.dealId)),
             capped: carryOver.length > 0,
+            stagesByHistory: stageNorms.size,
+            workProbed: probe.length,
             warnings,
         };
     }

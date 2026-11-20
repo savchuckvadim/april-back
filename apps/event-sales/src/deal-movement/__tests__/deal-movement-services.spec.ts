@@ -34,6 +34,8 @@ describe('настройки движения сделок', () => {
                 windowDays: 10,
                 stuckDefaultDays: 30,
                 agreedStillDays: 12,
+                // Звонки и дела Битрикса — за тот же срок, что разборы.
+                workLookbackDays: 45,
                 chanceMin: null,
                 amountMin: null,
             },
@@ -45,8 +47,8 @@ describe('настройки движения сделок', () => {
                 maxNotes: 100,
                 maxTexts: 50,
             },
-            // Настроек сводки нет — выключена, «только новые», 15.
-            digest: { enabled: false, mode: 'new_only', top: 15 },
+            // Настроек сводки нет — выключена, «только новые», понедельник, 15.
+            digest: { enabled: false, mode: 'new_only', weekday: 1, top: 15 },
         });
     });
 
@@ -63,7 +65,20 @@ describe('настройки движения сделок', () => {
                 dealMovementDigestMode: 'daily',
                 dealMovementDigestTop: 5,
             }).digest,
-        ).toEqual({ enabled: true, mode: 'daily', top: 5 });
+        ).toEqual({ enabled: true, mode: 'daily', weekday: 1, top: 5 });
+        expect(
+            toDealMovementOptions({
+                dealMovementWindowDays: 14,
+                dealMovementStuckDays: 21,
+                dealMovementAgreedStillDays: 12,
+                dealMovementCallsLookbackDays: 60,
+                dealMovementMaxDeals: 500,
+                ...NOTES_OFF,
+                dealMovementDigestEnabled: true,
+                dealMovementDigestMode: 'biweekly',
+                dealMovementDigestWeekday: 5,
+            }).digest,
+        ).toMatchObject({ mode: 'biweekly', weekday: 5 });
     });
 
     it('окно звонков не короче окна событий', () => {
