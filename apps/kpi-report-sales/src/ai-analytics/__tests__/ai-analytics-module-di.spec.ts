@@ -13,6 +13,7 @@ import { AiAnalyticsBriefModule } from '../brief/ai-analytics-brief.module';
 import { AiAnalyticsCallPageModule } from '../call-page/ai-analytics-call-page.module';
 import { AiAnalyticsCallsModule } from '../calls/ai-analytics-calls.module';
 import { AiAnalyticsCallReviewsDigestModule } from '../call-reviews/ai-analytics-call-reviews-digest.module';
+import { AiAnalyticsDealMovementModule } from '../deal-movement/ai-analytics-deal-movement.module';
 import {
     AI_ANALYTICS_CORE_PBX_PROVIDERS,
     AiAnalyticsCorePbxModule,
@@ -125,6 +126,8 @@ const EXPECTED_CONTROLLERS = [
     'CallPageLinksController',
     // Раздел «Разборы звонков» отчёта KPI — под сессией портала.
     'CallsListController',
+    // Витрина «Движение сделок» отчёта KPI — под сессией портала.
+    'DealMovementVitrinaController',
 ];
 
 /** Модули фичи, в которых объявлены провайдеры (для проверки дублей). */
@@ -149,6 +152,7 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsCallPageModule,
     AiAnalyticsCallsModule,
     AiAnalyticsCallReviewsDigestModule,
+    AiAnalyticsDealMovementModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;
