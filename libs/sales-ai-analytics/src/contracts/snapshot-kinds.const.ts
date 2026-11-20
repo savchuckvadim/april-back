@@ -92,6 +92,8 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     ownerReport: 'ai-analytics-owner-report',
     /** Движение сделок (этап 7.3): итог ночного счёта по порталу (portal-day). */
     dealMovement: 'ai-analytics-deal-movement',
+    /** Движение сделок: проблемные сделки последней ночи (одна запись портала, ключ latest). */
+    dealMovementDeals: 'ai-analytics-deal-movement-deals',
     /** Итоги недели по менеджеру (этап 7.4): карточка «менеджер × неделя» (manager-week). */
     managerWeekDigest: 'ai-analytics-manager-week-digest',
     /** Итоги месяца по менеджеру (этап 7.4): карточка «менеджер × месяц» (manager-month). */
@@ -122,6 +124,7 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect,
     AI_ANALYTICS_SNAPSHOT_TYPE.ownerReport,
     AI_ANALYTICS_SNAPSHOT_TYPE.dealMovement,
+    AI_ANALYTICS_SNAPSHOT_TYPE.dealMovementDeals,
     AI_ANALYTICS_SNAPSHOT_TYPE.managerWeekDigest,
     AI_ANALYTICS_SNAPSHOT_TYPE.managerMonthDigest,
 ] as const;

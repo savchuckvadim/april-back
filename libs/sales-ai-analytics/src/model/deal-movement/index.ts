@@ -8,3 +8,4 @@ export * from './deal-movement.activity';
 export * from './deal-movement.note';
 export * from './deal-movement.todo';
 export * from './deal-movement.todo.prompt';
+export * from './deal-movement.progress-check';
