@@ -3,6 +3,10 @@ import { BitrixService, BitrixOwnerTypeId } from '@lib/bitrix';
 import { IBXItem } from '@lib/bitrix/domain/crm/item/interface/item.interface';
 import { callReportSmartUfName } from '../config/call-report-smart.config';
 import { CallReportSmartDegradation } from './call-report-smart-degradation';
+import {
+    describeSmartWriteFailure,
+    withBitrixResponse,
+} from './call-report-smart-failure';
 import { buildCallReportSmartFields } from './call-report-smart-fields.builder';
 import { CallReportSmartInfo } from './call-report-smart-resolver.service';
 import { CallReportSmartTimelineWriter } from './call-report-smart-timeline.writer';
@@ -97,14 +101,18 @@ export class CallReportSmartWriterService {
 
         const fields = this.buildFields(input, { isCreate: true });
         if (xmlId) fields.xmlId = xmlId;
-        const { response, dropped } = await this.degradation.write(
-            fields as Record<string, unknown>,
-            degraded =>
+        // Отказ Битрикса — с описанием из тела ответа: у axios в message
+        // только «status code 400», причина лежит в response.data.
+        const { response, dropped } = await this.degradation
+            .write(fields as Record<string, unknown>, degraded =>
                 this.bitrix.item.add(
                     String(this.smartInfo.entityTypeId),
                     degraded as Partial<IBXItem>,
                 ),
-        );
+            )
+            .catch((error: unknown) => {
+                throw withBitrixResponse(error);
+            });
         const itemId = Number(
             (response as { result?: { item?: { id?: number } } } | undefined)
                 ?.result?.item?.id,
@@ -168,9 +176,11 @@ export class CallReportSmartWriterService {
             // Не фатально: транскрипт и ais уже в БД, разбор дольётся
             // повторным прогоном. { telegram: true } — алерт, иначе пустые
             // поля ищут неделями.
-            this.updateFailure = (error as Error).message;
+            // С описанием из тела ответа Битрикса (describeSmartWriteFailure).
+            const reason = describeSmartWriteFailure(error);
+            this.updateFailure = reason;
             this.logger.error(
-                `Элемент #${existingId} не обновлён (${xmlId}, ${this.portalDomain}): ${(error as Error).message}`,
+                `Элемент #${existingId} не обновлён (${xmlId}, ${this.portalDomain}): ${reason}`,
                 { telegram: true, itemId: existingId },
             );
         }
