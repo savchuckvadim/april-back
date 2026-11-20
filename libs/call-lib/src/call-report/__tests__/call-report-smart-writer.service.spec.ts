@@ -925,3 +925,128 @@ describe('CallReportSmartWriterService: lastUpdateFailure', () => {
         expect(writer.lastUpdateFailure).toBe('boom');
     });
 });
+
+/**
+ * Отказ Битрикса с телом ответа: в журнале и тревоге — описание из тела, а
+ * не только «Request failed with status code 400» (garantservisvoronezh,
+ * 20.11.2026: повторялась тревога «Элемент #799 не обновлён», причину не
+ * было видно).
+ */
+describe('CallReportSmartWriterService: описание ответа Битрикса при отказе', () => {
+    const bodyError = (description: string) =>
+        Object.assign(new Error('Request failed with status code 400'), {
+            response: {
+                status: 400,
+                data: { error: 'ERROR_CORE', error_description: description },
+            },
+        });
+
+    it('update не прошёл — описание в lastUpdateFailure и в тревоге', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockResolvedValue({
+            result: { items: [{ id: 799 }] },
+        });
+        bitrix.item.update.mockRejectedValue(bodyError('Field is not valid'));
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const error = jest
+            .spyOn(
+                (writer as unknown as { logger: { error: () => void } }).logger,
+                'error',
+            )
+            .mockImplementation(() => undefined);
+
+        await writer.updateExisting({ activityId: '101', summary: 'Итог' });
+
+        expect(writer.lastUpdateFailure).toContain(
+            'ответ Битрикса: ERROR_CORE: Field is not valid',
+        );
+        const [message, meta] = error.mock.calls[0] as unknown as [
+            string,
+            { telegram?: boolean },
+        ];
+        expect(message).toContain('Элемент #799 не обновлён');
+        expect(message).toContain('Request failed with status code 400');
+        expect(message).toContain('ERROR_CORE: Field is not valid');
+        expect(meta.telegram).toBe(true);
+        error.mockRestore();
+    });
+
+    it('безликий 400 на минимальном варианте: деградация исчерпана, тревога называет ответ', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockResolvedValue({
+            result: { items: [{ id: 799 }] },
+        });
+        bitrix.item.update.mockRejectedValue(
+            Object.assign(new Error('Request failed with status code 400'), {
+                response: {
+                    status: 400,
+                    data: {
+                        error: '400',
+                        error_description: 'Internal server error.',
+                    },
+                },
+            }),
+        );
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const logger = (
+            writer as unknown as {
+                logger: { error: () => void; warn: () => void };
+            }
+        ).logger;
+        jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+        jest.spyOn(logger, 'error').mockImplementation(() => undefined);
+
+        await writer.updateExisting({
+            activityId: '101',
+            transcript: 'а'.repeat(20_000),
+        });
+
+        // Все варианты уже пробовались; в тревогу — 400 и «Internal server error».
+        expect(bitrix.item.update.mock.calls.length).toBeGreaterThan(1);
+        expect(writer.lastUpdateFailure).toContain(
+            'ответ Битрикса: 400: Internal server error.',
+        );
+    });
+
+    it('create не прошёл — наружу уходит ошибка с описанием, исходная — в cause', async () => {
+        const bitrix = makeBitrix();
+        const original = bodyError('Access denied');
+        bitrix.item.add.mockRejectedValue(original);
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+
+        const failure = await writer
+            .addItem({ activityId: '103', summary: 'Итог' })
+            .catch((error: unknown) => error as Error);
+
+        expect(failure).toBeInstanceOf(Error);
+        expect((failure as Error).message).toContain(
+            'Request failed with status code 400',
+        );
+        expect((failure as Error).message).toContain(
+            'ERROR_CORE: Access denied',
+        );
+        expect((failure as Error).cause).toBe(original);
+    });
+
+    it('create: ошибка без тела проходит как была (тот же объект)', async () => {
+        const bitrix = makeBitrix();
+        const original = new Error('socket hang up');
+        bitrix.item.add.mockRejectedValue(original);
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await expect(
+            writer.addItem({ activityId: '104', summary: 'Итог' }),
+        ).rejects.toBe(original);
+    });
+});
