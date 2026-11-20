@@ -15,6 +15,7 @@ import {
     DEAL_MOVEMENT_DIGEST_SKIP,
     skippedDealMovementDigest,
     type DealMovementDigestSummary,
+    type DealMovementStateEntry,
 } from '@lib/sales-ai-analytics';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
 import type { DealAuditFrequency } from '../../deal-audit/lib/deal-audit-schedule';
@@ -30,11 +31,15 @@ import {
     buildDealMovementDigest,
     shouldSendDealMovementDigest,
 } from '../lib/deal-movement-digest.formatter';
+import {
+    buildDealMovementPeriodDigest,
+    reminderDealMovementDigestDeals,
+} from '../lib/deal-movement-period-digest.formatter';
 import type {
     DealMovementDigestDeal,
     DealMovementDigestOptions,
 } from '../types/deal-movement.types';
-import { DealMovementNightCounters } from './deal-movement-night-counters';
+import { DealMovementDigestSchedule } from './deal-movement-digest.schedule';
 
 export interface DealMovementDigestRequest {
     readonly domain: string;
@@ -45,6 +50,8 @@ export interface DealMovementDigestRequest {
     readonly options: DealMovementDigestOptions;
     /** Оценённые сделки ночи (все статусы — для счёта в шапке). */
     readonly deals: readonly DealMovementDigestDeal[];
+    /** Состояние ночи: в нём запоминается ступень показанных напоминаний. */
+    readonly state: ReadonlyMap<string, DealMovementStateEntry>;
 }
 
 /** Получатели аудита сделок → адресаты отчёта РОПу. */
@@ -59,17 +66,21 @@ const recipientSettingsOf = (
 
 /**
  * Сводка «Движение сделок» руководителям после ночного счёта (вторая
- * волна, часть Б, 17.11.2026).
+ * волна, часть Б, 17.11.2026; режимы за период — 20.11.2026).
  *
  * Получатели и каналы — те же, что у сводки аудита сделок
  * (`DealAuditSettingsService`): выбор — `routeRecipients` из
  * `@lib/rop-reports` (запись — сделка, владелец — ответственный, «шире
  * побеждает», сироты не рассылаются), неработающим не уходит. Доставка —
- * классом аудита со своими тегом уведомления и меткой задачи. Один раз за
- * день портала (отметка в Redis ставится ДО рассылки: лучше потерять
- * сводку при сбое, чем прислать её дважды). Свежие находки аудита сделок
- * (`DealAuditFindingsStore`) — пометкой у сделки и числом в шапке; статус
- * они не меняют (решение 18.11.2026).
+ * классом аудита со своими тегом уведомления и меткой задачи.
+ *
+ * Ежедневные режимы — один раз за день портала. Режимы «раз в неделю» и
+ * «раз в две недели» — только в выбранный день недели и не чаще периода;
+ * в них — блок «Давно без продвижения», показанные напоминания
+ * запоминаются в состоянии сделки (каждая ступень — один раз). Отметки —
+ * в Redis ДО рассылки: лучше потерять сводку при сбое, чем прислать её
+ * дважды. Свежие находки аудита сделок — пометкой у сделки и числом в
+ * шапке; статус они не меняют (решение 18.11.2026).
  *
  * `@Injectable`, но инстанс Битрикса живёт только внутри вызова (CLAUDE.md).
  */
@@ -82,15 +93,15 @@ export class DealMovementDigestService {
         private readonly departments: BxDepartmentService,
         private readonly staff: ActiveStaffService,
         private readonly auditSettings: DealAuditSettingsService,
-        private readonly counters: DealMovementNightCounters,
         private readonly findings: DealAuditFindingsStore,
+        private readonly schedule: DealMovementDigestSchedule,
     ) {}
 
     async send(
         request: DealMovementDigestRequest,
         warnings: string[],
     ): Promise<DealMovementDigestSummary> {
-        const { domain, day, options } = request;
+        const { domain, options } = request;
         if (!options.enabled) {
             return skippedDealMovementDigest(
                 false,
@@ -106,12 +117,11 @@ export class DealMovementDigestService {
                 DEAL_MOVEMENT_DIGEST_SKIP.noRecipients,
             );
         }
-        if (!(await this.counters.claimDigest(domain, day))) {
-            return skippedDealMovementDigest(
-                true,
-                DEAL_MOVEMENT_DIGEST_SKIP.alreadySent,
-            );
+        const claim = await this.schedule.claim(request);
+        if (claim.skipped !== null) {
+            return skippedDealMovementDigest(true, claim.skipped);
         }
+        const period = claim.period;
         const deals = withDealAuditNotes(
             request.deals,
             await this.auditNotes(
@@ -148,16 +158,16 @@ export class DealMovementDigestService {
         ).filter(bucket =>
             shouldSendDealMovementDigest(bucket.items, options.mode),
         );
-        if (due.length === 0) {
-            return {
-                enabled: true,
-                skipped: null,
-                recipients: 0,
-                sent: 0,
-                failed: 0,
-                auditForgotten,
-            };
-        }
+        const summary: DealMovementDigestSummary = {
+            enabled: true,
+            skipped: null,
+            recipients: 0,
+            sent: 0,
+            failed: 0,
+            auditForgotten,
+            ...(period === null ? {} : { reminders: 0 }),
+        };
+        if (due.length === 0) return summary;
 
         const { bitrix, PortalModel } = await this.pbx.init(domain);
         const working = await keepWorkingRecipients(
@@ -177,32 +187,55 @@ export class DealMovementDigestService {
             },
         );
         const userNames = userNamesOf(departments);
+        const reminded = new Map<string, number>();
         let sent = 0;
         for (const bucket of working) {
-            const digest = buildDealMovementDigest({
-                domain,
-                day,
-                deals: bucket.items,
-                top: options.top,
-                userNames,
-            });
+            const scope = { domain, deals: bucket.items, userNames };
+            const digest =
+                period === null
+                    ? buildDealMovementDigest({
+                          ...scope,
+                          day: request.day,
+                          top: options.top,
+                      })
+                    : buildDealMovementPeriodDigest({
+                          ...scope,
+                          day: request.day,
+                          top: options.top,
+                          ...period,
+                      });
             if (
-                digest &&
-                (await delivery.deliver(bucket.userId, digest, warnings))
+                !digest ||
+                !(await delivery.deliver(bucket.userId, digest, warnings))
             ) {
-                sent += 1;
+                continue;
+            }
+            sent += 1;
+            if (period === null) continue;
+            for (const deal of reminderDealMovementDigestDeals(
+                bucket.items,
+                options.top,
+            )) {
+                if (deal.remindStep !== null) {
+                    reminded.set(deal.dealId, deal.remindStep);
+                }
             }
         }
+        await this.schedule.markReminded(
+            domain,
+            request.state,
+            reminded,
+            warnings,
+        );
         this.logger.log(
             `[deal-movement] ${domain}: сводок руководителям доставлено ${sent} из ${working.length}`,
         );
         return {
-            enabled: true,
-            skipped: null,
+            ...summary,
             recipients: working.length,
             sent,
             failed: working.length - sent,
-            auditForgotten,
+            ...(period === null ? {} : { reminders: reminded.size }),
         };
     }
 

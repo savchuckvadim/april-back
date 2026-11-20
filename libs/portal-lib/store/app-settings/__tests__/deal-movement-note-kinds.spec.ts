@@ -11,8 +11,14 @@ import {
 import {
     DEAL_MOVEMENT_DIGEST_MODE,
     DEAL_MOVEMENT_DIGEST_MODE_OPTIONS,
+    dealMovementDigestPeriodDays,
     toDealMovementDigestMode,
+    toDealMovementDigestWeekday,
 } from '../lib/deal-movement-digest-modes.const';
+import {
+    DEAL_MOVEMENT_STATUS_LABELS,
+    dealMovementStatusQuoted,
+} from '../lib/deal-movement-status-titles.const';
 
 const SETTINGS = PORTAL_APP_SETTINGS_SCHEMA[EnumPortalAppCode.eventSales];
 
@@ -36,11 +42,50 @@ describe('движение сделок: настройки сводки рук�
             DEAL_MOVEMENT_DIGEST_MODE.daily,
         );
         expect(toDealMovementDigestMode('weekly')).toBe(
+            DEAL_MOVEMENT_DIGEST_MODE.weekly,
+        );
+        expect(toDealMovementDigestMode('biweekly')).toBe(
+            DEAL_MOVEMENT_DIGEST_MODE.biweekly,
+        );
+        expect(toDealMovementDigestMode('monthly')).toBe(
             DEAL_MOVEMENT_DIGEST_MODE.newOnly,
         );
         expect(toDealMovementDigestMode(undefined)).toBe(
             DEAL_MOVEMENT_DIGEST_MODE.newOnly,
         );
+    });
+
+    it('неделя и две недели: период 7 и 14 дней, у ежедневных периода нет; день недели 1–7, по умолчанию понедельник', () => {
+        expect(dealMovementDigestPeriodDays('weekly')).toBe(7);
+        expect(dealMovementDigestPeriodDays('biweekly')).toBe(14);
+        expect(dealMovementDigestPeriodDays('daily')).toBeNull();
+        expect(dealMovementDigestPeriodDays('new_only')).toBeNull();
+        expect(SETTINGS.dealMovementDigestWeekday.code).toBe(
+            'deal_movement_digest_weekday',
+        );
+        expect(SETTINGS.dealMovementDigestWeekday.default).toBe(1);
+        expect(toDealMovementDigestWeekday(5)).toBe(5);
+        expect(toDealMovementDigestWeekday('7')).toBe(7);
+        expect(toDealMovementDigestWeekday(0)).toBe(1);
+        expect(toDealMovementDigestWeekday(8)).toBe(1);
+        expect(toDealMovementDigestWeekday('')).toBe(1);
+        expect(
+            DEAL_MOVEMENT_DIGEST_MODE_OPTIONS.map(option => option.code),
+        ).toEqual(['new_only', 'daily', 'weekly', 'biweekly']);
+    });
+});
+
+describe('движение сделок: подписи статусов в описаниях настроек', () => {
+    it('одно место подписей; в описаниях — новые подписи, без «застряла»', () => {
+        expect(DEAL_MOVEMENT_STATUS_LABELS.stuck).toBe('Без продвижения');
+        expect(dealMovementStatusQuoted('abandoned')).toBe('«без внимания»');
+        const texts = Object.values(SETTINGS)
+            .filter(setting => setting.code.startsWith('deal_movement_'))
+            .map(setting => `${setting.name} ${setting.description}`)
+            .join(' ');
+        expect(texts).not.toMatch(/застрял|откатил/i);
+        expect(texts).toContain('«без внимания»');
+        expect(texts).toContain('«без продвижения»');
     });
 });
 

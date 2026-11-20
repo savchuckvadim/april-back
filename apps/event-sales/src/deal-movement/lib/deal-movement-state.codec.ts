@@ -59,5 +59,7 @@ export function decodeDealMovementEntry(
         changedAt: stringOrNull(record.changedAt),
         notifiedAt: stringOrNull(record.notifiedAt),
         checkedAt: record.checkedAt,
+        // Нет у состояний до 20.11.2026 — не напоминали.
+        remindedStep: numberOrNull(record.remindedStep) ?? 0,
     };
 }

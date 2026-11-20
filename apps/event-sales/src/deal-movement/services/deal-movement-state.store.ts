@@ -88,4 +88,29 @@ export class DealMovementStateStore {
         await redis.hset(key, dealId, encodeDealMovementEntry(entry));
         await redis.expire(key, DEAL_MOVEMENT_TTL_SEC.state);
     }
+
+    /**
+     * Несколько сделок — по полю хеша на каждую (напоминания сводки за
+     * период): остальное состояние не трогается.
+     */
+    async saveEntries(
+        domain: string,
+        entries: ReadonlyMap<string, DealMovementStateEntry>,
+    ): Promise<void> {
+        if (entries.size === 0) return;
+        const redis = this.redisService.getClient();
+        const key = DEAL_MOVEMENT_REDIS_KEYS.state(domain);
+        const list = [...entries.entries()];
+        for (let start = 0; start < list.length; start += FIELDS_PER_COMMAND) {
+            const fields: Record<string, string> = {};
+            for (const [dealId, entry] of list.slice(
+                start,
+                start + FIELDS_PER_COMMAND,
+            )) {
+                fields[dealId] = encodeDealMovementEntry(entry);
+            }
+            await redis.hset(key, fields);
+        }
+        await redis.expire(key, DEAL_MOVEMENT_TTL_SEC.state);
+    }
 }

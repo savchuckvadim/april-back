@@ -14,6 +14,11 @@ export const DEAL_MOVEMENT_DIGEST_SKIP = {
     alreadySent: 'already_sent',
     /** Получатели в настройках не заданы. */
     noRecipients: 'no_recipients',
+    /**
+     * Сводка раз в неделю / две недели: сегодня не её день или с прошлой
+     * сводки прошло меньше периода (20.11.2026).
+     */
+    notDue: 'not_due',
 } as const;
 
 export type DealMovementDigestSkip =
@@ -27,6 +32,7 @@ export const DEAL_MOVEMENT_DIGEST_SKIP_TITLES: Readonly<
     manual: 'уходит только после ночного счёта',
     already_sent: 'сегодня уже отправлена',
     no_recipients: 'получатели не заданы',
+    not_due: 'сегодня не день сводки за период',
 };
 
 export interface DealMovementDigestSummary {
@@ -45,6 +51,11 @@ export interface DealMovementDigestSummary {
      * у сводок до 18.11.2026 и у пропущенных.
      */
     auditForgotten?: number;
+    /**
+     * Сводка за период (неделя / две недели): сколько сделок попало в блок
+     * «Давно без продвижения»; нет у ежедневных и пропущенных сводок.
+     */
+    reminders?: number;
 }
 
 export const skippedDealMovementDigest = (
