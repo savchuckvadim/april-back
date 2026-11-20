@@ -43,6 +43,7 @@ const dossier = (
     amount: null,
     calls: [],
     closedActivitiesAt: [],
+    work: [],
     forgotten: null,
     ...fields,
 });
@@ -137,48 +138,144 @@ describe('статус сделки по досье', () => {
         ).toBe('rolled_back');
     });
 
-    it('застряла: в стадии дольше обычного срока портала и звонков за окно нет', () => {
-        const stuck = verdictOf({
+    it('без внимания: в стадии дольше срока по истории портала, ни звонков, ни дел за окно', () => {
+        const abandoned = verdictOf({
             stageEnteredAt: '2026-10-01T12:00:00.000Z',
             stageNormDays: 30,
+        });
+        expect(abandoned).toMatchObject({
+            status: 'abandoned',
+            reasons: ['no_work'],
+        });
+        expect(abandoned.facts).toMatchObject({
+            daysInStage: 46,
+            stageLimitDays: 30,
+            stageLimitSource: 'history',
+            // Последняя «работа» — вход в стадию.
+            idleDays: 46,
+            recentWork: null,
+        });
+
+        // Своего ряда портала мало — общий порог 21 день.
+        const byDefault = verdictOf({
+            stageEnteredAt: '2026-10-20T12:00:00.000Z',
+        });
+        expect(byDefault.status).toBe('abandoned');
+        expect(byDefault.facts).toMatchObject({
+            stageLimitDays: 21,
+            stageLimitSource: 'default',
+        });
+    });
+
+    it('граница срока: ровно срок — ещё не дольше, на день больше — дольше', () => {
+        // 16.11 23:30 − 26.10 12:00 = 21 полный день.
+        expect(
+            verdictOf({ stageEnteredAt: '2026-10-26T12:00:00.000Z' }).status,
+        ).toBe('moving');
+        // 22 дня при пороге 21.
+        expect(
+            verdictOf({ stageEnteredAt: '2026-10-25T12:00:00.000Z' }).status,
+        ).toBe('abandoned');
+        // Срок по истории: 22 дня при обычных 22 — ещё нет.
+        expect(
+            verdictOf({
+                stageEnteredAt: '2026-10-25T12:00:00.000Z',
+                stageNormDays: 22,
+            }).status,
+        ).toBe('moving');
+    });
+
+    it('без продвижения: дольше срока, но недозвоны за окно — это работа', () => {
+        const stuck = verdictOf({
+            stageEnteredAt: '2026-10-01T12:00:00.000Z',
+            stageNormDays: 34,
+            work: [
+                { at: at(13, 10), kind: 'call', missed: true },
+                { at: at(16, 9), kind: 'call', missed: true },
+            ],
         });
         expect(stuck).toMatchObject({
             status: 'stuck',
             reasons: ['stage_overdue'],
         });
-        expect(stuck.facts).toMatchObject({
-            daysInStage: 46,
-            stageLimitDays: 30,
+        expect(stuck.facts.recentWork).toMatchObject({
+            callDays: ['2026-11-13', '2026-11-16'],
+            callsMissed: true,
         });
-
-        // Своего ряда портала мало — порог по умолчанию 21 день.
-        expect(
-            verdictOf({ stageEnteredAt: '2026-10-20T12:00:00.000Z' }).status,
-        ).toBe('stuck');
-        // Свежий звонок: сделкой занимаются, она не «застряла».
-        expect(
-            verdictOf({
-                stageEnteredAt: '2026-10-01T12:00:00.000Z',
-                calls: [call(12, { progress: 3 })],
-            }).status,
-        ).toBe('moving');
+        expect(dealMovementReasonTexts(stuck)).toEqual([
+            'звонки 13.11 и 16.11 (недозвоны), стадия не меняется 46 дней при обычных 34 днях для этой стадии',
+        ]);
     });
 
-    it('застряла — только без активности по сделке за окно: разобраны не все звонки', () => {
+    it('без продвижения: дело или задача за окно — работа; разобранный звонок — не недозвон', () => {
+        const longInStage = { stageEnteredAt: '2026-10-01T12:00:00.000Z' };
+        const activity = verdictOf({
+            ...longInStage,
+            work: [{ at: at(12), kind: 'activity', missed: false }],
+        });
+        expect(activity.status).toBe('stuck');
+        expect(dealMovementReasonTexts(activity)[0]).toBe(
+            'дело 12.11, стадия не меняется 46 дней при пороге 21 день',
+        );
+
+        const task = verdictOf({
+            ...longInStage,
+            work: [{ at: at(14), kind: 'task', missed: false }],
+        });
+        expect(task.status).toBe('stuck');
+        expect(task.facts.recentWork?.taskDays).toEqual(['2026-11-14']);
+
+        // Разобранный звонок и недозвон в один день — пометки «недозвон» нет.
+        const mixed = verdictOf({
+            ...longInStage,
+            calls: [call(12, { progress: 3 })],
+            work: [{ at: at(12, 15), kind: 'call', missed: true }],
+        });
+        expect(mixed.status).toBe('stuck');
+        expect(dealMovementReasonTexts(mixed)[0]).toBe(
+            'звонок 12.11, стадия не меняется 46 дней при пороге 21 день',
+        );
+    });
+
+    it('работа старше окна — не работа: без внимания, «ни звонков, ни дел N дней»', () => {
+        const old = verdictOf({
+            stageEnteredAt: '2026-10-01T12:00:00.000Z',
+            work: [
+                { at: '2026-10-27T12:00:00.000Z', kind: 'call', missed: false },
+            ],
+        });
+        expect(old.status).toBe('abandoned');
+        expect(old.facts.idleDays).toBe(20);
+        expect(dealMovementReasonTexts(old)).toEqual([
+            'ни звонков, ни дел 20 дней; в стадии 46 дней при пороге 21 день',
+        ]);
+
+        // Дальше срока чтения дел — честно «больше N дней».
+        const ancient = verdictOf({
+            stageEnteredAt: '2026-03-01T12:00:00.000Z',
+        });
+        expect(dealMovementReasonTexts(ancient)).toEqual([
+            'ни звонков, ни дел больше 60 дней; в стадии 260 дней при пороге 21 день',
+        ]);
+    });
+
+    it('активность по сделке за окно — работа (разобраны не все звонки)', () => {
         const longInStage = { stageEnteredAt: '2026-10-01T12:00:00.000Z' };
 
-        expect(
-            verdictOf({ ...longInStage, lastActivityAt: at(12) }).status,
-        ).toBe('moving');
+        const active = verdictOf({ ...longInStage, lastActivityAt: at(12) });
+        expect(active.status).toBe('stuck');
+        expect(dealMovementReasonTexts(active)[0]).toBe(
+            'активность в сделке 12.11, стадия не меняется 46 дней при пороге 21 день',
+        );
         expect(
             verdictOf({
                 ...longInStage,
                 lastActivityAt: '2026-10-25T12:00:00.000Z',
             }).status,
-        ).toBe('stuck');
+        ).toBe('abandoned');
         expect(
             verdictOf({ ...longInStage, lastActivityAt: 'не дата' }).status,
-        ).toBe('stuck');
+        ).toBe('abandoned');
     });
 
     it('под риском: договорённость просрочена — дата прошла, контакта после неё не было', () => {
@@ -335,7 +432,7 @@ describe('статус сделки по досье', () => {
         ).toEqual(['step_overdue', 'forgotten']);
     });
 
-    it('порядок правил: откат важнее застоя, застой важнее риска', () => {
+    it('порядок правил: возврат назад важнее срока стадии, срок стадии важнее риска', () => {
         expect(
             verdictOf({
                 stageEnteredAt: '2026-10-01T12:00:00.000Z',
@@ -348,6 +445,14 @@ describe('статус сделки по досье', () => {
             verdictOf({
                 stageEnteredAt: '2026-10-01T12:00:00.000Z',
                 forgotten: true,
+            }).status,
+        ).toBe('abandoned');
+        expect(
+            verdictOf({
+                stageEnteredAt: '2026-10-01T12:00:00.000Z',
+                calls: [
+                    call(5, { nextStep: { set: true, date: '2026-11-10' } }),
+                ],
             }).status,
         ).toBe('stuck');
     });
@@ -404,7 +509,18 @@ describe('статус сделки словами', () => {
                 }),
             ),
         ).toBe(
-            'Застряла: в стадии 46 дней при сроке 30 дней, работы по сделке за последнее время нет',
+            'Без внимания: ни звонков, ни дел 46 дней; в стадии 46 дней при обычных 30 днях для этой стадии',
+        );
+        expect(
+            dealMovementLine(
+                verdictOf({
+                    stageEnteredAt: '2026-10-01T12:00:00.000Z',
+                    stageNormDays: 21,
+                    work: [{ at: at(16), kind: 'call', missed: false }],
+                }),
+            ),
+        ).toBe(
+            'Без продвижения: звонок 16.11, стадия не меняется 46 дней при обычных 21 дне для этой стадии',
         );
         expect(
             dealMovementLine(

@@ -8,11 +8,14 @@
  * Расхождение `status ≠ notifiedStatus` и есть повод для записи; не
  * записали (лимит ночи, защита от метаний, сбой Битрикса) — расхождение
  * остаётся до следующей ночи. Сделка, увиденная впервые, получает базовую
- * линию: о текущем статусе ей не пишем (решение 17.11.2026).
+ * линию: о текущем статусе ей не пишем (решение 17.11.2026). О статусах,
+ * которых нет в ленте («Без внимания», решение 20.11.2026), «сказано»
+ * молча: запись о них не планируется.
  */
 import { DAY_MS, timeOf } from './deal-movement.timeline';
 import {
     DEAL_MOVEMENT_STATUSES,
+    isDealMovementFeedSilent,
     type DealMovementReason,
     type DealMovementStatus,
     type DealMovementVerdict,
@@ -39,6 +42,12 @@ export interface DealMovementStateEntry {
     /** Когда последний раз писали в ленту сделки; null — ни разу. */
     notifiedAt: string | null;
     checkedAt: string;
+    /**
+     * Последняя ступень «давно без продвижения», о которой напомнили в
+     * сводке за период (2 — вдвое дольше срока, 3 — втрое, …). Нет или 0 —
+     * не напоминали; смена стадии сбрасывает. Нет у состояний до 20.11.2026.
+     */
+    remindedStep?: number;
 }
 
 /** Сделка ночи: вердикт кода и то, что запоминается рядом с ним. */
@@ -145,11 +154,19 @@ function nextEntry(
 ): DealMovementStateEntry {
     const status = deal.verdict.status;
     const changed = previous !== undefined && previous.status !== status;
+    // Ступень напоминания живёт, пока сделка в той же стадии.
+    const remindedStep =
+        previous !== undefined && previous.stageCode === deal.stageCode
+            ? (previous.remindedStep ?? 0)
+            : 0;
     return {
         status,
-        // Базовая линия и молчаливый режим: о статусе «сказано».
+        // Базовая линия, молчаливый режим и статус без записи в ленту:
+        // о статусе «сказано».
         notifiedStatus:
-            previous === undefined || mode === 'silent'
+            previous === undefined ||
+            mode === 'silent' ||
+            isDealMovementFeedSilent(status)
                 ? status
                 : previous.notifiedStatus,
         reasons: [...deal.verdict.reasons],
@@ -160,6 +177,7 @@ function nextEntry(
         changedAt: changed ? now : (previous?.changedAt ?? null),
         notifiedAt: previous?.notifiedAt ?? null,
         checkedAt: now,
+        remindedStep,
     };
 }
 

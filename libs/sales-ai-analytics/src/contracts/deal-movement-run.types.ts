@@ -37,6 +37,7 @@ export const DEAL_MOVEMENT_RUN_PHASES = [
     'deals',
     'history',
     'calls',
+    'work',
     'evaluated',
     'notes',
     'digest',
@@ -76,8 +77,13 @@ export const DEAL_MOVEMENT_JOB_OPTIONS = {
     removeOnFail: true,
 } as const;
 
-/** Версия расчёта: колонка model дневного снимка. */
-export const DEAL_MOVEMENT_CALC_VERSION = 'deal-movement-1.0.0';
+/**
+ * Версия расчёта: колонка model дневного снимка и метка счёта. Сменилась
+ * (20.11.2026: «Без внимания», срок по истории портала) — первый счёт
+ * после выкладки идёт базовой линией: прежний «stuck» значил другое, и
+ * тысячи «смен» статуса за одну ночь были бы ложными.
+ */
+export const DEAL_MOVEMENT_CALC_VERSION = 'deal-movement-2.0.0';
 
 /** Ход и итог прогона портала (Redis, ключ `status`). */
 export interface DealMovementRunStatus {
@@ -94,6 +100,16 @@ export interface DealMovementRunStatus {
     evaluated: number;
     /** Сработал потолок сделок за ночь. */
     capped: boolean;
+    /**
+     * Сколько стадий получили срок по истории портала (остальные — общий
+     * порог); нет у прогонов до 20.11.2026.
+     */
+    stagesByHistory?: number;
+    /**
+     * У скольких сделок читались звонки и дела Битрикса (кандидаты в «Без
+     * внимания»); нет у прогонов до 20.11.2026.
+     */
+    workProbed?: number;
     /** Прошлого состояния нет или оно устарело — базовая линия заново. */
     baseline: boolean;
     /** Сделок, увиденных впервые. */
@@ -117,9 +133,33 @@ export interface DealMovementRunStatus {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const isCounts = (value: unknown): boolean =>
+/** Статусы, которых нет в старых состояниях и снимках (до 20.11.2026). */
+export const DEAL_MOVEMENT_LATER_STATUSES = [
+    'abandoned',
+] as const satisfies readonly DealMovementStatus[];
+
+/**
+ * Счёт по статусам: число у каждого статуса; статуса, которого не было в
+ * прошлой версии расчёта («Без внимания»), может не быть.
+ */
+export const isDealMovementCountsLike = (value: unknown): boolean =>
     isRecord(value) &&
-    DEAL_MOVEMENT_STATUSES.every(status => typeof value[status] === 'number');
+    DEAL_MOVEMENT_STATUSES.every(
+        status =>
+            typeof value[status] === 'number' ||
+            (DEAL_MOVEMENT_LATER_STATUSES as readonly string[]).includes(
+                status,
+            ),
+    );
+
+/** Счёт по статусам из Redis или ais → у каждого статуса число (нет — 0). */
+export function normalizeDealMovementCounts(
+    value: Partial<Record<DealMovementStatus, number>>,
+): Record<DealMovementStatus, number> {
+    return Object.fromEntries(
+        DEAL_MOVEMENT_STATUSES.map(status => [status, value[status] ?? 0]),
+    ) as Record<DealMovementStatus, number>;
+}
 
 /** Структурная проверка состояния прогона при чтении из Redis. */
 export function isDealMovementRunStatusLike(
@@ -137,7 +177,7 @@ export function isDealMovementRunStatusLike(
         typeof value.finished === 'boolean' &&
         typeof value.openTotal === 'number' &&
         typeof value.evaluated === 'number' &&
-        isCounts(value.byStatus) &&
+        isDealMovementCountsLike(value.byStatus) &&
         Array.isArray(value.warnings)
     );
 }
@@ -170,6 +210,12 @@ export const DEAL_MOVEMENT_REDIS_KEYS = {
     /** Сводка руководителям за день портала уже уходила (один раз в день). */
     digestDay: (domain: string, day: string): string =>
         `event-sales:deal-movement:digest-day:${domain}:${day}`,
+    /**
+     * Последняя сводка за период (раз в неделю / две недели): день портала
+     * и момент — от него «что изменилось с прошлой сводки».
+     */
+    digestLast: (domain: string): string =>
+        `event-sales:deal-movement:digest-last:${domain}`,
     /** Итог последней проверки записи в ленту (ручка админки). */
     probe: (domain: string): string =>
         `event-sales:deal-movement:probe:${domain}`,

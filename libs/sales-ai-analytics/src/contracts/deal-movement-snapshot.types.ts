@@ -4,14 +4,12 @@
  * итог ночи и смены статуса словами, без состояния по сделкам — оно живёт
  * в Redis (решение 17.11.2026). Чистые типы и проверка формы.
  */
-import {
-    DEAL_MOVEMENT_STATUSES,
-    type DealMovementStatus,
-} from '../model/deal-movement/deal-movement.types';
+import type { DealMovementStatus } from '../model/deal-movement/deal-movement.types';
 import type { DealMovementDigestSummary } from './deal-movement-digest.types';
 import type { DealMovementNotesSummary } from './deal-movement-notes.types';
 import {
     DEAL_MOVEMENT_RUN_MODES,
+    isDealMovementCountsLike,
     type DealMovementRunMode,
 } from './deal-movement-run.types';
 
@@ -65,17 +63,13 @@ export function isDealMovementSnapshotPayload(
     value: unknown,
 ): value is DealMovementSnapshotPayload {
     if (!isRecord(value)) return false;
-    const counts = value.byStatus;
     return (
         typeof value.day === 'string' &&
         (DEAL_MOVEMENT_RUN_MODES as readonly unknown[]).includes(value.mode) &&
         typeof value.openTotal === 'number' &&
         typeof value.evaluated === 'number' &&
         typeof value.changesTotal === 'number' &&
-        isRecord(counts) &&
-        DEAL_MOVEMENT_STATUSES.every(
-            status => typeof counts[status] === 'number',
-        ) &&
+        isDealMovementCountsLike(value.byStatus) &&
         Array.isArray(value.changes) &&
         Array.isArray(value.warnings)
     );

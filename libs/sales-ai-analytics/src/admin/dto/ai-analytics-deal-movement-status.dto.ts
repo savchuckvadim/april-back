@@ -19,28 +19,62 @@ import {
     DEAL_MOVEMENT_STATUSES,
     type DealMovementStatus,
 } from '../../model/deal-movement/deal-movement.types';
+import { DEAL_MOVEMENT_STATUS_TITLES } from '../../model/deal-movement/deal-movement.texts';
 import type { DealMovementStatusResult } from '../services/ai-analytics-deal-movement.service';
 import { AiAnalyticsDealMovementDomainDto } from './ai-analytics-deal-movement.dto';
 import { AiAnalyticsDealMovementDigestDto } from './ai-analytics-deal-movement-digest.dto';
 import { AiAnalyticsDealMovementNotesDto } from './ai-analytics-deal-movement-notes.dto';
 
+/** Коды статусов с подписями — для описаний полей. */
+const DEAL_MOVEMENT_STATUS_CODES_TEXT = DEAL_MOVEMENT_STATUSES.map(
+    status => `${status} — «${DEAL_MOVEMENT_STATUS_TITLES[status]}»`,
+).join(', ');
+
 /** Запрос состояния — домен портала. */
 export class AiAnalyticsDealMovementStatusQueryDto extends AiAnalyticsDealMovementDomainDto {}
 
-/** Сколько сделок в каждом статусе. */
+/** Сколько сделок в каждом статусе (подписи — DEAL_MOVEMENT_STATUS_TITLES). */
 export class AiAnalyticsDealMovementCountsDto
     implements Record<DealMovementStatus, number>
 {
-    @ApiProperty({ description: 'Движется.', example: 7000, type: Number })
+    @ApiProperty({
+        description: `${DEAL_MOVEMENT_STATUS_TITLES.moving}.`,
+        example: 7000,
+        type: Number,
+    })
     moving: number;
 
-    @ApiProperty({ description: 'Застряла.', example: 1500, type: Number })
+    @ApiProperty({
+        description:
+            `${DEAL_MOVEMENT_STATUS_TITLES.stuck}: дольше срока в стадии, ` +
+            'работа по сделке есть (звонки, недозвоны, дела), а стадия стоит.',
+        example: 400,
+        type: Number,
+    })
     stuck: number;
 
-    @ApiProperty({ description: 'Откатилась.', example: 12, type: Number })
+    @ApiProperty({
+        description:
+            `${DEAL_MOVEMENT_STATUS_TITLES.abandoned}: дольше срока в стадии, ` +
+            'и за окно ни звонков, ни дел. В ленту сделки не пишется. В ' +
+            'прогонах до 20.11.2026 такого статуса не было — там 0.',
+        example: 1100,
+        type: Number,
+    })
+    abandoned: number;
+
+    @ApiProperty({
+        description: `${DEAL_MOVEMENT_STATUS_TITLES.rolled_back}.`,
+        example: 12,
+        type: Number,
+    })
     rolled_back: number;
 
-    @ApiProperty({ description: 'Под риском.', example: 480, type: Number })
+    @ApiProperty({
+        description: `${DEAL_MOVEMENT_STATUS_TITLES.at_risk}.`,
+        example: 480,
+        type: Number,
+    })
     at_risk: number;
 }
 
@@ -122,6 +156,26 @@ export class AiAnalyticsDealMovementRunStatusDto
         type: Boolean,
     })
     capped: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько стадий получили срок по истории портала (за сколько ' +
+            'дней уходят из стадии 9 сделок из 10); у остальных — общий ' +
+            'порог настройки. Нет у прогонов до 20.11.2026.',
+        example: 6,
+        type: Number,
+    })
+    stagesByHistory?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'У скольких сделок читались звонки и дела Битрикса — только у ' +
+            `тех, кому иначе досталось бы «${DEAL_MOVEMENT_STATUS_TITLES.abandoned}». ` +
+            'Нет у прогонов до 20.11.2026.',
+        example: 3200,
+        type: Number,
+    })
+    workProbed?: number;
 
     @ApiProperty({
         description:
@@ -229,7 +283,7 @@ export class AiAnalyticsDealMovementChangeDto
     amount: number | null;
 
     @ApiProperty({
-        description: 'Статус прошлой ночи.',
+        description: `Статус прошлой ночи: ${DEAL_MOVEMENT_STATUS_CODES_TEXT}.`,
         enum: DEAL_MOVEMENT_STATUSES,
         example: 'moving',
         type: String,
@@ -237,7 +291,7 @@ export class AiAnalyticsDealMovementChangeDto
     from: DealMovementStatus;
 
     @ApiProperty({
-        description: 'Статус этой ночи.',
+        description: `Статус этой ночи: ${DEAL_MOVEMENT_STATUS_CODES_TEXT}.`,
         enum: DEAL_MOVEMENT_STATUSES,
         example: 'at_risk',
         type: String,

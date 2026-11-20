@@ -25,15 +25,21 @@ import { DEAL_MOVEMENT_TODO_LIMITS } from './deal-movement.todo.prompt';
 import {
     DEAL_MOVEMENT_ALARM_STATUSES,
     isDealMovementAlarm,
+    isDealMovementFeedSilent,
     type DealMovementStatus,
 } from './deal-movement.types';
 
-/** Статусы, для которых просим «что сделать»: тревожные, у «Движется» нет. */
+/**
+ * Статусы, для которых просим «что сделать»: тревожные, о которых пишем в
+ * ленту. У «Движется» делать нечего, «Без внимания» в ленту не пишется.
+ */
 export const DEAL_MOVEMENT_TODO_STATUSES: readonly DealMovementStatus[] =
-    DEAL_MOVEMENT_ALARM_STATUSES;
+    DEAL_MOVEMENT_ALARM_STATUSES.filter(
+        status => !isDealMovementFeedSilent(status),
+    );
 
 export const needsDealMovementTodo = (status: DealMovementStatus): boolean =>
-    isDealMovementAlarm(status);
+    isDealMovementAlarm(status) && !isDealMovementFeedSilent(status);
 
 /** Почему строка модели не прошла проверку. */
 export const DEAL_MOVEMENT_TODO_DROP = {

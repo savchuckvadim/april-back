@@ -20,6 +20,7 @@ import {
     DEAL_MOVEMENT_REQUESTERS,
     dealMovementJobId,
     isDealMovementRunStatusLike,
+    normalizeDealMovementCounts,
     type DealMovementJobData,
     type DealMovementRunStatus,
 } from '../../contracts/deal-movement-run.types';
@@ -157,7 +158,12 @@ export class AiAnalyticsDealMovementService {
         if (!raw) return null;
         try {
             const value: unknown = JSON.parse(raw);
-            return isDealMovementRunStatusLike(value) ? value : null;
+            return isDealMovementRunStatusLike(value)
+                ? {
+                      ...value,
+                      byStatus: normalizeDealMovementCounts(value.byStatus),
+                  }
+                : null;
         } catch {
             return null;
         }
@@ -172,7 +178,12 @@ export class AiAnalyticsDealMovementService {
             { limit: 1 },
         );
         return latest && isDealMovementSnapshotPayload(latest.payload)
-            ? latest.payload
+            ? {
+                  ...latest.payload,
+                  byStatus: normalizeDealMovementCounts(
+                      latest.payload.byStatus,
+                  ),
+              }
             : null;
     }
 }

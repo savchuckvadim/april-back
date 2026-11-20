@@ -44,8 +44,10 @@ describe('«что сделать»: вход модели', () => {
         expect(empty).toContain('Последний разобранный звонок: нет.');
     });
 
-    it('просим только у тревожных статусов; схема строгая, 3–5 строк', () => {
+    it('просим только у тревожных статусов с записью в ленту; схема строгая, 3–5 строк', () => {
         expect(needsDealMovementTodo('stuck')).toBe(true);
+        // «Без внимания» в ленту не пишется — и подсказка не нужна.
+        expect(needsDealMovementTodo('abandoned')).toBe(false);
         expect(needsDealMovementTodo('rolled_back')).toBe(true);
         expect(needsDealMovementTodo('at_risk')).toBe(true);
         expect(needsDealMovementTodo('moving')).toBe(false);

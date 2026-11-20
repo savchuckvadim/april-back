@@ -20,7 +20,13 @@ import { AI_ANALYTICS_SNAPSHOT_TYPE } from '../../contracts/snapshot-kinds.const
 
 const DOMAIN = 'garant.bitrix24.ru';
 
-const counts = { moving: 5, stuck: 2, rolled_back: 1, at_risk: 3 };
+const counts = {
+    moving: 5,
+    stuck: 2,
+    abandoned: 4,
+    rolled_back: 1,
+    at_risk: 3,
+};
 
 const runStatus: DealMovementRunStatus = {
     domain: DOMAIN,
@@ -172,6 +178,22 @@ describe('движение сделок в админке: состояние', 
             run: runStatus,
             lastSnapshot: snapshot,
             runAvailable: true,
+        });
+    });
+
+    it('прогон и снимок до 20.11.2026 без «Без внимания» читаются, счёт — 0', async () => {
+        const legacy = { moving: 5, stuck: 2, rolled_back: 1, at_risk: 3 };
+        const { service } = build({
+            redisValue: JSON.stringify({ ...runStatus, byStatus: legacy }),
+            snapshots: [{ payload: { ...snapshot, byStatus: legacy } }],
+        });
+
+        const result = await service.status(DOMAIN);
+
+        expect(result.run?.byStatus).toEqual({ ...legacy, abandoned: 0 });
+        expect(result.lastSnapshot?.byStatus).toEqual({
+            ...legacy,
+            abandoned: 0,
         });
     });
 
