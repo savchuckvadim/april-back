@@ -130,11 +130,6 @@ export function dealMovementRecentWorkText(
     if (work.stageDays.length > 0) {
         parts.push(`смена стадии ${datesText(work.stageDays)}`);
     }
-    if (parts.length === 0 && work.activityOnly !== null) {
-        parts.push(
-            `активность в сделке ${dealMovementShortDate(work.activityOnly)}`,
-        );
-    }
     return parts.join(', ');
 }
 

@@ -80,14 +80,15 @@ describe('оценка сделок ночи', () => {
         expect(dealsNeedingWork(result.verdicts)).toEqual([1]);
     });
 
-    it('чужая работа после нашей записи — работа есть: «без продвижения», а не «без внимания»', () => {
+    it('чужая «последняя активность» после нашей записи — в состоянии она, но работой не считается', () => {
+        // Её сдвигают роботы и бизнес-процессы: без звонков и дел — «без внимания».
         const result = evaluate('2026-11-17T09:00:00.000Z');
 
-        expect(result.verdicts.get('1')?.status).toBe('stuck');
+        expect(result.verdicts.get('1')?.status).toBe('abandoned');
         expect(result.deals[0]?.lastActivityAt).toBe(
             '2026-11-17T09:00:00.000Z',
         );
-        expect(dealsNeedingWork(result.verdicts)).toEqual([]);
+        expect(dealsNeedingWork(result.verdicts)).toEqual([1]);
     });
 
     it('недозвон из дел Битрикса — работа: «без внимания» становится «без продвижения»', () => {
@@ -133,7 +134,24 @@ describe('оценка сделок ночи', () => {
     });
 
     it('звонки для «что сделать» — только у тревожных статусов с записью в ленту', () => {
-        const result = evaluate('2026-11-17T09:00:00.000Z');
+        // «Без внимания» в ленту не пишется — и звонки для подсказки не нужны.
+        expect(evaluate(OWN_NOTE_ACTIVITY).pointers.has('1')).toBe(false);
+
+        const result = evaluate(OWN_NOTE_ACTIVITY, {
+            work: new Map([
+                [
+                    1,
+                    [
+                        {
+                            at: '2026-11-16T10:00:00.000Z',
+                            kind: 'activity',
+                            missed: false,
+                        },
+                    ],
+                ],
+            ]),
+        });
+        expect(result.verdicts.get('1')?.status).toBe('stuck');
 
         expect(result.pointers.get('1')).toEqual({
             lastCall: { id: 't1', at: '2026-10-25T10:00:00.000Z' },

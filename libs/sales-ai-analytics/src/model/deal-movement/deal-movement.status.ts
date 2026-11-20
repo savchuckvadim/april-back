@@ -110,7 +110,7 @@ export function dealMovementVerdict(
     const timeline = timelineOf(dossier, nowMs, thresholds.windowDays);
     const step = stepStateOf(timeline);
     const daysSinceAgreed = daysSinceAgreedOf(timeline);
-    const recentWork = recentWorkOf(dossier, timeline);
+    const recentWork = recentWorkOf(dossier, timeline, thresholds.timeZone);
     const facts: DealMovementFacts = {
         daysInStage: daysFrom(dossier.stageEnteredAt, nowMs),
         stageLimitDays: dossier.stageNormDays ?? thresholds.stuckDefaultDays,
@@ -138,7 +138,8 @@ export function dealMovementVerdict(
         return verdict('rolled_back', ['stage_back']);
     }
     // 2. Дольше срока в стадии: работы за окно нет — «Без внимания»; есть
-    //    (звонки, недозвоны, дела, задачи), а стадия стоит — «Без продвижения».
+    //    (звонки, недозвоны, дела, задачи, смена стадии), а стадия стоит —
+    //    «Без продвижения». «Последняя активность» сделки — не работа.
     if (facts.daysInStage > facts.stageLimitDays) {
         return recentWork === null
             ? verdict('abandoned', ['no_work'])

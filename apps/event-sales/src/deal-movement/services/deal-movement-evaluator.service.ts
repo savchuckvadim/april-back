@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
+import { resolveTimezoneByDomain } from '@lib/shared/lib/date';
 import type {
     DealMovementNightDeal,
     DealMovementRunPhase,
@@ -117,7 +118,11 @@ export class DealMovementEvaluator {
             stageNorms,
             previous,
             now: now.toISOString(),
-            thresholds: options.thresholds,
+            // Дни в текстах причин — по поясу портала.
+            thresholds: {
+                ...options.thresholds,
+                timeZone: resolveTimezoneByDomain(domain),
+            },
         };
         let result = evaluateDealRows(base);
         // Звонки и дела Битрикса — только тем, кому грозит «Без внимания».

@@ -259,23 +259,50 @@ describe('статус сделки по досье', () => {
         ]);
     });
 
-    it('активность по сделке за окно — работа (разобраны не все звонки)', () => {
+    it('«последняя активность» сделки — не работа: свежая, но без звонков и дел — без внимания', () => {
         const longInStage = { stageEnteredAt: '2026-10-01T12:00:00.000Z' };
 
-        const active = verdictOf({ ...longInStage, lastActivityAt: at(12) });
-        expect(active.status).toBe('stuck');
-        expect(dealMovementReasonTexts(active)[0]).toBe(
-            'активность в сделке 12.11, стадия не меняется 46 дней при пороге 21 день',
-        );
-        expect(
-            verdictOf({
-                ...longInStage,
-                lastActivityAt: '2026-10-25T12:00:00.000Z',
-            }).status,
-        ).toBe('abandoned');
+        // Её сдвигают наши записи в ленту, роботы и бизнес-процессы.
+        const touched = verdictOf({ ...longInStage, lastActivityAt: at(16) });
+        expect(touched).toMatchObject({
+            status: 'abandoned',
+            reasons: ['no_work'],
+            facts: { idleDays: 46, recentWork: null },
+        });
         expect(
             verdictOf({ ...longInStage, lastActivityAt: 'не дата' }).status,
         ).toBe('abandoned');
+    });
+
+    it('дни в причинах — по поясу портала: звонок в 23:30 UTC — уже следующий день по Москве', () => {
+        const lateCall = {
+            stageEnteredAt: '2026-10-01T12:00:00.000Z',
+            work: [
+                {
+                    at: '2026-11-13T23:30:00.000Z',
+                    kind: 'call' as const,
+                    missed: false,
+                },
+            ],
+        };
+
+        const moscow = verdictOf(lateCall);
+        expect(moscow.facts.recentWork?.callDays).toEqual(['2026-11-14']);
+        expect(dealMovementReasonTexts(moscow)[0]).toBe(
+            'звонок 14.11, стадия не меняется 46 дней при пороге 21 день',
+        );
+        // Тот же звонок для портала по UTC — 13.11.
+        const utc = dealMovementVerdict(dossier(lateCall), NOW, {
+            ...DEAL_MOVEMENT_DEFAULTS,
+            timeZone: 'UTC',
+        });
+        expect(utc.facts.recentWork?.callDays).toEqual(['2026-11-13']);
+        // Пояс не разобрать — день по UTC, расчёт не падает.
+        const broken = dealMovementVerdict(dossier(lateCall), NOW, {
+            ...DEAL_MOVEMENT_DEFAULTS,
+            timeZone: 'Не/Пояс',
+        });
+        expect(broken.facts.recentWork?.callDays).toEqual(['2026-11-13']);
     });
 
     it('под риском: договорённость просрочена — дата прошла, контакта после неё не было', () => {

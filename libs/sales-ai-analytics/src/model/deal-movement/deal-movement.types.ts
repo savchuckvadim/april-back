@@ -161,7 +161,9 @@ export interface DealMovementDossier {
     stageOrder: number | null;
     /**
      * Последняя активность по сделке (`LAST_ACTIVITY_TIME`), ISO 8601;
-     * null — неизвестна. Свежая активность — работа по сделке.
+     * null — неизвестна. Только для «контакта после договорённости»:
+     * работой по сделке она НЕ считается — её сдвигают наши записи,
+     * роботы и бизнес-процессы (20.11.2026).
      */
     lastActivityAt: string | null;
     /** Смены стадий сделки (любой порядок). */
@@ -206,6 +208,11 @@ export interface DealMovementThresholds {
     chanceMin: number | null;
     /** Сумма, с которой проверяется низкая вероятность; null — не проверять. */
     amountMin: number | null;
+    /**
+     * Пояс портала (IANA, например 'Europe/Moscow'): по нему дни в текстах
+     * причин — «звонки 13.11 и 16.11».
+     */
+    timeZone: string;
 }
 
 export const DEAL_MOVEMENT_DEFAULTS: DealMovementThresholds = {
@@ -215,11 +222,15 @@ export const DEAL_MOVEMENT_DEFAULTS: DealMovementThresholds = {
     workLookbackDays: 60,
     chanceMin: null,
     amountMin: null,
+    timeZone: 'Europe/Moscow',
 };
 
 /** Работа по сделке за окно — для причины «Без продвижения». */
 export interface DealMovementRecentWork {
-    /** Дни звонков 'YYYY-MM-DD' по порядку (и разобранных, и из дел). */
+    /**
+     * Дни звонков 'YYYY-MM-DD' по поясу портала, по порядку (и
+     * разобранных, и из дел).
+     */
     callDays: string[];
     /** Все звонки окна — недозвоны. */
     callsMissed: boolean;
@@ -229,11 +240,6 @@ export interface DealMovementRecentWork {
     taskDays: string[];
     /** Дни смены стадии. */
     stageDays: string[];
-    /**
-     * День последней активности по сделке (`LAST_ACTIVITY_TIME`), если
-     * ничего другого за окно не нашлось; иначе null.
-     */
-    activityOnly: string | null;
 }
 
 /** Числа, на которые опираются причины, — для текста человеку. */
@@ -245,8 +251,8 @@ export interface DealMovementFacts {
     /** Откуда срок: история портала или общий порог. */
     stageLimitSource: DealMovementLimitSource;
     /**
-     * Дней без работы по сделке (звонок, дело, задача, смена стадии,
-     * активность); null — момента не найти.
+     * Дней без работы по сделке (звонок, дело, задача, смена стадии);
+     * null — момента не найти.
      */
     idleDays: number | null;
     /** Предел точности «дней без работы» (`workLookbackDays`). */

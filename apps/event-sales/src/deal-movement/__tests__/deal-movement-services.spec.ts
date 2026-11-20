@@ -38,6 +38,8 @@ describe('настройки движения сделок', () => {
                 workLookbackDays: 45,
                 chanceMin: null,
                 amountMin: null,
+                // Пояс по умолчанию; оценщик ставит пояс портала.
+                timeZone: 'Europe/Moscow',
             },
             callsLookbackDays: 45,
             maxDeals: 10_000,
