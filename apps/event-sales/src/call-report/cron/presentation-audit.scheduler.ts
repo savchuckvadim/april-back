@@ -3,7 +3,6 @@ import { Cron } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { CallRefusalAuditService } from '../services/call-refusal-audit.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
-import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 import { CallReportDomainRosterService } from './call-report-domain-roster.service';
 
@@ -22,6 +21,12 @@ const MAX_ENTITIES = 20;
  * (PresentationAuditService). Включается ИЗ АДМИНКИ per-portal: тумблер
  * «Сверка по презентациям» (portal_ai_settings, JSON
  * settings.presentationAuditEnabled; по умолчанию выключен).
+ *
+ * План-факт презентаций (PresentationPlanFactService) из утреннего прогона
+ * убран 22.11.2026: фильтр даты списка не работал, и в телеграм шли планы
+ * 2024–2025 годов. Вернётся после переделки за настройками портала
+ * (по умолчанию выключены) — ai/tasks/2026-11-22-presentation-plan-fact.md.
+ * Ручной запуск POST /call-report/presentation-plan-fact остаётся.
  */
 @Injectable()
 export class PresentationAuditScheduler implements OnModuleInit {
@@ -32,7 +37,6 @@ export class PresentationAuditScheduler implements OnModuleInit {
         private readonly roster: CallReportDomainRosterService,
         private readonly settingsService: CallReportSettingsService,
         private readonly auditService: PresentationAuditService,
-        private readonly planFactService: PresentationPlanFactService,
         private readonly refusalAuditService: CallRefusalAuditService,
     ) {}
 
@@ -91,15 +95,6 @@ export class PresentationAuditScheduler implements OnModuleInit {
                         to,
                         MAX_ENTITIES,
                     );
-                    // План-факт тем же тумблером: пропущенные и «отчитался
-                    // без звонка» презентации — дайджест в телеграм.
-                    await this.planFactService
-                        .runForDomain(entry.domain, from, to)
-                        .catch((error: Error) =>
-                            this.logger.warn(
-                                `План-факт ${entry.domain} не выполнен: ${error.message}`,
-                            ),
-                        );
                 } catch (error) {
                     // { telegram: true } — форс-алерт админам (транспорт логгера)
                     this.logger.error(
