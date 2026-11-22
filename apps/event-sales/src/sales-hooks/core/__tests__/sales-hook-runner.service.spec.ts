@@ -1,3 +1,8 @@
+import {
+    CallContext,
+    getCallContext,
+    runAsCallSource,
+} from '@lib/core/call-context';
 import { SalesHookRunnerService } from '../services/sales-hook-runner.service';
 import { EnumSalesHookCode } from '../constants/sales-hook-code.enum';
 import {
@@ -152,6 +157,26 @@ describe('SalesHookRunnerService', () => {
             'socket-1',
             expect.objectContaining({ event: SALES_HOOK_WS_EVENTS.ERROR }),
         );
+    });
+
+    it('подпись тревог Битрикса: операция хука, портал и инициатор в контексте use-case', async () => {
+        const { runner, execute } = makeRunner();
+        let seen: CallContext | null = null;
+        execute.mockImplementation(() => {
+            seen = { ...getCallContext() };
+            return Promise.resolve({ implemented: false });
+        });
+
+        await runAsCallSource('queue:sales-hook-lead-to-work', undefined, () =>
+            runner.run({ ...job, initiatorUserId: 325 }),
+        );
+
+        expect(seen).toMatchObject({
+            source: 'queue:sales-hook-lead-to-work',
+            operation: 'Хук: лид в работу',
+            domain: job.domain,
+            actor: { userId: 325 },
+        });
     });
 
     it('без socketId WS не вызывается', async () => {

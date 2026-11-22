@@ -19,25 +19,13 @@ import {
     LogQueryFilter,
     LogRowView,
 } from './log-query.types';
+import { LogRawRow as RawRow, num, str } from './log-query.values';
 
 /** Минимальный контракт чтения: в тестах — фейк, в бою — @clickhouse/client. */
 export interface LogQueryClient {
     rows<T>(sql: LogSql): Promise<T[]>;
     close(): Promise<void>;
 }
-
-type RawRow = Record<string, unknown>;
-
-/** Числа ClickHouse (UInt64) приходят строками — приводим один раз здесь. */
-const num = (value: unknown): number => Number(value) || 0;
-
-/** Строковое поле ответа; всё прочее — пустая строка. */
-const str = (value: unknown): string =>
-    typeof value === 'string'
-        ? value
-        : typeof value === 'number'
-          ? String(value)
-          : '';
 
 function createLogQueryClient(): LogQueryClient | null {
     const config = buildClickHouseConfig();
@@ -132,6 +120,14 @@ export class LogQueryRepository implements OnModuleDestroy {
             warnings: num(row.warnings),
             total: num(row.total),
         }));
+    }
+
+    /**
+     * Произвольный SELECT по готовому LogSql — для тематических срезов
+     * журнала (сбои Битрикса) через то же подключение.
+     */
+    async select(sql: LogSql): Promise<RawRow[]> {
+        return this.query<RawRow>(sql);
     }
 
     async onModuleDestroy(): Promise<void> {

@@ -225,9 +225,10 @@ describe('BatchApiService.executeBatch: алерты и шум в логах', (
     const makeService = (request: jest.Mock) => {
         const alert = jest.fn().mockResolvedValue(undefined);
         const log = jest.fn();
+        const error = jest.fn();
         const core = {
             domain: 'portal.bitrix24.ru',
-            logger: { log, warn: jest.fn() },
+            logger: { log, warn: jest.fn(), error },
             telegramBot: { sendMessageAdminError: alert },
             request,
         } as unknown as BitrixCore;
@@ -235,7 +236,7 @@ describe('BatchApiService.executeBatch: алерты и шум в логах', (
             core,
             {} as unknown as AxiosInstance,
         );
-        return { service, alert, log };
+        return { service, alert, log, error };
     };
 
     it('сбой пачки: в алерт уходит суть ошибки, а не объект axios с ключом вебхука', async () => {

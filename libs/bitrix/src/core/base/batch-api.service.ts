@@ -7,43 +7,19 @@ import {
 import { BitrixCore } from './bitrix-core.service';
 import { AxiosInstance } from 'axios';
 import { BitrixRateLimitTimeoutError } from '../rate-limit/bitrix-rate-limiter.service';
-
-/**
- * Что случилось с пачкой — для алерта.
- *
- * Объект ошибки axios целиком в алерт НЕ кладём: его сериализация содержит
- * адрес запроса вместе с ключом вебхука портала и тело запроса с данными
- * клиентов. Берём только то, что помогает разобраться.
- */
-const describeBatchFailure = (error: unknown): string => {
-    const e = error as {
-        message?: unknown;
-        code?: unknown;
-        response?: { status?: unknown; data?: unknown };
-    };
-    const parts: string[] = [];
-    if (typeof e?.message === 'string') parts.push(e.message);
-    if (typeof e?.code === 'string') parts.push(`код ${e.code}`);
-    if (typeof e?.response?.status === 'number') {
-        parts.push(`HTTP ${e.response.status}`);
-    }
-    const body = e?.response?.data as
-        | { error?: unknown; error_description?: unknown }
-        | undefined;
-    if (typeof body?.error === 'string') parts.push(body.error);
-    if (typeof body?.error_description === 'string') {
-        parts.push(body.error_description);
-    }
-    return parts.length ? parts.join(' · ') : 'неизвестная ошибка';
-};
+import { BitrixBatchFailureReporter } from '../failure/bitrix-batch-failure.reporter';
+import { describeBitrixError } from '../failure/bitrix-failure-record.util';
 
 export class BatchApiService {
     private cmdBatch: Record<string, string> = {};
+    /** Подпись тревог пачки и журнал её окончательных сбоев. */
+    private readonly failures: BitrixBatchFailureReporter;
     constructor(
         private readonly core: BitrixCore,
         private readonly http: AxiosInstance,
     ) {
         this.cmdBatch = {};
+        this.failures = new BitrixBatchFailureReporter(core);
     }
 
     protected dictToQueryString(
@@ -176,14 +152,19 @@ export class BatchApiService {
                 await this.sleep(100);
             } catch (error) {
                 const e = error as { message?: string };
-                this.core.logger.error(
-                    `Batch request failed: ${e.message ?? String(error)}`,
-                );
-                await this.core.telegramBot.sendMessageAdminError(`Batch error:
+                const text = `Batch request failed: ${e.message ?? String(error)}`;
+                const chunk = this.failures.chunk(text, batch, error);
+                if (!chunk.journaled) this.core.logger.error(text);
+                await this.core.telegramBot.sendMessageAdminError(
+                    this.failures.sign(
+                        `Batch error:
           callBatch
           ${this.core.domain}
 
-          ${JSON.stringify(e.message)}`);
+          ${JSON.stringify(e.message)}`,
+                        [chunk.commandsLine],
+                    ),
+                );
                 results.push(error);
             }
         }
@@ -308,29 +289,20 @@ export class BatchApiService {
             // this.logger.log(`Domain: ${this.domain}`);
             const batchResultsCount = Object.keys(result.result).length;
             this.core.logger.log(`Batch results count: ${batchResultsCount}`);
-            this.handleBatchErrors(result, 'executeBatch');
+            this.handleBatchErrors(result, 'executeBatch', cmd);
             return result;
         } catch (error) {
             // Фону отказано в слоте ограничителя — это не сбой Битрикса:
             // ограничитель уже записал причину, алерт не нужен.
             if (!(error instanceof BitrixRateLimitTimeoutError)) {
-                this.alert(
-                    `Execute batch failed (${this.core.domain}): ${describeBatchFailure(error)}`,
-                );
+                const text = `Execute batch failed (${this.core.domain}): ${describeBitrixError(error)}`;
+                const chunk = this.failures.chunk(text, batch, error);
+                this.failures.alert(text, [chunk.commandsLine]);
             }
             return error as IBitrixBatchResponseResult;
         }
     }
 
-    /**
-     * Алерт в Telegram без ожидания ответа: сбой пачки не должен ждать
-     * ещё и телеграм (у его клиента нет таймаута).
-     */
-    private alert(message: string): void {
-        void Promise.resolve(
-            this.core.telegramBot.sendMessageAdminError(message),
-        ).catch(() => undefined);
-    }
     clearResult(result: IBitrixBatchResponseResult[]): unknown[] {
         const results: unknown[] = [];
         result.map(res => {
@@ -342,9 +314,15 @@ export class BatchApiService {
         });
         return results;
     }
+    /**
+     * Ошибки отдельных команд выполненной пачки (тревога и журнал — см.
+     * BitrixBatchFailureReporter.command). `cmd` — команды этого чанка: по
+     * ним видно, какой метод не выполнился и запись ли это.
+     */
     protected handleBatchErrors(
         result: IBitrixBatchResponseResult,
         context = 'Batch error',
+        cmd: Record<string, string> = {},
     ): void {
         // Успешная пачка отдаёт result_error ПУСТЫМ МАССИВОМ — раньше он
         // проходил проверку «есть ли ошибки», и на каждый успешный чанк в
@@ -353,12 +331,7 @@ export class BatchApiService {
         if (!errorEntries.length) return;
 
         for (const [key, error] of errorEntries) {
-            const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}
-
-      Domain: ${this.core.domain}
-      `;
-            this.core.logger.log(`result_error: ${message}`);
-            this.alert(message);
+            this.failures.command(context, key, error, cmd);
         }
     }
 

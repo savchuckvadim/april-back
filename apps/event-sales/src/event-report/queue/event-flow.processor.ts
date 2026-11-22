@@ -5,8 +5,13 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueConcurrencyService } from '@/modules/queue/concurrency/queue-concurrency.service';
 import { WsService } from '@/core/ws';
-import { runAsInteractive } from '@lib/core/call-context';
+import {
+    annotateCallContext,
+    CallSource,
+    runAsInteractive,
+} from '@lib/core/call-context';
 import { EVENT_FLOW_WS_EVENTS } from '../constants/event-flow.const';
+import { eventReportCallContext } from '../lib/event-report-call-context';
 import { EnumEventFlowStatus } from '../dto/response/event-flow-operation.dto';
 import { EventFlowJobData } from '../dto/event-flow-job.dto';
 import { EventFlowStatusService } from '../services/status/event-flow-status.service';
@@ -77,6 +82,7 @@ export class EventFlowProcessor {
     }
 
     @Process({ name: JobNames.EVENT_SALES_FLOW, concurrency: FLOW_CONCURRENCY })
+    @CallSource(`queue:${JobNames.EVENT_SALES_FLOW}`)
     async handle(job: Job<EventFlowJobData>): Promise<void> {
         const { operationId, domain, socketId, dto } = job.data;
         const waitedMs = Date.now() - job.timestamp;
@@ -154,9 +160,14 @@ export class EventFlowProcessor {
             // считалась бы фоном — тогда отчёты стояли бы в ограничителе
             // Битрикса за кронами (см. @lib/core/call-context).
             const useCase = isTmcReport(dto) ? this.tmcUseCase : this.useCase;
+            // Подпись тревог и журнала сбоев Битрикса: отчёт, карточка,
+            // сотрудник — внутри интерактивного контекста отчёта.
             const result = await runAsInteractive(
                 `queue:${QueueNames.EVENT_SALES_FLOW}`,
-                () => useCase.execute(dto, socketId),
+                () => {
+                    annotateCallContext(() => eventReportCallContext(dto));
+                    return useCase.execute(dto, socketId);
+                },
             );
             const done = await this.status.setDone(
                 domain,

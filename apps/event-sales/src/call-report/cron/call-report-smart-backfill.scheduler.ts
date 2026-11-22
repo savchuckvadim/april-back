@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { AGENT_ANALYSIS_TYPE, AiService } from '@lib/call-lib';
 import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
 import {
@@ -46,6 +47,10 @@ export class CallReportSmartBackfillScheduler implements OnModuleInit {
     }
 
     @Cron(NIGHTLY_AT_MSK_2230, { name: 'call-report-smart-backfill' })
+    @CallSource(
+        'cron:call-report-smart-backfill',
+        'Крон: дописывание карточек разборов',
+    )
     async tick(now: Date = new Date()): Promise<void> {
         const domains = await this.roster.resolve();
         for (const entry of domains) {

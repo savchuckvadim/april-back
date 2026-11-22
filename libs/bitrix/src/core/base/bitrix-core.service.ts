@@ -35,12 +35,16 @@ import {
     BitrixAttempt,
     bitrixRetryKind,
 } from './bitrix-retry.util';
+import { BitrixFailureReporter } from '../failure/bitrix-failure.reporter';
+import { markBitrixFailureReported } from '../failure/bitrix-failure-record.util';
 
 export { TRANSIENT_BITRIX_STATUSES } from './bitrix-retry.util';
 
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);
     protected readonly axiosInstance: AxiosInstance;
+    /** Подпись тревог («Где», «Команды») и журнал окончательных сбоев. */
+    protected readonly failures = new BitrixFailureReporter(this);
 
     public domain = '';
     public apiKey = '';
@@ -261,7 +265,10 @@ export class BitrixCore {
      * клиента нет таймаута) — на каждую попытку и каждый упавший чанк.
      *
      * `attempt` — какая это попытка и будет ли повтор: текст тревоги
-     * начинается с пометки (см. attemptAlertNote).
+     * начинается с пометки (см. attemptAlertNote). Вторая строка тревоги —
+     * «Где: …» (приложение, операция, карточка), у пачки ещё «Команды».
+     * Окончательный исход (повтора не будет) пишется в журнал сбоев
+     * (meta.bitrixFailure), промежуточные попытки — как раньше.
      */
     protected reportError(
         error: unknown,
@@ -293,6 +300,8 @@ export class BitrixCore {
                 `Bitrix [${method}]: ${benignMarker} (id ${requestedEntityId(data)}) — ` +
                     'обрабатывается вызывающим кодом, без алерта',
             );
+            // Ни тревоги, ни записи в журнал — и слой пачки её не запишет.
+            markBitrixFailureReported(error);
             return;
         }
 
@@ -303,17 +312,18 @@ export class BitrixCore {
         const where =
             `на ${this.domain}` + (entityId === '—' ? '' : `, id ${entityId}`);
         const note = attempt ? attemptAlertNote(attempt) : '';
-        this.logger.error(
-            `${note}Error calling Bitrix [${method}] ${where}` +
+        this.failures.callFailed({
+            method,
+            data,
+            error,
+            final: !attempt || attempt.retryInMs === null,
+            logText:
+                `${note}Error calling Bitrix [${method}] ${where}` +
                 (status ? ` (HTTP ${status})` : '') +
                 `: ${message}` +
                 payload,
-        );
-        void Promise.resolve(
-            this.telegramBot.sendMessageAdminError(
-                `${note}Bitrix API error (${method}) ${where}: ${JSON.stringify(responseText)}`,
-            ),
-        ).catch(() => undefined);
+            alertText: `${note}Bitrix API error (${method}) ${where}: ${JSON.stringify(responseText)}`,
+        });
     }
 
     /**

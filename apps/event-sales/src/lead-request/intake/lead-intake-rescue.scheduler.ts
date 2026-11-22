@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { STAGGERED_HALF_HOUR_CRON } from '../../shared/cron/staggered-crons.const';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
@@ -39,6 +40,7 @@ export class LeadIntakeRescueScheduler {
     ) {}
 
     @Cron(RESCUE_CRON, { name: 'lead-intake-rescue' })
+    @CallSource('cron:lead-intake-rescue', 'Крон: подстраховка приёма заявок')
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

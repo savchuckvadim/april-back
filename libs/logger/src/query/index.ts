@@ -9,3 +9,8 @@ export * from './log-query.service';
 export * from './log-query.module';
 export * from './logs-admin.module';
 export * from './admin/dto/logs-admin.dto';
+export * from './bitrix-failures/bitrix-failures.types';
+export * from './bitrix-failures/bitrix-failures.sql';
+export * from './bitrix-failures/bitrix-failures.mapper';
+export * from './bitrix-failures/bitrix-failures.service';
+export * from './admin/dto/bitrix-failures-admin.dto';

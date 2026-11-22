@@ -7,6 +7,7 @@ import {
     Process,
     Processor,
 } from '@nestjs/bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { IColdHookSilenceHandlerData } from '../type/cold-hook-silence.interface';
@@ -22,7 +23,12 @@ export class ColdHooksProcessor {
     }
 
     @Process(JobNames.EVENT_COLD_CALL)
+    @CallSource(
+        `queue:${JobNames.EVENT_COLD_CALL}`,
+        'Хук: холодный обзвон (v1) — окно тишины',
+    )
     async handle(job: Job<IColdHookSilenceHandlerData>) {
+        annotateCallContext({ domain: job.data.payload.domain });
         const { collected, payload } = job.data;
         const waitedMs = Date.now() - job.timestamp;
         this.logger.log(`EVENT_COLD_CALL jobId=${job.id} waitedMs=${waitedMs}`);

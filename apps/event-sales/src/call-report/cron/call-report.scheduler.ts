@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { STAGGERED_HALF_HOUR_CRON } from '../../shared/cron/staggered-crons.const';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib';
@@ -56,6 +57,7 @@ export class CallReportScheduler implements OnModuleInit {
     }
 
     @Cron(STAGGERED_HALF_HOUR_CRON.callReportScan, { name: 'call-report-scan' })
+    @CallSource('cron:call-report-scan', 'Крон: сбор звонков на разбор')
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
 

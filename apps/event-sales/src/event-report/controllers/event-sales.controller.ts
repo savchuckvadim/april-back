@@ -19,6 +19,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
+import { annotateCallContext } from '@lib/core/call-context';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
@@ -38,6 +39,7 @@ import {
     EVENT_FLOW_SETTLE,
     EventFlowDuplicateGuardService,
 } from '../services/flow-guard/event-flow-duplicate-guard.service';
+import { eventReportCallContext } from '../lib/event-report-call-context';
 
 @ApiTags('Event Sales')
 @Controller('event-sales')
@@ -114,6 +116,9 @@ export class EventSalesController {
     async getFlow(
         @Body() dto: EventSalesFlowDto,
     ): Promise<EventFlowOperationDto> {
+        // Подпись тревог Битрикса для работы самой ручки; сам отчёт пишет
+        // воркер очереди и подписывает его так же (EventFlowProcessor).
+        annotateCallContext(() => eventReportCallContext(dto));
         // Согласованность DTO проверяется ДО очереди: 400 отсюда фронт
         // покажет баннером, 400 из воркера не увидит никто.
         await this.flowGuard.assertValid(dto);

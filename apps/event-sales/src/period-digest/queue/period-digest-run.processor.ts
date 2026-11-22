@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
 import { Job } from 'bull';
 import { JobNames, QueueNames } from '@lib/queue';
 import { RopReportTicker } from '@lib/rop-reports';
@@ -25,7 +26,12 @@ export class PeriodDigestRunProcessor {
     ) {}
 
     @Process({ name: JobNames.EVENT_SALES_PERIOD_DIGEST_RUN, concurrency: 1 })
+    @CallSource(
+        `queue:${JobNames.EVENT_SALES_PERIOD_DIGEST_RUN}`,
+        'Очередь: итоги периода (из админки)',
+    )
     async handle(job: Job<PeriodDigestJobData>): Promise<void> {
+        annotateCallContext({ domain: job.data.domain });
         const { domain, kind, periodKey } = job.data;
         this.logger.log(
             `Итоги периода ${domain}: подсчёт ${kind} ${periodKey ?? 'последнего закрытого'} из админки`,

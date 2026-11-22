@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -37,6 +38,7 @@ export class RejectReviveScheduler {
     ) {}
 
     @Cron(REVIVE_CRON, { name: 'reject-revive' })
+    @CallSource('cron:reject-revive', 'Крон: возврат отказников')
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

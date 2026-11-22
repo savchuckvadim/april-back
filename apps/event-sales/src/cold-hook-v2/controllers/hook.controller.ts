@@ -5,7 +5,8 @@ import { BxWebHookDto } from '@lib/bitrix/dto/bx-webhook.dto';
 import { ColdHookSilinceEndpointV2Service } from '../services/silence/cold-hook-silince-endpoint.service';
 import { toColdCallData } from '../lib/cold-call-data';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BackgroundCalls } from '@lib/core/call-context';
+import { annotateCallContext, BackgroundCalls } from '@lib/core/call-context';
+import { coldCallCallContext } from '../lib/cold-call-call-context';
 
 @ApiTags('Event Sales Cold Hook')
 @BackgroundCalls()
@@ -54,6 +55,7 @@ export class EventSalesHookV2Controller {
         @Query() dto: ColdCallQueryDto,
     ): Promise<ColdCallHookResponseDto> {
         const domain = body.auth.domain;
+        annotateCallContext(() => coldCallCallContext(domain, dto));
         this.logger.log(
             `[DEADLINE][controller] POST cold-call domain=${domain} ` +
                 `entityType=${dto.entityType} entityId=${dto.entityId} ` +
