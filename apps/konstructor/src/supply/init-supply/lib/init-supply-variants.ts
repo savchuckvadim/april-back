@@ -124,3 +124,42 @@ export const buildVariantLinksField = (
 
     return { [fieldId]: ids.map(id => `${smart.crm}${id}`) };
 };
+
+/**
+ * Id участников заявки — варианты, которые менеджер продаёт. Берём
+ * положительные целые из `variantSmartId`, без повторов, в порядке запроса.
+ * Пустой список означает запрос без вариантов (старый фронт или сделка без
+ * вариантов).
+ */
+export const participantVariantIds = (dto: InitSupplyDto): number[] => {
+    const unique = new Set<number>();
+    for (const variant of dto.variants ?? []) {
+        const id = Number(variant.variantSmartId);
+        if (Number.isInteger(id) && id > 0) {
+            unique.add(id);
+        }
+    }
+    return [...unique];
+};
+
+/**
+ * Варианты сделки, которые остаются вне поставки: строки слепков с элементом
+ * смарта, чьего id нет среди участников заявки. Без участников список пуст:
+ * запрос без вариантов ничего не закрывает.
+ */
+export const selectLeftoutVariantIds = (
+    dealVariants: readonly { smartId: number | null }[],
+    participantIds: readonly number[],
+): number[] => {
+    if (!participantIds.length) {
+        return [];
+    }
+    const participants = new Set(participantIds);
+    const leftout = new Set<number>();
+    for (const row of dealVariants) {
+        if (row.smartId && !participants.has(row.smartId)) {
+            leftout.add(row.smartId);
+        }
+    }
+    return [...leftout];
+};

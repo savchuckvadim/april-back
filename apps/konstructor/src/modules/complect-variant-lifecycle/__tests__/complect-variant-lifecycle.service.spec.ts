@@ -83,6 +83,31 @@ describe('ComplectVariantLifecycleService', () => {
         expect(fields.stageId).not.toContain('REJECTED');
     });
 
+    it('«Не состоялся» не переписывает итог: «Успех», «Отклонён» и «Не состоялся» остаются как есть', async () => {
+        const { bitrix, itemUpdate } = makeBitrix({
+            5001: 'DT1046_3:SUCCESS',
+            5002: 'DT1046_3:REJECTED',
+            5003: 'DT1046_3:FAILED',
+            5004: 'DT1046_3:CONTRACT',
+        });
+        const service = makeService(bitrix);
+
+        const result = await service.markRejected('d.ru', [
+            5001, 5002, 5003, 5004,
+        ]);
+
+        // закрывается только вариант без итога
+        expect(result).toEqual({ requested: 4, moved: 1, skipped: 3 });
+        expect(itemUpdate).toHaveBeenCalledTimes(1);
+        const [id, , fields] = itemUpdate.mock.calls[0] as [
+            number,
+            number,
+            { stageId: string },
+        ];
+        expect(id).toBe(5004);
+        expect(fields.stageId).toBe('DT1046_3:FAILED');
+    });
+
     it('смарт на портале не установлен — тихо ничего не делаем', async () => {
         const { bitrix, itemGet, itemUpdate } = makeBitrix();
         const service = new ComplectVariantLifecycleService(

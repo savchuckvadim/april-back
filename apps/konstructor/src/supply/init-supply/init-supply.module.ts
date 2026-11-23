@@ -27,14 +27,24 @@ import { TotalSumCommentService } from './services/rpa-timeline-comment/total-co
 import { TelegramModule } from '@lib/telegram/telegram.module';
 import { OfferWordModule } from '../../offer-word/offer-word.module';
 import { InitSupplyDiskService } from './services/disk/init-supply-disk.service';
+import { InnerDealModule } from '../../modules/inner-deal/inner-deal.module';
 
 /**
  * Диск Битрикса берётся у OfferWordModule: он уже экспортирует
  * BitrixDocumentSaveFlowService (папка сделки, загрузка файлов), которым
  * пользуются КП и договор. Своей копии провайдера здесь нет.
+ *
+ * Варианты сделки (слепки с элементами смарта) читает InnerDealService из
+ * InnerDealModule: по ним заявка закрывает варианты, не вошедшие в поставку.
  */
 @Module({
-    imports: [PBXModule, ProviderModule, TelegramModule, OfferWordModule],
+    imports: [
+        PBXModule,
+        ProviderModule,
+        TelegramModule,
+        OfferWordModule,
+        InnerDealModule,
+    ],
     controllers: [InitSupplyController],
     providers: [
         InitSupplyUseCase,

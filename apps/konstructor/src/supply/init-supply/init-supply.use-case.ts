@@ -15,6 +15,11 @@ import { toTimelineCommentDirect } from '@lib/bitrix/consts/timeline.consts';
 import { InitSupplyResponseDto } from './dto/init-supply-response.dto';
 import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
+import { InnerDealService } from '../../modules/inner-deal/services/inner-deal.service';
+import {
+    participantVariantIds,
+    selectLeftoutVariantIds,
+} from './lib/init-supply-variants';
 
 @Injectable()
 export class InitSupplyUseCase {
@@ -26,6 +31,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyTimelineCommentService: InitSupplyTimelineCommentService,
         private readonly initSupplyDealFileFieldsService: InitSupplyDealFileFieldsService,
         private readonly initSupplyDiskService: InitSupplyDiskService,
+        private readonly innerDealService: InnerDealService,
     ) {}
 
     async initSupply(dto: InitSupplyDto): Promise<InitSupplyResponseDto> {
@@ -67,16 +73,19 @@ export class InitSupplyUseCase {
         }
         const rpaId = dto.rpa_id || rpaResponse?.id;
 
-        // участники заявки → стадия «Поставка» (README lifecycle, п.4; только вперёд)
-        const variantIds = (dto.variants ?? [])
-            .map(variant => Number(variant.variantSmartId))
-            .filter(id => Number.isFinite(id) && id > 0);
+        // Участники заявки → стадия «Поставка» (README lifecycle, п.4; только
+        // вперёд). Остальные варианты сделки закрываются «Не состоялся»: в
+        // сервисную сделку переезжают только проданные. Запрос без вариантов
+        // ничего не двигает и не закрывает.
+        const variantIds = participantVariantIds(dto);
+        let closedVariantIds: number[] = [];
         if (variantIds.length) {
+            const lifecycle = new ComplectVariantLifecycleService(
+                bitrix,
+                PortalModel,
+            );
             try {
-                await new ComplectVariantLifecycleService(
-                    bitrix,
-                    PortalModel,
-                ).markStageForward(
+                await lifecycle.markStageForward(
                     dto.domain,
                     variantIds,
                     COMPLECT_VARIANT_STAGE.SUPPLY,
@@ -86,6 +95,11 @@ export class InitSupplyUseCase {
                     `${dto.domain}: стадия «Поставка» вариантам не проставлена: ${error instanceof Error ? error.message : String(error)}`,
                 );
             }
+            closedVariantIds = await this.closeLeftoutVariants(
+                dto,
+                lifecycle,
+                variantIds,
+            );
         }
 
         // Договор и счёт, приложенные менеджером в конструкторе, кладём ещё и
@@ -193,7 +207,50 @@ export class InitSupplyUseCase {
             ...(diskWarnings.length > 0
                 ? { diskWarning: diskWarnings.join('; ') }
                 : {}),
+            ...(closedVariantIds.length > 0 ? { closedVariantIds } : {}),
         };
+    }
+
+    /**
+     * Остальные варианты сделки (строки слепков, чьих id нет среди участников
+     * заявки) переводятся в «Не состоялся». Закрытые раньше («Успех»,
+     * «Отклонён») сервис жизненного цикла не переписывает.
+     *
+     * Best-effort: сбой чтения вариантов или Битрикса пишется в лог и заявку
+     * не роняет. Возвращает id вариантов, которым стадия поставлена.
+     */
+    private async closeLeftoutVariants(
+        dto: InitSupplyDto,
+        lifecycle: ComplectVariantLifecycleService,
+        participantIds: readonly number[],
+    ): Promise<number[]> {
+        const closed: number[] = [];
+        if (!dto.dealId) {
+            return closed;
+        }
+        try {
+            const dealVariants = await this.innerDealService.listVariants(
+                dto.domain,
+                dto.dealId,
+            );
+            // по одному: так видно, какие именно варианты закрыты
+            for (const variantId of selectLeftoutVariantIds(
+                dealVariants,
+                participantIds,
+            )) {
+                const result = await lifecycle.markRejected(dto.domain, [
+                    variantId,
+                ]);
+                if (result.moved > 0) {
+                    closed.push(variantId);
+                }
+            }
+        } catch (error) {
+            this.logger.warn(
+                `${dto.domain}: остальные варианты сделки ${dto.dealId} не закрыты стадией «Не состоялся»: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+        return closed;
     }
 
     /**
