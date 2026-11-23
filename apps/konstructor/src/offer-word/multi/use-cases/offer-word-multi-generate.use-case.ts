@@ -8,6 +8,7 @@ import { OfferBxTimelineService } from '../../services/bitrix/offer-bx-timeline.
 import { BitrixDocumentSaveFlowService } from '../../services/bitrix/bitrix-document-save-flow.service';
 import { OfferWordCoreGenerateService } from '../../services/offer-word-core/offer-word-core-generate.service';
 import { OfferWordMultiBuildService } from '../services/offer-word-multi-build.service';
+import { OfferWordMultiSupplyEnrichService } from '../services/offer-word-multi-supply-enrich.service';
 import {
     OfferWordMultiGenerateDto,
     OfferWordMultiGenerateResultDto,
@@ -26,6 +27,7 @@ export class OfferWordMultiGenerateUseCase {
     constructor(
         private readonly pbx: PBXService,
         private readonly buildService: OfferWordMultiBuildService,
+        private readonly supplyEnrich: OfferWordMultiSupplyEnrichService,
         private readonly innerDealService: InnerDealService,
         private readonly timelineService: OfferBxTimelineService,
         private readonly bxDocumentSaveFlowService: BitrixDocumentSaveFlowService,
@@ -73,7 +75,9 @@ export class OfferWordMultiGenerateUseCase {
         const onlyBitrixSave = Boolean(dto.onlyBitrixSave) || true;
 
         try {
-            const buildResult = await this.buildService.build(dto);
+            // Подписи поставок для КП и счёта: верх запроса и каждый вариант
+            const prepared = await this.supplyEnrich.enrich(dto);
+            const buildResult = await this.buildService.build(prepared);
             // КП может быть несколько (по участнику) — в Битрикс уходят все
             const allDocuments = [
                 ...buildResult.offers,
