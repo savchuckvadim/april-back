@@ -19,6 +19,7 @@ export const StyleSheet = {
 export const Font = {
     register: (): void => undefined,
     registerHyphenationCallback: (): void => undefined,
+    getRegisteredFonts: (): Record<string, never> => ({}),
 };
 
 export const renderToBuffer = (): Promise<Buffer> =>

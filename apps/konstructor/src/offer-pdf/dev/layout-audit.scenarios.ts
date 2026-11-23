@@ -562,4 +562,17 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             ),
         },
     },
+    // латиница в заголовке и у получателя после документов без неё: при
+    // испорченном кэше глифов буквы выпадали (glyph-loss). Сценарий идёт
+    // последним — кэш к нему уже наполнен предыдущими документами процесса.
+    {
+        name: '29-latin-title-after-cyrillic',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                GeneralProductName: 'Гарант-Предприятие PRO',
+                RecipientCompanyName: 'test',
+            }),
+        },
+    },
 ];

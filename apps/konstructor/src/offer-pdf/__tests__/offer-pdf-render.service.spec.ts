@@ -18,6 +18,7 @@ jest.mock('@react-pdf/renderer', () => ({
     Font: {
         register: registerMock,
         registerHyphenationCallback: hyphenationMock,
+        getRegisteredFonts: (): Record<string, never> => ({}),
     },
     pdf: pdfMock,
 }));

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { Font } from '@react-pdf/renderer';
 import { PT_SANS_BOLD_BASE64 } from './fonts/pt-sans-bold.base64';
 import { PT_SANS_REGULAR_BASE64 } from './fonts/pt-sans-regular.base64';
+import { primePdfFontGlyphs } from './prime-font-glyphs';
 
 /**
  * Шрифты PDF-отчётов: PT Sans (кириллица, лицензия OFL) встроен в бандл
@@ -55,4 +56,20 @@ export function registerPdfFonts(baseDir?: string): void {
     // слова рвутся где попало. Переносим только по пробелам.
     Font.registerHyphenationCallback(word => [word]);
     registered = true;
+}
+
+let primed: Promise<void> | null = null;
+
+/**
+ * Шрифты готовы к рендеру: зарегистрированы и прогреты (см.
+ * primePdfFontGlyphs). Один раз на процесс; неудачная попытка не
+ * запоминается, следующий рендер повторит её.
+ */
+export function preparePdfFonts(baseDir?: string): Promise<void> {
+    registerPdfFonts(baseDir);
+    primed ??= primePdfFontGlyphs([PDF_FONT_FAMILY]).catch((error: unknown) => {
+        primed = null;
+        throw error;
+    });
+    return primed;
 }

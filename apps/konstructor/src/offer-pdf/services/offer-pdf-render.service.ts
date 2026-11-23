@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { registerOfferPdfFonts } from '../fonts/offer-pdf-fonts';
+import { prepareOfferPdfFonts } from '../fonts/offer-pdf-fonts';
 import { OfferPdfAssetStore } from '../lib/offer-pdf-asset-store';
 import {
     findTextlessPages,
@@ -75,7 +75,7 @@ export class OfferPdfRenderService {
         }
         // настройки, которые стиль задаёт сам, — поверх выбора менеджера
         const model = { ...withLockedSettings(input, template), assets };
-        registerOfferPdfFonts();
+        await prepareOfferPdfFonts();
 
         const started = performance.now();
         let rendered = await renderPdfWithLayout(template.render(model));
