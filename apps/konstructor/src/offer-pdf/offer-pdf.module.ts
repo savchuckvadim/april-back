@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
 import { StorageModule } from '@lib/core/storage/storage.module';
 import { PBXModule } from '@lib/pbx';
-import { OfferLetterModule } from '@lib/portal-lib/konstructor';
+import {
+    OfferLetterModule,
+    ProviderImageModule,
+} from '@lib/portal-lib/konstructor';
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { ComplectVariantOfferStageService } from '../modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
@@ -26,6 +29,8 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         DocumentGenerateModule,
         ProviderModule,
         OfferLetterModule,
+        // печать, подпись и логотип поставщика для блока подписи и шапок
+        ProviderImageModule,
         StorageModule,
         FileLinkModule,
         // стадия «КП» вариантам комплекта после генерации

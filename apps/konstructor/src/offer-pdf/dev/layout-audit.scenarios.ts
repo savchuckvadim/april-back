@@ -13,8 +13,12 @@ import {
     DocumentFieldViewMode,
 } from '../model/offer-document-settings.type';
 import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
-import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
+import {
+    OfferPdfDocumentModel,
+    OfferPdfImages,
+} from '../model/offer-pdf-document.model';
 import { OfferPdfSettingsInput } from '../model/offer-pdf-settings';
+import { createAuditProviderImages } from './layout-audit.images';
 
 /** Крайние данные: на них старый PHP-подсчёт строк ошибался чаще всего. */
 
@@ -283,6 +287,11 @@ export interface AuditScenario {
     name: string;
     settings: OfferPdfSettingsInput;
     model?: Partial<OfferPdfDocumentModel>;
+    /**
+     * Картинки поставщика (печать, подпись, логотип). Рисуются в коде через
+     * sharp, поэтому задаются функцией: sharp работает асинхронно.
+     */
+    images?: () => Promise<OfferPdfImages>;
 }
 
 export const AUDIT_SCENARIOS: AuditScenario[] = [
@@ -789,6 +798,17 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             data: createOfferRenderDataFixture({
                 ProductRows: captionRows(14),
             }),
+        },
+    },
+    // печать, подпись руководителя и логотип поставщика (картинки из
+    // provider_images): блок подписи под длинным письмом становится выше
+    // (96 pt вместо 36), логотип стоит в шапке «Классики» и «Призмы»
+    {
+        name: '37-provider-images-stamps',
+        settings: {},
+        images: createAuditProviderImages,
+        model: {
+            letter: { appeal: 'Уважаемый Иван Петрович!', text: letterText(6) },
         },
     },
     // латиница в заголовке и у получателя после документов без неё: при

@@ -11,7 +11,11 @@ export interface OfferStampsProps {
     theme: OfferPdfTheme;
 }
 
-/** Подпись руководителя и печать (картинки — когда появятся в реквизитах). */
+/**
+ * Подпись руководителя и печать. Картинки печати и подписи — из реквизитов
+ * поставщика (`model.images`); без них блок печатает должность, линию подписи
+ * и ФИО. У реквизитов без руководителя (ИП) слева стоит название поставщика.
+ */
 export const OfferStamps: FC<OfferStampsProps> = ({ model, theme }) => {
     const { signer, images } = model;
     const withImages = Boolean(images.stamp || images.signature);

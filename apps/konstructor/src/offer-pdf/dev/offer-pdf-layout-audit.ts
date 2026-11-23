@@ -104,6 +104,7 @@ const main = async (): Promise<void> => {
             templateCode: template.code,
             palette,
             settings: resolveOfferPdfSettings(scenario.settings),
+            images: (await scenario.images?.()) ?? {},
             ...scenario.model,
         });
         const { result, count: unbreakable } = await countUnbreakable(() =>
