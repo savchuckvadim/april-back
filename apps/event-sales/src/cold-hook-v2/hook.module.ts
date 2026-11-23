@@ -16,7 +16,8 @@ import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 @Module({
     imports: [
         EventSilenceModule,
-        // Своя очередь окон холодного старта v2 (строго по одному окну).
+        // Своя очередь окон холодного старта v2 и касса портала
+        // (QueueLaneService): порталы параллельно, окна портала по одному.
         QueueModule,
         PBXModule,
         TelegramModule,

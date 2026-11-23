@@ -7,6 +7,19 @@ import {
 export interface IColdHookSilenceHandlerData {
     collected: Record<string, IColdCallData>;
     payload: IColdCallPayload;
+    /**
+     * Ожидание кассы портала (`ColdHooksV2Processor`): сколько раз окно
+     * перекладывали, когда его поставили впервые и сказали ли уже в Telegram
+     * про долгое ожидание. У впервые поставленного окна полей нет.
+     */
+    lane?: IColdHookLaneWait;
+}
+
+export interface IColdHookLaneWait {
+    retries: number;
+    /** Время первой постановки окна, мс (Date.now). */
+    firstQueuedAt: number;
+    alerted: boolean;
 }
 
 export interface IColdCallPayload {

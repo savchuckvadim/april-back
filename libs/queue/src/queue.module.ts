@@ -4,6 +4,7 @@ import { RedisModule } from '@lib/core/redis/redis.module';
 import { ConfigService } from '@nestjs/config';
 import { QueueDispatcherService } from './dispatch/queue-dispatcher.service';
 import { QueueConcurrencyService } from './concurrency/queue-concurrency.service';
+import { QueueLaneService } from './concurrency/queue-lane.service';
 import { QueueNames } from './constants/queue-names.enum';
 import { createRedisOptions } from '@lib/core/redis/redis.config';
 import { RedisOptions } from 'ioredis';
@@ -29,7 +30,16 @@ import { RedisOptions } from 'ioredis';
         ),
         RedisModule,
     ],
-    providers: [QueueDispatcherService, QueueConcurrencyService],
-    exports: [QueueDispatcherService, QueueConcurrencyService, BullModule],
+    providers: [
+        QueueDispatcherService,
+        QueueConcurrencyService,
+        QueueLaneService,
+    ],
+    exports: [
+        QueueDispatcherService,
+        QueueConcurrencyService,
+        QueueLaneService,
+        BullModule,
+    ],
 })
 export class QueueModule {}
