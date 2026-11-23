@@ -1,4 +1,5 @@
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
+import { hasSetTitle, type PriceSetTitleSource } from './price-set-title.util';
 
 /**
  * Высота раздела «Стоимость» до раскладки — чтобы решить, встанет ли он на
@@ -10,6 +11,8 @@ import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 const NAME_LINE_CHARS = 34;
 /** Символов в строке подписи поставки под названием */
 const SUPPLY_LINE_CHARS = 42;
+/** Символов в строке заголовка набора для сравнения (он идёт во всю ширину таблицы) */
+const SET_TITLE_LINE_CHARS = 80;
 /** Символов в строке фразы об акции (во всю ширину полосы) */
 const PHRASE_LINE_CHARS = 88;
 /** Вертикальные поля ячейки (сверху и снизу) и линия под строкой */
@@ -19,7 +22,7 @@ const SECTION_GAPS = 30;
 /** Итог: сумма, «в месяц», налог и сумма прописью в две строки */
 const TOTALS_LINES = 5;
 
-export interface PriceBlockRow {
+export interface PriceBlockRow extends PriceSetTitleSource {
     ProductName: string;
     SupplyNameMarketing?: string;
 }
@@ -49,9 +52,17 @@ export const estimatePriceBlockHeight = (
 
     const heading = line(sizes.h2) + (withCaption ? line(sizes.sm) : 0);
     const head = line(sizes.sm) + CELL_FRAME;
+    // строка-заголовок набора для сравнения: ячейка во всю ширину, текст жирным кеглем sm
+    const setTitle = (row: PriceBlockRow): number =>
+        hasSetTitle(row)
+            ? CELL_FRAME +
+              linesOf(row.ProductSetTitle, SET_TITLE_LINE_CHARS) *
+                  line(sizes.sm)
+            : 0;
     const body = rows.reduce(
         (sum, row) =>
             sum +
+            setTitle(row) +
             CELL_FRAME +
             linesOf(row.ProductName, NAME_LINE_CHARS) * line(sizes.sm) +
             (row.SupplyNameMarketing

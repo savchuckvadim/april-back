@@ -6,6 +6,10 @@ import {
 import { ProductRowDto } from '../../../document-generate/dto/product-row/product-row.dto';
 import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
 import { ContractDto } from '../../../dto/contract.dto';
+import {
+    getProductSetMarks,
+    type ProductSetKind,
+} from '../../../document-generate/product-rows/product-set-marks.util';
 
 export interface IProductRenderData {
     ProductRows: IProductRenderItemData[];
@@ -35,6 +39,11 @@ export interface IProductRenderItemData {
     ProductByContractName: string; // название товара с договором (как для счета) ProductContractName + ProductName+ SupplyNameMarketing
     MonthQuantityString: string; // просто написано "месяцев" без цифр - видимо типа просклоненное значение
     ContractFullName: string; // полное название договора на самом деле что-то странное     Internet длительность 1 мес.// полное название договора можно изменить на Интернет/Проксима/Лицензия и тд
+
+    ProductSetKind: ProductSetKind; // general — общий набор (то, что предлагают купить), alternative — набор для сравнения
+    ProductSetNumber: number; // номер набора: 0 — общий, 1..N — наборы для сравнения
+    ProductSetTitle: string; // заголовок набора: пусто у общего, «Набор N» у набора для сравнения
+    IsSetFirstRow: boolean; // первая строка набора для сравнения (перед ней ставится заголовок набора); у общего набора всегда false
 }
 
 export interface ITotalRowItemRenderData {
@@ -198,8 +207,11 @@ export class OfferRenderPriceService {
             contractCoefficient,
             null,
         );
+        // getProducts отдаёт товары в порядке строк, признаки набора — тоже
+        const setMarks = getProductSetMarks(rows);
         const renderData: IProductRenderItemData[] = [];
-        for (const row of productRowsData) {
+        for (const [index, row] of productRowsData.entries()) {
+            const marks = setMarks[index];
             renderData.push({
                 ProductNumber: row.productNumber.toString(),
                 ProductName: row.productName,
@@ -223,6 +235,10 @@ export class OfferRenderPriceService {
                 ProductByContractName: row.productWithContractName,
                 MonthQuantityString: row.monthQuantityString,
                 ContractFullName: row.contractFullName,
+                ProductSetKind: marks.kind,
+                ProductSetNumber: marks.number,
+                ProductSetTitle: marks.title,
+                IsSetFirstRow: marks.isFirstRow,
             });
         }
 

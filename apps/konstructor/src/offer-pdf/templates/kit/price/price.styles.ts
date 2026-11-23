@@ -21,6 +21,8 @@ export const priceStyles = themedStyles(({ colors, sizes }) =>
             borderTopWidth: FRAME,
             borderTopColor: colors.tableBorder,
         },
+        /** Заголовок набора для сравнения: заливка шапки, текст слева */
+        rowSetTitle: { backgroundColor: colors.shade },
         rowLast: {
             borderBottomWidth: FRAME - GRID,
             borderBottomColor: colors.tableBorder,
@@ -39,6 +41,11 @@ export const priceStyles = themedStyles(({ colors, sizes }) =>
             fontSize: sizes.sm,
             fontWeight: 'bold',
             textAlign: 'center',
+        },
+        cellSetTitle: {
+            fontSize: sizes.sm,
+            fontWeight: 'bold',
+            textAlign: 'left',
         },
         cellText: { fontSize: sizes.sm, textAlign: 'center' },
         cellTextLeft: { fontSize: sizes.sm, textAlign: 'left' },

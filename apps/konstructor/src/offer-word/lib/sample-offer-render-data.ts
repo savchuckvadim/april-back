@@ -4,6 +4,7 @@
  * фикстурой тестов/аудита PDF-КП. Данные вымышленные.
  */
 import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
+import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 import {
     IInfblockGroupsRenderData,
     IInfblockRenderData,
@@ -133,7 +134,7 @@ const productRow = (
     price: string,
     sum: string,
     discountPercent: string,
-) => ({
+): IProductRenderItemData => ({
     ProductNumber: number,
     ProductName: name,
     ProductQuantity: quantity,
@@ -156,6 +157,10 @@ const productRow = (
     ProductByContractName: `Услуги по информационному обслуживанию ${name}`,
     MonthQuantityString: 'месяцев',
     ContractFullName: 'Интернет, длительность 12 мес.',
+    ProductSetKind: 'general',
+    ProductSetNumber: 0,
+    ProductSetTitle: '',
+    IsSetFirstRow: false,
 });
 
 /** Данные КП как их отдаёт OfferRenderDataService — без БД. */
