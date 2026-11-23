@@ -10,3 +10,6 @@ export * from './provider.repository';
 export * from './lib/provider-entity.util';
 export * from './provider.controller';
 export * from './provider.admin.controller';
+export * from './provider-image.dto';
+export * from './provider-image-upload.interceptor';
+export * from './provider-image.admin.controller';
