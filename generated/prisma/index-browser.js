@@ -1870,6 +1870,21 @@ exports.Prisma.OfferLetterScalarFieldEnum = {
   legacyFieldId: 'legacyFieldId'
 };
 
+exports.Prisma.ProviderImageScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  rqId: 'rqId',
+  role: 'role',
+  path: 'path',
+  format: 'format',
+  width: 'width',
+  height: 'height',
+  size: 'size',
+  originalName: 'originalName',
+  legacyFileId: 'legacyFileId'
+};
+
 exports.Prisma.ContractTemplateScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
@@ -3088,6 +3103,14 @@ exports.Prisma.OfferLetterOrderByRelevanceFieldEnum = {
   text: 'text'
 };
 
+exports.Prisma.ProviderImageOrderByRelevanceFieldEnum = {
+  id: 'id',
+  role: 'role',
+  path: 'path',
+  format: 'format',
+  originalName: 'originalName'
+};
+
 exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
   contract_type: 'contract_type',
   client_types: 'client_types',
@@ -3347,6 +3370,7 @@ exports.Prisma.ModelName = {
   ShareLink: 'ShareLink',
   KonstructorPublicLink: 'KonstructorPublicLink',
   OfferLetter: 'OfferLetter',
+  ProviderImage: 'ProviderImage',
   ContractTemplate: 'ContractTemplate',
   SupplyReportTemplate: 'SupplyReportTemplate',
   RenewalOfferLink: 'RenewalOfferLink',

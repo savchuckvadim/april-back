@@ -625,6 +625,13 @@ export type KonstructorPublicLink = $Result.DefaultSelection<Prisma.$Konstructor
  */
 export type OfferLetter = $Result.DefaultSelection<Prisma.$OfferLetterPayload>
 /**
+ * Model ProviderImage
+ * Печать, подписи и логотип поставщика для документов: по одной картинке каждой роли на реквизиты (rqs).
+ * role — stamp | signature_director | signature_accountant | logo; path — путь внутри storage/app.
+ * Миграция: online/database/migrations/2026_11_23_120000_create_provider_images_table.php
+ */
+export type ProviderImage = $Result.DefaultSelection<Prisma.$ProviderImagePayload>
+/**
  * Model ContractTemplate
  * Шаблон договора (миграция 2026_09_15_100100).
  * У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
@@ -2012,6 +2019,16 @@ export class PrismaClient<
   get offerLetter(): Prisma.OfferLetterDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.providerImage`: Exposes CRUD operations for the **ProviderImage** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ProviderImages
+    * const providerImages = await prisma.providerImage.findMany()
+    * ```
+    */
+  get providerImage(): Prisma.ProviderImageDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.contractTemplate`: Exposes CRUD operations for the **ContractTemplate** model.
     * Example usage:
     * ```ts
@@ -2626,6 +2643,7 @@ export namespace Prisma {
     ShareLink: 'ShareLink',
     KonstructorPublicLink: 'KonstructorPublicLink',
     OfferLetter: 'OfferLetter',
+    ProviderImage: 'ProviderImage',
     ContractTemplate: 'ContractTemplate',
     SupplyReportTemplate: 'SupplyReportTemplate',
     RenewalOfferLink: 'RenewalOfferLink',
@@ -2651,7 +2669,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "offerLetter" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink" | "siteMedia" | "siteArticle" | "siteArticleRevision" | "siteArticleMedia"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "offerLetter" | "providerImage" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink" | "siteMedia" | "siteArticle" | "siteArticleRevision" | "siteArticleMedia"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -9651,6 +9669,72 @@ export namespace Prisma {
           }
         }
       }
+      ProviderImage: {
+        payload: Prisma.$ProviderImagePayload<ExtArgs>
+        fields: Prisma.ProviderImageFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ProviderImageFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ProviderImageFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          findFirst: {
+            args: Prisma.ProviderImageFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ProviderImageFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          findMany: {
+            args: Prisma.ProviderImageFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>[]
+          }
+          create: {
+            args: Prisma.ProviderImageCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          createMany: {
+            args: Prisma.ProviderImageCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ProviderImageDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          update: {
+            args: Prisma.ProviderImageUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          deleteMany: {
+            args: Prisma.ProviderImageDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ProviderImageUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ProviderImageUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProviderImagePayload>
+          }
+          aggregate: {
+            args: Prisma.ProviderImageAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateProviderImage>
+          }
+          groupBy: {
+            args: Prisma.ProviderImageGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ProviderImageGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ProviderImageCountArgs<ExtArgs>
+            result: $Utils.Optional<ProviderImageCountAggregateOutputType> | number
+          }
+        }
+      }
       ContractTemplate: {
         payload: Prisma.$ContractTemplatePayload<ExtArgs>
         fields: Prisma.ContractTemplateFieldRefs
@@ -10315,6 +10399,7 @@ export namespace Prisma {
     shareLink?: ShareLinkOmit
     konstructorPublicLink?: KonstructorPublicLinkOmit
     offerLetter?: OfferLetterOmit
+    providerImage?: ProviderImageOmit
     contractTemplate?: ContractTemplateOmit
     supplyReportTemplate?: SupplyReportTemplateOmit
     renewalOfferLink?: RenewalOfferLinkOmit
@@ -11444,11 +11529,13 @@ export namespace Prisma {
   export type RqsCountOutputType = {
     rq_counter: number
     agents: number
+    providerImages: number
   }
 
   export type RqsCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     rq_counter?: boolean | RqsCountOutputTypeCountRq_counterArgs
     agents?: boolean | RqsCountOutputTypeCountAgentsArgs
+    providerImages?: boolean | RqsCountOutputTypeCountProviderImagesArgs
   }
 
   // Custom InputTypes
@@ -11474,6 +11561,13 @@ export namespace Prisma {
    */
   export type RqsCountOutputTypeCountAgentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: agentsWhereInput
+  }
+
+  /**
+   * RqsCountOutputType without action
+   */
+  export type RqsCountOutputTypeCountProviderImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProviderImageWhereInput
   }
 
 
@@ -69028,6 +69122,7 @@ export namespace Prisma {
     agentId?: boolean
     rq_counter?: boolean | rqs$rq_counterArgs<ExtArgs>
     agents?: boolean | rqs$agentsArgs<ExtArgs>
+    providerImages?: boolean | rqs$providerImagesArgs<ExtArgs>
     _count?: boolean | RqsCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["rqs"]>
 
@@ -69081,6 +69176,7 @@ export namespace Prisma {
   export type rqsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     rq_counter?: boolean | rqs$rq_counterArgs<ExtArgs>
     agents?: boolean | rqs$agentsArgs<ExtArgs>
+    providerImages?: boolean | rqs$providerImagesArgs<ExtArgs>
     _count?: boolean | RqsCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -69089,6 +69185,7 @@ export namespace Prisma {
     objects: {
       rq_counter: Prisma.$rq_counterPayload<ExtArgs>[]
       agents: Prisma.$agentsPayload<ExtArgs>[]
+      providerImages: Prisma.$ProviderImagePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -69474,6 +69571,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     rq_counter<T extends rqs$rq_counterArgs<ExtArgs> = {}>(args?: Subset<T, rqs$rq_counterArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$rq_counterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     agents<T extends rqs$agentsArgs<ExtArgs> = {}>(args?: Subset<T, rqs$agentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$agentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    providerImages<T extends rqs$providerImagesArgs<ExtArgs> = {}>(args?: Subset<T, rqs$providerImagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -69932,6 +70030,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AgentsScalarFieldEnum | AgentsScalarFieldEnum[]
+  }
+
+  /**
+   * rqs.providerImages
+   */
+  export type rqs$providerImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    where?: ProviderImageWhereInput
+    orderBy?: ProviderImageOrderByWithRelationInput | ProviderImageOrderByWithRelationInput[]
+    cursor?: ProviderImageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ProviderImageScalarFieldEnum | ProviderImageScalarFieldEnum[]
   }
 
   /**
@@ -127146,6 +127268,1065 @@ export namespace Prisma {
 
 
   /**
+   * Model ProviderImage
+   */
+
+  export type AggregateProviderImage = {
+    _count: ProviderImageCountAggregateOutputType | null
+    _avg: ProviderImageAvgAggregateOutputType | null
+    _sum: ProviderImageSumAggregateOutputType | null
+    _min: ProviderImageMinAggregateOutputType | null
+    _max: ProviderImageMaxAggregateOutputType | null
+  }
+
+  export type ProviderImageAvgAggregateOutputType = {
+    rqId: number | null
+    width: number | null
+    height: number | null
+    size: number | null
+    legacyFileId: number | null
+  }
+
+  export type ProviderImageSumAggregateOutputType = {
+    rqId: bigint | null
+    width: number | null
+    height: number | null
+    size: number | null
+    legacyFileId: number | null
+  }
+
+  export type ProviderImageMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    rqId: bigint | null
+    role: string | null
+    path: string | null
+    format: string | null
+    width: number | null
+    height: number | null
+    size: number | null
+    originalName: string | null
+    legacyFileId: number | null
+  }
+
+  export type ProviderImageMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    rqId: bigint | null
+    role: string | null
+    path: string | null
+    format: string | null
+    width: number | null
+    height: number | null
+    size: number | null
+    originalName: string | null
+    legacyFileId: number | null
+  }
+
+  export type ProviderImageCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    rqId: number
+    role: number
+    path: number
+    format: number
+    width: number
+    height: number
+    size: number
+    originalName: number
+    legacyFileId: number
+    _all: number
+  }
+
+
+  export type ProviderImageAvgAggregateInputType = {
+    rqId?: true
+    width?: true
+    height?: true
+    size?: true
+    legacyFileId?: true
+  }
+
+  export type ProviderImageSumAggregateInputType = {
+    rqId?: true
+    width?: true
+    height?: true
+    size?: true
+    legacyFileId?: true
+  }
+
+  export type ProviderImageMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    rqId?: true
+    role?: true
+    path?: true
+    format?: true
+    width?: true
+    height?: true
+    size?: true
+    originalName?: true
+    legacyFileId?: true
+  }
+
+  export type ProviderImageMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    rqId?: true
+    role?: true
+    path?: true
+    format?: true
+    width?: true
+    height?: true
+    size?: true
+    originalName?: true
+    legacyFileId?: true
+  }
+
+  export type ProviderImageCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    rqId?: true
+    role?: true
+    path?: true
+    format?: true
+    width?: true
+    height?: true
+    size?: true
+    originalName?: true
+    legacyFileId?: true
+    _all?: true
+  }
+
+  export type ProviderImageAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProviderImage to aggregate.
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProviderImages to fetch.
+     */
+    orderBy?: ProviderImageOrderByWithRelationInput | ProviderImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ProviderImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProviderImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProviderImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ProviderImages
+    **/
+    _count?: true | ProviderImageCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ProviderImageAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ProviderImageSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ProviderImageMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ProviderImageMaxAggregateInputType
+  }
+
+  export type GetProviderImageAggregateType<T extends ProviderImageAggregateArgs> = {
+        [P in keyof T & keyof AggregateProviderImage]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateProviderImage[P]>
+      : GetScalarType<T[P], AggregateProviderImage[P]>
+  }
+
+
+
+
+  export type ProviderImageGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProviderImageWhereInput
+    orderBy?: ProviderImageOrderByWithAggregationInput | ProviderImageOrderByWithAggregationInput[]
+    by: ProviderImageScalarFieldEnum[] | ProviderImageScalarFieldEnum
+    having?: ProviderImageScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ProviderImageCountAggregateInputType | true
+    _avg?: ProviderImageAvgAggregateInputType
+    _sum?: ProviderImageSumAggregateInputType
+    _min?: ProviderImageMinAggregateInputType
+    _max?: ProviderImageMaxAggregateInputType
+  }
+
+  export type ProviderImageGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    rqId: bigint
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName: string | null
+    legacyFileId: number | null
+    _count: ProviderImageCountAggregateOutputType | null
+    _avg: ProviderImageAvgAggregateOutputType | null
+    _sum: ProviderImageSumAggregateOutputType | null
+    _min: ProviderImageMinAggregateOutputType | null
+    _max: ProviderImageMaxAggregateOutputType | null
+  }
+
+  type GetProviderImageGroupByPayload<T extends ProviderImageGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ProviderImageGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ProviderImageGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ProviderImageGroupByOutputType[P]>
+            : GetScalarType<T[P], ProviderImageGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ProviderImageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    rqId?: boolean
+    role?: boolean
+    path?: boolean
+    format?: boolean
+    width?: boolean
+    height?: boolean
+    size?: boolean
+    originalName?: boolean
+    legacyFileId?: boolean
+    rq?: boolean | rqsDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["providerImage"]>
+
+
+
+  export type ProviderImageSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    rqId?: boolean
+    role?: boolean
+    path?: boolean
+    format?: boolean
+    width?: boolean
+    height?: boolean
+    size?: boolean
+    originalName?: boolean
+    legacyFileId?: boolean
+  }
+
+  export type ProviderImageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "rqId" | "role" | "path" | "format" | "width" | "height" | "size" | "originalName" | "legacyFileId", ExtArgs["result"]["providerImage"]>
+  export type ProviderImageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    rq?: boolean | rqsDefaultArgs<ExtArgs>
+  }
+
+  export type $ProviderImagePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ProviderImage"
+    objects: {
+      rq: Prisma.$rqsPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      rqId: bigint
+      role: string
+      path: string
+      format: string
+      width: number
+      height: number
+      size: number
+      originalName: string | null
+      /**
+       * Запись `files`, из которой перенесена картинка: повторный перенос не плодит копий
+       */
+      legacyFileId: number | null
+    }, ExtArgs["result"]["providerImage"]>
+    composites: {}
+  }
+
+  type ProviderImageGetPayload<S extends boolean | null | undefined | ProviderImageDefaultArgs> = $Result.GetResult<Prisma.$ProviderImagePayload, S>
+
+  type ProviderImageCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ProviderImageFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ProviderImageCountAggregateInputType | true
+    }
+
+  export interface ProviderImageDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ProviderImage'], meta: { name: 'ProviderImage' } }
+    /**
+     * Find zero or one ProviderImage that matches the filter.
+     * @param {ProviderImageFindUniqueArgs} args - Arguments to find a ProviderImage
+     * @example
+     * // Get one ProviderImage
+     * const providerImage = await prisma.providerImage.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ProviderImageFindUniqueArgs>(args: SelectSubset<T, ProviderImageFindUniqueArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ProviderImage that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ProviderImageFindUniqueOrThrowArgs} args - Arguments to find a ProviderImage
+     * @example
+     * // Get one ProviderImage
+     * const providerImage = await prisma.providerImage.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ProviderImageFindUniqueOrThrowArgs>(args: SelectSubset<T, ProviderImageFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ProviderImage that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageFindFirstArgs} args - Arguments to find a ProviderImage
+     * @example
+     * // Get one ProviderImage
+     * const providerImage = await prisma.providerImage.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ProviderImageFindFirstArgs>(args?: SelectSubset<T, ProviderImageFindFirstArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ProviderImage that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageFindFirstOrThrowArgs} args - Arguments to find a ProviderImage
+     * @example
+     * // Get one ProviderImage
+     * const providerImage = await prisma.providerImage.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ProviderImageFindFirstOrThrowArgs>(args?: SelectSubset<T, ProviderImageFindFirstOrThrowArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ProviderImages that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ProviderImages
+     * const providerImages = await prisma.providerImage.findMany()
+     * 
+     * // Get first 10 ProviderImages
+     * const providerImages = await prisma.providerImage.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const providerImageWithIdOnly = await prisma.providerImage.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ProviderImageFindManyArgs>(args?: SelectSubset<T, ProviderImageFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ProviderImage.
+     * @param {ProviderImageCreateArgs} args - Arguments to create a ProviderImage.
+     * @example
+     * // Create one ProviderImage
+     * const ProviderImage = await prisma.providerImage.create({
+     *   data: {
+     *     // ... data to create a ProviderImage
+     *   }
+     * })
+     * 
+     */
+    create<T extends ProviderImageCreateArgs>(args: SelectSubset<T, ProviderImageCreateArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ProviderImages.
+     * @param {ProviderImageCreateManyArgs} args - Arguments to create many ProviderImages.
+     * @example
+     * // Create many ProviderImages
+     * const providerImage = await prisma.providerImage.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ProviderImageCreateManyArgs>(args?: SelectSubset<T, ProviderImageCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ProviderImage.
+     * @param {ProviderImageDeleteArgs} args - Arguments to delete one ProviderImage.
+     * @example
+     * // Delete one ProviderImage
+     * const ProviderImage = await prisma.providerImage.delete({
+     *   where: {
+     *     // ... filter to delete one ProviderImage
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ProviderImageDeleteArgs>(args: SelectSubset<T, ProviderImageDeleteArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ProviderImage.
+     * @param {ProviderImageUpdateArgs} args - Arguments to update one ProviderImage.
+     * @example
+     * // Update one ProviderImage
+     * const providerImage = await prisma.providerImage.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ProviderImageUpdateArgs>(args: SelectSubset<T, ProviderImageUpdateArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ProviderImages.
+     * @param {ProviderImageDeleteManyArgs} args - Arguments to filter ProviderImages to delete.
+     * @example
+     * // Delete a few ProviderImages
+     * const { count } = await prisma.providerImage.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ProviderImageDeleteManyArgs>(args?: SelectSubset<T, ProviderImageDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProviderImages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ProviderImages
+     * const providerImage = await prisma.providerImage.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ProviderImageUpdateManyArgs>(args: SelectSubset<T, ProviderImageUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ProviderImage.
+     * @param {ProviderImageUpsertArgs} args - Arguments to update or create a ProviderImage.
+     * @example
+     * // Update or create a ProviderImage
+     * const providerImage = await prisma.providerImage.upsert({
+     *   create: {
+     *     // ... data to create a ProviderImage
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ProviderImage we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ProviderImageUpsertArgs>(args: SelectSubset<T, ProviderImageUpsertArgs<ExtArgs>>): Prisma__ProviderImageClient<$Result.GetResult<Prisma.$ProviderImagePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ProviderImages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageCountArgs} args - Arguments to filter ProviderImages to count.
+     * @example
+     * // Count the number of ProviderImages
+     * const count = await prisma.providerImage.count({
+     *   where: {
+     *     // ... the filter for the ProviderImages we want to count
+     *   }
+     * })
+    **/
+    count<T extends ProviderImageCountArgs>(
+      args?: Subset<T, ProviderImageCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ProviderImageCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ProviderImage.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ProviderImageAggregateArgs>(args: Subset<T, ProviderImageAggregateArgs>): Prisma.PrismaPromise<GetProviderImageAggregateType<T>>
+
+    /**
+     * Group by ProviderImage.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProviderImageGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ProviderImageGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ProviderImageGroupByArgs['orderBy'] }
+        : { orderBy?: ProviderImageGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ProviderImageGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetProviderImageGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ProviderImage model
+   */
+  readonly fields: ProviderImageFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ProviderImage.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ProviderImageClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    rq<T extends rqsDefaultArgs<ExtArgs> = {}>(args?: Subset<T, rqsDefaultArgs<ExtArgs>>): Prisma__rqsClient<$Result.GetResult<Prisma.$rqsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ProviderImage model
+   */
+  interface ProviderImageFieldRefs {
+    readonly id: FieldRef<"ProviderImage", 'String'>
+    readonly createdAt: FieldRef<"ProviderImage", 'DateTime'>
+    readonly updatedAt: FieldRef<"ProviderImage", 'DateTime'>
+    readonly rqId: FieldRef<"ProviderImage", 'BigInt'>
+    readonly role: FieldRef<"ProviderImage", 'String'>
+    readonly path: FieldRef<"ProviderImage", 'String'>
+    readonly format: FieldRef<"ProviderImage", 'String'>
+    readonly width: FieldRef<"ProviderImage", 'Int'>
+    readonly height: FieldRef<"ProviderImage", 'Int'>
+    readonly size: FieldRef<"ProviderImage", 'Int'>
+    readonly originalName: FieldRef<"ProviderImage", 'String'>
+    readonly legacyFileId: FieldRef<"ProviderImage", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ProviderImage findUnique
+   */
+  export type ProviderImageFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter, which ProviderImage to fetch.
+     */
+    where: ProviderImageWhereUniqueInput
+  }
+
+  /**
+   * ProviderImage findUniqueOrThrow
+   */
+  export type ProviderImageFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter, which ProviderImage to fetch.
+     */
+    where: ProviderImageWhereUniqueInput
+  }
+
+  /**
+   * ProviderImage findFirst
+   */
+  export type ProviderImageFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter, which ProviderImage to fetch.
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProviderImages to fetch.
+     */
+    orderBy?: ProviderImageOrderByWithRelationInput | ProviderImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProviderImages.
+     */
+    cursor?: ProviderImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProviderImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProviderImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProviderImages.
+     */
+    distinct?: ProviderImageScalarFieldEnum | ProviderImageScalarFieldEnum[]
+  }
+
+  /**
+   * ProviderImage findFirstOrThrow
+   */
+  export type ProviderImageFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter, which ProviderImage to fetch.
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProviderImages to fetch.
+     */
+    orderBy?: ProviderImageOrderByWithRelationInput | ProviderImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProviderImages.
+     */
+    cursor?: ProviderImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProviderImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProviderImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProviderImages.
+     */
+    distinct?: ProviderImageScalarFieldEnum | ProviderImageScalarFieldEnum[]
+  }
+
+  /**
+   * ProviderImage findMany
+   */
+  export type ProviderImageFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter, which ProviderImages to fetch.
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProviderImages to fetch.
+     */
+    orderBy?: ProviderImageOrderByWithRelationInput | ProviderImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ProviderImages.
+     */
+    cursor?: ProviderImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProviderImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProviderImages.
+     */
+    skip?: number
+    distinct?: ProviderImageScalarFieldEnum | ProviderImageScalarFieldEnum[]
+  }
+
+  /**
+   * ProviderImage create
+   */
+  export type ProviderImageCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ProviderImage.
+     */
+    data: XOR<ProviderImageCreateInput, ProviderImageUncheckedCreateInput>
+  }
+
+  /**
+   * ProviderImage createMany
+   */
+  export type ProviderImageCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ProviderImages.
+     */
+    data: ProviderImageCreateManyInput | ProviderImageCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProviderImage update
+   */
+  export type ProviderImageUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ProviderImage.
+     */
+    data: XOR<ProviderImageUpdateInput, ProviderImageUncheckedUpdateInput>
+    /**
+     * Choose, which ProviderImage to update.
+     */
+    where: ProviderImageWhereUniqueInput
+  }
+
+  /**
+   * ProviderImage updateMany
+   */
+  export type ProviderImageUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ProviderImages.
+     */
+    data: XOR<ProviderImageUpdateManyMutationInput, ProviderImageUncheckedUpdateManyInput>
+    /**
+     * Filter which ProviderImages to update
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * Limit how many ProviderImages to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ProviderImage upsert
+   */
+  export type ProviderImageUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ProviderImage to update in case it exists.
+     */
+    where: ProviderImageWhereUniqueInput
+    /**
+     * In case the ProviderImage found by the `where` argument doesn't exist, create a new ProviderImage with this data.
+     */
+    create: XOR<ProviderImageCreateInput, ProviderImageUncheckedCreateInput>
+    /**
+     * In case the ProviderImage was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ProviderImageUpdateInput, ProviderImageUncheckedUpdateInput>
+  }
+
+  /**
+   * ProviderImage delete
+   */
+  export type ProviderImageDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+    /**
+     * Filter which ProviderImage to delete.
+     */
+    where: ProviderImageWhereUniqueInput
+  }
+
+  /**
+   * ProviderImage deleteMany
+   */
+  export type ProviderImageDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProviderImages to delete
+     */
+    where?: ProviderImageWhereInput
+    /**
+     * Limit how many ProviderImages to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ProviderImage without action
+   */
+  export type ProviderImageDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProviderImage
+     */
+    select?: ProviderImageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProviderImage
+     */
+    omit?: ProviderImageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProviderImageInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model ContractTemplate
    */
 
@@ -137087,6 +138268,24 @@ export namespace Prisma {
   export type OfferLetterScalarFieldEnum = (typeof OfferLetterScalarFieldEnum)[keyof typeof OfferLetterScalarFieldEnum]
 
 
+  export const ProviderImageScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    rqId: 'rqId',
+    role: 'role',
+    path: 'path',
+    format: 'format',
+    width: 'width',
+    height: 'height',
+    size: 'size',
+    originalName: 'originalName',
+    legacyFileId: 'legacyFileId'
+  };
+
+  export type ProviderImageScalarFieldEnum = (typeof ProviderImageScalarFieldEnum)[keyof typeof ProviderImageScalarFieldEnum]
+
+
   export const ContractTemplateScalarFieldEnum: {
     id: 'id',
     created_at: 'created_at',
@@ -138636,6 +139835,17 @@ export namespace Prisma {
   };
 
   export type OfferLetterOrderByRelevanceFieldEnum = (typeof OfferLetterOrderByRelevanceFieldEnum)[keyof typeof OfferLetterOrderByRelevanceFieldEnum]
+
+
+  export const ProviderImageOrderByRelevanceFieldEnum: {
+    id: 'id',
+    role: 'role',
+    path: 'path',
+    format: 'format',
+    originalName: 'originalName'
+  };
+
+  export type ProviderImageOrderByRelevanceFieldEnum = (typeof ProviderImageOrderByRelevanceFieldEnum)[keyof typeof ProviderImageOrderByRelevanceFieldEnum]
 
 
   export const ContractTemplateOrderByRelevanceFieldEnum: {
@@ -144073,6 +145283,7 @@ export namespace Prisma {
     agentId?: BigIntNullableFilter<"rqs"> | bigint | number | null
     rq_counter?: Rq_counterListRelationFilter
     agents?: AgentsListRelationFilter
+    providerImages?: ProviderImageListRelationFilter
   }
 
   export type rqsOrderByWithRelationInput = {
@@ -144119,6 +145330,7 @@ export namespace Prisma {
     agentId?: SortOrderInput | SortOrder
     rq_counter?: rq_counterOrderByRelationAggregateInput
     agents?: agentsOrderByRelationAggregateInput
+    providerImages?: ProviderImageOrderByRelationAggregateInput
     _relevance?: rqsOrderByRelevanceInput
   }
 
@@ -144169,6 +145381,7 @@ export namespace Prisma {
     agentId?: BigIntNullableFilter<"rqs"> | bigint | number | null
     rq_counter?: Rq_counterListRelationFilter
     agents?: AgentsListRelationFilter
+    providerImages?: ProviderImageListRelationFilter
   }, "id">
 
   export type rqsOrderByWithAggregationInput = {
@@ -149797,6 +151010,100 @@ export namespace Prisma {
     isActive?: BoolWithAggregatesFilter<"OfferLetter"> | boolean
     sort?: IntWithAggregatesFilter<"OfferLetter"> | number
     legacyFieldId?: IntNullableWithAggregatesFilter<"OfferLetter"> | number | null
+  }
+
+  export type ProviderImageWhereInput = {
+    AND?: ProviderImageWhereInput | ProviderImageWhereInput[]
+    OR?: ProviderImageWhereInput[]
+    NOT?: ProviderImageWhereInput | ProviderImageWhereInput[]
+    id?: StringFilter<"ProviderImage"> | string
+    createdAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    rqId?: BigIntFilter<"ProviderImage"> | bigint | number
+    role?: StringFilter<"ProviderImage"> | string
+    path?: StringFilter<"ProviderImage"> | string
+    format?: StringFilter<"ProviderImage"> | string
+    width?: IntFilter<"ProviderImage"> | number
+    height?: IntFilter<"ProviderImage"> | number
+    size?: IntFilter<"ProviderImage"> | number
+    originalName?: StringNullableFilter<"ProviderImage"> | string | null
+    legacyFileId?: IntNullableFilter<"ProviderImage"> | number | null
+    rq?: XOR<RqsScalarRelationFilter, rqsWhereInput>
+  }
+
+  export type ProviderImageOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    rqId?: SortOrder
+    role?: SortOrder
+    path?: SortOrder
+    format?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    originalName?: SortOrderInput | SortOrder
+    legacyFileId?: SortOrderInput | SortOrder
+    rq?: rqsOrderByWithRelationInput
+    _relevance?: ProviderImageOrderByRelevanceInput
+  }
+
+  export type ProviderImageWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    legacyFileId?: number
+    rqId_role?: ProviderImageRqIdRoleCompoundUniqueInput
+    AND?: ProviderImageWhereInput | ProviderImageWhereInput[]
+    OR?: ProviderImageWhereInput[]
+    NOT?: ProviderImageWhereInput | ProviderImageWhereInput[]
+    createdAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    rqId?: BigIntFilter<"ProviderImage"> | bigint | number
+    role?: StringFilter<"ProviderImage"> | string
+    path?: StringFilter<"ProviderImage"> | string
+    format?: StringFilter<"ProviderImage"> | string
+    width?: IntFilter<"ProviderImage"> | number
+    height?: IntFilter<"ProviderImage"> | number
+    size?: IntFilter<"ProviderImage"> | number
+    originalName?: StringNullableFilter<"ProviderImage"> | string | null
+    rq?: XOR<RqsScalarRelationFilter, rqsWhereInput>
+  }, "id" | "legacyFileId" | "rqId_role">
+
+  export type ProviderImageOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    rqId?: SortOrder
+    role?: SortOrder
+    path?: SortOrder
+    format?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    originalName?: SortOrderInput | SortOrder
+    legacyFileId?: SortOrderInput | SortOrder
+    _count?: ProviderImageCountOrderByAggregateInput
+    _avg?: ProviderImageAvgOrderByAggregateInput
+    _max?: ProviderImageMaxOrderByAggregateInput
+    _min?: ProviderImageMinOrderByAggregateInput
+    _sum?: ProviderImageSumOrderByAggregateInput
+  }
+
+  export type ProviderImageScalarWhereWithAggregatesInput = {
+    AND?: ProviderImageScalarWhereWithAggregatesInput | ProviderImageScalarWhereWithAggregatesInput[]
+    OR?: ProviderImageScalarWhereWithAggregatesInput[]
+    NOT?: ProviderImageScalarWhereWithAggregatesInput | ProviderImageScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ProviderImage"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"ProviderImage"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"ProviderImage"> | Date | string | null
+    rqId?: BigIntWithAggregatesFilter<"ProviderImage"> | bigint | number
+    role?: StringWithAggregatesFilter<"ProviderImage"> | string
+    path?: StringWithAggregatesFilter<"ProviderImage"> | string
+    format?: StringWithAggregatesFilter<"ProviderImage"> | string
+    width?: IntWithAggregatesFilter<"ProviderImage"> | number
+    height?: IntWithAggregatesFilter<"ProviderImage"> | number
+    size?: IntWithAggregatesFilter<"ProviderImage"> | number
+    originalName?: StringNullableWithAggregatesFilter<"ProviderImage"> | string | null
+    legacyFileId?: IntNullableWithAggregatesFilter<"ProviderImage"> | number | null
   }
 
   export type ContractTemplateWhereInput = {
@@ -156581,6 +157888,7 @@ export namespace Prisma {
     agentId?: bigint | number | null
     rq_counter?: rq_counterCreateNestedManyWithoutRqsInput
     agents?: agentsCreateNestedManyWithoutRqInput
+    providerImages?: ProviderImageCreateNestedManyWithoutRqInput
   }
 
   export type rqsUncheckedCreateInput = {
@@ -156627,6 +157935,7 @@ export namespace Prisma {
     agentId?: bigint | number | null
     rq_counter?: rq_counterUncheckedCreateNestedManyWithoutRqsInput
     agents?: agentsUncheckedCreateNestedManyWithoutRqInput
+    providerImages?: ProviderImageUncheckedCreateNestedManyWithoutRqInput
   }
 
   export type rqsUpdateInput = {
@@ -156673,6 +157982,7 @@ export namespace Prisma {
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rq_counter?: rq_counterUpdateManyWithoutRqsNestedInput
     agents?: agentsUpdateManyWithoutRqNestedInput
+    providerImages?: ProviderImageUpdateManyWithoutRqNestedInput
   }
 
   export type rqsUncheckedUpdateInput = {
@@ -156719,6 +158029,7 @@ export namespace Prisma {
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rq_counter?: rq_counterUncheckedUpdateManyWithoutRqsNestedInput
     agents?: agentsUncheckedUpdateManyWithoutRqNestedInput
+    providerImages?: ProviderImageUncheckedUpdateManyWithoutRqNestedInput
   }
 
   export type rqsCreateManyInput = {
@@ -163205,6 +164516,110 @@ export namespace Prisma {
     legacyFieldId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
+  export type ProviderImageCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+    rq: rqsCreateNestedOneWithoutProviderImagesInput
+  }
+
+  export type ProviderImageUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    rqId: bigint | number
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+  }
+
+  export type ProviderImageUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    rq?: rqsUpdateOneRequiredWithoutProviderImagesNestedInput
+  }
+
+  export type ProviderImageUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rqId?: BigIntFieldUpdateOperationsInput | bigint | number
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type ProviderImageCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    rqId: bigint | number
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+  }
+
+  export type ProviderImageUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type ProviderImageUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rqId?: BigIntFieldUpdateOperationsInput | bigint | number
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
   export type ContractTemplateCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -168643,6 +170058,16 @@ export namespace Prisma {
     size?: SortOrder
   }
 
+  export type ProviderImageListRelationFilter = {
+    every?: ProviderImageWhereInput
+    some?: ProviderImageWhereInput
+    none?: ProviderImageWhereInput
+  }
+
+  export type ProviderImageOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type rqsOrderByRelevanceInput = {
     fields: rqsOrderByRelevanceFieldEnum | rqsOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -172849,6 +174274,78 @@ export namespace Prisma {
     bxUserId?: SortOrder
     sort?: SortOrder
     legacyFieldId?: SortOrder
+  }
+
+  export type ProviderImageOrderByRelevanceInput = {
+    fields: ProviderImageOrderByRelevanceFieldEnum | ProviderImageOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type ProviderImageRqIdRoleCompoundUniqueInput = {
+    rqId: bigint | number
+    role: string
+  }
+
+  export type ProviderImageCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    rqId?: SortOrder
+    role?: SortOrder
+    path?: SortOrder
+    format?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    originalName?: SortOrder
+    legacyFileId?: SortOrder
+  }
+
+  export type ProviderImageAvgOrderByAggregateInput = {
+    rqId?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    legacyFileId?: SortOrder
+  }
+
+  export type ProviderImageMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    rqId?: SortOrder
+    role?: SortOrder
+    path?: SortOrder
+    format?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    originalName?: SortOrder
+    legacyFileId?: SortOrder
+  }
+
+  export type ProviderImageMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    rqId?: SortOrder
+    role?: SortOrder
+    path?: SortOrder
+    format?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    originalName?: SortOrder
+    legacyFileId?: SortOrder
+  }
+
+  export type ProviderImageSumOrderByAggregateInput = {
+    rqId?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
+    size?: SortOrder
+    legacyFileId?: SortOrder
   }
 
   export type ContractTemplateOrderByRelevanceInput = {
@@ -177329,6 +178826,13 @@ export namespace Prisma {
     connect?: agentsWhereUniqueInput | agentsWhereUniqueInput[]
   }
 
+  export type ProviderImageCreateNestedManyWithoutRqInput = {
+    create?: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput> | ProviderImageCreateWithoutRqInput[] | ProviderImageUncheckedCreateWithoutRqInput[]
+    connectOrCreate?: ProviderImageCreateOrConnectWithoutRqInput | ProviderImageCreateOrConnectWithoutRqInput[]
+    createMany?: ProviderImageCreateManyRqInputEnvelope
+    connect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+  }
+
   export type rq_counterUncheckedCreateNestedManyWithoutRqsInput = {
     create?: XOR<rq_counterCreateWithoutRqsInput, rq_counterUncheckedCreateWithoutRqsInput> | rq_counterCreateWithoutRqsInput[] | rq_counterUncheckedCreateWithoutRqsInput[]
     connectOrCreate?: rq_counterCreateOrConnectWithoutRqsInput | rq_counterCreateOrConnectWithoutRqsInput[]
@@ -177341,6 +178845,13 @@ export namespace Prisma {
     connectOrCreate?: agentsCreateOrConnectWithoutRqInput | agentsCreateOrConnectWithoutRqInput[]
     createMany?: agentsCreateManyRqInputEnvelope
     connect?: agentsWhereUniqueInput | agentsWhereUniqueInput[]
+  }
+
+  export type ProviderImageUncheckedCreateNestedManyWithoutRqInput = {
+    create?: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput> | ProviderImageCreateWithoutRqInput[] | ProviderImageUncheckedCreateWithoutRqInput[]
+    connectOrCreate?: ProviderImageCreateOrConnectWithoutRqInput | ProviderImageCreateOrConnectWithoutRqInput[]
+    createMany?: ProviderImageCreateManyRqInputEnvelope
+    connect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
   }
 
   export type rq_counterUpdateManyWithoutRqsNestedInput = {
@@ -177371,6 +178882,20 @@ export namespace Prisma {
     deleteMany?: agentsScalarWhereInput | agentsScalarWhereInput[]
   }
 
+  export type ProviderImageUpdateManyWithoutRqNestedInput = {
+    create?: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput> | ProviderImageCreateWithoutRqInput[] | ProviderImageUncheckedCreateWithoutRqInput[]
+    connectOrCreate?: ProviderImageCreateOrConnectWithoutRqInput | ProviderImageCreateOrConnectWithoutRqInput[]
+    upsert?: ProviderImageUpsertWithWhereUniqueWithoutRqInput | ProviderImageUpsertWithWhereUniqueWithoutRqInput[]
+    createMany?: ProviderImageCreateManyRqInputEnvelope
+    set?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    disconnect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    delete?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    connect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    update?: ProviderImageUpdateWithWhereUniqueWithoutRqInput | ProviderImageUpdateWithWhereUniqueWithoutRqInput[]
+    updateMany?: ProviderImageUpdateManyWithWhereWithoutRqInput | ProviderImageUpdateManyWithWhereWithoutRqInput[]
+    deleteMany?: ProviderImageScalarWhereInput | ProviderImageScalarWhereInput[]
+  }
+
   export type rq_counterUncheckedUpdateManyWithoutRqsNestedInput = {
     create?: XOR<rq_counterCreateWithoutRqsInput, rq_counterUncheckedCreateWithoutRqsInput> | rq_counterCreateWithoutRqsInput[] | rq_counterUncheckedCreateWithoutRqsInput[]
     connectOrCreate?: rq_counterCreateOrConnectWithoutRqsInput | rq_counterCreateOrConnectWithoutRqsInput[]
@@ -177397,6 +178922,20 @@ export namespace Prisma {
     update?: agentsUpdateWithWhereUniqueWithoutRqInput | agentsUpdateWithWhereUniqueWithoutRqInput[]
     updateMany?: agentsUpdateManyWithWhereWithoutRqInput | agentsUpdateManyWithWhereWithoutRqInput[]
     deleteMany?: agentsScalarWhereInput | agentsScalarWhereInput[]
+  }
+
+  export type ProviderImageUncheckedUpdateManyWithoutRqNestedInput = {
+    create?: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput> | ProviderImageCreateWithoutRqInput[] | ProviderImageUncheckedCreateWithoutRqInput[]
+    connectOrCreate?: ProviderImageCreateOrConnectWithoutRqInput | ProviderImageCreateOrConnectWithoutRqInput[]
+    upsert?: ProviderImageUpsertWithWhereUniqueWithoutRqInput | ProviderImageUpsertWithWhereUniqueWithoutRqInput[]
+    createMany?: ProviderImageCreateManyRqInputEnvelope
+    set?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    disconnect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    delete?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    connect?: ProviderImageWhereUniqueInput | ProviderImageWhereUniqueInput[]
+    update?: ProviderImageUpdateWithWhereUniqueWithoutRqInput | ProviderImageUpdateWithWhereUniqueWithoutRqInput[]
+    updateMany?: ProviderImageUpdateManyWithWhereWithoutRqInput | ProviderImageUpdateManyWithWhereWithoutRqInput[]
+    deleteMany?: ProviderImageScalarWhereInput | ProviderImageScalarWhereInput[]
   }
 
   export type PortalCreateNestedOneWithoutSmartsInput = {
@@ -179209,6 +180748,20 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutOfferLettersInput, PortalUpdateWithoutOfferLettersInput>, PortalUncheckedUpdateWithoutOfferLettersInput>
   }
 
+  export type rqsCreateNestedOneWithoutProviderImagesInput = {
+    create?: XOR<rqsCreateWithoutProviderImagesInput, rqsUncheckedCreateWithoutProviderImagesInput>
+    connectOrCreate?: rqsCreateOrConnectWithoutProviderImagesInput
+    connect?: rqsWhereUniqueInput
+  }
+
+  export type rqsUpdateOneRequiredWithoutProviderImagesNestedInput = {
+    create?: XOR<rqsCreateWithoutProviderImagesInput, rqsUncheckedCreateWithoutProviderImagesInput>
+    connectOrCreate?: rqsCreateOrConnectWithoutProviderImagesInput
+    upsert?: rqsUpsertWithoutProviderImagesInput
+    connect?: rqsWhereUniqueInput
+    update?: XOR<XOR<rqsUpdateToOneWithWhereWithoutProviderImagesInput, rqsUpdateWithoutProviderImagesInput>, rqsUncheckedUpdateWithoutProviderImagesInput>
+  }
+
   export type SiteArticleMediaCreateNestedManyWithoutMediaInput = {
     create?: XOR<SiteArticleMediaCreateWithoutMediaInput, SiteArticleMediaUncheckedCreateWithoutMediaInput> | SiteArticleMediaCreateWithoutMediaInput[] | SiteArticleMediaUncheckedCreateWithoutMediaInput[]
     connectOrCreate?: SiteArticleMediaCreateOrConnectWithoutMediaInput | SiteArticleMediaCreateOrConnectWithoutMediaInput[]
@@ -180148,6 +181701,7 @@ export namespace Prisma {
     stampId?: bigint | number | null
     agentId?: bigint | number | null
     rq_counter?: rq_counterCreateNestedManyWithoutRqsInput
+    providerImages?: ProviderImageCreateNestedManyWithoutRqInput
   }
 
   export type rqsUncheckedCreateWithoutAgentsInput = {
@@ -180193,6 +181747,7 @@ export namespace Prisma {
     stampId?: bigint | number | null
     agentId?: bigint | number | null
     rq_counter?: rq_counterUncheckedCreateNestedManyWithoutRqsInput
+    providerImages?: ProviderImageUncheckedCreateNestedManyWithoutRqInput
   }
 
   export type rqsCreateOrConnectWithoutAgentsInput = {
@@ -180461,6 +182016,7 @@ export namespace Prisma {
     stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rq_counter?: rq_counterUpdateManyWithoutRqsNestedInput
+    providerImages?: ProviderImageUpdateManyWithoutRqNestedInput
   }
 
   export type rqsUncheckedUpdateWithoutAgentsInput = {
@@ -180506,6 +182062,7 @@ export namespace Prisma {
     stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rq_counter?: rq_counterUncheckedUpdateManyWithoutRqsNestedInput
+    providerImages?: ProviderImageUncheckedUpdateManyWithoutRqNestedInput
   }
 
   export type InvoiceTemplateUpsertWithWhereUniqueWithoutAgentInput = {
@@ -194621,6 +196178,7 @@ export namespace Prisma {
     stampId?: bigint | number | null
     agentId?: bigint | number | null
     agents?: agentsCreateNestedManyWithoutRqInput
+    providerImages?: ProviderImageCreateNestedManyWithoutRqInput
   }
 
   export type rqsUncheckedCreateWithoutRq_counterInput = {
@@ -194666,6 +196224,7 @@ export namespace Prisma {
     stampId?: bigint | number | null
     agentId?: bigint | number | null
     agents?: agentsUncheckedCreateNestedManyWithoutRqInput
+    providerImages?: ProviderImageUncheckedCreateNestedManyWithoutRqInput
   }
 
   export type rqsCreateOrConnectWithoutRq_counterInput = {
@@ -194756,6 +196315,7 @@ export namespace Prisma {
     stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agents?: agentsUpdateManyWithoutRqNestedInput
+    providerImages?: ProviderImageUpdateManyWithoutRqNestedInput
   }
 
   export type rqsUncheckedUpdateWithoutRq_counterInput = {
@@ -194801,6 +196361,7 @@ export namespace Prisma {
     stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agents?: agentsUncheckedUpdateManyWithoutRqNestedInput
+    providerImages?: ProviderImageUncheckedUpdateManyWithoutRqNestedInput
   }
 
   export type rq_counterCreateWithoutRqsInput = {
@@ -194875,6 +196436,44 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ProviderImageCreateWithoutRqInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+  }
+
+  export type ProviderImageUncheckedCreateWithoutRqInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+  }
+
+  export type ProviderImageCreateOrConnectWithoutRqInput = {
+    where: ProviderImageWhereUniqueInput
+    create: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput>
+  }
+
+  export type ProviderImageCreateManyRqInputEnvelope = {
+    data: ProviderImageCreateManyRqInput | ProviderImageCreateManyRqInput[]
+    skipDuplicates?: boolean
+  }
+
   export type rq_counterUpsertWithWhereUniqueWithoutRqsInput = {
     where: rq_counterWhereUniqueInput
     update: XOR<rq_counterUpdateWithoutRqsInput, rq_counterUncheckedUpdateWithoutRqsInput>
@@ -194905,6 +196504,40 @@ export namespace Prisma {
   export type agentsUpdateManyWithWhereWithoutRqInput = {
     where: agentsScalarWhereInput
     data: XOR<agentsUpdateManyMutationInput, agentsUncheckedUpdateManyWithoutRqInput>
+  }
+
+  export type ProviderImageUpsertWithWhereUniqueWithoutRqInput = {
+    where: ProviderImageWhereUniqueInput
+    update: XOR<ProviderImageUpdateWithoutRqInput, ProviderImageUncheckedUpdateWithoutRqInput>
+    create: XOR<ProviderImageCreateWithoutRqInput, ProviderImageUncheckedCreateWithoutRqInput>
+  }
+
+  export type ProviderImageUpdateWithWhereUniqueWithoutRqInput = {
+    where: ProviderImageWhereUniqueInput
+    data: XOR<ProviderImageUpdateWithoutRqInput, ProviderImageUncheckedUpdateWithoutRqInput>
+  }
+
+  export type ProviderImageUpdateManyWithWhereWithoutRqInput = {
+    where: ProviderImageScalarWhereInput
+    data: XOR<ProviderImageUpdateManyMutationInput, ProviderImageUncheckedUpdateManyWithoutRqInput>
+  }
+
+  export type ProviderImageScalarWhereInput = {
+    AND?: ProviderImageScalarWhereInput | ProviderImageScalarWhereInput[]
+    OR?: ProviderImageScalarWhereInput[]
+    NOT?: ProviderImageScalarWhereInput | ProviderImageScalarWhereInput[]
+    id?: StringFilter<"ProviderImage"> | string
+    createdAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ProviderImage"> | Date | string | null
+    rqId?: BigIntFilter<"ProviderImage"> | bigint | number
+    role?: StringFilter<"ProviderImage"> | string
+    path?: StringFilter<"ProviderImage"> | string
+    format?: StringFilter<"ProviderImage"> | string
+    width?: IntFilter<"ProviderImage"> | number
+    height?: IntFilter<"ProviderImage"> | number
+    size?: IntFilter<"ProviderImage"> | number
+    originalName?: StringNullableFilter<"ProviderImage"> | string | null
+    legacyFileId?: IntNullableFilter<"ProviderImage"> | number | null
   }
 
   export type PortalCreateWithoutSmartsInput = {
@@ -206099,6 +207732,206 @@ export namespace Prisma {
     telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
+  export type rqsCreateWithoutProviderImagesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    name?: string | null
+    number?: string | null
+    type: string
+    fullname?: string | null
+    shortname?: string | null
+    director?: string | null
+    position?: string | null
+    accountant?: string | null
+    based?: string | null
+    inn?: string | null
+    kpp?: string | null
+    ogrn?: string | null
+    ogrnip?: string | null
+    personName?: string | null
+    document?: string | null
+    docSer?: string | null
+    docNum?: string | null
+    docDate?: string | null
+    docIssuedBy?: string | null
+    docDepCode?: string | null
+    registredAdress?: string | null
+    primaryAdresss?: string | null
+    email?: string | null
+    garantEmail?: string | null
+    phone?: string | null
+    assigned?: string | null
+    assignedPhone?: string | null
+    other?: string | null
+    bank?: string | null
+    bik?: string | null
+    rs?: string | null
+    ks?: string | null
+    bankAdress?: string | null
+    bankOther?: string | null
+    directorSignatureId?: bigint | number | null
+    accountantSignatureId?: bigint | number | null
+    stampId?: bigint | number | null
+    agentId?: bigint | number | null
+    rq_counter?: rq_counterCreateNestedManyWithoutRqsInput
+    agents?: agentsCreateNestedManyWithoutRqInput
+  }
+
+  export type rqsUncheckedCreateWithoutProviderImagesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    name?: string | null
+    number?: string | null
+    type: string
+    fullname?: string | null
+    shortname?: string | null
+    director?: string | null
+    position?: string | null
+    accountant?: string | null
+    based?: string | null
+    inn?: string | null
+    kpp?: string | null
+    ogrn?: string | null
+    ogrnip?: string | null
+    personName?: string | null
+    document?: string | null
+    docSer?: string | null
+    docNum?: string | null
+    docDate?: string | null
+    docIssuedBy?: string | null
+    docDepCode?: string | null
+    registredAdress?: string | null
+    primaryAdresss?: string | null
+    email?: string | null
+    garantEmail?: string | null
+    phone?: string | null
+    assigned?: string | null
+    assignedPhone?: string | null
+    other?: string | null
+    bank?: string | null
+    bik?: string | null
+    rs?: string | null
+    ks?: string | null
+    bankAdress?: string | null
+    bankOther?: string | null
+    directorSignatureId?: bigint | number | null
+    accountantSignatureId?: bigint | number | null
+    stampId?: bigint | number | null
+    agentId?: bigint | number | null
+    rq_counter?: rq_counterUncheckedCreateNestedManyWithoutRqsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutRqInput
+  }
+
+  export type rqsCreateOrConnectWithoutProviderImagesInput = {
+    where: rqsWhereUniqueInput
+    create: XOR<rqsCreateWithoutProviderImagesInput, rqsUncheckedCreateWithoutProviderImagesInput>
+  }
+
+  export type rqsUpsertWithoutProviderImagesInput = {
+    update: XOR<rqsUpdateWithoutProviderImagesInput, rqsUncheckedUpdateWithoutProviderImagesInput>
+    create: XOR<rqsCreateWithoutProviderImagesInput, rqsUncheckedCreateWithoutProviderImagesInput>
+    where?: rqsWhereInput
+  }
+
+  export type rqsUpdateToOneWithWhereWithoutProviderImagesInput = {
+    where?: rqsWhereInput
+    data: XOR<rqsUpdateWithoutProviderImagesInput, rqsUncheckedUpdateWithoutProviderImagesInput>
+  }
+
+  export type rqsUpdateWithoutProviderImagesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    fullname?: NullableStringFieldUpdateOperationsInput | string | null
+    shortname?: NullableStringFieldUpdateOperationsInput | string | null
+    director?: NullableStringFieldUpdateOperationsInput | string | null
+    position?: NullableStringFieldUpdateOperationsInput | string | null
+    accountant?: NullableStringFieldUpdateOperationsInput | string | null
+    based?: NullableStringFieldUpdateOperationsInput | string | null
+    inn?: NullableStringFieldUpdateOperationsInput | string | null
+    kpp?: NullableStringFieldUpdateOperationsInput | string | null
+    ogrn?: NullableStringFieldUpdateOperationsInput | string | null
+    ogrnip?: NullableStringFieldUpdateOperationsInput | string | null
+    personName?: NullableStringFieldUpdateOperationsInput | string | null
+    document?: NullableStringFieldUpdateOperationsInput | string | null
+    docSer?: NullableStringFieldUpdateOperationsInput | string | null
+    docNum?: NullableStringFieldUpdateOperationsInput | string | null
+    docDate?: NullableStringFieldUpdateOperationsInput | string | null
+    docIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    docDepCode?: NullableStringFieldUpdateOperationsInput | string | null
+    registredAdress?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryAdresss?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    garantEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    assigned?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedPhone?: NullableStringFieldUpdateOperationsInput | string | null
+    other?: NullableStringFieldUpdateOperationsInput | string | null
+    bank?: NullableStringFieldUpdateOperationsInput | string | null
+    bik?: NullableStringFieldUpdateOperationsInput | string | null
+    rs?: NullableStringFieldUpdateOperationsInput | string | null
+    ks?: NullableStringFieldUpdateOperationsInput | string | null
+    bankAdress?: NullableStringFieldUpdateOperationsInput | string | null
+    bankOther?: NullableStringFieldUpdateOperationsInput | string | null
+    directorSignatureId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    accountantSignatureId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    rq_counter?: rq_counterUpdateManyWithoutRqsNestedInput
+    agents?: agentsUpdateManyWithoutRqNestedInput
+  }
+
+  export type rqsUncheckedUpdateWithoutProviderImagesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    fullname?: NullableStringFieldUpdateOperationsInput | string | null
+    shortname?: NullableStringFieldUpdateOperationsInput | string | null
+    director?: NullableStringFieldUpdateOperationsInput | string | null
+    position?: NullableStringFieldUpdateOperationsInput | string | null
+    accountant?: NullableStringFieldUpdateOperationsInput | string | null
+    based?: NullableStringFieldUpdateOperationsInput | string | null
+    inn?: NullableStringFieldUpdateOperationsInput | string | null
+    kpp?: NullableStringFieldUpdateOperationsInput | string | null
+    ogrn?: NullableStringFieldUpdateOperationsInput | string | null
+    ogrnip?: NullableStringFieldUpdateOperationsInput | string | null
+    personName?: NullableStringFieldUpdateOperationsInput | string | null
+    document?: NullableStringFieldUpdateOperationsInput | string | null
+    docSer?: NullableStringFieldUpdateOperationsInput | string | null
+    docNum?: NullableStringFieldUpdateOperationsInput | string | null
+    docDate?: NullableStringFieldUpdateOperationsInput | string | null
+    docIssuedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    docDepCode?: NullableStringFieldUpdateOperationsInput | string | null
+    registredAdress?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryAdresss?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    garantEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    assigned?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedPhone?: NullableStringFieldUpdateOperationsInput | string | null
+    other?: NullableStringFieldUpdateOperationsInput | string | null
+    bank?: NullableStringFieldUpdateOperationsInput | string | null
+    bik?: NullableStringFieldUpdateOperationsInput | string | null
+    rs?: NullableStringFieldUpdateOperationsInput | string | null
+    ks?: NullableStringFieldUpdateOperationsInput | string | null
+    bankAdress?: NullableStringFieldUpdateOperationsInput | string | null
+    bankOther?: NullableStringFieldUpdateOperationsInput | string | null
+    directorSignatureId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    accountantSignatureId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    stampId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    rq_counter?: rq_counterUncheckedUpdateManyWithoutRqsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutRqNestedInput
+  }
+
   export type SiteArticleMediaCreateWithoutMediaInput = {
     id: string
     createdAt?: Date | string | null
@@ -211833,6 +213666,20 @@ export namespace Prisma {
     withTax?: boolean
   }
 
+  export type ProviderImageCreateManyRqInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    role: string
+    path: string
+    format: string
+    width: number
+    height: number
+    size: number
+    originalName?: string | null
+    legacyFileId?: number | null
+  }
+
   export type rq_counterUpdateWithoutRqsInput = {
     type?: NullableStringFieldUpdateOperationsInput | string | null
     value?: NullableIntFieldUpdateOperationsInput | number | null
@@ -211908,6 +213755,48 @@ export namespace Prisma {
     code?: StringFieldUpdateOperationsInput | string
     number?: StringFieldUpdateOperationsInput | string
     withTax?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type ProviderImageUpdateWithoutRqInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type ProviderImageUncheckedUpdateWithoutRqInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type ProviderImageUncheckedUpdateManyWithoutRqInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    format?: StringFieldUpdateOperationsInput | string
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
+    size?: IntFieldUpdateOperationsInput | number
+    originalName?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyFileId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type telescope_entries_tagsCreateManyTelescope_entriesInput = {

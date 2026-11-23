@@ -1323,49 +1323,50 @@ model rq_counter {
 }
 
 model rqs {
-  id                    BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at            DateTime?    @db.Timestamp(0)
-  updated_at            DateTime?    @db.Timestamp(0)
-  name                  String?      @db.VarChar(255)
-  number                String?      @db.VarChar(255)
-  type                  String       @db.VarChar(255)
-  fullname              String?      @db.VarChar(255)
-  shortname             String?      @db.VarChar(255)
-  director              String?      @db.VarChar(255)
-  position              String?      @db.VarChar(255)
-  accountant            String?      @db.VarChar(255)
-  based                 String?      @db.VarChar(255)
-  inn                   String?      @db.VarChar(255)
-  kpp                   String?      @db.VarChar(255)
-  ogrn                  String?      @db.VarChar(255)
-  ogrnip                String?      @db.VarChar(255)
-  personName            String?      @db.VarChar(255)
-  document              String?      @db.VarChar(255)
-  docSer                String?      @db.VarChar(255)
-  docNum                String?      @db.VarChar(255)
-  docDate               String?      @db.VarChar(255)
-  docIssuedBy           String?      @db.VarChar(255)
-  docDepCode            String?      @db.VarChar(255)
-  registredAdress       String?      @db.VarChar(255)
-  primaryAdresss        String?      @db.VarChar(255)
-  email                 String?      @db.VarChar(255)
-  garantEmail           String?      @db.VarChar(255)
-  phone                 String?      @db.VarChar(255)
-  assigned              String?      @db.VarChar(255)
-  assignedPhone         String?      @db.VarChar(255)
-  other                 String?      @db.LongText
-  bank                  String?      @db.VarChar(255)
-  bik                   String?      @db.VarChar(255)
-  rs                    String?      @db.VarChar(255)
-  ks                    String?      @db.VarChar(255)
-  bankAdress            String?      @db.VarChar(255)
-  bankOther             String?      @db.LongText
-  directorSignatureId   BigInt?      @db.UnsignedBigInt
-  accountantSignatureId BigInt?      @db.UnsignedBigInt
-  stampId               BigInt?      @db.UnsignedBigInt
-  agentId               BigInt?      @db.UnsignedBigInt
+  id                    BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at            DateTime?       @db.Timestamp(0)
+  updated_at            DateTime?       @db.Timestamp(0)
+  name                  String?         @db.VarChar(255)
+  number                String?         @db.VarChar(255)
+  type                  String          @db.VarChar(255)
+  fullname              String?         @db.VarChar(255)
+  shortname             String?         @db.VarChar(255)
+  director              String?         @db.VarChar(255)
+  position              String?         @db.VarChar(255)
+  accountant            String?         @db.VarChar(255)
+  based                 String?         @db.VarChar(255)
+  inn                   String?         @db.VarChar(255)
+  kpp                   String?         @db.VarChar(255)
+  ogrn                  String?         @db.VarChar(255)
+  ogrnip                String?         @db.VarChar(255)
+  personName            String?         @db.VarChar(255)
+  document              String?         @db.VarChar(255)
+  docSer                String?         @db.VarChar(255)
+  docNum                String?         @db.VarChar(255)
+  docDate               String?         @db.VarChar(255)
+  docIssuedBy           String?         @db.VarChar(255)
+  docDepCode            String?         @db.VarChar(255)
+  registredAdress       String?         @db.VarChar(255)
+  primaryAdresss        String?         @db.VarChar(255)
+  email                 String?         @db.VarChar(255)
+  garantEmail           String?         @db.VarChar(255)
+  phone                 String?         @db.VarChar(255)
+  assigned              String?         @db.VarChar(255)
+  assignedPhone         String?         @db.VarChar(255)
+  other                 String?         @db.LongText
+  bank                  String?         @db.VarChar(255)
+  bik                   String?         @db.VarChar(255)
+  rs                    String?         @db.VarChar(255)
+  ks                    String?         @db.VarChar(255)
+  bankAdress            String?         @db.VarChar(255)
+  bankOther             String?         @db.LongText
+  directorSignatureId   BigInt?         @db.UnsignedBigInt
+  accountantSignatureId BigInt?         @db.UnsignedBigInt
+  stampId               BigInt?         @db.UnsignedBigInt
+  agentId               BigInt?         @db.UnsignedBigInt
   rq_counter            rq_counter[]
   agents                agents[]
+  providerImages        ProviderImage[]
 }
 
 model smarts {
@@ -2608,6 +2609,29 @@ model OfferLetter {
 
   @@index([portalId, bxUserId], map: "offer_letters_portal_id_bx_user_id_index")
   @@map("offer_letters")
+}
+
+/// Печать, подписи и логотип поставщика для документов: по одной картинке каждой роли на реквизиты (rqs).
+/// role — stamp | signature_director | signature_accountant | logo; path — путь внутри storage/app.
+/// Миграция: online/database/migrations/2026_11_23_120000_create_provider_images_table.php
+model ProviderImage {
+  id           String    @id @db.Char(36)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+  rqId         BigInt    @map("rq_id") @db.UnsignedBigInt
+  role         String    @db.VarChar(32)
+  path         String    @db.VarChar(500)
+  format       String    @db.VarChar(8)
+  width        Int       @db.UnsignedInt
+  height       Int       @db.UnsignedInt
+  size         Int       @db.UnsignedInt
+  originalName String?   @map("original_name") @db.VarChar(255)
+  /// Запись `files`, из которой перенесена картинка: повторный перенос не плодит копий
+  legacyFileId Int?      @unique(map: "provider_images_legacy_file_id_unique") @map("legacy_file_id") @db.UnsignedInt
+  rq           rqs       @relation(fields: [rqId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_images_rq_id_foreign")
+
+  @@unique([rqId, role], map: "provider_images_rq_id_role_unique")
+  @@map("provider_images")
 }
 
 /// Шаблон договора (миграция 2026_09_15_100100).
