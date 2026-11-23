@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
@@ -14,6 +15,11 @@ import { JobNames } from '@lib/queue';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { ColdCallHookResponseDto } from '../../dto/cold-call-response.dto';
+import { XoLaunchRegistryService } from '../../../shared/xo-dispatch/launch/xo-launch-registry.service';
+import {
+    XoLaunch,
+    xoLaunchEntityKey,
+} from '../../../shared/xo-dispatch/launch/xo-launch.rule';
 
 @Injectable()
 export class ColdHookSilinceEndpointV2Service {
@@ -22,12 +28,25 @@ export class ColdHookSilinceEndpointV2Service {
     constructor(
         private readonly silentManager: EventSilentJobManagerService,
         private readonly queueDispatcher: QueueDispatcherService,
+        private readonly launches: XoLaunchRegistryService,
     ) {}
 
+    /**
+     * Приём холодного звонка — от робота (контроллер), крона подстраховки и
+     * реанимации отказников: все идут сюда.
+     *
+     * Каждый запуск получает отметку (номер и время приёма) — по ней
+     * обработчик окна опознает повторный запуск по тому же клиенту
+     * («выигрывает первый», `xo-launch.rule`). После постановки в окно
+     * карточка помечается «ждёт обработки», чтобы крон подстраховки не
+     * досылал её, пока хук стоит в очереди.
+     */
     async createColdCallHook(
         domain: string,
-        coldCallData: IColdCallData,
+        rawData: IColdCallData,
     ): Promise<ColdCallHookResponseDto> {
+        const launch: XoLaunch = { id: randomUUID(), acceptedAt: Date.now() };
+        const coldCallData: IColdCallData = { ...rawData, launch };
         const domainKey = domain.replace(/\./g, '_');
         /*
          * Окно тишины группируется по ответственному — так burst по
@@ -55,6 +74,13 @@ export class ColdHookSilinceEndpointV2Service {
         };
 
         await this.silentManager.handle<IColdCallData>(ddosItem);
+        // Строго ПОСЛЕ постановки: не попал хук в окно — отметка не нужна,
+        // иначе крон час не досылал бы карточку, которую никто не обработает.
+        await this.launches.markPending(
+            domain,
+            xoLaunchEntityKey(coldCallData.entityType, coldCallData.entityId),
+            launch,
+        );
         this.logger.log(
             `[DEADLINE][silent] createColdCallHook exit keyPrefix=${keyPrefix} ` +
                 `rawDeadline="${coldCallData.deadline}" (буфер; реальная обработка асинхронна)`,
@@ -71,9 +97,9 @@ export class ColdHookSilinceEndpointV2Service {
     }
 
     /**
-     * Окно тишины закрылось — передаём его в свою очередь, где окна идут
-     * строго по одному (`ColdHooksV2Processor`). Сами здесь не работаем:
-     * воркер event-silent общий для всех хуков.
+     * Окно тишины закрылось — передаём его в свою очередь, где окна одного
+     * портала идут строго по одному (`ColdHooksV2Processor`). Сами здесь не
+     * работаем: сборщики event-silent общие для всех хуков.
      *
      * Без `{ async: true }`: с ним EventEmitter2 зовёт слушателя через
      * setImmediate и НЕ ждёт его, задание event-silent закрывается сразу —

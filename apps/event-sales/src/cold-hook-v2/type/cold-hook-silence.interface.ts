@@ -3,6 +3,7 @@ import {
     EnumColdCallForce,
     EnumColdCallIsTmc,
 } from '../dto/cold.dto';
+import { XoLaunch } from '../../shared/xo-dispatch/launch/xo-launch.rule';
 
 export interface IColdHookSilenceHandlerData {
     collected: Record<string, IColdCallData>;
@@ -47,6 +48,12 @@ export interface IColdCallData {
     name?: string;
     isTmc: EnumColdCallIsTmc;
     force?: EnumColdCallForce;
+    /**
+     * Отметка запуска — ставит приём хука (`createColdCallHook`). По ней
+     * обработчик опознаёт повторный запуск и повторную доставку окна
+     * (`xo-launch.rule`). У хуков, принятых до 23.11.2026, её нет.
+     */
+    launch?: XoLaunch;
 }
 
 /**

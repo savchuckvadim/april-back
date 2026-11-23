@@ -50,6 +50,9 @@ import {
     ColdAddressedXoV2Service,
     EMPTY_ADDRESSED_XO_PLAN,
 } from '../addressed-xo/cold-addressed-xo.service';
+import { XoLaunchRegistryService } from '../../../shared/xo-dispatch/launch/xo-launch-registry.service';
+import { XO_LAUNCH_REPEAT_NOTE } from '../../../shared/xo-dispatch/launch/xo-launch.rule';
+import { ColdLaunchGate } from './cold-launch-gate';
 
 /** Что решено по хуку в фазе чтения — вход фазы записи. */
 interface PreparedTarget {
@@ -93,6 +96,7 @@ export class ColdHooksHandlerV2Service {
         private readonly zprSmart: PbxZprSmartService,
         private readonly userNames: UserNameResolver,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly launches: XoLaunchRegistryService,
     ) {
         this.logger.log('Cold Hooks Silence Handler initialized');
     }
@@ -103,6 +107,9 @@ export class ColdHooksHandlerV2Service {
     ): Promise<void> {
         const startedAt = Date.now();
         const hooksCount = hooks ? Object.keys(hooks).length : 0;
+        // «Выигрывает первый»: повторный запуск по клиенту, пока выполнялся
+        // предыдущий, не выполняется (xo-launch.rule, gsr 20.11.2026).
+        const gate = new ColdLaunchGate(this.launches, domain);
         try {
             this.logger.log('Cold hooks handling started', {
                 domain,
@@ -151,10 +158,25 @@ export class ColdHooksHandlerV2Service {
             const baseDealTitleMode = await this.baseDealTitleMode(domain);
 
             // ===== Фаза 1: чтение, решение, закрытие — по всем хукам =====
-            const targets = await targetResolver.resolve(hooks);
+            const resolved = await targetResolver.resolve(hooks);
+            const {
+                proceed: targets,
+                repeated,
+                redelivered,
+            } = await gate.split(resolved);
             const prepared: PreparedTarget[] = [];
-            /** Цели, по которым не хватило данных — объясняем в таймлайне. */
-            const incomplete: { target: ColdTarget; note: string }[] = [];
+            /**
+             * Цели, которые не выполняются, но хук ОТРАБОТАЛ: не хватило
+             * данных либо повторный запуск. Объясняем в таймлайне карточки
+             * запуска и ставим метку «хук отправлен» — иначе крон дослал бы.
+             */
+            const incomplete: { target: ColdTarget; note: string }[] =
+                repeated.map(target => ({
+                    target,
+                    note: XO_LAUNCH_REPEAT_NOTE,
+                }));
+            /** Создали работу или уступили чужой — запуск завершён. */
+            const completed: ColdTarget[] = [];
             /**
              * Сделки, на которых окно споткнулось. Раньше любая ошибка на
              * одной сделке роняла ВСЁ окно: 09.11.2026 на garant один 500
@@ -313,6 +335,7 @@ export class ColdHooksHandlerV2Service {
                     // бы то же решение и только спамил бы таймлайн.
                     queueSentMark(item.target);
                     await buffer.endGroup();
+                    completed.push(item.target);
                     continue;
                 }
                 try {
@@ -348,6 +371,7 @@ export class ColdHooksHandlerV2Service {
                     queueSentMark(item.target);
                     await buffer.endGroup();
                     created += 1;
+                    completed.push(item.target);
                 } catch (error) {
                     // Полгруппы в буфер не пускаем: иначе её хвост уехал бы
                     // со следующей сделкой. Метки нет — дошлёт подстраховка.
@@ -368,6 +392,9 @@ export class ColdHooksHandlerV2Service {
             this.logger.log(
                 `Batch result: ${JSON.stringify(buffer.getResults())}`,
             );
+            // Только после записи: упавший flush — не завершение, следующий
+            // запуск по этим клиентам должен отработать как обычно.
+            await gate.markDone(completed);
 
             // ===== Фаза 3: push — напрямую, когда всё уже записано =====
             for (const item of prepared) {
@@ -382,6 +409,8 @@ export class ColdHooksHandlerV2Service {
                 created,
                 yielded,
                 failed: failed.length,
+                repeated: repeated.length,
+                redelivered: redelivered.length,
                 durationMs: Date.now() - startedAt,
             });
             if (failed.length) {
@@ -399,6 +428,10 @@ export class ColdHooksHandlerV2Service {
                 message,
             );
             this.logger.error(stack);
+        } finally {
+            // Хуки окна больше не стоят в очереди — ни выполненные, ни
+            // пропущенные, ни упавшие (упавшие дошлёт крон по своей метке).
+            await gate.clearPending(hooks ?? {});
         }
     }
 

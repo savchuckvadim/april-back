@@ -4,6 +4,7 @@ import { BULL_MODULE_QUEUE_PROCESS } from '@nestjs/bull/dist/bull.constants';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueLaneAcquire } from '@lib/queue/concurrency/queue-lane.service';
+import { InMemoryLaunchRegistry } from '../../shared/xo-dispatch/launch/__tests__/in-memory-launch-registry';
 import { ColdHookSilinceEndpointV2Service } from '../services/silence/cold-hook-silince-endpoint.service';
 import {
     ColdHooksV2Processor,
@@ -77,6 +78,7 @@ describe('холодный старт v2: окно тишины → своя о�
         const endpoint = new ColdHookSilinceEndpointV2Service(
             { handle: jest.fn() } as never,
             { dispatch } as never,
+            new InMemoryLaunchRegistry() as never,
         );
         const collected = { '1': hook('81925'), '2': hook('95833') };
 
@@ -115,6 +117,47 @@ describe('холодный старт v2: окно тишины → своя о�
             name: JobNames.EVENT_COLD_CALL_V2,
             concurrency: 8,
         });
+    });
+});
+
+describe('приём холодного звонка: отметка запуска', () => {
+    it('каждый хук получает номер и время приёма, карточка — «ждёт обработки»', async () => {
+        const handle = jest.fn().mockResolvedValue(undefined);
+        const registry = new InMemoryLaunchRegistry();
+        const endpoint = new ColdHookSilinceEndpointV2Service(
+            { handle } as never,
+            { dispatch: jest.fn() } as never,
+            registry as never,
+        );
+
+        await endpoint.createColdCallHook(DOMAIN, hook('117743'));
+
+        const [item] = handle.mock.calls[0] as [
+            { data: IColdCallData; domain: string },
+        ];
+        expect(item.data.launch?.id).toEqual(expect.any(String));
+        expect(item.data.launch?.acceptedAt).toEqual(expect.any(Number));
+        expect(await registry.pending(DOMAIN, ['company:117743'])).toEqual(
+            new Set(['company:117743']),
+        );
+    });
+
+    it('хук не лёг в окно — карточка не помечается (крон её дошлёт)', async () => {
+        const registry = new InMemoryLaunchRegistry();
+        const endpoint = new ColdHookSilinceEndpointV2Service(
+            {
+                handle: jest.fn().mockRejectedValue(new Error('redis down')),
+            } as never,
+            { dispatch: jest.fn() } as never,
+            registry as never,
+        );
+
+        await expect(
+            endpoint.createColdCallHook(DOMAIN, hook('117743')),
+        ).rejects.toThrow('redis down');
+        expect(await registry.pending(DOMAIN, ['company:117743'])).toEqual(
+            new Set(),
+        );
     });
 });
 

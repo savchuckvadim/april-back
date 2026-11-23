@@ -12,6 +12,7 @@ import { UserNameResolver } from '../shared/lead-request/user-name.resolver';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { ColdHooksV2Processor } from './queue/cold-hooks-v2.processor';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
+import { XoLaunchRegistryModule } from '../shared/xo-dispatch/launch/xo-launch-registry.module';
 
 @Module({
     imports: [
@@ -27,6 +28,8 @@ import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
         PbxZprSmartModule,
         // Настройка названия новой основной сделки (xo_start_*).
         PortalAppSettingsModule,
+        // Запуски ХО: «выигрывает первый» и отметка для подстраховки.
+        XoLaunchRegistryModule,
     ],
     controllers: [EventSalesHookV2Controller],
     providers: [

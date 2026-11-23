@@ -13,6 +13,9 @@ import {
 } from '../../dto/cold.dto';
 import { IColdCallData } from '../../type/cold-hook-silence.interface';
 import { ColdHooksHandlerV2Service } from './cold-hooks-handler.service';
+import { InMemoryLaunchRegistry } from '../../../shared/xo-dispatch/launch/__tests__/in-memory-launch-registry';
+import { XoLaunchRegistryService } from '../../../shared/xo-dispatch/launch/xo-launch-registry.service';
+import { XO_LAUNCH_REPEAT_NOTE } from '../../../shared/xo-dispatch/launch/xo-launch.rule';
 
 /**
  * Сквозной прогон обработчика v2 на фейках (шаг 8 плана): цель → связи →
@@ -280,12 +283,16 @@ const makeBitrix = (world: World) => {
     return { bitrix, journal };
 };
 
-/** `settings` — что отдаёт чтение настроек портала; `null` — чтение упало. */
+/**
+ * `settings` — что отдаёт чтение настроек портала; `null` — чтение упало.
+ * `launches` — реестр запусков ХО (по умолчанию пустой, в памяти).
+ */
 const makeHandler = (
     world: World,
     settings: { xoStartBaseDealTitle: string } | null = {
         xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.default,
     },
+    launches: InMemoryLaunchRegistry = new InMemoryLaunchRegistry(),
 ) => {
     const { bitrix, journal } = makeBitrix(world);
     const pbx = {
@@ -324,8 +331,9 @@ const makeHandler = (
         zprSmart,
         names,
         appSettings,
+        launches as unknown as XoLaunchRegistryService,
     );
-    return { handler, journal, bitrix };
+    return { handler, journal, bitrix, launches };
 };
 
 const hook = (
@@ -990,6 +998,91 @@ describe('ColdHooksHandlerV2Service — отметка «хук отработа
         });
 
         expect(sentMarks(journal)).toHaveLength(1);
+    });
+});
+
+/**
+ * «Выигрывает первый» (gsr 20.11.2026): хук ждал в очереди, менеджер
+ * запустил ХО ещё раз — отработали оба, второй перезаписал первый.
+ */
+describe('ColdHooksHandlerV2Service — повторный запуск по клиенту', () => {
+    const world: World = {
+        companies: [{ ID: '7', TITLE: 'ООО Ромашка' }],
+        deals: [],
+        tasks: [],
+        items: {},
+    };
+    const launched = (id: string, acceptedAt: number): IColdCallData => ({
+        ...hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+        launch: { id, acceptedAt },
+    });
+    const since = <T>(journal: T[], from: number): T[] => journal.slice(from);
+
+    it('второй запуск, принятый пока шёл первый, не выполняется и объясняется в карточке', async () => {
+        const { handler, journal } = makeHandler(world);
+        const now = Date.now();
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: launched('L1', now - 60_000),
+        });
+        expect(of(journal, 'deal.set').length).toBeGreaterThan(0);
+
+        const from = journal.length;
+        await handler.handleHooks('d.b24.ru', {
+            h2: launched('L2', now - 30_000),
+        });
+        const second = since(journal, from);
+
+        expect(of(second, 'deal.set')).toHaveLength(0);
+        expect(JSON.stringify(of(second, 'timeline.add'))).toContain(
+            XO_LAUNCH_REPEAT_NOTE,
+        );
+        // Хук отработал: метка «отправлен» есть — крон не дошлёт.
+        expect(JSON.stringify(of(second, 'company.update'))).toContain(
+            'UF_CRM_OP_XO_REVIVE_SENT_AT',
+        );
+    });
+
+    it('запуск после завершения предыдущего — обычная работа', async () => {
+        const { handler, journal } = makeHandler(world);
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: launched('L1', Date.now() - 60_000),
+        });
+        const from = journal.length;
+        await handler.handleHooks('d.b24.ru', {
+            h3: launched('L3', Date.now() + 60_000),
+        });
+
+        expect(of(since(journal, from), 'deal.set').length).toBeGreaterThan(0);
+    });
+
+    it('то же окно доставлено второй раз — ни работы, ни записи в карточку', async () => {
+        const { handler, journal } = makeHandler(world);
+        const first = { h1: launched('L1', Date.now() - 60_000) };
+
+        await handler.handleHooks('d.b24.ru', first);
+        const from = journal.length;
+        await handler.handleHooks('d.b24.ru', first);
+        const again = since(journal, from);
+
+        expect(of(again, 'deal.set')).toHaveLength(0);
+        expect(of(again, 'timeline.add')).toHaveLength(0);
+    });
+
+    it('после окна карточка больше не «ждёт обработки»', async () => {
+        const launches = new InMemoryLaunchRegistry();
+        const launch = { id: 'L1', acceptedAt: Date.now() };
+        await launches.markPending('d.b24.ru', 'company:7', launch);
+        const { handler } = makeHandler(world, undefined, launches);
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: { ...launched('L1', launch.acceptedAt) },
+        });
+
+        expect(await launches.pending('d.b24.ru', ['company:7'])).toEqual(
+            new Set(),
+        );
     });
 });
 
