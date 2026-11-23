@@ -26,11 +26,19 @@ export const withVariant = <T extends DocumentVariantsRequest>(
     };
     delete base.composition;
     delete base.variants;
+    // комплекты и вид их печати — «про комплект»: берутся только от участника,
+    // иначе наполнение одного участника попало бы в документ другого
+    delete base.complects;
+    delete base.complectsMode;
 
     return {
         ...base,
         contractType: variant.contractType,
         complect: variant.complect,
+        ...(variant.complects ? { complects: variant.complects } : {}),
+        ...(variant.complectsMode
+            ? { complectsMode: variant.complectsMode }
+            : {}),
         contract: variant.contract,
         supply: variant.supply,
         rows: variant.rows,

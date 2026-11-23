@@ -2,6 +2,8 @@ export * from './product-row/product-row.dto';
 export * from './product-row/product-row-price.dto';
 export * from './product-row-set/product-row-set.dto';
 export * from './complect/complect.dto';
+export * from './complect/offer-complect-section.dto';
+export * from './complect/offer-complects-mode.type';
 export * from './offer-price/price-cells.dto';
 export * from './recipient.dto';
 export * from './region.dto';

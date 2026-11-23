@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -13,6 +13,8 @@ import {
     ProductRowDto,
     ProductRowSetDto,
     ComplectDto,
+    OfferComplectSectionDto,
+    OfferComplectsModeEnum,
 } from '@app/konstructor/document-generate';
 import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { ContractDto } from '../../dto/contract.dto';
@@ -146,6 +148,28 @@ export class OfferWordByTemplateGenerateDto {
     @ValidateNested({ each: true })
     @Type(() => ComplectDto)
     complect: ComplectDto[];
+
+    @ApiPropertyOptional({
+        type: [OfferComplectSectionDto],
+        description:
+            'Комплекты общего набора со своим наполнением: название, подпись поставки и группы инфоблоков каждого комплекта. По ним КП печатает наполнение по комплектам (complectsMode: separate); Word-шаблон получает их в данных ComplectSections. Без поля КП печатается как раньше: одно объединённое наполнение из `complect`',
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => OfferComplectSectionDto)
+    complects?: OfferComplectSectionDto[];
+
+    @ApiPropertyOptional({
+        enum: OfferComplectsModeEnum,
+        enumName: 'OfferComplectsMode',
+        default: OfferComplectsModeEnum.MERGED,
+        description:
+            'Как печатать наполнение общего набора: merged — объединённое наполнение одним списком без повторов (поле `complect`); separate — по комплектам, у каждого свой раздел со своим заголовком (поле `complects`, нужно два комплекта и больше). Без поля действует merged. Настройка одинакова для Word и PDF',
+    })
+    @IsOptional()
+    @IsEnum(OfferComplectsModeEnum)
+    complectsMode?: OfferComplectsModeEnum;
 
     @ApiProperty({ description: 'Supply of the contract', type: SupplyDto })
     @ValidateNested()

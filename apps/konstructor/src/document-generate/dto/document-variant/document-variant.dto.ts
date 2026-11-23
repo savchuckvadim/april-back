@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -9,6 +9,8 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ComplectDto } from '../complect/complect.dto';
+import { OfferComplectSectionDto } from '../complect/offer-complect-section.dto';
+import { OfferComplectsModeEnum } from '../complect/offer-complects-mode.type';
 import { ProductRowDto } from '../product-row/product-row.dto';
 import { ProductRowSetDto } from '../product-row-set/product-row-set.dto';
 import { ContractSpecificationDto } from '../specification/specification.dto';
@@ -65,6 +67,28 @@ export class DocumentVariantDto {
     @ValidateNested({ each: true })
     @Type(() => ComplectDto)
     complect: ComplectDto[];
+
+    @ApiPropertyOptional({
+        type: [OfferComplectSectionDto],
+        description:
+            'Комплекты варианта со своим наполнением: название, подпись поставки и группы инфоблоков каждого комплекта. По ним КП печатает наполнение по комплектам (complectsMode: separate); Word-шаблон получает их в данных ComplectSections. Без поля наполнение печатается одним объединённым списком из `complect`',
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => OfferComplectSectionDto)
+    complects?: OfferComplectSectionDto[];
+
+    @ApiPropertyOptional({
+        enum: OfferComplectsModeEnum,
+        enumName: 'OfferComplectsMode',
+        default: OfferComplectsModeEnum.MERGED,
+        description:
+            'Как печатать наполнение варианта: merged — объединённое наполнение одним списком без повторов (поле `complect`); separate — по комплектам, у каждого свой раздел со своим заголовком (поле `complects`, нужно два комплекта и больше). Без поля действует merged',
+    })
+    @IsOptional()
+    @IsEnum(OfferComplectsModeEnum)
+    complectsMode?: OfferComplectsModeEnum;
 
     @ApiProperty({ type: ContractDto })
     @ValidateNested()
