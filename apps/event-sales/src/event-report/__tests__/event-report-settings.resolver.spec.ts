@@ -60,6 +60,20 @@ describe('EventReportSettingsResolver', () => {
         });
     });
 
+    it('название основной: по умолчанию по клиенту, выключается только явным false', async () => {
+        expect(await makeResolver({}).baseDealTitleAssign('d')).toBe(true);
+        expect(
+            await makeResolver({
+                baseDealTitleAssign: false,
+            }).baseDealTitleAssign('d'),
+        ).toBe(false);
+        expect(
+            await makeResolver(new Error('redis down')).baseDealTitleAssign(
+                'd',
+            ),
+        ).toBe(true);
+    });
+
     it('настройки недоступны — дефолты схемы и выключенные чек-листы, без исключения', async () => {
         const resolver = makeResolver(new Error('redis down'));
 

@@ -572,6 +572,9 @@ export class LeadToWorkUseCase
             ctx.portal,
             ufDefinitions,
             userNames,
+            {
+                assignBaseDealTitle: await this.baseDealTitleAssign(ctx.domain),
+            },
         );
 
         // Накопитель: что запланировали по каждому лиду. Реальные id
@@ -907,6 +910,26 @@ export class LeadToWorkUseCase
         ids: number[],
     ): Promise<Set<number>> {
         return this.activeStaff.activeUserIds(ctx.domain, ctx.bitrix, ids);
+    }
+
+    /**
+     * Называть ли НОВУЮ основную сделку по клиенту (`base_deal_title_assign`,
+     * по умолчанию да). Настройки не прочитались — как по умолчанию: заявка
+     * важнее названия.
+     */
+    private async baseDealTitleAssign(domain: string): Promise<boolean> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return settings.baseDealTitleAssign !== false;
+        } catch (error) {
+            this.logger.warn(
+                `lead-to-work: настройки ${domain} не прочитаны — название основной по клиенту (${getErrorDetails(error).message})`,
+            );
+            return true;
+        }
     }
 
     /**

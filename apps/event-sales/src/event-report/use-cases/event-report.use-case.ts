@@ -112,6 +112,9 @@ export class EventReportUseCase {
         ctx.setFieldPolicySettings(await this.settings.fieldPolicy(dto.domain));
         ctx.setStageRuleSettings(await this.settings.stageRule(dto.domain));
         ctx.setPostFailSettings(await this.settings.postFail(dto.domain));
+        ctx.setBaseDealTitleAssign(
+            await this.settings.baseDealTitleAssign(dto.domain),
+        );
         // Режим руководителя: пометка ставится до flow-сервисов — её читают
         // история карточки, таймлайн, описание задачи и KPI.
         ctx.setActingManager(await this.actingManager.resolve(dto));

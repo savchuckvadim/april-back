@@ -1,5 +1,7 @@
 import { BitrixOwnerTypeId } from '@lib/bitrix';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
+import { BitrixService } from '@/modules/bitrix';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
@@ -18,6 +20,15 @@ import { queueDealContactLinks } from './deal-contact-links';
 import { baseDealTitle } from '../../lib/base-deal-title';
 import { BxRow, LeadToWorkFlowBase } from './lead-to-work-flow.base';
 
+/** Настройки портала, от которых зависит запись сделок. */
+export interface DealFlowOptions {
+    /**
+     * `base_deal_title_assign`: называть НОВУЮ основную по клиенту; false —
+     * поле TITLE не передаётся, сделку называет Битрикс.
+     */
+    assignBaseDealTitle: boolean;
+}
+
 /** Итог по одной сделке: ссылка для связей + ключ команды. */
 export interface DealFlowResult {
     /** `123` (reuse) либо `$result[cmd]` (создание); null — сделки нет. */
@@ -34,10 +45,21 @@ export interface DealFlowResult {
  * правило пользователя «у любой связанной сделки видно, из какого лида».
  */
 export class DealFlowService extends LeadToWorkFlowBase {
+    constructor(
+        bitrix: BitrixService,
+        portal: PortalModel,
+        private readonly options: DealFlowOptions = {
+            assignBaseDealTitle: true,
+        },
+    ) {
+        super(bitrix, portal);
+    }
+
     /**
      * Основная сделка ОП: reuse существующей либо создание новой.
-     * Название — по клиенту (`baseDealTitle`), не по событию ХО; у
-     * существующей сделки название не трогается.
+     * Название — по клиенту (`baseDealTitle`), не по событию ХО, если
+     * портал не выключил `base_deal_title_assign`; у существующей сделки
+     * название не трогается.
      */
     queueBase(
         item: ResolvedLeadToWorkItem,
@@ -118,13 +140,17 @@ export class DealFlowService extends LeadToWorkFlowBase {
 
         const cmd = `lw_deal_${item.leadId}`;
         const fields: BxRow = {
-            TITLE: toBatchSafeText(
-                baseDealTitle({
-                    company: ctx.company as unknown as BxRow | null,
-                    lead: ctx.lead as unknown as BxRow | null,
-                    leadId: item.leadId,
-                }),
-            ),
+            ...(this.options.assignBaseDealTitle
+                ? {
+                      TITLE: toBatchSafeText(
+                          baseDealTitle({
+                              company: ctx.company as unknown as BxRow | null,
+                              lead: ctx.lead as unknown as BxRow | null,
+                              leadId: item.leadId,
+                          }),
+                      ),
+                  }
+                : {}),
             CATEGORY_ID: plan.dealCategoryId,
             ...this.responsibleFields('deal', item.responsible),
             ...this.dealLinkFields(item.leadId, null),

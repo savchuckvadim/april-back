@@ -79,6 +79,11 @@ export class DeferredFlowContextFactory {
             await this.resolveFieldPolicySettings(domain),
         );
         ctx.setStageRuleSettings(await this.resolveStageRuleSettings(domain));
+        // Досылка может создать основную сделку (set_base_deal) — название
+        // по той же настройке, что у обычного flow.
+        ctx.setBaseDealTitleAssign(
+            await this.resolveBaseDealTitleAssign(domain),
+        );
         // Режим руководителя: досылаемые KPI-записи обязаны нести ту же
         // пометку, что и записи обычного flow.
         ctx.setActingManager(await this.actingManager.resolve(payload));
@@ -118,6 +123,26 @@ export class DeferredFlowContextFactory {
                     `на дефолтах схемы (${(error as Error).message})`,
             );
             return DEFAULT_STAGE_RULE_SETTINGS;
+        }
+    }
+
+    /**
+     * Название новой основной по клиенту (`base_deal_title_assign`);
+     * настройки недоступны — как по умолчанию (называем по клиенту).
+     */
+    private async resolveBaseDealTitleAssign(domain: string): Promise<boolean> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return settings.baseDealTitleAssign !== false;
+        } catch (error) {
+            this.logger.warn(
+                `[deferred] настройки ${domain} недоступны — название основной ` +
+                    `по клиенту (${(error as Error).message})`,
+            );
+            return true;
         }
     }
 

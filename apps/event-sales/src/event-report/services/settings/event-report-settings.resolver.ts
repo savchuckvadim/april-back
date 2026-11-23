@@ -114,6 +114,19 @@ export class EventReportSettingsResolver {
     }
 
     /**
+     * Название новой основной сделки по клиенту (`base_deal_title_assign`,
+     * по умолчанию ВКЛ). Настройки недоступны — как по умолчанию: название
+     * по клиенту, как было до настройки.
+     */
+    async baseDealTitleAssign(domain: string): Promise<boolean> {
+        const settings = await this.read(
+            domain,
+            'название основной по клиенту (по умолчанию)',
+        );
+        return settings?.baseDealTitleAssign !== false;
+    }
+
+    /**
      * Закрытие лидов по итогу работы (`lead_closing_enabled`, решения
      * владельца 11–15.11.2026). Настройки недоступны — лиды не закрываются.
      */

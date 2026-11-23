@@ -436,6 +436,41 @@ describe('LeadToWorkFlowService', () => {
         }
     });
 
+    it('новая основная: название по клиенту, а при выключенной настройке его нет', () => {
+        const named = makeBitrix();
+        new LeadToWorkFlowService(
+            named.bitrix as never,
+            makePortal(FIELDS) as never,
+        ).queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'N' }),
+            baseContext({ company: { ID: '7', TITLE: 'Ромашка' } as never }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+        const unnamed = makeBitrix();
+        new LeadToWorkFlowService(
+            unnamed.bitrix as never,
+            makePortal(FIELDS) as never,
+            {},
+            {},
+            { assignBaseDealTitle: false },
+        ).queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'N' }),
+            baseContext({ company: { ID: '7', TITLE: 'Ромашка' } as never }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const baseFields = (calls: typeof named.calls) =>
+            calls.find(c => c.cmd === 'lw_deal_42')?.args[0] as Record<
+                string,
+                unknown
+            >;
+        expect(baseFields(named.calls).TITLE).toBe('Ромашка');
+        expect(baseFields(unnamed.calls)).not.toHaveProperty('TITLE');
+        expect(baseFields(unnamed.calls).CATEGORY_ID).toBeDefined();
+    });
+
     /*
      * Существующая сделка прочитана crm.deal.get — CONTACT_IDS он не отдаёт.
      * Запись CONTACT_IDS от такой строки отвязывала бы контакты сделки

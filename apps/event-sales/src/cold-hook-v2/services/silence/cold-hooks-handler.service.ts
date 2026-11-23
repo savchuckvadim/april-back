@@ -554,8 +554,9 @@ export class ColdHooksHandlerV2Service {
 
     /**
      * Как назвать новую основную сделку (`xo_start_base_deal_title`).
-     * Настройки не прочитались — работа важнее названия: как раньше,
-     * сделку назовёт Битрикс.
+     * Портал выключил названия совсем (`base_deal_title_assign`) — Битрикс,
+     * что бы ни стояло в настройке запуска ХО. Настройки не прочитались —
+     * работа важнее названия: как раньше, сделку назовёт Битрикс.
      */
     private async baseDealTitleMode(domain: string): Promise<string> {
         try {
@@ -563,6 +564,9 @@ export class ColdHooksHandlerV2Service {
                 domain,
                 EnumPortalAppCode.eventSales,
             );
+            if (settings.baseDealTitleAssign === false) {
+                return XO_START_BASE_DEAL_TITLE_MODE.default;
+            }
             return settings.xoStartBaseDealTitle;
         } catch (error) {
             this.logger.warn(

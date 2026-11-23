@@ -34,6 +34,11 @@ export interface NewBaseDealClientSource {
     reportContact: ClientRow | null;
     /** Битрикс-id категории «ОП Основная». */
     baseCategoryId: string;
+    /**
+     * Называть по клиенту (`base_deal_title_assign`); false — поле TITLE не
+     * передаётся, сделку называет Битрикс. Не указано — называть (как было).
+     */
+    assignTitle?: boolean;
 }
 
 /** Контакты сделки: первичный первым — он станет CONTACT_ID новой сделки. */
@@ -115,8 +120,9 @@ export const newBaseDealClientFields = (
 
     const companyId = company ? null : positiveId(ownerDeal?.COMPANY_ID);
 
+    const assignTitle = source.assignTitle !== false;
     return {
-        ...(title ? { TITLE: toBatchSafeText(title) } : {}),
+        ...(title && assignTitle ? { TITLE: toBatchSafeText(title) } : {}),
         ...(companyId ? { COMPANY_ID: String(companyId) } : {}),
         ...(contactIds.length
             ? { CONTACT_ID: String(contactIds[0]), CONTACT_IDS: contactIds }

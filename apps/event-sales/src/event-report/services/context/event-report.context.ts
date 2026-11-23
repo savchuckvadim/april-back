@@ -252,6 +252,19 @@ export class EventReportContext {
         DEFAULT_STAGE_RULE_SETTINGS;
 
     /**
+     * Называть ли НОВУЮ основную сделку по клиенту (`base_deal_title_assign`).
+     * Читатель — сервис базовой сделки. Без явной установки — да (дефолт
+     * схемы, поведение до настройки).
+     */
+    get baseDealTitleAssign(): boolean {
+        return this.baseDealTitleAssignVo;
+    }
+    setBaseDealTitleAssign(assign: boolean): void {
+        this.baseDealTitleAssignVo = assign;
+    }
+    private baseDealTitleAssignVo = true;
+
+    /**
      * Пост-отказ (дата следующего звонка после «Отказа») из настроек
      * портала — читатель — сервис пост-отказа. Без явной установки —
      * дефолт схемы (выключено).

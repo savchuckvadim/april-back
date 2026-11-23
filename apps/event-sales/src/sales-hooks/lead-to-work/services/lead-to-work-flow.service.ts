@@ -26,7 +26,7 @@ import {
 } from './flows/lead-to-work-flow.base';
 import { DealConsolidationService } from './flows/deal-consolidation.service';
 import { CompanyFlowService } from './flows/company-flow.service';
-import { DealFlowService } from './flows/deal-flow.service';
+import { DealFlowOptions, DealFlowService } from './flows/deal-flow.service';
 import { LeadFlowService, xoPrevResponsible } from './flows/lead-flow.service';
 import { TaskFlowService } from './flows/task-flow.service';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
@@ -119,12 +119,14 @@ export class LeadToWorkFlowService {
         ufDefinitions: LeadUfDefinitions = {},
         /** Имена сотрудников для читаемой истории; нет — пишем id. */
         private readonly userNames: Record<number, string> = {},
+        /** Настройки портала для записи сделок; нет — поведение по умолчанию. */
+        dealOptions: DealFlowOptions = { assignBaseDealTitle: true },
     ) {
         this.detector = new LeadRequestDetectorService(portal);
         this.kpi = new LeadToWorkKpiService(bitrix, portal);
         this.consolidation = new DealConsolidationService(bitrix, portal);
         this.companyFlow = new CompanyFlowService(bitrix, portal);
-        this.dealFlow = new DealFlowService(bitrix, portal);
+        this.dealFlow = new DealFlowService(bitrix, portal, dealOptions);
         this.leadFlow = new LeadFlowService(bitrix, portal, ufDefinitions);
         this.taskFlow = new TaskFlowService(bitrix, portal);
         this.relations = new CrmRelationsReassignService(bitrix);

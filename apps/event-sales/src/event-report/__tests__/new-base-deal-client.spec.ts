@@ -44,6 +44,21 @@ describe('newBaseDealClientFields', () => {
         });
     });
 
+    it('портал выключил названия (base_deal_title_assign) — TITLE нет, клиент остаётся', () => {
+        expect(
+            newBaseDealClientFields(
+                source({
+                    ownerDeal: CLOSED_DEAL,
+                    ownerDealContactIds: [275105, 282939],
+                    assignTitle: false,
+                }),
+            ),
+        ).toEqual({
+            CONTACT_ID: '275105',
+            CONTACT_IDS: [275105, 282939],
+        });
+    });
+
     it('контакты не прочитались — остаётся главный контакт сделки', () => {
         const fields = newBaseDealClientFields(
             source({ ownerDeal: CLOSED_DEAL }),

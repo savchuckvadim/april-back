@@ -121,6 +121,14 @@ describe('категории настроек приложений', () => {
             resolveAppSettingGroup(app, 'lead_intake_repeat_join_mode'),
         ).toBe('lead_repeat');
         expect(resolveAppSettingGroup(app, 'with_ai')).toBe('calls_features');
+        // Название основной — своя категория, не «Запуск ХО»: его создают
+        // и отчёт «Звонков», и «Лид → работа».
+        expect(resolveAppSettingGroup(app, 'base_deal_title_assign')).toBe(
+            'base_deal',
+        );
+        expect(resolveAppSettingGroup(app, 'xo_start_base_deal_title')).toBe(
+            'xo_start',
+        );
         // Спутники «Пост-отказной даты» живут рядом с ней.
         expect(resolveAppSettingGroup(app, 'post_fail_assign_user_id')).toBe(
             'calls_features',

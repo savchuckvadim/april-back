@@ -99,6 +99,7 @@ export class SalesBaseDealService {
                 planContact: ctx.planContact,
                 reportContact: ctx.reportContact,
                 baseCategoryId: String(category.bitrixId),
+                assignTitle: ctx.baseDealTitleAssign,
             }),
         });
         return `$result[${cmd}]`;

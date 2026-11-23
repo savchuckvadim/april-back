@@ -285,6 +285,8 @@ describe('EventReportUseCase — ответ основного батча дое
                 takeoverSettings: () => Promise.resolve(NO_REPORT_TAKEOVER),
                 // Закрытие лидов по итогу работы выключено.
                 leadClosingEnabled: () => Promise.resolve(false),
+                // Название новой основной — по клиенту (дефолт схемы).
+                baseDealTitleAssign: () => Promise.resolve(true),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[3],
             { dispatch } as unknown as EventReportPostFlowService,
             // Режим руководителя в этих сценариях выключен: обычный отчёт.

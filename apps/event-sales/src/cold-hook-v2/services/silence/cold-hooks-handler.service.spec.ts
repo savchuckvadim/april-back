@@ -283,13 +283,19 @@ const makeBitrix = (world: World) => {
     return { bitrix, journal };
 };
 
+/** Настройки портала, которые читает обработчик окна. */
+type HandlerSettings = {
+    xoStartBaseDealTitle: string;
+    baseDealTitleAssign?: boolean;
+};
+
 /**
  * `settings` — что отдаёт чтение настроек портала; `null` — чтение упало.
  * `launches` — реестр запусков ХО (по умолчанию пустой, в памяти).
  */
 const makeHandler = (
     world: World,
-    settings: { xoStartBaseDealTitle: string } | null = {
+    settings: HandlerSettings | null = {
         xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.default,
     },
     launches: InMemoryLaunchRegistry = new InMemoryLaunchRegistry(),
@@ -1287,7 +1293,7 @@ describe('ColdHooksHandlerV2Service — клиент новых сделок: к
         contacts: { company_7: [91, 92] },
     });
     const run = async (
-        settings?: { xoStartBaseDealTitle: string } | null,
+        settings?: HandlerSettings | null,
         data: World = world(),
     ) => {
         const { handler, journal } = makeHandler(data, settings);
@@ -1326,6 +1332,15 @@ describe('ColdHooksHandlerV2Service — клиент новых сделок: к
             xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.client,
         });
         expect(base.TITLE).toBe('ООО Ромашка');
+        expect(xo.TITLE).toBe('Холодный обзвон ООО Ромашка');
+    });
+
+    it('названия выключены на портале — «по клиенту» запуска ХО не действует', async () => {
+        const { base, xo } = await run({
+            xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.client,
+            baseDealTitleAssign: false,
+        });
+        expect(base).not.toHaveProperty('TITLE');
         expect(xo.TITLE).toBe('Холодный обзвон ООО Ромашка');
     });
 

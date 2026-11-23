@@ -301,6 +301,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'подтверждение, оповещение, защита поздних стадий.',
         links: [LINK.dealFields],
     },
+    base_deal: {
+        title: 'Основная сделка: название',
+        description:
+            'Как называется новая сделка «ОП Основная», которую создают ' +
+            'отчёт «Звонков», переход заявки в работу и запуск холодного ' +
+            'обзвона: по клиенту или названием Битрикса.',
+        links: [LINK.dealFields],
+    },
     xo_start: {
         title: 'Запуск холодного обзвона',
         description:
@@ -430,6 +438,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             group: 'report_takeover',
             prefixes: ['report_takeover_', 'xo_start_bot_'],
         },
+        { group: 'base_deal', prefixes: ['base_deal_'] },
         { group: 'xo_start', prefixes: ['xo_start_'] },
         { group: 'tmc_approval_rescue', prefixes: ['tmc_approval_rescue_'] },
         { group: 'lead_sla', prefixes: ['lead_intake_sla_'] },

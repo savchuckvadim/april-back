@@ -1669,6 +1669,20 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: REPORT_TAKEOVER_PROTECT_NONE,
             options: REPORT_TAKEOVER_PROTECT_OPTIONS,
         }),
+        baseDealTitleAssign: setting({
+            code: 'base_deal_title_assign',
+            name: 'Основная сделка: присваивать название по клиенту',
+            description:
+                'Включено — новая сделка «ОП Основная» получает название ' +
+                'клиента: компании, а без компании — лида или контакта (отчёт ' +
+                '«Звонков», переход заявки в работу; при запуске холодного ' +
+                'обзвона — по настройке «Запуск ХО: название новой основной ' +
+                'сделки»). Выключено — название не задаётся нигде, сделку ' +
+                'называет Битрикс («Сделка #N»). Существующие сделки не ' +
+                'переименовываются ни в каком режиме.',
+            type: 'boolean',
+            default: true,
+        }),
         xoStartBaseDealTitle: setting({
             code: 'xo_start_base_deal_title',
             name: 'Запуск ХО: название новой основной сделки',
