@@ -2,7 +2,22 @@ import { BitrixService } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BxDocumentDeal } from 'generated/prisma';
 import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
+import {
+    ComplectComposition,
+    ComplectModeEnum,
+    ComplectOfferInfoblocksEnum,
+} from '../../../modules/inner-deal/type/complect-composition.type';
 import { CopyComplectVariantsService } from '../services/copy-complect-variants.service';
+
+/** Настройки строк сделок со слепком: в тестах важна только колонка настроек. */
+interface DealRows {
+    /** Настройки строки исходной сделки (100); не заданы — настроек нет. */
+    source?: ComplectComposition | null;
+    /** Настройки строки целевой сделки (200), как их принёс слепок; по умолчанию те же, что у источника. */
+    target?: ComplectComposition | null;
+    /** Слепок сделки до цели не доехал: строки у цели нет. */
+    targetMissing?: boolean;
+}
 
 /**
  * Вместе со сделкой в отдел сервиса переезжают ВСЕ наборы комплектов: у
@@ -51,13 +66,35 @@ describe('CopyComplectVariantsService', () => {
         return { bitrix, itemGet, itemAdd, rowList, rowSet };
     };
 
+    const dealRow = (
+        settings: ComplectComposition | null,
+    ): Partial<BxDocumentDeal> => ({
+        id: BigInt(1),
+        settings: settings === null ? null : JSON.stringify(settings),
+    });
+
+    /** Настройки сборки комплекта, как их хранит слепок сделки. */
+    const composition = (
+        over: Partial<ComplectComposition> = {},
+    ): ComplectComposition => ({
+        mode: ComplectModeEnum.MULTI_CONTRACT,
+        offer: {
+            infoblocks: ComplectOfferInfoblocksEnum.MERGED,
+            showAlternatives: true,
+        },
+        openVariantSmartId: null,
+        ...over,
+    });
+
     /**
      * `listVariants` спрашивают дважды: про исходную сделку и про целевую —
-     * «не переносили ли уже». Целевая по умолчанию пуста.
+     * «не переносили ли уже». Целевая по умолчанию пуста. Строки сделок со
+     * слепком (`findSnapshot`) по умолчанию без настроек.
      */
     const makeInnerDeal = (
         variants: Partial<BxDocumentDeal>[],
         targetVariants: Partial<BxDocumentDeal>[] = [],
+        rows: DealRows = {},
     ) => {
         const listVariants = jest
             .fn()
@@ -67,12 +104,37 @@ describe('CopyComplectVariantsService', () => {
         const copySnapshot = jest
             .fn()
             .mockResolvedValue({ copied: true, reason: null, deal: null });
+
+        const sourceSettings = rows.source ?? null;
+        const targetSettings =
+            rows.target === undefined ? sourceSettings : rows.target;
+        const findSnapshot = jest
+            .fn()
+            .mockImplementation((_domain: string, dealId: number) => {
+                if (dealId === 100) {
+                    return Promise.resolve(dealRow(sourceSettings));
+                }
+                if (dealId === 200 && !rows.targetMissing) {
+                    return Promise.resolve(dealRow(targetSettings));
+                }
+                return Promise.resolve(null);
+            });
+        const updateSettings = jest.fn().mockResolvedValue(dealRow(null));
+
         const innerDeal = {
             listVariants,
             copySnapshot,
+            findSnapshot,
+            updateSettings,
         } as unknown as InnerDealService;
 
-        return { innerDeal, listVariants, copySnapshot };
+        return {
+            innerDeal,
+            listVariants,
+            copySnapshot,
+            findSnapshot,
+            updateSettings,
+        };
     };
 
     it('смарт на портале не установлен — шаг проходит вхолостую', async () => {
@@ -272,6 +334,215 @@ describe('CopyComplectVariantsService', () => {
             copied: 1,
             movedSourceIds: [5002],
             notMovedSourceIds: [],
+        });
+    });
+
+    describe('открытый вариант в настройках целевой сделки', () => {
+        const TWO = [{ smartId: 5001 }, { smartId: 5002 }];
+
+        const setup = (
+            rows: DealRows,
+            over: {
+                variants?: Partial<BxDocumentDeal>[];
+                targetVariants?: Partial<BxDocumentDeal>[];
+                stageById?: Record<number, string>;
+            } = {},
+        ) => {
+            const mocks = makeBitrix(over.stageById);
+            const inner = makeInnerDeal(
+                over.variants ?? TWO,
+                over.targetVariants ?? [],
+                rows,
+            );
+            const service = new CopyComplectVariantsService(
+                mocks.bitrix,
+                portalModelWith({ entityTypeId: ENTITY_TYPE_ID, crm: 'T416_' }),
+                inner.innerDeal,
+            );
+            return { service, ...mocks, ...inner };
+        };
+
+        it('указатель получает id копии открытого варианта, остальные настройки остаются', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5002 }),
+            });
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            // копии создаются в порядке вариантов: 5001 → 9001, 5002 → 9002
+            expect(updateSettings).toHaveBeenCalledTimes(1);
+            expect(updateSettings).toHaveBeenCalledWith('d.ru', 200, {
+                mode: ComplectModeEnum.MULTI_CONTRACT,
+                offer: {
+                    infoblocks: ComplectOfferInfoblocksEnum.MERGED,
+                    showAlternatives: true,
+                },
+                openVariantSmartId: 9002,
+            });
+        });
+
+        it('открытый вариант не переехал — указатель обнуляется', async () => {
+            // отклонённый вариант остаётся на исходной сделке
+            const { service, updateSettings } = setup(
+                { source: composition({ openVariantSmartId: 5002 }) },
+                { stageById: { 5002: 'DT1046_1:REJECTED' } },
+            );
+
+            const result = await service.copy('d.ru', 100, 200, 7);
+
+            expect(result.movedSourceIds).toEqual([5001]);
+            expect(updateSettings).toHaveBeenCalledWith(
+                'd.ru',
+                200,
+                expect.objectContaining({ openVariantSmartId: null }),
+            );
+        });
+
+        it('копия открытого варианта не создалась — указатель обнуляется', async () => {
+            const { service, updateSettings, itemAdd } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+            });
+            itemAdd.mockResolvedValueOnce({ result: { item: {} } });
+
+            const result = await service.copy('d.ru', 100, 200, 7);
+
+            expect(result.movedSourceIds).toEqual([5002]);
+            expect(updateSettings).toHaveBeenCalledWith(
+                'd.ru',
+                200,
+                expect.objectContaining({ openVariantSmartId: null }),
+            );
+        });
+
+        it('остальное в настройках цели остаётся таким, каким его принёс слепок', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+                target: composition({
+                    mode: ComplectModeEnum.SINGLE_CONTRACT,
+                    openVariantSmartId: 5001,
+                }),
+            });
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            expect(updateSettings).toHaveBeenCalledWith('d.ru', 200, {
+                mode: ComplectModeEnum.SINGLE_CONTRACT,
+                offer: {
+                    infoblocks: ComplectOfferInfoblocksEnum.MERGED,
+                    showAlternatives: true,
+                },
+                openVariantSmartId: 9001,
+            });
+        });
+
+        it('у цели настроек нет — берутся настройки источника с новым id', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+                target: null,
+            });
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            expect(updateSettings).toHaveBeenCalledWith('d.ru', 200, {
+                mode: ComplectModeEnum.MULTI_CONTRACT,
+                offer: {
+                    infoblocks: ComplectOfferInfoblocksEnum.MERGED,
+                    showAlternatives: true,
+                },
+                openVariantSmartId: 9001,
+            });
+        });
+
+        it('повторный прогон настройки целевой сделки не трогает', async () => {
+            const { service, itemAdd, updateSettings } = setup(
+                {
+                    source: composition({ openVariantSmartId: 5001 }),
+                    // в цели id давно новые
+                    target: composition({ openVariantSmartId: 9001 }),
+                },
+                // варианты в цели уже есть — значит перенос был
+                { targetVariants: [{ smartId: 9001 }] },
+            );
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            expect(itemAdd).not.toHaveBeenCalled();
+            expect(updateSettings).not.toHaveBeenCalled();
+        });
+
+        it('у источника нет открытого варианта — настройки не пишем', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: null }),
+            });
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            expect(updateSettings).not.toHaveBeenCalled();
+        });
+
+        it('у источника нет настроек вовсе — настройки не пишем', async () => {
+            const { service, updateSettings } = setup({ source: null });
+
+            const result = await service.copy('d.ru', 100, 200, 7);
+
+            expect(result.movedSourceIds).toEqual([5001, 5002]);
+            expect(updateSettings).not.toHaveBeenCalled();
+        });
+
+        it('слепок сделки до цели не доехал — строку с одними настройками не заводим', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+                targetMissing: true,
+            });
+
+            const result = await service.copy('d.ru', 100, 200, 7);
+
+            expect(result.movedSourceIds).toEqual([5001, 5002]);
+            expect(updateSettings).not.toHaveBeenCalled();
+        });
+
+        it('настройки пишутся после копирования слепков вариантов', async () => {
+            const { service, updateSettings, copySnapshot } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+            });
+
+            await service.copy('d.ru', 100, 200, 7);
+
+            const lastSnapshot = Math.max(
+                ...copySnapshot.mock.invocationCallOrder,
+            );
+            expect(updateSettings.mock.invocationCallOrder[0]).toBeGreaterThan(
+                lastSnapshot,
+            );
+        });
+
+        it('сбой записи настроек не роняет перенос: исходники всё равно закрываются', async () => {
+            const { service, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+            });
+            updateSettings.mockRejectedValueOnce(new Error('БД недоступна'));
+
+            await expect(
+                service.copy('d.ru', 100, 200, 7),
+            ).resolves.toMatchObject({
+                copied: 2,
+                movedSourceIds: [5001, 5002],
+            });
+        });
+
+        it('сбой чтения настроек не роняет перенос', async () => {
+            const { service, findSnapshot, updateSettings } = setup({
+                source: composition({ openVariantSmartId: 5001 }),
+            });
+            findSnapshot.mockRejectedValue(new Error('БД недоступна'));
+
+            await expect(
+                service.copy('d.ru', 100, 200, 7),
+            ).resolves.toMatchObject({
+                copied: 2,
+                movedSourceIds: [5001, 5002],
+            });
+            expect(updateSettings).not.toHaveBeenCalled();
         });
     });
 });
