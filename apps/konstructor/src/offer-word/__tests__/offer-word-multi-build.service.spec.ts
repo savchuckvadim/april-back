@@ -346,39 +346,245 @@ describe('OfferWordMultiBuildService', () => {
         expect(result.offers).toHaveLength(2);
     });
 
-    it('счета — по группе участников на тип договора, участники группы слиты', async () => {
-        const result = await service.build(
-            request({
-                invoice: {
-                    needGeneralInvoice: true,
-                    needManyInvoices: false,
-                    isByPresentationInvoices: false,
-                    invoiceDate: '',
-                },
-                variants: [
-                    variant('a', CONTRACT_LTYPE.ABON, 100),
-                    variant('b', CONTRACT_LTYPE.LIC, 50),
-                    variant('c', CONTRACT_LTYPE.ABON, 200),
+    describe('число счетов следует за договором', () => {
+        const generalInvoice = {
+            needGeneralInvoice: true,
+            needManyInvoices: false,
+            isByPresentationInvoices: false,
+            invoiceDate: '',
+        };
+
+        // вариант с одним основным набором: строка Гаранта и итог набора
+        const setVariant = (
+            title: string,
+            contractType: CONTRACT_LTYPE,
+            sum: number,
+            supplyName: string,
+            quantity = 12,
+        ): DocumentVariantDto => ({
+            ...variant(title, contractType, sum),
+            sets: {
+                general: [
+                    Object.assign(new ProductRowSetDto(), {
+                        id: 1,
+                        show: true,
+                        rows: {
+                            garant: [garantRow(`Гарант-${title}`, supplyName)],
+                        },
+                        total: [total(sum, quantity)],
+                    }),
                 ],
-                composition: composition(ComplectModeEnum.MULTI_CONTRACT),
-            }),
+                alternative: [],
+            },
+        });
+
+        const lawyer = (
+            contractType = CONTRACT_LTYPE.ABON,
+            quantity = 12,
+        ): DocumentVariantDto =>
+            setVariant('Юрист', contractType, 100, 'Интернет 5 ОД', quantity);
+        const accountant = (
+            contractType = CONTRACT_LTYPE.ABON,
+            quantity = 12,
+        ): DocumentVariantDto =>
+            setVariant(
+                'Бухгалтер',
+                contractType,
+                200,
+                'Проксима 3 ОД',
+                quantity,
+            );
+
+        const garantNames = (dto: OfferWordByTemplateGenerateDto): string[] =>
+            (dto.sets.general[0].rows.garant ?? []).map(item => item.name);
+
+        it('single_contract, один тип договора — один счёт на все варианты, в нём строки обоих', async () => {
+            const result = await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [lawyer(), accountant()],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            const sent = renderInvoice.mock.calls[0][0];
+            expect(sent.contractType).toBe(CONTRACT_LTYPE.ABON);
+            expect(sent.sets.general).toHaveLength(1);
+            expect(garantNames(sent)).toEqual([
+                'Гарант-Юрист',
+                'Гарант-Бухгалтер',
+            ]);
+            // общий итог набора — сумма вариантов
+            expect(sent.sets.general[0].total).toHaveLength(1);
+            expect(sent.sets.general[0].total[0].price.sum).toBe(300);
+            expect(sent.sets.general[0].id).toBe(0);
+            expect(sent.sets.general[0].show).toBe(false);
+
+            expect(result.invoices).toHaveLength(1);
+            // имя — по первой строке Гаранта сведённого набора
+            expect(result.invoices[0].name).toBe(
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+            );
+            expect(result.warnings).toEqual([]);
+        });
+
+        it('single_contract с единым порядком инфоблоков — тоже один счёт', async () => {
+            await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [lawyer(), accountant()],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT, {
+                        infoblocks: ComplectOfferInfoblocksEnum.MERGED,
+                    }),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            expect(renderInvoice.mock.calls[0][0].sets.general).toHaveLength(1);
+        });
+
+        it('single_contract, сроки наборов разные — один счёт, предупреждение про срок одно', async () => {
+            const result = await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [
+                        lawyer(CONTRACT_LTYPE.ABON, 12),
+                        accountant(CONTRACT_LTYPE.ABON, 6),
+                    ],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            expect(result.warnings).toEqual([
+                'срок набора «Итого» (6) отличается от первого (12) — взят первый',
+            ]);
+        });
+
+        it('multi_contract, один тип договора — по счёту на вариант, каждый со своим вариантом', async () => {
+            const result = await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [lawyer(), accountant()],
+                    composition: composition(ComplectModeEnum.MULTI_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(2);
+            const [first, second] = renderInvoice.mock.calls.map(
+                call => call[0],
+            );
+            expect(garantNames(first)).toEqual(['Гарант-Юрист']);
+            expect(first.total.price.sum).toBe(100);
+            expect(first.sets.general[0].total[0].price.sum).toBe(100);
+            expect(garantNames(second)).toEqual(['Гарант-Бухгалтер']);
+            expect(second.total.price.sum).toBe(200);
+            expect(second.sets.general[0].total[0].price.sum).toBe(200);
+
+            expect(result.invoices.map(item => item.name)).toEqual([
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+                'Счёт Гарант-Бухгалтер - Проксима 3 ОД',
+            ]);
+            expect(result.warnings).toEqual([]);
+        });
+
+        it('single_contract, типы договора разные — по счёту на тип договора, группа сведена в один набор, есть предупреждение', async () => {
+            const result = await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [
+                        setVariant('a', CONTRACT_LTYPE.ABON, 100, 'Интернет 5'),
+                        setVariant('b', CONTRACT_LTYPE.LIC, 50, 'Интернет 1'),
+                        setVariant('c', CONTRACT_LTYPE.ABON, 200, 'Проксима 3'),
+                    ],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(2);
+            const [abon, lic] = renderInvoice.mock.calls.map(call => call[0]);
+            expect(abon.contractType).toBe(CONTRACT_LTYPE.ABON);
+            expect(abon.sets.general).toHaveLength(1);
+            expect(garantNames(abon)).toEqual(['Гарант-a', 'Гарант-c']);
+            expect(abon.sets.general[0].total[0].price.sum).toBe(300);
+            expect(lic.contractType).toBe(CONTRACT_LTYPE.LIC);
+            expect(garantNames(lic)).toEqual(['Гарант-b']);
+            expect(lic.sets.general[0].total[0].price.sum).toBe(50);
+
+            expect(result.invoices.map(item => item.link)).toEqual([
+                `https://pdf/invoice-${CONTRACT_LTYPE.ABON}.docx`,
+                `https://pdf/invoice-${CONTRACT_LTYPE.LIC}.docx`,
+            ]);
+            expect(result.warnings).toEqual([
+                'Счёт разделён по типам договора: у наборов разные типы',
+            ]);
+        });
+
+        it('compare — один счёт по первому варианту, наборы не сводятся', async () => {
+            const result = await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [
+                        lawyer(CONTRACT_LTYPE.ABON),
+                        accountant(CONTRACT_LTYPE.LIC),
+                    ],
+                    composition: composition(ComplectModeEnum.COMPARE),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            const sent = renderInvoice.mock.calls[0][0];
+            expect(sent.contractType).toBe(CONTRACT_LTYPE.ABON);
+            expect(garantNames(sent)).toEqual(['Гарант-Юрист']);
+            expect(sent.sets.general[0].id).toBe(1);
+            expect(sent.total.price.sum).toBe(100);
+            expect(result.invoices).toHaveLength(1);
+            expect(result.warnings).toEqual([]);
+        });
+
+        it('composition не прислан — один счёт по первому варианту, как раньше', async () => {
+            await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [lawyer(), accountant()],
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            expect(garantNames(renderInvoice.mock.calls[0][0])).toEqual([
+                'Гарант-Юрист',
+            ]);
+        });
+
+        it.each([
+            ComplectModeEnum.COMPARE,
+            ComplectModeEnum.SINGLE_CONTRACT,
+            ComplectModeEnum.MULTI_CONTRACT,
+        ])(
+            'один вариант при режиме %s — один счёт с наборами варианта как есть',
+            async mode => {
+                await service.build(
+                    request({
+                        invoice: generalInvoice,
+                        variants: [lawyer()],
+                        composition: composition(mode),
+                    }),
+                );
+
+                expect(renderInvoice).toHaveBeenCalledTimes(1);
+                const sent = renderInvoice.mock.calls[0][0];
+                expect(garantNames(sent)).toEqual(['Гарант-Юрист']);
+                expect(sent.sets.general[0].id).toBe(1);
+            },
         );
 
-        expect(renderInvoice).toHaveBeenCalledTimes(2);
-        const [abon, lic] = renderInvoice.mock.calls.map(call => call[0]);
-        expect(abon.contractType).toBe(CONTRACT_LTYPE.ABON);
-        expect(abon.rows.map(row => row.name)).toEqual([
-            'строка a',
-            'строка c',
-        ]);
-        expect(abon.total.price.sum).toBe(300);
-        expect(lic.contractType).toBe(CONTRACT_LTYPE.LIC);
-        expect(lic.total.price.sum).toBe(50);
+        it('вариантов нет — один счёт из полей запроса', async () => {
+            await service.build(request({ invoice: generalInvoice }));
 
-        expect(result.invoices.map(item => item.link)).toEqual([
-            `https://pdf/invoice-${CONTRACT_LTYPE.ABON}.docx`,
-            `https://pdf/invoice-${CONTRACT_LTYPE.LIC}.docx`,
-        ]);
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            expect(renderInvoice.mock.calls[0][0].total.price.sum).toBe(500);
+        });
     });
 
     it('compare — печатается открытый вариант, счёт только на него; альтернативы по флагу', async () => {
@@ -548,7 +754,7 @@ describe('OfferWordMultiBuildService', () => {
             ]);
         });
 
-        it('шаблон не найден для нескольких групп договоров — предупреждение одно', async () => {
+        it('шаблон не найден для нескольких счетов — предупреждение одно', async () => {
             renderInvoice.mockResolvedValue(noTemplate);
 
             const result = await service.build(
