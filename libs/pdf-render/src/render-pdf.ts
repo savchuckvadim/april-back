@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { renderToBuffer, type DocumentProps } from '@react-pdf/renderer';
-import { registerPdfFonts } from './pdf-fonts';
+import { preparePdfFonts } from './pdf-fonts';
 
 /** Итог рендера: байты PDF и время сборки. */
 export interface PdfRenderResult {
@@ -16,7 +16,7 @@ export interface PdfRenderResult {
 export async function renderPdfToBuffer(
     element: ReactElement,
 ): Promise<PdfRenderResult> {
-    registerPdfFonts();
+    await preparePdfFonts();
     const started = performance.now();
     // Любой документ react-pdf: корень — <Document>, пропсы корня типизирует он сам.
     const buffer = await renderToBuffer(element as ReactElement<DocumentProps>);

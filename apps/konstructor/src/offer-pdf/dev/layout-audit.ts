@@ -2,6 +2,7 @@ import {
     findTextlessPages,
     isDecoration,
     type LayoutBox,
+    type LayoutLine,
     type LayoutNode,
 } from '../lib/pdf-layout';
 
@@ -20,7 +21,8 @@ export type LayoutIssueKind =
     | 'orphan-heading'
     | 'orphan-totals'
     | 'text-overlap'
-    | 'textless-page';
+    | 'textless-page'
+    | 'glyph-loss';
 
 export interface LayoutIssue {
     page: number;
@@ -97,6 +99,22 @@ const leaves = (
 };
 
 const bottomOf = (box: LayoutBox): number => box.top + box.height;
+
+const textNodesOf = (node: LayoutNode): LayoutNode[] =>
+    node.type === 'TEXT' ? [node] : (node.children ?? []).flatMap(textNodesOf);
+
+/**
+ * Сколько символов строки осталось без глифа. react-pdf режет строку на
+ * глифы по символам, закреплённым за каждым глифом; глиф без символов
+ * (испорченный кэш шрифта, см. primePdfFontGlyphs) сбивает счёт, и буквы
+ * выпадают из печати: «Гарант-Предприятие PRO» → «Гарант-Предприятие O».
+ */
+const lostChars = (line: LayoutLine): number => {
+    const printed = (line.runs ?? [])
+        .flatMap(run => run.glyphs ?? [])
+        .reduce((sum, glyph) => sum + (glyph.codePoints?.length ?? 0), 0);
+    return [...line.string].length - printed;
+};
 
 /** Заголовок раздела: кегль заметно крупнее базового */
 const isHeading = (node: LayoutNode): boolean =>
@@ -227,6 +245,20 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 });
             }
         });
+        // буквы выпали из печати — смотрим весь лист, включая титульник и шапки
+        for (const node of textNodesOf(page)) {
+            for (const line of node.lines ?? []) {
+                const lost = lostChars(line);
+                if (lost > 0) {
+                    issues.push({
+                        page: number,
+                        kind: 'glyph-loss',
+                        text: clip(line.string),
+                        detail: `символов без глифа — ${lost}: буквы выпали из печати`,
+                    });
+                }
+            }
+        }
         // «Итого» без своей таблицы: страница начинается с итога
         if (content[0] && textOf(content[0].node).startsWith('Итого')) {
             issues.push({

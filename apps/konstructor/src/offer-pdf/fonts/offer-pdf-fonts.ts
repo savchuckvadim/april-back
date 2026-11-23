@@ -1,6 +1,7 @@
 import { Font } from '@react-pdf/renderer';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { primePdfFontGlyphs } from '@lib/pdf-render/prime-font-glyphs';
 
 /**
  * Семейства шрифтов PDF-КП. Все — статические TTF с полной кириллицей под
@@ -107,4 +108,23 @@ export const registerOfferPdfFonts = (): void => {
     // рвутся где попало. Переносим только по пробелам.
     Font.registerHyphenationCallback(word => [word]);
     registered = true;
+};
+
+let primed: Promise<void> | null = null;
+
+/**
+ * Шрифты готовы к рендеру: зарегистрированы и прогреты. Без прогрева первый
+ * документ процесса без латиницы портит кэш глифов, и в следующих документах
+ * латинские буквы выпадают из строк (разбор — в primePdfFontGlyphs).
+ * Один раз на процесс; неудачная попытка не запоминается.
+ */
+export const prepareOfferPdfFonts = (): Promise<void> => {
+    registerOfferPdfFonts();
+    primed ??= primePdfFontGlyphs(Object.values(OFFER_PDF_FONTS)).catch(
+        (error: unknown) => {
+            primed = null;
+            throw error;
+        },
+    );
+    return primed;
 };

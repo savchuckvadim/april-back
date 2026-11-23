@@ -15,6 +15,15 @@ export interface LayoutBox {
     height: number;
 }
 
+/** Строка текста после раскладки: сама строка и глифы, которыми она печатается */
+export interface LayoutLine {
+    string: string;
+    runs?: Array<{
+        /** codePoints — символы строки, закреплённые за глифом */
+        glyphs?: Array<{ codePoints?: number[] }>;
+    }>;
+}
+
 export interface LayoutNode {
     type: string;
     /** Координаты относительно родителя */
@@ -28,7 +37,7 @@ export interface LayoutNode {
         fontSize?: number;
     };
     children?: LayoutNode[];
-    lines?: Array<{ string: string }>;
+    lines?: LayoutLine[];
 }
 
 /** Поля страницы под шапку и подвал; шаблон кладёт их поверх своих */
