@@ -230,6 +230,7 @@ export class ContractGenerateService {
             dto.total,
             dto.clientType,
             getWithTax(provider, dto.contractType),
+            dto.contractType,
         );
         const [mainProduct] = this.documentProductRowService.getProducts(
             [dto.total],
@@ -237,6 +238,7 @@ export class ContractGenerateService {
             dto.contractType !== CONTRACT_LTYPE.SERVICE,
             dto.contract.prepayment,
             dto.clientType,
+            dto.contractType,
         );
 
         const contractStart =
@@ -271,6 +273,7 @@ export class ContractGenerateService {
             dto.contractType !== CONTRACT_LTYPE.SERVICE,
             dto.contract.prepayment,
             dto.clientType,
+            dto.contractType,
         );
         const specificationData = this.specificationService.getSpecification(
             dto.domain,
@@ -357,6 +360,7 @@ export class ContractGenerateService {
                 ? String(mainProduct.productQuantity)
                 : BLANK,
             productMeasure: mainProduct?.productMeasure ?? BLANK,
+            productMeasureCaption: mainProduct?.productMeasureCaption ?? '',
             productPrice: mainProduct?.productPrice ?? BLANK,
             productSum: mainProduct?.productSum ?? BLANK,
             products: products,
@@ -367,6 +371,7 @@ export class ContractGenerateService {
                 ? String(mainProduct.productQuantity)
                 : BLANK,
             total_measure: totals.total_measure,
+            total_measure_caption: totals.total_measure_caption,
             total_prepayment_sum: totals.total_prepayment_sum,
             total_prepayment_sum_string: totals.total_prepayment_sum_string,
             total_prepayment_quantity_string:

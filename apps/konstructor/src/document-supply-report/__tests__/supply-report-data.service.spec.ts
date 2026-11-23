@@ -20,7 +20,7 @@ describe('SupplyReportDataService.prepareTemplateData', () => {
             sum: 96096,
             default: 9000,
             quantity: 1,
-            measure: { name: 'мес.' },
+            measure: { name: 'Абонемент 12 месяцев' },
         },
         product: { contractCoefficient: 12 },
     };
@@ -47,7 +47,7 @@ describe('SupplyReportDataService.prepareTemplateData', () => {
                     current: 96096,
                     sum: 96096,
                     quantity: 1,
-                    measure: { name: 'мес.' },
+                    measure: { name: 'Абонемент 12 месяцев' },
                 },
                 product: { contractCoefficient: 12 },
             },
@@ -125,11 +125,30 @@ describe('SupplyReportDataService.prepareTemplateData', () => {
             productNumber: 1,
             productName:
                 'Услуги по сопровождению длительность 1 мес. (Гарант-Юрист)',
-            productMeasure: 'мес.',
+            productMeasure: 'шт.',
+            productMeasureCaption: 'Абонемент 12 месяцев',
             productPrice: '8008.00',
             productSum: '96096.00',
             complect_sup: 'Интернет-версия',
         });
+    });
+
+    it('единица по виду договора: абонемент — «шт.» с подписью, сервисный — «мес.» без неё', () => {
+        const abon = service.prepareTemplateData(dto());
+        expect(abon.totalData.total_measure).toBe('шт.');
+        expect(abon.totalData.total_measure_caption).toBe(
+            'Абонемент 12 месяцев',
+        );
+
+        const serviceData = service.prepareTemplateData(
+            dto({ contractType: CONTRACT_LTYPE.SERVICE }),
+        );
+        expect(serviceData.productRows[0]).toMatchObject({
+            productMeasure: 'мес.',
+            productMeasureCaption: '',
+        });
+        expect(serviceData.totalData.total_measure).toBe('мес.');
+        expect(serviceData.totalData.total_measure_caption).toBe('');
     });
 
     it('итоги считает вместе с суммой прописью и склонением месяцев', () => {
