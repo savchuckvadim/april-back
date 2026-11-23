@@ -4,7 +4,7 @@ import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.ser
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { RedisService } from '@lib/core/redis/redis.service';
-import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
+import { OfferWordPdfPreviewRequestDto } from '../../dto/offer-word-pdf-preview-request.dto';
 import {
     OfferWordEphemeralPdfPollResponseDto,
     OfferWordEphemeralPdfStatusEnum,
@@ -24,7 +24,7 @@ export class OfferWordEphemeralPdfQueueService {
         private readonly redisService: RedisService,
     ) {}
 
-    async start(dto: OfferWordByTemplateGenerateDto): Promise<string> {
+    async start(dto: OfferWordPdfPreviewRequestDto): Promise<string> {
         const operationId = randomUUID();
         const redis = this.redisService.getClient();
         if (!redis) {

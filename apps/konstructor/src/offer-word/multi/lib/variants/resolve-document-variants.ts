@@ -1,9 +1,30 @@
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
+import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
 import {
     ComplectModeEnum,
     ComplectOfferInfoblocksEnum,
 } from '@app/konstructor/modules/inner-deal/type/complect-composition.type';
-import { OfferWordMultiGenerateDto } from '../../dto/offer-word-multi-generate.dto';
+
+/**
+ * Запрос с участниками: Word-КП (`OfferWordMultiGenerateDto`) и PDF-КП
+ * (`OfferPdfGenerateDto`) читают его одним кодом. Поля «про комплект» верхнего
+ * уровня описывают одиночный документ, `variants` и `composition` — участников
+ * и настройки их сборки.
+ */
+export interface DocumentVariantsRequest
+    extends Pick<
+        DocumentVariantDto,
+        | 'contractType'
+        | 'complect'
+        | 'contract'
+        | 'supply'
+        | 'rows'
+        | 'sets'
+        | 'total'
+    > {
+    variants?: DocumentVariantDto[] | null;
+    composition?: ComplectCompositionDto | null;
+}
 
 /** Как печатать участников. */
 export type DocumentVariantsMode =
@@ -26,7 +47,7 @@ export interface ResolvedDocumentVariants {
  * (или единственный) вариант — так старый фронт и один набор идут одним кодом.
  */
 export const variantFromDto = (
-    dto: OfferWordMultiGenerateDto,
+    dto: DocumentVariantsRequest,
 ): DocumentVariantDto => ({
     variantSmartId: null,
     title: dto.total?.name ?? '',
@@ -47,7 +68,7 @@ export const variantFromDto = (
  * что это единственный режим, который не меняет вид документа.
  */
 export const resolveDocumentVariants = (
-    dto: OfferWordMultiGenerateDto,
+    dto: DocumentVariantsRequest,
 ): ResolvedDocumentVariants => {
     const variants = dto.variants ?? [];
     const showAlternatives = Boolean(dto.composition?.offer?.showAlternatives);

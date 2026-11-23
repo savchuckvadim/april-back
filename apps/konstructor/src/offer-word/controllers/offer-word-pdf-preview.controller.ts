@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
+import { OfferWordPdfPreviewRequestDto } from '../dto/offer-word-pdf-preview-request.dto';
 import { OfferWordEphemeralPdfQueueService } from '../services/queue/offer-word-ephemeral-pdf-queue.service';
 import {
     OfferWordEphemeralPdfPollResponseDto,
@@ -18,7 +18,7 @@ export class OfferWordPdfPreviewController {
     @ApiOperation({
         summary: 'Превью: запуск генерации PDF в очередь',
         description:
-            'Всегда PDF (isWord в теле игнорируется). Возвращает operationId для polling и отмены.',
+            'Всегда PDF (isWord в теле игнорируется). Участники комплекта (variants) и настройки сборки (composition) необязательны: превью печатает тот же документ, что формирование КП (compare, merged, independent), всегда одним PDF-файлом. Без них печатаются верхние поля запроса. Счёт не строится, документы никуда не сохраняются. Возвращает operationId для polling и отмены.',
     })
     @ApiResponse({
         status: 200,
@@ -27,7 +27,7 @@ export class OfferWordPdfPreviewController {
     })
     @Post()
     async startPreview(
-        @Body() dto: OfferWordByTemplateGenerateDto,
+        @Body() dto: OfferWordPdfPreviewRequestDto,
     ): Promise<OfferWordEphemeralPdfStartResponseDto> {
         const operationId =
             await this.offerWordEphemeralPdfQueueService.start(dto);
