@@ -34,3 +34,22 @@ export const SPLIT_PRESENCE = 44;
 export const TABLE_GROUP_HEAD = 18;
 /** Заголовок группы в списке: 11,5 pt × 1,35 и отступы */
 export const LIST_GROUP_HEAD = 30;
+
+/**
+ * Заголовок комплекта в разделе наполнения по комплектам: полоса акцента
+ * слева, название комплекта и под ним подпись поставки. Заголовок и первая
+ * группа комплекта держатся на одном листе (HeadWithFirst).
+ */
+/** Отступ сверху: комплекты отделены друг от друга и от заголовка раздела */
+export const COMPLECT_HEAD_MARGIN_TOP = 14;
+/** Отступ снизу до заголовка первой группы или таблицы */
+export const COMPLECT_HEAD_MARGIN_BOTTOM = 2;
+/** Толщина полосы акцента слева от заголовка комплекта */
+export const COMPLECT_HEAD_BAR = 3;
+/** Поле между полосой и текстом заголовка комплекта */
+export const COMPLECT_HEAD_PADDING = 6;
+/** Интерлиньяж названия комплекта — по его собственному кеглю */
+export const COMPLECT_TITLE_LINE_HEIGHT = 1.15;
+
+/** Кегль названия комплекта: на шаг крупнее заголовка группы и меньше заголовка раздела */
+export const complectTitleSize = (lg: number): number => lg + 1;

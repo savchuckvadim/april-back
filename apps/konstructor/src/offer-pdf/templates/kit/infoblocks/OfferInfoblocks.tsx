@@ -1,6 +1,5 @@
 import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
-import { DocumentFieldViewMode } from '../../../model/offer-document-settings.type';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
 import { onSurface } from '../document/surface.styles';
@@ -8,21 +7,28 @@ import { SurfaceGate } from '../document/SurfaceGate';
 import { HEADING_PRESENCE } from '../document/section.layout';
 import { SplitGate } from './SplitGate';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
+import { ComplectInfoblocks } from './ComplectInfoblocks';
+import { printedComplectSections } from './complect-sections.util';
 import { groupsWithItems } from './infoblock-description.util';
 import { infoblocksStyles } from './infoblocks.styles';
-import { ListView } from './ListView';
-import { TableView } from './TableView';
+import { InfoblocksView } from './InfoblocksView';
 
 export interface OfferInfoblocksProps {
     model: OfferPdfDocumentModel;
     theme: OfferPdfTheme;
 }
 
-/** Информационное наполнение комплекта: список или таблица, описание по режиму. */
+/**
+ * Информационное наполнение комплекта: список или таблица, описание по режиму.
+ * Общий набор из нескольких комплектов с видом «по комплектам»
+ * (`IsComplectsSeparate`) печатается разделами: у каждого комплекта свой
+ * заголовок и своё наполнение в том же виде и режиме описаний.
+ */
 export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
     const { data, settings } = model;
+    const sections = printedComplectSections(data);
     const groups = groupsWithItems(data.infoblocksByGroups ?? []);
-    if (groups.length === 0) return null;
+    if (!sections && groups.length === 0) return null;
     const base = baseStyles(theme);
 
     return (
@@ -38,27 +44,29 @@ export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
                 >
                     Информационное наполнение
                 </Text>
-                {data.GeneralProductName ? (
-                    <Text style={infoblocksStyles(theme).complectName}>
-                        {data.GeneralProductName}
-                    </Text>
-                ) : null}
-                {settings.viewMode === DocumentFieldViewMode.LIST ? (
-                    <ListView
-                        groups={groups}
-                        mode={settings.descriptionMode}
-                        theme={theme}
-                    />
+                {sections ? (
+                    // у каждого комплекта свой заголовок: общее название набора не нужно
+                    sections.map((section, index) => (
+                        <ComplectInfoblocks
+                            key={index}
+                            section={section}
+                            settings={settings}
+                            theme={theme}
+                        />
+                    ))
                 ) : (
-                    <TableView
-                        groups={groups}
-                        mode={settings.descriptionMode}
-                        theme={theme}
-                        withGroups={
-                            settings.viewMode ===
-                            DocumentFieldViewMode.TABLE_WITH_GROUP
-                        }
-                    />
+                    <>
+                        {data.GeneralProductName ? (
+                            <Text style={infoblocksStyles(theme).complectName}>
+                                {data.GeneralProductName}
+                            </Text>
+                        ) : null}
+                        <InfoblocksView
+                            groups={groups}
+                            settings={settings}
+                            theme={theme}
+                        />
+                    </>
                 )}
             </View>
         </>

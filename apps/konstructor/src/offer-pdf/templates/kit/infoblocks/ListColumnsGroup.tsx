@@ -5,12 +5,15 @@ import { chunk } from '../lib/text.util';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { HeadWithFirst } from './HeadWithFirst';
 import { LIST_GROUP_HEAD } from './infoblocks.layout';
+import type { InfoblocksLead } from './infoblocks-lead';
 import { infoblocksStyles } from './infoblocks.styles';
 import { ListNamesRow } from './ListNamesRow';
 
 export interface ListColumnsGroupProps {
     group: IInfblockGroupsRenderData;
     theme: OfferPdfTheme;
+    /** Блок перед заголовком группы: у первой группы раздела комплекта */
+    lead?: InfoblocksLead;
 }
 
 /**
@@ -20,11 +23,13 @@ export interface ListColumnsGroupProps {
 export const ListColumnsGroup: FC<ListColumnsGroupProps> = ({
     group,
     theme,
+    lead,
 }) => {
     const [first = [], ...rest] = chunk(group.infoblocks, 2);
     return (
         <>
             <HeadWithFirst
+                lead={lead}
                 head={
                     <Text style={infoblocksStyles(theme).groupTitle}>
                         {group.groupsName}

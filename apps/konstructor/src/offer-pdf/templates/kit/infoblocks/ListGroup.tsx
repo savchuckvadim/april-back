@@ -6,6 +6,7 @@ import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { HeadWithFirst } from './HeadWithFirst';
 import { isLongInfoblock } from './infoblock-description.util';
 import { LIST_DESC_CHARS, LIST_GROUP_HEAD } from './infoblocks.layout';
+import type { InfoblocksLead } from './infoblocks-lead';
 import { infoblocksStyles } from './infoblocks.styles';
 import { ListItem } from './ListItem';
 
@@ -13,15 +14,18 @@ export interface ListGroupProps {
     group: IInfblockGroupsRenderData;
     mode: DocumentFieldDescriptionMode;
     theme: OfferPdfTheme;
+    /** Блок перед заголовком группы: у первой группы раздела комплекта */
+    lead?: InfoblocksLead;
 }
 
 /** Группа в виде списка: заголовок вместе с первым пунктом, затем остальные. */
-export const ListGroup: FC<ListGroupProps> = ({ group, mode, theme }) => {
+export const ListGroup: FC<ListGroupProps> = ({ group, mode, theme, lead }) => {
     const [first, ...rest] = group.infoblocks;
 
     return (
         <>
             <HeadWithFirst
+                lead={lead}
                 head={
                     <Text style={infoblocksStyles(theme).groupTitle}>
                         {group.groupsName}
