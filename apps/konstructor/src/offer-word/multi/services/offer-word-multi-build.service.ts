@@ -24,11 +24,11 @@ import {
 } from '../lib/variants/resolve-document-variants';
 import { mergeDocumentVariants } from '../lib/variants/merge-document-variants';
 import { mergeGeneralSets } from '../lib/variants/merge-general-sets';
+import { planOfferRenders } from '../lib/variants/plan-offer-renders';
 import {
     groupVariantsByContractType,
     withVariant,
 } from '../lib/variants/with-variant';
-import { withComparisonSets } from '../lib/variants/with-comparison-sets';
 
 export interface IOfferWordMultiBuildResult {
     template: WordTemplate;
@@ -144,37 +144,20 @@ export class OfferWordMultiBuildService {
         isPdf: boolean,
         warnings: string[],
     ): Promise<RenderedOffers> {
-        switch (resolved.mode) {
-            case 'merged': {
-                const merged = mergeDocumentVariants(resolved.variants);
-                warnings.push(...merged.warnings);
-                return this.renderSingleOffer(
-                    withVariant(dto, merged.variant),
-                    year,
-                    isPdf,
-                );
-            }
-            case 'independent':
-                return this.renderIndependentOffers(dto, resolved, year, isPdf);
-            case 'compare':
-                return this.renderSingleOffer(
-                    withVariant(
-                        dto,
-                        withComparisonSets(
-                            resolved.variants,
-                            resolved.showAlternatives,
-                        ),
-                    ),
-                    year,
-                    isPdf,
-                );
-            default:
-                return this.renderSingleOffer(
-                    withVariant(dto, resolved.variants[0]),
-                    year,
-                    isPdf,
-                );
+        // режим → запросы на рендер: тот же план использует превью
+        const plan = planOfferRenders(dto, resolved);
+        warnings.push(...plan.warnings);
+
+        if (plan.perVariant) {
+            return this.renderIndependentOffers(
+                dto,
+                plan.requests,
+                resolved,
+                year,
+                isPdf,
+            );
         }
+        return this.renderSingleOffer(plan.requests[0], year, isPdf);
     }
 
     private async renderSingleOffer(
@@ -206,6 +189,7 @@ export class OfferWordMultiBuildService {
      */
     private async renderIndependentOffers(
         dto: OfferWordMultiGenerateDto,
+        variantDtos: readonly OfferWordByTemplateGenerateDto[],
         resolved: ResolvedDocumentVariants,
         year: string,
         isPdf: boolean,
@@ -213,8 +197,7 @@ export class OfferWordMultiBuildService {
         const documents: IPreparedDocument[] = [];
         let firstCore: OfferWordCoreGenerateResult | null = null;
 
-        for (const variant of resolved.variants) {
-            const variantDto = withVariant(dto, variant);
+        for (const variantDto of variantDtos) {
             const core = await this.renderOffer(variantDto);
             firstCore ??= core;
             documents.push(
@@ -243,9 +226,7 @@ export class OfferWordMultiBuildService {
                 offers: [
                     {
                         link: merged.link,
-                        name: getOfferDocumentProductName(
-                            withVariant(dto, resolved.variants[0]),
-                        ),
+                        name: getOfferDocumentProductName(variantDtos[0]),
                         type: 'offer',
                         absolutePath: merged.absolutePath,
                     },

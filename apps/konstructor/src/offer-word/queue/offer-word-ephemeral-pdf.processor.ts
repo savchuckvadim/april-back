@@ -15,10 +15,14 @@ import {
     offerWordEphemeralPdfResultRedisKey,
 } from '../constants/offer-word-ephemeral-pdf.constants';
 
-import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
+import { OfferWordPdfPreviewRequestDto } from '../dto/offer-word-pdf-preview-request.dto';
 
+/**
+ * Данные задания превью. Уходят в Redis как JSON: участники комплекта и
+ * настройки сборки едут в `dto` вместе с верхними полями запроса.
+ */
 export type OfferWordEphemeralPdfJobPayload = {
-    dto: OfferWordByTemplateGenerateDto;
+    dto: OfferWordPdfPreviewRequestDto;
     operationId: string;
 };
 
