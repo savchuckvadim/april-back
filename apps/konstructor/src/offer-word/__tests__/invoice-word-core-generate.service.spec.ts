@@ -17,6 +17,29 @@ const dto = (): OfferWordByTemplateGenerateDto =>
         invoiceTemplateId: '',
     });
 
+const templateRow: InvoiceTemplate = {
+    id: 'tpl-1',
+    created_at: null,
+    updated_at: null,
+    visibility: 'portal',
+    file_path: 'konstructor/invoice-templates/tpl-1.docx',
+    demo_path: null,
+    type: 'word',
+    name: 'Счёт',
+    code: 'invoice-tpl-1',
+    counter: 0,
+    description: null,
+    is_default: true,
+    is_active: true,
+    is_archived: false,
+    archived_at: null,
+    portal_id: null,
+    agent_id: null,
+    creator_bitrix_user_id: null,
+    client_types: null,
+    supply_types: null,
+};
+
 describe('InvoiceWordCoreGenerateService', () => {
     let resolve: jest.Mock<Promise<InvoiceTemplate | null>, [unknown]>;
     let getInvoiceRenderData: jest.Mock;
@@ -31,7 +54,10 @@ describe('InvoiceWordCoreGenerateService', () => {
         const moduleRef = await Test.createTestingModule({
             providers: [
                 InvoiceWordCoreGenerateService,
-                { provide: InvoiceTemplateService, useValue: {} },
+                {
+                    provide: InvoiceTemplateService,
+                    useValue: { toDto: jest.fn().mockReturnValue({}) },
+                },
                 {
                     provide: InvoiceTemplateSourceService,
                     useValue: { resolve },
@@ -61,5 +87,91 @@ describe('InvoiceWordCoreGenerateService', () => {
         });
         expect(getInvoiceRenderData).not.toHaveBeenCalled();
         expect(saveFile).not.toHaveBeenCalled();
+    });
+
+    it('каждый счёт несёт вид набора и его индекс', async () => {
+        resolve.mockResolvedValue(templateRow);
+        const price = (
+            setKind: 'general' | 'alternative',
+            setIndex: number,
+        ) => ({
+            rows: { ProductRows: [] },
+            total: {},
+            setKind,
+            setIndex,
+        });
+        getInvoiceRenderData.mockResolvedValue({
+            InvoiceNumber: '15',
+            prices: [
+                price('general', 0),
+                price('general', 1),
+                price('alternative', 0),
+                price('alternative', 1),
+            ],
+        });
+        const renderSingleInvoice = jest
+            .spyOn(service, 'renderSingleInvoice')
+            .mockImplementation(renderData =>
+                Promise.resolve({
+                    renderData,
+                    docxPath: '/tmp/invoice.docx',
+                    resultFileName: 'invoice.docx',
+                    docxLink: 'https://docx/invoice',
+                }),
+            );
+
+        const result = await service.execute(dto());
+
+        expect(renderSingleInvoice).toHaveBeenCalledTimes(4);
+        expect(
+            result.savedResults.map(({ setKind, setIndex }) => ({
+                setKind,
+                setIndex,
+            })),
+        ).toEqual([
+            { setKind: 'general', setIndex: 0 },
+            { setKind: 'general', setIndex: 1 },
+            { setKind: 'alternative', setIndex: 0 },
+            { setKind: 'alternative', setIndex: 1 },
+        ]);
+        expect(result.notBuiltReason).toBeUndefined();
+    });
+
+    it('шаблон найден — в рендер каждого счёта идут общие поля и данные его набора', async () => {
+        resolve.mockResolvedValue(templateRow);
+        getInvoiceRenderData.mockResolvedValue({
+            InvoiceNumber: '15',
+            prices: [
+                {
+                    rows: { ProductRows: ['a'] },
+                    total: { TotalSum: '100' },
+                    setKind: 'general',
+                    setIndex: 0,
+                },
+            ],
+        });
+        const renderSingleInvoice = jest
+            .spyOn(service, 'renderSingleInvoice')
+            .mockImplementation(renderData =>
+                Promise.resolve({
+                    renderData,
+                    docxPath: '/tmp/invoice.docx',
+                    resultFileName: 'invoice.docx',
+                    docxLink: 'https://docx/invoice',
+                }),
+            );
+
+        await service.execute(dto());
+
+        expect(renderSingleInvoice).toHaveBeenCalledTimes(1);
+        expect(renderSingleInvoice.mock.calls[0][0]).toMatchObject({
+            InvoiceNumber: '15',
+            ProductRows: ['a'],
+            TotalSum: '100',
+        });
+        // вид и индекс набора не попадают в данные шаблона DOCX
+        expect(renderSingleInvoice.mock.calls[0][0]).not.toHaveProperty(
+            'setKind',
+        );
     });
 });

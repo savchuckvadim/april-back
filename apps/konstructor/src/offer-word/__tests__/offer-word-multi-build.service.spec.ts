@@ -1,16 +1,23 @@
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
 import { ProductRowDto } from '@app/konstructor/document-generate/dto/product-row/product-row.dto';
+import { ProductRowSetDto } from '@app/konstructor/document-generate/dto/product-row-set/product-row-set.dto';
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import {
     ComplectModeEnum,
     ComplectOfferInfoblocksEnum,
 } from '@app/konstructor/modules/inner-deal/type/complect-composition.type';
 import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
-import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
+import {
+    OfferWordByTemplateGenerateDto,
+    ProductRowFullSetsDto,
+} from '../dto/offer-word-generate-request.dto';
 import { OfferWordCoreGenerateResult } from '../types/offer-word-core-generate.types';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
-import { InvoiceWordCoreGenerateService } from '../services/invoice-word-core/invoice-word-core-generate.service';
+import {
+    InvoiceWordCoreGenerateResult,
+    InvoiceWordCoreGenerateService,
+} from '../services/invoice-word-core/invoice-word-core-generate.service';
 import {
     OfferWordPdfExportParams,
     OfferWordPdfExportService,
@@ -63,6 +70,25 @@ const variant = (
         },
         total: total(sum),
     }) as unknown as DocumentVariantDto;
+
+const garantRow = (
+    name: string,
+    supplyName: string,
+    alternativeName?: string,
+): ProductRowDto =>
+    Object.assign(new ProductRowDto(), {
+        name,
+        alternativeName,
+        supply: { name: supplyName },
+    });
+
+const garantSet = (...garant: ProductRowDto[]): ProductRowSetDto =>
+    Object.assign(new ProductRowSetDto(), {
+        id: 1,
+        show: true,
+        rows: { garant },
+        total: [],
+    });
 
 const composition = (
     mode: ComplectModeEnum,
@@ -119,6 +145,10 @@ describe('OfferWordMultiBuildService', () => {
         [OfferWordPdfExportParams]
     >;
     let merge: jest.Mock<Promise<PdfMergeResult>, [PdfMergeParams]>;
+    // наборы, из которых «сборка» счетов отдаёт файлы (по умолчанию — один основной)
+    let invoiceSets: Array<
+        Pick<InvoiceWordCoreGenerateResult, 'setKind' | 'setIndex'>
+    >;
     let service: OfferWordMultiBuildService;
 
     beforeEach(() => {
@@ -133,17 +163,18 @@ describe('OfferWordMultiBuildService', () => {
                 docxLink: `https://docx/offer-${renderCount}`,
             });
         });
+        invoiceSets = [{ setKind: 'general', setIndex: 0 }];
         renderInvoice = jest.fn((dto: OfferWordByTemplateGenerateDto) =>
             Promise.resolve({
                 renderData: {},
                 template: {},
-                savedResults: [
-                    {
-                        docxLink: `https://docx/invoice-${dto.contractType}`,
-                        docxPath: `/tmp/invoice-${dto.contractType}.docx`,
-                        resultFileName: `invoice-${dto.contractType}.docx`,
-                    },
-                ],
+                // по счёту на набор из invoiceSets: вид и индекс набора едут с результатом
+                savedResults: invoiceSets.map(invoiceSet => ({
+                    docxLink: `https://docx/invoice-${dto.contractType}`,
+                    docxPath: `/tmp/invoice-${dto.contractType}.docx`,
+                    resultFileName: `invoice-${dto.contractType}.docx`,
+                    ...invoiceSet,
+                })),
             } as unknown as InvoiceCoreResult),
         );
         buildPublicPdfLink = jest.fn((params: OfferWordPdfExportParams) =>
@@ -384,6 +415,106 @@ describe('OfferWordMultiBuildService', () => {
         );
         expect(result.mode).toBe('compare');
         expect(result.invoices).toHaveLength(1);
+    });
+
+    describe('имена счетов выводятся из набора, из которого собран счёт', () => {
+        const invoiceFlags = {
+            needGeneralInvoice: true,
+            needManyInvoices: true,
+            isByPresentationInvoices: false,
+            invoiceDate: '',
+        };
+        const fullSets = Object.assign(new ProductRowFullSetsDto(), {
+            general: [
+                garantSet(garantRow('Гарант-Юрист', 'Интернет 5 ОД')),
+                garantSet(garantRow('Гарант-Бухгалтер', 'Проксима 3 ОД')),
+            ],
+            alternative: [
+                garantSet(garantRow('Гарант-Эксперт', 'Интернет 1 ОД')),
+                garantSet(
+                    garantRow(
+                        'Гарант-Строитель',
+                        'Интернет 2 ОД',
+                        'Строитель PRO',
+                    ),
+                ),
+            ],
+        });
+        const emptySets = Object.assign(new ProductRowFullSetsDto(), {
+            general: [garantSet(), garantSet()],
+            alternative: [garantSet()],
+        });
+
+        const invoiceNames = async (
+            sets: ProductRowFullSetsDto,
+        ): Promise<string[]> => {
+            const result = await service.build(
+                request({ sets, invoice: invoiceFlags }),
+            );
+            return result.invoices.map(item => item.name);
+        };
+
+        it('первый счёт из general — по первому набору', async () => {
+            invoiceSets = [{ setKind: 'general', setIndex: 0 }];
+
+            expect(await invoiceNames(fullSets)).toEqual([
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+            ]);
+        });
+
+        it('второй счёт из второго набора general называется по своему набору', async () => {
+            invoiceSets = [
+                { setKind: 'general', setIndex: 0 },
+                { setKind: 'general', setIndex: 1 },
+            ];
+
+            expect(await invoiceNames(fullSets)).toEqual([
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+                'Счёт Гарант-Бухгалтер - Проксима 3 ОД',
+            ]);
+        });
+
+        it('счёт из alternative называется по своему набору для сравнения', async () => {
+            invoiceSets = [
+                { setKind: 'general', setIndex: 0 },
+                { setKind: 'alternative', setIndex: 1 },
+            ];
+
+            expect(await invoiceNames(fullSets)).toEqual([
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+                'Счёт Строитель PRO - Интернет 2 ОД',
+            ]);
+        });
+
+        it('основные наборы и наборы для сравнения вместе — у каждого счёта своё имя', async () => {
+            invoiceSets = [
+                { setKind: 'general', setIndex: 0 },
+                { setKind: 'general', setIndex: 1 },
+                { setKind: 'alternative', setIndex: 0 },
+                { setKind: 'alternative', setIndex: 1 },
+            ];
+
+            expect(await invoiceNames(fullSets)).toEqual([
+                'Счёт Гарант-Юрист - Интернет 5 ОД',
+                'Счёт Гарант-Бухгалтер - Проксима 3 ОД',
+                'Счёт Гарант-Эксперт - Интернет 1 ОД',
+                'Счёт Строитель PRO - Интернет 2 ОД',
+            ]);
+        });
+
+        it('строки Гаранта в наборах нет — «Счёт» для первого и «Счёт - N» для следующих', async () => {
+            invoiceSets = [
+                { setKind: 'general', setIndex: 0 },
+                { setKind: 'general', setIndex: 1 },
+                { setKind: 'alternative', setIndex: 0 },
+            ];
+
+            expect(await invoiceNames(emptySets)).toEqual([
+                'Счёт',
+                'Счёт - 1',
+                'Счёт - 2',
+            ]);
+        });
     });
 
     describe('счёт не построен', () => {

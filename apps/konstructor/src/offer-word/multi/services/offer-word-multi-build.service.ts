@@ -351,8 +351,6 @@ export class OfferWordMultiBuildService {
             );
         }
         const results: IPreparedDocument[] = [];
-        let isAlternative = false;
-        let invoiceCount = 0;
 
         for (const saved of invoiceCoreResult.savedResults) {
             let serverLink: string = saved.docxLink;
@@ -381,17 +379,16 @@ export class OfferWordMultiBuildService {
 
             results.push({
                 link: serverLink,
+                // имя — по набору, из которого собран счёт
                 name: getInvoiceDocumentProductName(
                     dto,
-                    isAlternative,
-                    invoiceCount,
+                    saved.setKind,
+                    saved.setIndex,
+                    results.length,
                 ),
                 type: 'invoice',
                 absolutePath,
             });
-
-            isAlternative = true;
-            invoiceCount++;
         }
 
         return results;

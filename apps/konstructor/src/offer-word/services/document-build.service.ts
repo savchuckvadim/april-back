@@ -120,8 +120,6 @@ export class DocumentBuildService {
             );
         }
         const results: IPreparedDocument[] = [];
-        let isAlternative = false;
-        let invoiceCount = 0;
 
         for (const saved of invoiceCoreResult.savedResults) {
             let serverLink: string = saved.docxLink;
@@ -148,10 +146,12 @@ export class DocumentBuildService {
                 }
             }
 
+            // имя — по набору, из которого собран счёт
             const displayName = getInvoiceDocumentProductName(
                 dto,
-                isAlternative,
-                invoiceCount,
+                saved.setKind,
+                saved.setIndex,
+                results.length,
             );
             results.push({
                 link: serverLink,
@@ -159,9 +159,6 @@ export class DocumentBuildService {
                 type: 'invoice',
                 absolutePath,
             });
-
-            isAlternative = true;
-            invoiceCount++;
         }
 
         return results;

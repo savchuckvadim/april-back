@@ -21,6 +21,7 @@ import {
     INVOICE_TEMPLATE_NOT_FOUND_REASON,
     InvoiceTemplateSourceService,
 } from './invoice-template-source.service';
+import { InvoiceSetKind } from '../../types/invoice-set.types';
 
 const RESULT_PATH = `konstructor/invoice-document/${dayjs().format('YYYY')}`;
 
@@ -29,11 +30,29 @@ const RESULT_PATH = `konstructor/invoice-document/${dayjs().format('YYYY')}`;
  * Без PDF, без записи шаблона в сделку, без выбора «ссылка на word/pdf» — это уровень use case / эфемерного сценария.
  */
 
-export interface InvoiceWordCoreGenerateResult {
+/** Один отрендеренный и сохранённый DOCX счёта. */
+export interface InvoiceWordRenderedFile {
     docxPath: string;
     resultFileName: string;
     docxLink: string;
     renderData: IInvoiceSingleItemRenderData;
+}
+
+/**
+ * Счёт вместе с набором, из которого он собран: имя счёта в списке документов
+ * выводится из набора, поэтому вид и индекс набора едут с результатом.
+ */
+export interface InvoiceWordCoreGenerateResult extends InvoiceWordRenderedFile {
+    setKind: InvoiceSetKind;
+    /** Индекс в `sets.general` или `sets.alternative` — по `setKind`. */
+    setIndex: number;
+}
+
+/** Данные одного счёта для рендера и набор, из которого он собран. */
+interface InvoiceSingleRenderItem {
+    data: IInvoiceSingleItemRenderData;
+    setKind: InvoiceSetKind;
+    setIndex: number;
 }
 
 /**
@@ -79,14 +98,18 @@ export class InvoiceWordCoreGenerateService {
             await this.invoiceRenderDataService.getInvoiceRenderData(dto);
         const singleItemRenderData =
             this.getInvoiceSingleRenderdata(renderData);
-        for (const set of singleItemRenderData) {
+        for (const item of singleItemRenderData) {
             const saved = await this.renderSingleInvoice(
-                set,
+                item.data,
                 template,
                 dto.userId.toString(),
                 dto.domain,
             );
-            savedResults.push(saved);
+            savedResults.push({
+                ...saved,
+                setKind: item.setKind,
+                setIndex: item.setIndex,
+            });
         }
 
         return { renderData, template: templateDto, savedResults };
@@ -97,7 +120,7 @@ export class InvoiceWordCoreGenerateService {
         template: InvoiceTemplate,
         userId: string,
         domain: string,
-    ): Promise<InvoiceWordCoreGenerateResult> {
+    ): Promise<InvoiceWordRenderedFile> {
         const doc = await this.getTemplateDocument(template);
         doc.render(renderData);
 
@@ -210,11 +233,15 @@ export class InvoiceWordCoreGenerateService {
 
     protected getInvoiceSingleRenderdata(
         renderData: IInvoiceRenderData,
-    ): IInvoiceSingleItemRenderData[] {
+    ): InvoiceSingleRenderItem[] {
         return renderData.prices.map(price => ({
-            ...renderData,
-            ...price.rows,
-            ...price.total,
+            data: {
+                ...renderData,
+                ...price.rows,
+                ...price.total,
+            },
+            setKind: price.setKind,
+            setIndex: price.setIndex,
         }));
     }
     protected getResultPath(domain: string, userId: string): string {
