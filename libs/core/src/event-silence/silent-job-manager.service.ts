@@ -13,12 +13,32 @@ import { delay } from '@/shared';
 
 type KeyType = 'data' | 'lock' | 'job' | 'seq';
 
+/** Окно тишины: пока хуки сыплются, lock продлевается; ждём столько без новых. */
+export const SILENCE_WINDOW_MS = 1500;
+
+/**
+ * Срок жизни собранных хуков (data и seq) — страховка от мусора, а не рабочий
+ * срок: штатно их забирает collectAndClear.
+ *
+ * Было 30 секунд, и хуки ПРОПАДАЛИ, если сборщик не успевал к окну за это
+ * время: долгая пачка одного портала держала единственный сборщик, а данные
+ * окна другого портала тем временем истекали (разбор 23.11.2026).
+ */
+export const SILENCE_DATA_TTL_MS = 3_600_000;
+
+/**
+ * Страж «одно задание на окно». Короткий намеренно: если задание потерялось
+ * (сбой постановки), следующий хук того же ключа через 30 секунд поставит
+ * новое и заберёт всё накопленное. Лишнее задание безвредно — оно соберёт
+ * пустоту и выйдет.
+ */
+export const SILENCE_JOB_GUARD_TTL_MS = 30_000;
+
 @Injectable()
 export class EventSilentJobManagerService {
-    // окно тишины: пока хуки сыплются — продлеваем lock, ждём этого таймаута без активности
-    private readonly silenceWindowMs = 1500;
-    // TTL для данных/jobKey: запас на случай задержки воркера; safety net, явно чистится в collectAndClear
-    private readonly dataTtlMs = 30_000;
+    private readonly silenceWindowMs = SILENCE_WINDOW_MS;
+    private readonly dataTtlMs = SILENCE_DATA_TTL_MS;
+    private readonly jobGuardTtlMs = SILENCE_JOB_GUARD_TTL_MS;
     // интервал опроса lock-ключа в waitUntilSilent
     private readonly pollIntervalMs = 500;
     private readonly logger = new Logger(EventSilentJobManagerService.name);
@@ -53,7 +73,13 @@ export class EventSilentJobManagerService {
         await redis.set(lockKey, '1', 'PX', this.silenceWindowMs);
 
         // NX-guard: один job на одно окно. Удаляется в collectAndClear после сбора данных
-        const wasSet = await redis.set(jobKey, '1', 'PX', this.dataTtlMs, 'NX');
+        const wasSet = await redis.set(
+            jobKey,
+            '1',
+            'PX',
+            this.jobGuardTtlMs,
+            'NX',
+        );
 
         if (wasSet === 'OK') {
             await this.queueDispatcher.dispatch(
@@ -95,26 +121,34 @@ export class EventSilentJobManagerService {
         await this.eventEmitter.emitAsync(eventName, handleData);
     }
 
+    /**
+     * Забрать хуки окна и освободить ключ — ОДНОЙ атомарной операцией
+     * (MULTI: прочитать data, удалить data и job).
+     *
+     * Раньше это были три отдельные команды: хук, записанный между чтением и
+     * удалением, пропадал, а при нескольких сборщиках одно и то же окно могли
+     * бы забрать дважды. После MULTI новый хук ложится в свежий data-ключ и
+     * ставит своё задание — оно соберёт следующее окно.
+     *
+     * jobKey удаляется ВСЕГДА, даже при пустом окне: иначе страж висел бы до
+     * TTL и не давал поставить задание на следующие хуки.
+     */
     private async collectAndClear<T>(
         keyPrefix: string,
     ): Promise<HooksCollectedData<T>> {
         const redis = this.redisService.getClient();
         const dataKey = this.getKey('data', keyPrefix);
         const jobKey = this.getKey('job', keyPrefix);
-        const raw = await redis.hgetall(dataKey);
+        const replies = await redis
+            .multi()
+            .hgetall(dataKey)
+            .del(dataKey)
+            .del(jobKey)
+            .exec();
 
-        // jobKey удаляем ВСЕГДА: даже при пустом hgetall — иначе guard висит до TTL
-        // и блокирует постановку новых job'ов на следующие хуки
-        if (!raw || Object.keys(raw).length === 0) {
-            await redis.del(jobKey);
-            return {};
-        }
-
-        // удаляем оба ключа ДО emit'a handleHooks — это разрешает
-        // новым хукам сразу поставить следующий job, который встанет за текущим
-        // в Bull (concurrency=1) и обработается последовательно после
-        await redis.del(dataKey);
-        await redis.del(jobKey);
+        const [readError, raw] = replies?.[0] ?? [null, null];
+        if (readError) throw readError;
+        if (!isStringRecord(raw)) return {};
 
         const data: HooksCollectedData<T> = {};
         for (const [field, value] of Object.entries(raw)) {
@@ -134,3 +168,10 @@ export class EventSilentJobManagerService {
         return `${keyPrefix}_${type}`;
     }
 }
+
+/** Ответ HGETALL: объект «поле → строка»; пустой хэш — пустой объект. */
+const isStringRecord = (raw: unknown): raw is Record<string, string> =>
+    typeof raw === 'object' &&
+    raw !== null &&
+    !Array.isArray(raw) &&
+    Object.values(raw).every(value => typeof value === 'string');
