@@ -771,6 +771,26 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             }),
         },
     },
+    // короткая единица «шт.» и подпись меры портала под названием (лицензия, абонемент)
+    {
+        name: '35-measure-captions',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: captionRows(6),
+            }),
+        },
+    },
+    // много строк с подписью меры: оценка высоты учитывает подпись, «Стоимость» открывает лист
+    {
+        name: '36-measure-captions-many-prices',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: captionRows(14),
+            }),
+        },
+    },
     // латиница в заголовке и у получателя после документов без неё: при
     // испорченном кэше глифов буквы выпадали (glyph-loss). Сценарий идёт
     // после всех документов без латиницы — кэш к нему уже наполнен.
@@ -781,26 +801,6 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             data: createOfferRenderDataFixture({
                 GeneralProductName: 'Гарант-Предприятие PRO',
                 RecipientCompanyName: 'test',
-            }),
-        },
-    },
-    // короткая единица «шт.» и подпись меры портала под названием (лицензия, абонемент)
-    {
-        name: '30-measure-captions',
-        settings: {},
-        model: {
-            data: createOfferRenderDataFixture({
-                ProductRows: captionRows(6),
-            }),
-        },
-    },
-    // много строк с подписью меры: оценка высоты учитывает подпись, «Стоимость» открывает лист
-    {
-        name: '31-measure-captions-many-prices',
-        settings: {},
-        model: {
-            data: createOfferRenderDataFixture({
-                ProductRows: captionRows(14),
             }),
         },
     },
