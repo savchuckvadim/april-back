@@ -94,6 +94,9 @@ export class ComplectVariantLifecycleService {
      * — ручное решение менеджера в конструкторе, и затирать им автоматический
      * итог нельзя, иначе в отчётах пропадёт разница между «клиент отказался» и
      * «просто выбрали другой набор».
+     *
+     * Стадия ставится только вперёд: вариант с итогом («Успех», «Отклонён»,
+     * «Не состоялся») остаётся на своей стадии.
      */
     async markRejected(
         domain: string,
@@ -103,6 +106,7 @@ export class ComplectVariantLifecycleService {
             domain,
             variantSmartIds,
             COMPLECT_VARIANT_STAGE.FAILED,
+            true,
         );
     }
 

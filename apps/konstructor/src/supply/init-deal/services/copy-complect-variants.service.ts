@@ -4,7 +4,9 @@ import { BitrixOwnerType } from '@lib/bitrix/domain/enums/bitrix-constants.enum'
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { COMPLECT_VARIANT_SMART_TYPE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ListProductRowDto } from '@lib/bitrix/domain/crm/product-row/dto/list-product-row.sto';
+import { getErrorString } from '@lib/shared';
 import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
+import { parseComplectComposition } from '../../../modules/inner-deal/type/complect-composition.type';
 import {
     isFinalVariantStage,
     selectVariantsToCopy,
@@ -81,7 +83,8 @@ const SKIPPED_ITEM_FIELDS = new Set([
  * несколько, и у каждого свой договор — в том числе разного типа.
  *
  * На каждый вариант создаётся свой элемент смарта на новой сделке, к нему
- * копируются товарные строки и слепок конструктора.
+ * копируются товарные строки и слепок конструктора. После переноса открытый
+ * вариант в настройках целевой сделки указывает на копию.
  *
  * Не @Injectable: внутри per-domain инстанс Bitrix (CLAUDE.md — race condition).
  */
@@ -154,6 +157,8 @@ export class CopyComplectVariantsService {
 
         const selected = selectVariantsToCopy(candidates);
         const movedSourceIds: number[] = [];
+        // id исходного элемента → id его копии на новой сделке
+        const copyIds = new Map<number, number>();
         let copied = 0;
 
         for (const candidate of selected) {
@@ -171,6 +176,7 @@ export class CopyComplectVariantsService {
             // копия создана — вариант физически уехал в поставку; слепок
             // может не доехать, но судьбу исходника это уже не меняет
             movedSourceIds.push(candidate.sourceItemId);
+            copyIds.set(candidate.sourceItemId, newItemId);
 
             await this.copyProductRows(
                 portalSmart.crm,
@@ -197,6 +203,13 @@ export class CopyComplectVariantsService {
             }
         }
 
+        await this.pointOpenVariantToCopy(
+            domain,
+            sourceDealId,
+            targetDealId,
+            copyIds,
+        );
+
         const moved = new Set(movedSourceIds);
         // Остались на старой сделке и ещё не закрыты: их робот пометит
         // «Не состоялся». Финальные стадии не трогаем — там уже есть итог.
@@ -218,6 +231,62 @@ export class CopyComplectVariantsService {
             movedSourceIds,
             notMovedSourceIds,
         };
+    }
+
+    /**
+     * Открытый вариант целевой сделки указывает на копию.
+     *
+     * Слепок сделки копируется раньше вариантов и приносит настройки со
+     * СТАРЫМ id открытого варианта: этот id принадлежит исходной сделке, и
+     * конструктор в сервисной сделке открывал бы чужой элемент. Здесь
+     * `openVariantSmartId` получает id копии открытого варианта. Если
+     * открытый вариант остался на исходной сделке, указатель получает null.
+     * Остальные настройки остаются теми, что принёс слепок.
+     *
+     * Ничего не пишем, когда у исходной сделки нет открытого варианта и когда
+     * у цели нет строки слепка: строка с одними настройками заблокировала бы
+     * ручное восстановление слепка без force. Сбой записи не роняет перенос:
+     * варианты уже созданы, и робот должен закрыть исходники.
+     */
+    private async pointOpenVariantToCopy(
+        domain: string,
+        sourceDealId: number,
+        targetDealId: number,
+        copyIds: ReadonlyMap<number, number>,
+    ): Promise<void> {
+        try {
+            const sourceRow = await this.innerDealService.findSnapshot(
+                domain,
+                sourceDealId,
+                null,
+            );
+            const source = parseComplectComposition(sourceRow?.settings);
+            if (!source || source.openVariantSmartId === null) {
+                return;
+            }
+
+            const targetRow = await this.innerDealService.findSnapshot(
+                domain,
+                targetDealId,
+                null,
+            );
+            if (!targetRow) {
+                this.logger.warn(
+                    `${domain}: у сделки ${targetDealId} нет слепка — открытый вариант в настройках не переведён`,
+                );
+                return;
+            }
+
+            await this.innerDealService.updateSettings(domain, targetDealId, {
+                ...(parseComplectComposition(targetRow.settings) ?? source),
+                openVariantSmartId:
+                    copyIds.get(source.openVariantSmartId) ?? null,
+            });
+        } catch (error) {
+            this.logger.warn(
+                `${domain}: открытый вариант в настройках сделки ${targetDealId} не переведён на копию — ${getErrorString(error)}`,
+            );
+        }
     }
 
     /** Элемент варианта из Битрикса. null — прочитать не удалось. */

@@ -9,6 +9,9 @@ import { ApiProperty } from '@nestjs/swagger';
  *
  * `diskFolderUrl` и `diskWarning` — результат дополнительной выкладки
  * документов на Диск: сбой Диска заявку не роняет.
+ *
+ * `closedVariantIds` — варианты сделки, закрытые стадией «Не состоялся»
+ * вместе с заявкой: в поставку идут только проданные.
  */
 export class InitSupplyResponseDto {
     @ApiProperty({
@@ -66,4 +69,15 @@ export class InitSupplyResponseDto {
         required: false,
     })
     diskWarning?: string;
+
+    @ApiProperty({
+        description:
+            'Id элементов смарта «Варианты комплекта», которые заявка перевела в стадию «Не состоялся»: ' +
+            'остальные варианты сделки, не вошедшие в список вариантов заявки. ' +
+            'Варианты с итогом («Успех», «Отклонён», «Не состоялся») не меняются и сюда не попадают. ' +
+            'Поля нет, если закрывать было нечего или заявка пришла без вариантов',
+        type: [Number],
+        required: false,
+    })
+    closedVariantIds?: number[];
 }

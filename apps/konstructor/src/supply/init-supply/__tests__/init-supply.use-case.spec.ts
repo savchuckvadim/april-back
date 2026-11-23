@@ -10,6 +10,8 @@ import {
 import { InitSupplyDealFileFieldsService } from '../services/file/init-supply-deal-file-fields.service';
 import { InitSupplyRpaFieldsService } from '../services/rpa-fields/init-supply-rpa-fields.service';
 import { InitSupplyTimelineCommentService } from '../services/rpa-timeline-comment/init-supply-timeline-comment.service';
+import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
+import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
 
 interface RpaTimelineRequest {
     typeId: number;
@@ -32,22 +34,42 @@ const DISK_OK: InitSupplyDiskResult = {
 };
 const RPA_LINK = 'https://gsr.bitrix24.ru/rpa/item/9/77/';
 
+const ENTITY_TYPE_ID = 1046;
+
+/** Стадия варианта по умолчанию: черновик в воронке №3. */
+const DRAFT_STAGE = `DT${ENTITY_TYPE_ID}_3:DRAFT`;
+
+interface ItemUpdateFields {
+    stageId: string;
+}
+
 /**
  * Шаги заявки: RPA → участники → файлы сделки → Диск → страницы таймлайна RPA →
  * комментарий сделки. Диск дополняет заявку: ссылка на папку идёт в таймлайн,
  * сбой Диска заявку не роняет.
+ *
+ * Варианты сделки: `dealVariants` — строки слепков сделки (listVariants),
+ * `stageById` — текущая стадия элемента смарта; по умолчанию черновик.
  */
 const setup = async (
     options: {
         disk?: InitSupplyDiskResult;
         failDiskPage?: boolean;
         dealFileFields?: Record<string, { fileData: [string, string] }>;
+        dealVariants?: { smartId: number }[];
+        stageById?: Record<number, string>;
+        listVariantsError?: Error;
+        failItemUpdateFor?: number;
     } = {},
 ) => {
     const {
         disk = DISK_OK,
         failDiskPage = false,
         dealFileFields = {},
+        dealVariants = [],
+        stageById = {},
+        listVariantsError,
+        failItemUpdateFor,
     } = options;
 
     const rpaAdd = jest
@@ -71,6 +93,34 @@ const setup = async (
         [InitSupplyDiskParams]
     >(() => Promise.resolve(disk));
 
+    const itemGet = jest.fn<Promise<unknown>, [string, string, string[]]>(
+        id =>
+            Promise.resolve({
+                result: {
+                    item: {
+                        id: Number(id),
+                        stageId: stageById[Number(id)] ?? DRAFT_STAGE,
+                    },
+                },
+            }),
+    );
+    const itemUpdate = jest.fn<
+        Promise<unknown>,
+        [number, number, ItemUpdateFields]
+    >(id =>
+        id === failItemUpdateFor
+            ? Promise.reject(new Error('Битрикс отказал'))
+            : Promise.resolve({ result: { item: { id } } }),
+    );
+    const listVariants = jest.fn<
+        Promise<{ smartId: number }[]>,
+        [string, number]
+    >(() =>
+        listVariantsError
+            ? Promise.reject(listVariantsError)
+            : Promise.resolve(dealVariants),
+    );
+
     const moduleRef = await Test.createTestingModule({
         providers: [
             InitSupplyUseCase,
@@ -83,9 +133,13 @@ const setup = async (
                             api: { call: apiCall },
                             timeline: { addTimelineComment },
                             deal: { update: dealUpdate },
+                            item: { get: itemGet, update: itemUpdate },
                         },
                         PortalModel: {
                             getRpaByCode: () => ({ bitrixId: 9 }),
+                            getSmartByType: () => ({
+                                entityTypeId: ENTITY_TYPE_ID,
+                            }),
                         },
                     }),
                 },
@@ -109,6 +163,7 @@ const setup = async (
                 useValue: { get: jest.fn().mockReturnValue(dealFileFields) },
             },
             { provide: InitSupplyDiskService, useValue: { save: saveToDisk } },
+            { provide: InnerDealService, useValue: { listVariants } },
         ],
     }).compile();
 
@@ -120,6 +175,8 @@ const setup = async (
         addTimelineComment,
         dealUpdate,
         saveToDisk,
+        itemUpdate,
+        listVariants,
     };
 };
 
@@ -282,5 +339,196 @@ describe('InitSupplyUseCase: документы заявки на Диске', (
         expect(apiCall).not.toHaveBeenCalled();
         expect(addTimelineComment).not.toHaveBeenCalled();
         expect(result.diskFolderUrl).toBe(FOLDER_URL);
+    });
+});
+
+/** Участник заявки: из варианта нужен только элемент смарта. */
+const participant = (variantSmartId: number): DocumentVariantDto =>
+    Object.assign(new DocumentVariantDto(), { variantSmartId });
+
+/** Стадии, которые заявка выставила вариантам: id элемента → суффикс стадии. */
+const stagesSet = (
+    itemUpdate: jest.Mock<Promise<unknown>, [number, number, ItemUpdateFields]>,
+): Record<number, string> =>
+    Object.fromEntries(
+        itemUpdate.mock.calls.map(([id, , fields]) => [
+            id,
+            fields.stageId.split(':')[1],
+        ]),
+    );
+
+/**
+ * В поставку идут варианты, которые менеджер продаёт (`variants` заявки):
+ * они получают стадию «Поставка». Остальные варианты сделки закрываются
+ * стадией «Не состоялся».
+ */
+describe('InitSupplyUseCase: варианты сделки при поставке', () => {
+    const TWO_VARIANTS = [{ smartId: 5001 }, { smartId: 5002 }];
+
+    it('в запросе один вариант из двух — он в «Поставке», второй закрыт «Не состоялся»', async () => {
+        const { useCase, itemUpdate, listVariants } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001)] }),
+        );
+
+        expect(listVariants).toHaveBeenCalledWith('gsr.bitrix24.ru', 35018);
+        expect(stagesSet(itemUpdate)).toEqual({
+            5001: 'SUPPLY',
+            5002: 'FAILED',
+        });
+        expect(result.closedVariantIds).toEqual([5002]);
+        expect(result.id_rpa).toBe(77);
+    });
+
+    it('закрытие идёт после перевода участников в «Поставку»', async () => {
+        const { useCase, itemUpdate } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        await useCase.initSupply(dtoOf({ variants: [participant(5001)] }));
+
+        const order = itemUpdate.mock.calls.map(([id, , fields]) => [
+            id,
+            fields.stageId.split(':')[1],
+        ]);
+        expect(order).toEqual([
+            [5001, 'SUPPLY'],
+            [5002, 'FAILED'],
+        ]);
+    });
+
+    it('в запросе оба варианта — никто не закрыт', async () => {
+        const { useCase, itemUpdate } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001), participant(5002)] }),
+        );
+
+        expect(stagesSet(itemUpdate)).toEqual({
+            5001: 'SUPPLY',
+            5002: 'SUPPLY',
+        });
+        expect(result.closedVariantIds).toBeUndefined();
+    });
+
+    it('запрос без вариантов ничего не закрывает и варианты сделки не читает', async () => {
+        const { useCase, itemUpdate, listVariants } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        const withoutField = await useCase.initSupply(dtoOf());
+        const emptyList = await useCase.initSupply(dtoOf({ variants: [] }));
+
+        expect(itemUpdate).not.toHaveBeenCalled();
+        expect(listVariants).not.toHaveBeenCalled();
+        expect(withoutField.closedVariantIds).toBeUndefined();
+        expect(emptyList.closedVariantIds).toBeUndefined();
+    });
+
+    it('участник без id не считается вариантом заявки и закрытие не запускает', async () => {
+        const { useCase, itemUpdate } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        await useCase.initSupply(
+            dtoOf({
+                variants: [
+                    Object.assign(new DocumentVariantDto(), {
+                        variantSmartId: null,
+                    }),
+                ],
+            }),
+        );
+
+        expect(itemUpdate).not.toHaveBeenCalled();
+    });
+
+    it('варианты с итогом не переписываются: «Успех», «Отклонён» и «Не состоялся» остаются', async () => {
+        const { useCase, itemUpdate } = await setup({
+            dealVariants: [
+                { smartId: 5001 },
+                { smartId: 5002 },
+                { smartId: 5003 },
+                { smartId: 5004 },
+                { smartId: 5005 },
+            ],
+            stageById: {
+                5003: `DT${ENTITY_TYPE_ID}_3:SUCCESS`,
+                5004: `DT${ENTITY_TYPE_ID}_3:REJECTED`,
+                5005: `DT${ENTITY_TYPE_ID}_3:FAILED`,
+            },
+        });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001)] }),
+        );
+
+        expect(stagesSet(itemUpdate)).toEqual({
+            5001: 'SUPPLY',
+            5002: 'FAILED',
+        });
+        expect(result.closedVariantIds).toEqual([5002]);
+    });
+
+    it('сделка без вариантов в базе: участники в «Поставке», закрывать нечего', async () => {
+        const { useCase, itemUpdate } = await setup({ dealVariants: [] });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001)] }),
+        );
+
+        expect(stagesSet(itemUpdate)).toEqual({ 5001: 'SUPPLY' });
+        expect(result.closedVariantIds).toBeUndefined();
+    });
+
+    it('заявка без сделки (dealId пуст) вариантов не закрывает', async () => {
+        const { useCase, itemUpdate, listVariants } = await setup({
+            dealVariants: TWO_VARIANTS,
+        });
+
+        await useCase.initSupply(
+            dtoOf({ dealId: null, variants: [participant(5001)] }),
+        );
+
+        expect(listVariants).not.toHaveBeenCalled();
+        expect(stagesSet(itemUpdate)).toEqual({ 5001: 'SUPPLY' });
+    });
+
+    it('сбой чтения вариантов сделки заявку не роняет', async () => {
+        const { useCase, rpaAdd, addTimelineComment } = await setup({
+            dealVariants: TWO_VARIANTS,
+            listVariantsError: new Error('БД недоступна'),
+        });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001)] }),
+        );
+
+        expect(rpaAdd).toHaveBeenCalledTimes(1);
+        expect(result.id_rpa).toBe(77);
+        expect(result.closedVariantIds).toBeUndefined();
+        expect(addTimelineComment).toHaveBeenCalledTimes(1);
+    });
+
+    it('Битрикс отказал на одном варианте — заявка цела, остальные закрываются', async () => {
+        const { useCase, itemUpdate, addTimelineComment } = await setup({
+            dealVariants: [{ smartId: 5001 }, { smartId: 5002 }, { smartId: 5003 }],
+            failItemUpdateFor: 5002,
+        });
+
+        const result = await useCase.initSupply(
+            dtoOf({ variants: [participant(5001)] }),
+        );
+
+        expect(itemUpdate).toHaveBeenCalledTimes(3);
+        expect(result.id_rpa).toBe(77);
+        // 5002 не закрылся, 5003 закрылся
+        expect(result.closedVariantIds).toEqual([5003]);
+        expect(addTimelineComment).toHaveBeenCalledTimes(1);
     });
 });

@@ -6,6 +6,8 @@ import { InitSupplyDto } from '../dto/init-supply.dto';
 import {
     buildVariantLinksField,
     initSupplyForVariant,
+    participantVariantIds,
+    selectLeftoutVariantIds,
     specificationFromComplect,
 } from '../lib/init-supply-variants';
 
@@ -157,6 +159,49 @@ describe('init-supply: варианты', () => {
             expect(
                 buildVariantLinksField(dto(), portalModel('UF', 'T416_')),
             ).toEqual({});
+        });
+    });
+
+    describe('участники заявки и варианты вне поставки', () => {
+        it('участники — положительные целые id без повторов, в порядке запроса', () => {
+            const ids = participantVariantIds(
+                dto({
+                    variants: [
+                        variant({ variantSmartId: 9002 }),
+                        variant({ variantSmartId: 9001 }),
+                        variant({ variantSmartId: 9002 }),
+                        variant({ variantSmartId: null }),
+                        variant({ variantSmartId: 0 }),
+                    ],
+                }),
+            );
+
+            expect(ids).toEqual([9002, 9001]);
+        });
+
+        it('запрос без вариантов даёт пустой список участников', () => {
+            expect(participantVariantIds(dto())).toEqual([]);
+            expect(participantVariantIds(dto({ variants: [] }))).toEqual([]);
+        });
+
+        it('вне поставки остаются строки сделки, чьих id нет среди участников', () => {
+            expect(
+                selectLeftoutVariantIds(
+                    [
+                        { smartId: 5001 },
+                        { smartId: 5002 },
+                        { smartId: 5002 },
+                        { smartId: null },
+                    ],
+                    [5001],
+                ),
+            ).toEqual([5002]);
+        });
+
+        it('без участников закрывать нечего', () => {
+            expect(
+                selectLeftoutVariantIds([{ smartId: 5001 }], []),
+            ).toEqual([]);
         });
     });
 });
