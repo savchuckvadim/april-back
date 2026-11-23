@@ -13,6 +13,7 @@ export type OfferRenderInput = Pick<
     | 'complect'
     | 'complects'
     | 'complectsMode'
+    | 'alternativeComplects'
     | 'rows'
     | 'contract'
     | 'clientType'

@@ -13,6 +13,7 @@ import {
     ProductRowDto,
     ProductRowSetDto,
     ComplectDto,
+    OfferAlternativeSetComplectsDto,
     OfferComplectSectionDto,
     OfferComplectsModeEnum,
 } from '@app/konstructor/document-generate';
@@ -170,6 +171,17 @@ export class OfferWordByTemplateGenerateDto {
     @IsOptional()
     @IsEnum(OfferComplectsModeEnum)
     complectsMode?: OfferComplectsModeEnum;
+
+    @ApiPropertyOptional({
+        type: [OfferAlternativeSetComplectsDto],
+        description:
+            'Наполнение наборов для сравнения: по разделу на набор — номер и заголовок набора из таблицы цен и наполнение его комплектов. Поле есть и не пусто — после наполнения общего набора КП печатает блок «Наполнение наборов для сравнения»; Word-шаблон получает его в данных AlternativeComplectSections и флаге IsAlternativeComplects. Без поля или с пустым списком КП печатается как раньше. Настройка одинакова для Word и PDF',
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => OfferAlternativeSetComplectsDto)
+    alternativeComplects?: OfferAlternativeSetComplectsDto[];
 
     @ApiProperty({ description: 'Supply of the contract', type: SupplyDto })
     @ValidateNested()

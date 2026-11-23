@@ -9,6 +9,7 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ComplectDto } from '../complect/complect.dto';
+import { OfferAlternativeSetComplectsDto } from '../complect/offer-alternative-set-complects.dto';
 import { OfferComplectSectionDto } from '../complect/offer-complect-section.dto';
 import { OfferComplectsModeEnum } from '../complect/offer-complects-mode.type';
 import { ProductRowDto } from '../product-row/product-row.dto';
@@ -89,6 +90,17 @@ export class DocumentVariantDto {
     @IsOptional()
     @IsEnum(OfferComplectsModeEnum)
     complectsMode?: OfferComplectsModeEnum;
+
+    @ApiPropertyOptional({
+        type: [OfferAlternativeSetComplectsDto],
+        description:
+            'Наполнение наборов для сравнения варианта: по разделу на набор — номер и заголовок набора из таблицы цен и наполнение его комплектов. Поле есть и не пусто — после наполнения общего набора КП печатает блок «Наполнение наборов для сравнения»; Word-шаблон получает его в данных AlternativeComplectSections. Без поля или с пустым списком КП печатается как раньше. Наборы для сравнения разных вариантов не объединяются',
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => OfferAlternativeSetComplectsDto)
+    alternativeComplects?: OfferAlternativeSetComplectsDto[];
 
     @ApiProperty({ type: ContractDto })
     @ValidateNested()

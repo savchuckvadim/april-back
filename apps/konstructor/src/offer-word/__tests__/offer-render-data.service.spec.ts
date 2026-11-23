@@ -2,6 +2,7 @@ import { ProductRowDto } from '@app/konstructor/document-generate/dto/product-ro
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import {
+    createAlternativeSetFixture,
     createComplectSectionFixture,
     createOfferRenderDataFixture,
 } from '../lib/sample-offer-render-data';
@@ -11,9 +12,14 @@ import {
 } from '../dto/offer-word-generate-request.dto';
 import { OfferRenderDataService } from '../services/render-data-services/offer-render-data.service';
 import {
+    IAlternativeComplectsRenderData,
     IComplectSectionsRenderData,
     IInfoblocksRenderData,
 } from '../services/render-data-services/offer-render-infoblocks.service';
+
+type InfoblocksData = IInfoblocksRenderData &
+    IComplectSectionsRenderData &
+    IAlternativeComplectsRenderData;
 
 /**
  * Итоговые данные КП для Word и PDF собираются из данных сервисов: поля
@@ -21,8 +27,8 @@ import {
  */
 const sample = createOfferRenderDataFixture();
 const infoblocksOf = (
-    extra: IComplectSectionsRenderData,
-): IInfoblocksRenderData & IComplectSectionsRenderData => ({
+    extra: IComplectSectionsRenderData & IAlternativeComplectsRenderData,
+): InfoblocksData => ({
     infoblocksByGroups: sample.infoblocksByGroups,
     simpleInfoblocks: sample.simpleInfoblocks,
     simpleInfoblocksByColumns: sample.simpleInfoblocksByColumns,
@@ -41,9 +47,7 @@ const infoblocksOf = (
     ...extra,
 });
 
-const createService = (
-    infoblocks: IInfoblocksRenderData & IComplectSectionsRenderData,
-) => {
+const createService = (infoblocks: InfoblocksData) => {
     const infoblocksService = {
         renderInfoblocks: jest.fn().mockResolvedValue(infoblocks),
     };
@@ -108,6 +112,44 @@ describe('OfferRenderDataService: наполнение по комплектам
 
         expect(data).not.toHaveProperty('ComplectSections');
         expect(data).not.toHaveProperty('IsComplectsSeparate');
+        expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
+    });
+});
+
+describe('OfferRenderDataService: наполнение наборов для сравнения в данных шаблона', () => {
+    it('AlternativeComplectSections и IsAlternativeComplects доходят до данных рядом с наполнением общего набора', async () => {
+        const generalSections = [
+            createComplectSectionFixture('Бухгалтерия', 'Интернет 3 ОД', []),
+        ];
+        const alternatives = [
+            createAlternativeSetFixture(1, [
+                createComplectSectionFixture('Юрист', 'Интернет 1 ОД', []),
+            ]),
+        ];
+        const { service } = createService(
+            infoblocksOf({
+                ComplectSections: generalSections,
+                IsComplectsSeparate: false,
+                AlternativeComplectSections: alternatives,
+                IsAlternativeComplects: true,
+            }),
+        );
+
+        const data = await service.getOfferRenderData(createRequest());
+
+        expect(data.AlternativeComplectSections).toBe(alternatives);
+        expect(data.IsAlternativeComplects).toBe(true);
+        expect(data.ComplectSections).toBe(generalSections);
+        expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
+    });
+
+    it('запрос без alternativeComplects: в данных нет ни AlternativeComplectSections, ни флага', async () => {
+        const { service } = createService(infoblocksOf({}));
+
+        const data = await service.getOfferRenderData(createRequest());
+
+        expect(data).not.toHaveProperty('AlternativeComplectSections');
+        expect(data).not.toHaveProperty('IsAlternativeComplects');
         expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
     });
 });

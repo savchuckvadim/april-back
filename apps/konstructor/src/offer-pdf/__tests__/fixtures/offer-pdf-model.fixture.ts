@@ -2,12 +2,17 @@ import { OfferPdfDocumentModel } from '../../model/offer-pdf-document.model';
 import { OFFER_PDF_DEFAULT_SETTINGS } from '../../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
 import {
+    createAlternativeSetFixture,
     createComplectSectionFixture,
     createOfferRenderDataFixture,
 } from '@app/konstructor/offer-word/lib/sample-offer-render-data';
 import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 
-export { createComplectSectionFixture, createOfferRenderDataFixture };
+export {
+    createAlternativeSetFixture,
+    createComplectSectionFixture,
+    createOfferRenderDataFixture,
+};
 
 /**
  * Строки таблицы цен с наборами для сравнения в том порядке, в каком их

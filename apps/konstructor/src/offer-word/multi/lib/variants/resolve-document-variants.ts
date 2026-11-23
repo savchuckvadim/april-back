@@ -18,6 +18,7 @@ export interface DocumentVariantsRequest
         | 'complect'
         | 'complects'
         | 'complectsMode'
+        | 'alternativeComplects'
         | 'contract'
         | 'supply'
         | 'rows'
@@ -57,6 +58,9 @@ export const variantFromDto = (
     complect: dto.complect,
     ...(dto.complects ? { complects: dto.complects } : {}),
     ...(dto.complectsMode ? { complectsMode: dto.complectsMode } : {}),
+    ...(dto.alternativeComplects
+        ? { alternativeComplects: dto.alternativeComplects }
+        : {}),
     contract: dto.contract,
     supply: dto.supply,
     rows: dto.rows,

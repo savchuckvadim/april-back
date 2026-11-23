@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ProviderService } from '@lib/portal-lib/konstructor/provider';
 
 import {
+    IAlternativeComplectsRenderData,
     IComplectSectionsRenderData,
     IInfoblocksRenderData,
     OfferRenderInfoblocksService,
@@ -32,6 +33,7 @@ import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.
 
 export type IOfferWordRenderData = IInfoblocksRenderData &
     IComplectSectionsRenderData &
+    IAlternativeComplectsRenderData &
     IProductRenderData &
     IProviderRqRenderData &
     IOfferRenderRecipientData &
@@ -105,7 +107,9 @@ export class OfferRenderDataService {
 
     private createRenderData(
         providerRq: IProviderRqRenderData,
-        infoblocks: IInfoblocksRenderData & IComplectSectionsRenderData,
+        infoblocks: IInfoblocksRenderData &
+            IComplectSectionsRenderData &
+            IAlternativeComplectsRenderData,
         productPrices: IProductRenderData,
         generalProduct: IGeneralProductRenderItemData,
         recipient: IOfferRenderRecipientData,
@@ -125,7 +129,11 @@ export class OfferRenderDataService {
 
     private async renderDoumentInfoblocks(
         dto: OfferRenderInput,
-    ): Promise<IInfoblocksRenderData & IComplectSectionsRenderData> {
+    ): Promise<
+        IInfoblocksRenderData &
+            IComplectSectionsRenderData &
+            IAlternativeComplectsRenderData
+    > {
         return await this.offerRenderInfoblocksService.renderInfoblocks(dto);
     }
 

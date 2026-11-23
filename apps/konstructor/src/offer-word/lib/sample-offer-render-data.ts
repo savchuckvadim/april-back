@@ -4,7 +4,10 @@
  * фикстурой тестов/аудита PDF-КП. Данные вымышленные.
  */
 import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
-import { IComplectSectionRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-infoblocks.service';
+import {
+    IAlternativeComplectSectionRenderData,
+    IComplectSectionRenderData,
+} from '@app/konstructor/offer-word/services/render-data-services/offer-render-infoblocks.service';
 import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 import {
     IInfblockGroupsRenderData,
@@ -190,6 +193,43 @@ const complectSections: IComplectSectionRenderData[] = [
     ),
 ];
 
+/**
+ * Наполнение набора для сравнения: номер и заголовок набора, как у строк цен
+ * (`ProductSetNumber`, `ProductSetTitle`), и разделы его комплектов.
+ */
+export const createAlternativeSetFixture = (
+    number: number,
+    complects: IComplectSectionRenderData[],
+): IAlternativeComplectSectionRenderData => ({
+    AlternativeSetNumber: number,
+    AlternativeSetTitle: `Набор ${number}`,
+    ComplectSections: complects,
+});
+
+/** Два набора для сравнения по одному комплекту: у каждого свои группы наполнения. */
+const alternativeComplectSections: IAlternativeComplectSectionRenderData[] = [
+    createAlternativeSetFixture(1, [
+        createComplectSectionFixture(
+            'ГАРАНТ-Профессионал. Юрист',
+            'Интернет 5 ОД',
+            [groups[2], groups[4]],
+            {
+                CaseLaw: groups[2].infoblocks,
+                Academy: [groups[4].infoblocks[2]],
+                Consalting: [groups[4].infoblocks[0]],
+            },
+        ),
+    ]),
+    createAlternativeSetFixture(2, [
+        createComplectSectionFixture(
+            'ГАРАНТ-Профессионал. Бухгалтерия',
+            'Интернет 1 ОД',
+            [groups[0], groups[1]],
+            { NPA: groups[0].infoblocks, Comments: groups[1].infoblocks },
+        ),
+    ]),
+];
+
 const productRow = (
     number: string,
     name: string,
@@ -249,6 +289,10 @@ export const createOfferRenderDataFixture = (
     // IsComplectsSeparate включают тесты и аудит PDF, когда нужен этот вид
     ComplectSections: complectSections,
     IsComplectsSeparate: false,
+    // два набора для сравнения для циклов Word-шаблона; печать их наполнения
+    // выключена — IsAlternativeComplects включают тесты и аудит PDF
+    AlternativeComplectSections: alternativeComplectSections,
+    IsAlternativeComplects: false,
 
     ProductRows: [
         productRow(
