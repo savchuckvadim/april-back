@@ -5,6 +5,11 @@
  */
 
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type {
+    RequestBodyObject,
+    ResponseObject,
+} from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -180,5 +185,67 @@ describe('админ-ручки картинок поставщика', () => {
         const list = (await request(app.getHttpServer()).get(BASE).expect(200))
             .body as ProviderImageResponseDto[];
         expect(list).toEqual([]);
+    });
+
+    it('Swagger описывает четыре ручки: роль — перечисление, загрузка — multipart с полем file', () => {
+        const document = SwaggerModule.createDocument(
+            app,
+            new DocumentBuilder().build(),
+            {
+                operationIdFactory: (
+                    controllerKey: string,
+                    methodKey: string,
+                ) =>
+                    `${controllerKey.replace(/Controller$/i, '')}_${methodKey}`,
+            },
+        );
+        const list = document.paths['/admin/portal/provider/rq/{rqId}/images'];
+        const byRole =
+            document.paths['/admin/portal/provider/rq/{rqId}/images/{role}'];
+        const file =
+            document.paths[
+                '/admin/portal/provider/rq/{rqId}/images/{role}/file'
+            ];
+
+        expect(list.get?.operationId).toBe('ProviderImageAdmin_listImages');
+        expect(byRole.put?.operationId).toBe('ProviderImageAdmin_uploadImage');
+        expect(byRole.delete?.operationId).toBe(
+            'ProviderImageAdmin_removeImage',
+        );
+        expect(file.get?.operationId).toBe('ProviderImageAdmin_getImageFile');
+
+        const body = byRole.put?.requestBody as RequestBodyObject | undefined;
+        expect(Object.keys(body?.content ?? {})).toEqual([
+            'multipart/form-data',
+        ]);
+        const ok = file.get?.responses['200'] as ResponseObject | undefined;
+        expect(Object.keys(ok?.content ?? {})).toEqual([
+            'image/png',
+            'image/jpeg',
+        ]);
+        expect(Object.keys(byRole.delete?.responses ?? {})).toContain('204');
+
+        const roleParam = (byRole.put?.parameters ?? []).find(
+            parameter => 'name' in parameter && parameter.name === 'role',
+        );
+        expect(roleParam).toMatchObject({
+            in: 'path',
+            required: true,
+            schema: { $ref: '#/components/schemas/ProviderImageRole' },
+        });
+        expect(document.components?.schemas?.ProviderImageRole).toMatchObject({
+            enum: [
+                'stamp',
+                'signature_director',
+                'signature_accountant',
+                'logo',
+            ],
+        });
+        expect(document.components?.schemas).toHaveProperty(
+            'ProviderImageResponseDto',
+        );
+        expect(document.components?.schemas).toHaveProperty(
+            'ProviderImageUploadDto',
+        );
     });
 });
