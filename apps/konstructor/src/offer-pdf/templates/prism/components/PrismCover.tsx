@@ -1,10 +1,12 @@
 import type { FC } from 'react';
 import { Image, Text, View } from '@react-pdf/renderer';
+import { COVER_VARIANT } from '../../kit/cover/brand-cover.styles';
 import { GlassStripes } from '../../kit/decor/GlassStripes';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { joinNonEmpty } from '../../kit/lib/text.util';
 import { offerCoverContent } from '../../kit/lib/cover.util';
 import { A4 } from '../../kit/theme/offer-pdf-theme';
+import { sx } from '../../shared/style.util';
 import { PRISM_STRIPE_BASE } from '../prism.theme';
 import { COVER_STRIPES_WIDTH, prismCoverStyles } from './prism-cover.styles';
 import { PrismContact } from './PrismContact';
@@ -49,6 +51,11 @@ export const PrismCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                     <Text style={styles.product}>{cover.product}</Text>
                 ) : null}
                 {details ? <Text style={styles.details}>{details}</Text> : null}
+                {cover.variantTitle ? (
+                    <Text style={sx(styles.product, COVER_VARIANT)}>
+                        {cover.variantTitle}
+                    </Text>
+                ) : null}
             </View>
             <View style={styles.bottom}>
                 {cover.recipient ? (

@@ -6,13 +6,12 @@ import {
     ProviderService,
     RqEntity,
 } from '@lib/portal-lib/konstructor/provider';
-import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 import { OfferRenderDataService } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
-import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
 import {
     OfferPdfDocumentModel,
     OfferPdfSigner,
 } from '../model/offer-pdf-document.model';
+import { OfferPdfPrintInput } from '../model/offer-pdf-print-input';
 import { resolveOfferPdfSettings } from '../model/offer-pdf-settings';
 import { OFFER_PDF_DEFAULT_TEMPLATE_CODE } from '../model/offer-pdf-template-code';
 
@@ -25,9 +24,16 @@ const cleanText = (value?: string | null): string | null => {
 const cleanRqValue = (value?: string | null): string =>
     value && value !== 'null' ? value.trim() : '';
 
+export interface OfferPdfModelOptions {
+    /** Название варианта комплекта для титульника и первого листа */
+    variantTitle?: string | null;
+}
+
 /**
  * Сборка модели документа: данные КП — тем же сервисом, что и для
- * Word-шаблона, поверх — настройки, письмо, подписант и дата.
+ * Word-шаблона, поверх — настройки, письмо, подписант и дата. Подписи
+ * поставок в запросе уже дополнены: это делает генерация один раз на весь
+ * запрос, со всеми вариантами.
  */
 @Injectable()
 export class OfferPdfDocumentModelService {
@@ -36,21 +42,16 @@ export class OfferPdfDocumentModelService {
     constructor(
         private readonly renderDataService: OfferRenderDataService,
         private readonly providerService: ProviderService,
-        private readonly supplyEnricher: SupplyPayloadEnricherService,
         private readonly letters: OfferLetterRepository,
     ) {}
 
-    async build(dto: OfferPdfGenerateDto): Promise<OfferPdfDocumentModel> {
-        // Подписи поставок — с бэка по code, как в Word-потоке (легаси-тексты сильнее)
-        const enriched: OfferPdfGenerateDto = {
-            ...dto,
-            supply: await this.supplyEnricher.enrichSupply(dto.supply),
-            rows: await this.supplyEnricher.enrichRows(dto.rows),
-            total: await this.supplyEnricher.enrichRow(dto.total),
-        };
+    async build(
+        dto: OfferPdfPrintInput,
+        options: OfferPdfModelOptions = {},
+    ): Promise<OfferPdfDocumentModel> {
         const letterText = cleanText(dto.letter?.text);
         const [data, provider, portalLetter] = await Promise.all([
-            this.renderDataService.getOfferRenderData(enriched),
+            this.renderDataService.getOfferRenderData(dto),
             this.providerService.findById(Number(dto.providerId)),
             letterText ? Promise.resolve(null) : this.portalLetter(dto.domain),
         ]);
@@ -73,6 +74,7 @@ export class OfferPdfDocumentModelService {
                 date: formatRu(dayjs(), 'D MMMM YYYY [г.]'),
                 documentNumber: cleanText(dto.documentNumber),
             },
+            variantTitle: cleanText(options.variantTitle),
         };
     }
 

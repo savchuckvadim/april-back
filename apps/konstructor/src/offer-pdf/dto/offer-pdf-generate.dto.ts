@@ -1,6 +1,7 @@
 import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+    IsArray,
     IsBoolean,
     IsEnum,
     IsOptional,
@@ -8,6 +9,8 @@ import {
     MaxLength,
     ValidateNested,
 } from 'class-validator';
+import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
+import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
 import { OfferWordByTemplateGenerateDto } from '../../offer-word/dto/offer-word-generate-request.dto';
 import {
     DocumentFieldDescriptionMode,
@@ -202,4 +205,25 @@ export class OfferPdfGenerateDto extends OmitType(
     @IsOptional()
     @IsBoolean()
     saveToDeal?: boolean;
+
+    @ApiPropertyOptional({
+        type: [DocumentVariantDto],
+        description:
+            'Варианты комплекта — по одному payload на каждый, как у Word-КП (generate-multi). Без них или с одним вариантом КП печатается из полей запроса. Настройки PDF (settings, letter, documentNumber, стиль, гамма) общие для всех вариантов.',
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => DocumentVariantDto)
+    variants?: DocumentVariantDto[];
+
+    @ApiPropertyOptional({
+        type: ComplectCompositionDto,
+        description:
+            'Настройки сборки нескольких вариантов: режим (compare, multi_contract, single_contract) и настройки КП. Без них несколько вариантов печатаются как compare: открывается первый, остальные показываются наборами «для сравнения», если включён showAlternatives.',
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ComplectCompositionDto)
+    composition?: ComplectCompositionDto;
 }

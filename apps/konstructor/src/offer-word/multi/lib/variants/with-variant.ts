@@ -1,25 +1,34 @@
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
-import { OfferWordByTemplateGenerateDto } from '../../../dto/offer-word-generate-request.dto';
-import { OfferWordMultiGenerateDto } from '../../dto/offer-word-multi-generate.dto';
+import { DocumentVariantsRequest } from './resolve-document-variants';
+
+/** Запрос одиночного документа: тот же запрос без участников и настроек их сборки. */
+export type SingleDocumentRequest<T extends DocumentVariantsRequest> = Omit<
+    T,
+    'composition' | 'variants'
+>;
 
 /**
  * Payload одиночного рендера с данными одного участника. Всё «про сделку»
  * (шаблон, получатель, менеджер, счета) остаётся от запроса, всё «про
  * комплект» — от участника. Сам запрос не мутируется.
  *
- * Возвращается старый DTO: core-сервисы печатают одного участника и про
- * мультивариантность не знают — участники и настройки сборки дальше не идут.
+ * Возвращается запрос без `variants` и `composition` (для Word — старый DTO):
+ * core-сервисы печатают одного участника и про мультивариантность не знают —
+ * участники и настройки сборки дальше не идут. Подходит любому запросу с
+ * участниками: Word-КП и PDF-КП.
  */
-export const withVariant = (
-    dto: OfferWordMultiGenerateDto,
+export const withVariant = <T extends DocumentVariantsRequest>(
+    dto: T,
     variant: DocumentVariantDto,
-): OfferWordByTemplateGenerateDto => {
-    const base: Partial<OfferWordMultiGenerateDto> = { ...dto };
+): SingleDocumentRequest<T> => {
+    const base: SingleDocumentRequest<T> & Partial<DocumentVariantsRequest> = {
+        ...dto,
+    };
     delete base.composition;
     delete base.variants;
 
     return {
-        ...(base as OfferWordByTemplateGenerateDto),
+        ...base,
         contractType: variant.contractType,
         complect: variant.complect,
         contract: variant.contract,

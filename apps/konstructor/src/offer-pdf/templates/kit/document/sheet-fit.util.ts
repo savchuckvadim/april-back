@@ -1,8 +1,10 @@
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { estimateLetterHeight } from '../letter/letter-fit.util';
+import { variantTitleOf } from '../lib/variant-title.util';
 import { estimatePriceBlockHeight } from '../price/price-fit.util';
 import { SMALL_TABLE_ROWS } from '../price/price.layout';
 import { A4, type OfferPdfTheme } from '../theme/offer-pdf-theme';
+import { estimateVariantBannerHeight } from './variant-banner.util';
 
 /** Доля листа, которую разрешаем занять письму с ценами: запас на шапку и подвал стиля */
 const SHEET_SHARE = 0.9;
@@ -51,7 +53,10 @@ export const priceFitsLetterSheet = (
     model: OfferPdfDocumentModel,
     theme: OfferPdfTheme,
 ): boolean =>
-    estimateLetterHeight(theme, model) + estimatePrice(model, theme) <=
+    estimateLetterHeight(theme, model) +
+        // название варианта открывает лист письма и занимает его высоту
+        estimateVariantBannerHeight(theme, variantTitleOf(model)) +
+        estimatePrice(model, theme) <=
     sheetCapacity(theme);
 
 /**

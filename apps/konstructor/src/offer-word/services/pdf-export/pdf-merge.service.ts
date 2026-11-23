@@ -22,8 +22,8 @@ export interface PdfMergeResult {
 /**
  * Склейка нескольких PDF в один: КП «на каждый набор своя страница».
  *
- * Именно PDF, а не DOCX: docx-файлы с разными стилями и нумерацией надёжно
- * не сливаются, а PDF после LibreOffice — просто страницы. В Word-режиме
+ * Склеиваются готовые PDF: после LibreOffice это просто страницы. Docx-файлы
+ * с разными стилями и нумерацией надёжно слить нельзя, поэтому в Word-режиме
  * документы отдаются по одному.
  */
 @Injectable()
@@ -36,11 +36,15 @@ export class PdfMergeService {
         private readonly configService: ConfigService,
     ) {}
 
-    async merge(params: PdfMergeParams): Promise<PdfMergeResult> {
+    /**
+     * Склейка PDF, лежащих в памяти: страницы идут подряд в порядке списка.
+     * Без записи на диск — для предпросмотра и для PDF-КП, который сам
+     * кладёт итоговый файл в своё хранилище.
+     */
+    async mergeBuffers(sources: readonly Uint8Array[]): Promise<Buffer> {
         const merged = await PDFDocument.create();
 
-        for (const pdfPath of params.pdfAbsolutePaths) {
-            const bytes = await this.storageService.readFile(pdfPath);
+        for (const bytes of sources) {
             const source = await PDFDocument.load(bytes);
             const pages = await merged.copyPages(
                 source,
@@ -51,7 +55,16 @@ export class PdfMergeService {
             }
         }
 
-        const buffer = Buffer.from(await merged.save());
+        return Buffer.from(await merged.save());
+    }
+
+    async merge(params: PdfMergeParams): Promise<PdfMergeResult> {
+        const sources: Buffer[] = [];
+        for (const pdfPath of params.pdfAbsolutePaths) {
+            sources.push(await this.storageService.readFile(pdfPath));
+        }
+
+        const buffer = await this.mergeBuffers(sources);
         const fileName = `offer-${randomUUID()}.pdf`;
         const subPath = `konstructor/offer-word/${params.year}/${params.domain}/${params.userId}`;
         const absolutePath = await this.storageService.saveFile(

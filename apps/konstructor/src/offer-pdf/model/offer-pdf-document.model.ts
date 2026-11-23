@@ -80,6 +80,13 @@ export interface OfferPdfDocumentModel {
     signer: OfferPdfSigner | null;
     images: OfferPdfImages;
     meta: OfferPdfDocumentMeta;
+    /**
+     * Название варианта комплекта (`DocumentVariantDto.title`). Задаётся, когда
+     * каждый вариант печатается своим документом: титульник и первый лист
+     * показывают его, чтобы в склеенном PDF было видно, где какой вариант.
+     * Не задано или пусто — документ печатается без названия варианта.
+     */
+    variantTitle?: string | null;
     /** Картинки и логотипы стиля — кладёт сервис рендера */
     assets?: OfferPdfAssets;
 }

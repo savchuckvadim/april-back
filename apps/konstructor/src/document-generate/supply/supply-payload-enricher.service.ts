@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupplyTextService } from '@lib/garant';
 import { SupplyDto } from '../../dto/supply.dto';
+import { DocumentVariantDto } from '../dto/document-variant/document-variant.dto';
 import { ProductRowDto } from '../dto/product-row/product-row.dto';
 import {
     ProductRowSetDto,
@@ -28,6 +29,11 @@ export interface SupplyCaptionPayload {
     rows?: ProductRowDto[] | null;
     total?: ProductRowDto | null;
     sets?: ProductRowSetsPayload | null;
+}
+
+/** Запрос, у которого подписи несут и верхние поля, и каждый вариант комплекта. */
+export interface SupplyCaptionVariantsPayload extends SupplyCaptionPayload {
+    variants?: DocumentVariantDto[] | null;
 }
 
 /** Типы продукта, под которыми набор хранит строки. */
@@ -143,6 +149,27 @@ export class SupplyPayloadEnricherService {
                 : payload.total,
             sets: await this.enrichSets(payload.sets, memo),
         };
+    }
+
+    /**
+     * Подписи в запросе с вариантами комплекта: верхние поля печатаются, когда
+     * вариантов нет или он один, а каждый вариант печатается сам, поэтому
+     * дополняются и они. Одна память на запрос держит число обращений к
+     * справочнику равным числу разных поставок. Запрос без `variants` остаётся
+     * без `variants`, пустой список остаётся пустым.
+     */
+    async enrichWithVariants<T extends SupplyCaptionVariantsPayload>(
+        payload: T,
+        memo: SupplyEnrichMemo = new Map(),
+    ): Promise<T> {
+        const top = await this.enrichPayload(payload, memo);
+        if (!payload.variants) return top;
+
+        const variants: DocumentVariantDto[] = [];
+        for (const variant of payload.variants) {
+            variants.push(await this.enrichPayload(variant, memo));
+        }
+        return { ...top, variants };
     }
 
     private async enrichSetList(

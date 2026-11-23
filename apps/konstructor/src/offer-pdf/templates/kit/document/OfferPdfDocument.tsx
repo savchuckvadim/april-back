@@ -5,6 +5,7 @@ import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
 import { groupsWithItems } from '../infoblocks/infoblock-description.util';
 import { OfferLetter } from '../letter/OfferLetter';
+import { variantTitleOf } from '../lib/variant-title.util';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
 import { ChromePage } from './ChromePage';
 import {
@@ -17,6 +18,7 @@ import type { OfferPdfChrome } from './offer-pdf-chrome';
 import { OfferSections } from './OfferSections';
 import { priceFitsLetterSheet, priceStartsOwnSheet } from './sheet-fit.util';
 import { withSurfaceBottom } from './surface.styles';
+import { VariantBanner } from './VariantBanner';
 
 export interface OfferPdfDocumentProps {
     model: OfferPdfDocumentModel;
@@ -44,6 +46,8 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     const cardTheme = withSurfaceBottom(theme, frame?.surfaceBottom);
     const { Cover, Promo } = chrome;
     const pages = offerDocumentPages(settings, chrome);
+    // вариант комплекта печатается своим документом: название — в шапке первого листа
+    const variantTitle = variantTitleOf(model);
     const letterOnSheets = !pages.letterInPromo;
     const hasInfoblocks =
         groupsWithItems(data.infoblocksByGroups ?? []).length > 0;
@@ -95,6 +99,9 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
                     chrome={chrome}
                     frame={frame}
                 >
+                    {index === 0 && variantTitle ? (
+                        <VariantBanner title={variantTitle} theme={theme} />
+                    ) : null}
                     {flow.withLetter ? (
                         <OfferLetter model={model} theme={cardTheme} />
                     ) : null}

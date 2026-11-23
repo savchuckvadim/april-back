@@ -3,8 +3,13 @@ import { Text, View } from '@react-pdf/renderer';
 import { BrandLogo } from '../brand/BrandLogo';
 import type { OfferPdfChromeProps } from '../document/offer-pdf-chrome';
 import { offerCoverContent } from '../lib/cover.util';
+import { sx } from '../../shared/style.util';
 import { strongAccent } from '../theme/theme-colors.util';
-import { COVER_LOGO_HEIGHT, type BrandCoverStyles } from './brand-cover.styles';
+import {
+    COVER_LOGO_HEIGHT,
+    COVER_VARIANT,
+    type BrandCoverStyles,
+} from './brand-cover.styles';
 import { CoverPeople } from './CoverPeople';
 
 export interface BrandCoverProps extends OfferPdfChromeProps {
@@ -67,6 +72,11 @@ export const BrandCover: FC<BrandCoverProps> = ({
                 {afterProduct}
                 {cover.supply ? (
                     <Text style={styles.supply}>{cover.supply}</Text>
+                ) : null}
+                {cover.variantTitle ? (
+                    <Text style={sx(styles.supply, COVER_VARIANT)}>
+                        {cover.variantTitle}
+                    </Text>
                 ) : null}
                 {afterSupply}
             </View>

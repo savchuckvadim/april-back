@@ -110,6 +110,8 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         OfferRenderDataService,
         BitrixDocumentSaveFlowService,
         OfferBxTimelineService,
+        // Склейка PDF вариантов нужна и PDF-КП (offer-pdf)
+        PdfMergeService,
         // Зависимости процессоров из OfferWordWorkerModule
         OfferWordByTemplateGenerateUseCase,
         OfferWordMultiGenerateUseCase,

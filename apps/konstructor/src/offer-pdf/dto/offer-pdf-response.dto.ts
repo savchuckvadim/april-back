@@ -1,7 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfSettingsDto } from './offer-pdf-generate.dto';
-import { OfferPdfGenerateResult } from '../services/offer-pdf-generate.service';
+import {
+    OfferPdfGeneratedFile,
+    OfferPdfGenerateResult,
+} from '../services/offer-pdf-generate.service';
 import { OfferPdfTemplateInfo } from '../templates/offer-pdf-template.interface';
 import { OfferPdfPaletteInfo } from '../templates/kit/theme/offer-pdf-palette';
 
@@ -74,9 +77,10 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
     palettes: OfferPdfPaletteItemDto[];
 }
 
-export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
+/** Один готовый файл КП: единственный, склейка вариантов или файл варианта. */
+export class OfferPdfGeneratedFileDto implements OfferPdfGeneratedFile {
     @ApiProperty({
-        description: 'Публичная ссылка на PDF.',
+        description: 'Публичная ссылка на PDF на нашем сервере.',
         type: String,
         example: 'https://app.example.ru/api/files/abc123',
     })
@@ -84,6 +88,47 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
 
     @ApiProperty({
         description: 'Имя файла в хранилище.',
+        type: String,
+        example: 'offer-7f3c….pdf',
+    })
+    fileName: string;
+
+    @ApiProperty({
+        description:
+            'Имя документа, как в Битриксе: «КП <комплект> - <поставка>».',
+        type: String,
+        example: 'КП Бухгалтерия - Интернет 3 ОД',
+    })
+    name: string;
+
+    @ApiProperty({
+        description: 'Размер файла в байтах.',
+        type: Number,
+        example: 148_233,
+    })
+    size: number;
+
+    @ApiProperty({
+        description:
+            'Ссылка на файл в Битриксе; пусто — на Диск Битрикса он не попал.',
+        type: String,
+        nullable: true,
+        example: 'https://portal.bitrix24.ru/disk/file/42',
+    })
+    bitrixLink: string | null;
+}
+
+export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
+    @ApiProperty({
+        description:
+            'Публичная ссылка на PDF. Файлов несколько — ссылка на первый, все файлы перечислены в links.',
+        type: String,
+        example: 'https://app.example.ru/api/files/abc123',
+    })
+    link: string;
+
+    @ApiProperty({
+        description: 'Имя первого файла в хранилище.',
         type: String,
         example: 'offer-7f3c….pdf',
     })
@@ -98,14 +143,15 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
     templateCode: OfferPdfTemplateCode;
 
     @ApiProperty({
-        description: 'Время рендера PDF в миллисекундах.',
+        description:
+            'Время рендера PDF в миллисекундах; у нескольких вариантов — сумма по всем документам.',
         type: Number,
         example: 180,
     })
     durationMs: number;
 
     @ApiProperty({
-        description: 'Размер файла в байтах.',
+        description: 'Размер первого файла в байтах.',
         type: Number,
         example: 148_233,
     })
@@ -121,14 +167,15 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
 
     @ApiProperty({
         description:
-            'Файл загружен на Диск Битрикса и упомянут в таймлайне сделки.',
+            'Все файлы загружены на Диск Битрикса и упомянуты в таймлайне сделки.',
         type: Boolean,
         example: true,
     })
     savedToDeal: boolean;
 
     @ApiProperty({
-        description: 'Ссылка на файл в Битриксе; пусто — загрузка не удалась.',
+        description:
+            'Ссылка на первый файл в Битриксе; пусто — загрузка не удалась.',
         type: String,
         nullable: true,
         example: 'https://portal.bitrix24.ru/disk/file/42',
@@ -137,10 +184,25 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
 
     @ApiProperty({
         description:
-            'Почему файл не прикреплён к сделке; пусто — прикреплён или не запрашивалось.',
+            'Почему файлы не прикреплены к сделке; пусто — прикреплены или не запрашивалось.',
         type: String,
         nullable: true,
         example: 'Не удалось прикрепить файл к сделке: нет доступа к Диску',
     })
     dealMessage: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Все готовые файлы по порядку. Файл один, когда варианты склеены в один PDF или печатается одно КП; по файлу на вариант — при separateDocuments и когда склейка не удалась. Первый файл повторяют поля link, fileName, size и bitrixLink.',
+        type: [OfferPdfGeneratedFileDto],
+    })
+    links?: OfferPdfGeneratedFileDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Что не сошлось при слиянии вариантов (сроки, скидки) и почему файлы не склеены — для показа менеджеру.',
+        type: [String],
+        example: [],
+    })
+    warnings?: string[];
 }
