@@ -25,9 +25,16 @@ import { InfoblocksCommentService } from './services/rpa-timeline-comment/infobl
 import { ContractCommentService } from './services/rpa-timeline-comment/contract-comment.service';
 import { TotalSumCommentService } from './services/rpa-timeline-comment/total-comment.service';
 import { TelegramModule } from '@lib/telegram/telegram.module';
+import { OfferWordModule } from '../../offer-word/offer-word.module';
+import { InitSupplyDiskService } from './services/disk/init-supply-disk.service';
 
+/**
+ * Диск Битрикса берётся у OfferWordModule: он уже экспортирует
+ * BitrixDocumentSaveFlowService (папка сделки, загрузка файлов), которым
+ * пользуются КП и договор. Своей копии провайдера здесь нет.
+ */
 @Module({
-    imports: [PBXModule, ProviderModule, TelegramModule],
+    imports: [PBXModule, ProviderModule, TelegramModule, OfferWordModule],
     controllers: [InitSupplyController],
     providers: [
         InitSupplyUseCase,
@@ -42,6 +49,9 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
         InitSupplyRpaSupplyReportFileFieldService,
         InitSupplyFileService,
         InitSupplyDealFileFieldsService,
+
+        // документы заявки на Диске Битрикса
+        InitSupplyDiskService,
 
         // RPA timeline comment
         InitSupplyTimelineCommentService,

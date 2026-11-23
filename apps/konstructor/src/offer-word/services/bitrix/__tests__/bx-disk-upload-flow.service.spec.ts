@@ -12,11 +12,9 @@ const fakeBitrix = (subfolderExists: boolean) => {
     const disk = {
         storage: {
             getlist: jest.fn().mockResolvedValue({ result: [{ ID: '100' }] }),
-            getchildren: jest
-                .fn()
-                .mockResolvedValue({
-                    result: [{ ID: '200', DETAIL_URL: 'deal-folder' }],
-                }),
+            getchildren: jest.fn().mockResolvedValue({
+                result: [{ ID: '200', DETAIL_URL: 'deal-folder' }],
+            }),
             addfolder: jest.fn(),
         },
         folder: {
@@ -25,16 +23,12 @@ const fakeBitrix = (subfolderExists: boolean) => {
                     ? [{ ID: '300', DETAIL_URL: 'contracts-folder' }]
                     : [],
             }),
-            addsubfolder: jest
-                .fn()
-                .mockResolvedValue({
-                    result: { ID: '301', DETAIL_URL: 'new-contracts-folder' },
-                }),
-            uploadfile: jest
-                .fn()
-                .mockResolvedValue({
-                    result: { ID: '900', DETAIL_URL: 'file-url' },
-                }),
+            addsubfolder: jest.fn().mockResolvedValue({
+                result: { ID: '301', DETAIL_URL: 'new-contracts-folder' },
+            }),
+            uploadfile: jest.fn().mockResolvedValue({
+                result: { ID: '900', DETAIL_URL: 'file-url' },
+            }),
         },
     };
     return { bitrix: { disk } as unknown as BitrixService, disk };
@@ -109,5 +103,98 @@ describe('BxDiskUploadFlowService', () => {
         expect(disk.folder.uploadfile).toHaveBeenCalledWith(
             expect.objectContaining({ id: 301 }),
         );
+    });
+
+    describe('по шагам: папка и отдельный файл', () => {
+        it('ensureTargetFolder отдаёт id и ссылку подпапки, файлы не грузит', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+                { subfolder: 'Поставка 77' },
+            );
+
+            const folder = await flow.ensureTargetFolder();
+
+            expect(folder).toEqual({ id: 300, url: 'contracts-folder' });
+            expect(disk.folder.uploadfile).not.toHaveBeenCalled();
+        });
+
+        it('ensureTargetFolder без подпапки отдаёт папку сделки', async () => {
+            const { bitrix } = fakeBitrix(true);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+            );
+
+            expect(await flow.ensureTargetFolder()).toEqual({
+                id: 200,
+                url: 'deal-folder',
+            });
+        });
+
+        it('uploadFile: буфер уходит как base64, имя исходное, уникальные имена включены', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+                { uniqueNames: true },
+            );
+
+            const uploaded = await flow.uploadFile(
+                300,
+                'Счёт.pdf',
+                Buffer.from('pdf-bytes'),
+            );
+
+            expect(disk.folder.uploadfile).toHaveBeenCalledWith({
+                id: 300,
+                data: { NAME: 'Счёт.pdf' },
+                fileContent: ['Счёт.pdf', 'cGRmLWJ5dGVz'],
+                generateUniqueName: true,
+            });
+            expect(uploaded.DETAIL_URL).toBe('file-url');
+        });
+
+        it('uploadFile: base64-строка уходит без изменений', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+            );
+
+            await flow.uploadFile(300, FILE[0], FILE[1]);
+
+            expect(disk.folder.uploadfile).toHaveBeenCalledWith({
+                id: 300,
+                data: { NAME: 'Договор.docx' },
+                fileContent: FILE,
+            });
+        });
+
+        it('нет хранилища группы продаж — ошибка, ничего не создаётся', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            disk.storage.getlist.mockResolvedValue({ result: [] });
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+                { subfolder: 'Поставка 77' },
+            );
+
+            await expect(flow.ensureTargetFolder()).rejects.toThrow(
+                'Root storage folder ID is not found',
+            );
+            expect(disk.folder.addsubfolder).not.toHaveBeenCalled();
+        });
     });
 });
