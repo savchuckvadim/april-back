@@ -8,6 +8,10 @@ import { IPreparedDocument } from '../interface/document.interface';
 import { OfferWordCoreGenerateResult } from '../types/offer-word-core-generate.types';
 import { getOfferDocumentProductName } from '../lib/get-offer-document-product-name.util';
 import { getInvoiceDocumentProductName } from '../lib/get-invoice-document-product-name';
+import {
+    describeInvoiceNotBuilt,
+    getErrorReason,
+} from '../lib/invoice-not-built.util';
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
 
 export interface IDocumentBuildResult {
@@ -47,7 +51,10 @@ export class DocumentBuildService {
                 invoices = await this.buildInvoiceDocuments(dto, year, isPdf);
             }
         } catch (error) {
-            console.error('Error in buildInvoiceDocuments:', error);
+            // счёт — дополнение к КП: без него КП всё равно отдаём
+            this.logger.error(
+                `${dto.domain}: ${describeInvoiceNotBuilt(getErrorReason(error))}`,
+            );
         }
 
         return {
@@ -107,6 +114,11 @@ export class DocumentBuildService {
     ): Promise<IPreparedDocument[]> {
         const invoiceCoreResult =
             await this.invoiceGenerateService.execute(dto);
+        if (invoiceCoreResult.notBuiltReason) {
+            this.logger.warn(
+                `${dto.domain}: ${describeInvoiceNotBuilt(invoiceCoreResult.notBuiltReason)}`,
+            );
+        }
         const results: IPreparedDocument[] = [];
         let isAlternative = false;
         let invoiceCount = 0;

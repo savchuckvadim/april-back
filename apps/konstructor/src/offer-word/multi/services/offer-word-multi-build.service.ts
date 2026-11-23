@@ -10,6 +10,10 @@ import { IPreparedDocument } from '../../interface/document.interface';
 import { OfferWordCoreGenerateResult } from '../../types/offer-word-core-generate.types';
 import { getOfferDocumentProductName } from '../../lib/get-offer-document-product-name.util';
 import { getInvoiceDocumentProductName } from '../../lib/get-invoice-document-product-name';
+import {
+    describeInvoiceNotBuilt,
+    getErrorReason,
+} from '../../lib/invoice-not-built.util';
 import { OfferWordMultiGenerateDto } from '../dto/offer-word-multi-generate.dto';
 import {
     DocumentVariantsMode,
@@ -103,10 +107,11 @@ export class OfferWordMultiBuildService {
                 );
             }
         } catch (error) {
-            // счёт — дополнение к КП: без него КП всё равно отдаём
-            this.logger.error(
-                `${dto.domain}: счета не собрались — ${(error as Error)?.message}`,
-            );
+            // счёт — дополнение к КП: КП отдаём в любом случае и сообщаем
+            // менеджеру причину
+            const reason = getErrorReason(error);
+            this.logger.error(`${dto.domain}: счета не собрались — ${reason}`);
+            this.addWarning(warnings, describeInvoiceNotBuilt(reason));
         }
 
         if (warnings.length) {
@@ -262,6 +267,7 @@ export class OfferWordMultiBuildService {
                 withVariant(dto, resolved.variants[0]),
                 year,
                 isPdf,
+                warnings,
             );
         }
 
@@ -274,10 +280,18 @@ export class OfferWordMultiBuildService {
                     withVariant(dto, merged.variant),
                     year,
                     isPdf,
+                    warnings,
                 )),
             );
         }
         return invoices;
+    }
+
+    /** Одинаковое предупреждение от нескольких групп договоров — одной строкой. */
+    private addWarning(warnings: string[], warning: string): void {
+        if (!warnings.includes(warning)) {
+            warnings.push(warning);
+        }
     }
 
     private async buildOfferDocument(
@@ -326,9 +340,16 @@ export class OfferWordMultiBuildService {
         dto: OfferWordByTemplateGenerateDto,
         year: string,
         isPdf: boolean,
+        warnings: string[],
     ): Promise<IPreparedDocument[]> {
         const invoiceCoreResult =
             await this.invoiceGenerateService.execute(dto);
+        if (invoiceCoreResult.notBuiltReason) {
+            this.addWarning(
+                warnings,
+                describeInvoiceNotBuilt(invoiceCoreResult.notBuiltReason),
+            );
+        }
         const results: IPreparedDocument[] = [];
         let isAlternative = false;
         let invoiceCount = 0;

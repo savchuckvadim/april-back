@@ -386,22 +386,81 @@ describe('OfferWordMultiBuildService', () => {
         expect(result.invoices).toHaveLength(1);
     });
 
-    it('счёт не собрался — КП всё равно отдаём', async () => {
-        renderInvoice.mockRejectedValue(new Error('шаблон счёта не найден'));
+    describe('счёт не построен', () => {
+        const withGeneralInvoice = {
+            needGeneralInvoice: true,
+            needManyInvoices: false,
+            isByPresentationInvoices: false,
+            invoiceDate: '',
+        };
+        const noTemplate: InvoiceCoreResult = {
+            renderData: null,
+            template: null,
+            savedResults: [],
+            notBuiltReason: 'для портала не найден шаблон счёта',
+        };
 
-        const result = await service.build(
-            request({
-                invoice: {
-                    needGeneralInvoice: true,
-                    needManyInvoices: false,
-                    isByPresentationInvoices: false,
-                    invoiceDate: '',
-                },
-                variants: [variant('Юрист', CONTRACT_LTYPE.ABON)],
-            }),
-        );
+        it('шаблон счёта не найден — КП отдано, в warnings строка про счёт', async () => {
+            renderInvoice.mockResolvedValue(noTemplate);
 
-        expect(result.offers).toHaveLength(1);
-        expect(result.invoices).toEqual([]);
+            const result = await service.build(
+                request({
+                    invoice: withGeneralInvoice,
+                    variants: [variant('Юрист', CONTRACT_LTYPE.ABON)],
+                }),
+            );
+
+            expect(result.offers).toHaveLength(1);
+            expect(result.invoices).toEqual([]);
+            expect(result.warnings).toEqual([
+                'Счёт не сформирован: для портала не найден шаблон счёта',
+            ]);
+        });
+
+        it('шаблон не найден для нескольких групп договоров — предупреждение одно', async () => {
+            renderInvoice.mockResolvedValue(noTemplate);
+
+            const result = await service.build(
+                request({
+                    invoice: withGeneralInvoice,
+                    variants: [
+                        variant('a', CONTRACT_LTYPE.ABON),
+                        variant('b', CONTRACT_LTYPE.LIC),
+                    ],
+                    composition: composition(ComplectModeEnum.MULTI_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(2);
+            expect(result.warnings).toEqual([
+                'Счёт не сформирован: для портала не найден шаблон счёта',
+            ]);
+        });
+
+        it('сбой сборки счёта — КП отдано, в warnings причина сбоя', async () => {
+            renderInvoice.mockRejectedValue(
+                new Error('Файл шаблона счёта не найден в хранилище'),
+            );
+
+            const result = await service.build(
+                request({
+                    invoice: withGeneralInvoice,
+                    variants: [variant('Юрист', CONTRACT_LTYPE.ABON)],
+                }),
+            );
+
+            expect(result.offers).toHaveLength(1);
+            expect(result.invoices).toEqual([]);
+            expect(result.warnings).toEqual([
+                'Счёт не сформирован: Файл шаблона счёта не найден в хранилище',
+            ]);
+        });
+
+        it('счёт не запрошен — предупреждений про счёт нет, шаблон не ищется', async () => {
+            const result = await service.build(request({}));
+
+            expect(renderInvoice).not.toHaveBeenCalled();
+            expect(result.warnings).toEqual([]);
+        });
     });
 });

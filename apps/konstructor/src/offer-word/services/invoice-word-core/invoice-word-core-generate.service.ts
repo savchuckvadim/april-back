@@ -17,6 +17,10 @@ import {
     InvoiceTemplateService,
 } from '@app/konstructor/modules/invoice-template';
 import { InvoiceTemplate } from 'generated/prisma';
+import {
+    INVOICE_TEMPLATE_NOT_FOUND_REASON,
+    InvoiceTemplateSourceService,
+} from './invoice-template-source.service';
 
 const RESULT_PATH = `konstructor/invoice-document/${dayjs().format('YYYY')}`;
 
@@ -32,31 +36,41 @@ export interface InvoiceWordCoreGenerateResult {
     renderData: IInvoiceSingleItemRenderData;
 }
 
+/**
+ * Итог сборки счетов. Шаблона нет — `savedResults` пуст, `renderData` и
+ * `template` равны null, `notBuiltReason` хранит причину для менеджера.
+ */
+export interface InvoiceWordCoreExecuteResult {
+    renderData: IInvoiceRenderData | null;
+    template: InvoiceTemplateResponseDto | null;
+    savedResults: InvoiceWordCoreGenerateResult[];
+    /** Заполнено, когда счёт не построен: текст причины для менеджера. */
+    notBuiltReason?: string;
+}
+
 @Injectable()
 export class InvoiceWordCoreGenerateService {
     constructor(
         private readonly invoiceTemplateService: InvoiceTemplateService,
+        private readonly invoiceTemplateSource: InvoiceTemplateSourceService,
         private readonly storageService: StorageService,
         private readonly fileLinkService: FileLinkService,
         private readonly configService: ConfigService,
         private readonly invoiceRenderDataService: InvoiceRenderDataService,
     ) {}
 
-    async execute(dto: OfferWordByTemplateGenerateDto): Promise<{
-        renderData: IInvoiceRenderData;
-        template: InvoiceTemplateResponseDto;
-        savedResults: InvoiceWordCoreGenerateResult[];
-    }> {
-        const template = await this.invoiceTemplateService.innerFindById(
-            dto.invoiceTemplateId,
-        );
+    async execute(
+        dto: OfferWordByTemplateGenerateDto,
+    ): Promise<InvoiceWordCoreExecuteResult> {
+        const template = await this.invoiceTemplateSource.resolve(dto);
         const savedResults: InvoiceWordCoreGenerateResult[] = [];
         if (!template) {
-            // Искали по invoiceTemplateId — его и сообщаем. Раньше в текст
-            // подставлялся templateId (шаблон КП), и 404 указывал на чужой id.
-            throw new NotFoundException(
-                `Invoice template with ID ${dto.invoiceTemplateId} not found`,
-            );
+            return {
+                renderData: null,
+                template: null,
+                savedResults,
+                notBuiltReason: INVOICE_TEMPLATE_NOT_FOUND_REASON,
+            };
         }
         //for debug/////////////////////////////////////////////////////
         const templateDto = this.invoiceTemplateService.toDto(template);
@@ -180,7 +194,9 @@ export class InvoiceWordCoreGenerateService {
         );
 
         if (!isFileExist) {
-            throw new NotFoundException(`File ${template.file_path} not found`);
+            throw new NotFoundException(
+                `Файл шаблона счёта не найден в хранилище: ${template.file_path}`,
+            );
         }
         const fileBuffer = await this.storageService.readFile(
             template.file_path,
