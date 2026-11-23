@@ -23,6 +23,8 @@ import {
 } from './xo-rescue.decision';
 import { PortalWorkingHoursService } from '../working-hours/portal-working-hours.service';
 import { workingHoursAgo } from '../working-hours/working-hours.model';
+import { XoLaunchRegistryService } from './launch/xo-launch-registry.service';
+import { xoLaunchEntityKey } from './launch/xo-launch.rule';
 
 /** Настройки прогона (из админки, на домен). */
 export interface XoRescueOptions {
@@ -102,6 +104,7 @@ export class XoDispatchRescueService {
         private readonly pbx: PBXService,
         private readonly coldHook: ColdHookSilinceEndpointV2Service,
         private readonly workingHours: PortalWorkingHoursService,
+        private readonly launches: XoLaunchRegistryService,
     ) {}
 
     async runForDomain(
@@ -190,6 +193,7 @@ export class XoDispatchRescueService {
                 )),
             );
         }
+        await this.markAwaitingQueue(domain, entityType, rows);
 
         let spent = 0;
         const seen = new Set<number>();
@@ -346,6 +350,26 @@ export class XoDispatchRescueService {
             // Верхняя граница жёсткая: час на то, чтобы хук доработал сам.
             orphanNotAfter: now.subtract(1, 'hour'),
         };
+    }
+
+    /**
+     * Карточки, хук по которым принят и ещё стоит в нашей очереди, — не
+     * потерянные, а медленные: досылка поставила бы ХО второй раз. Один
+     * запрос к реестру на всю выборку; реестр не ответил — решаем по меткам,
+     * как раньше (досланный дубль всё равно отсечёт обработчик окна).
+     */
+    private async markAwaitingQueue(
+        domain: string,
+        entityType: XoRescueEntityType,
+        rows: XoRescueRow[],
+    ): Promise<void> {
+        const keyOf = (item: XoRescueRow) =>
+            xoLaunchEntityKey(entityType, item.entityId);
+        const waiting = await this.launches.pending(domain, rows.map(keyOf));
+        if (!waiting) return;
+        for (const item of rows) {
+            item.candidate.awaitingQueue = waiting.has(keyOf(item));
+        }
     }
 
     private describeSkipped(result: XoRescueRunResult): string {

@@ -189,6 +189,8 @@ export class XoRescueCandidateReader {
                 // До проверки считаем «работа есть»: ошибка чтения не должна
                 // оборачиваться массовой досылкой.
                 hasXoWorkSincePlan: needsWorkCheck,
+                // Заполняет сервис по реестру запусков (один запрос на выборку).
+                awaitingQueue: false,
             },
         };
     }

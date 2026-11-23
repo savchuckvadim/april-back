@@ -7,6 +7,8 @@ import { XoDispatchRescueService } from '../xo-dispatch-rescue.service';
 import { LeadRequestModule } from '../../../lead-request/lead-request.module';
 import { RejectReviveHookModule } from '../../../sales-hooks/reject-revive/reject-revive.module';
 import { EventReportTmcModule } from '../../../event-report-tmc/event-report-tmc.module';
+import { ColdHookV2Module } from '../../../cold-hook-v2/hook.module';
+import { XoLaunchRegistryModule } from '../launch/xo-launch-registry.module';
 
 /**
  * Проводка модуля, а не логика.
@@ -56,6 +58,14 @@ describe('XoDispatchRescueModule — проводка', () => {
 
     it('импортирует PBXModule — его требует чтение календаря портала', () => {
         expect(importsOf(XoDispatchRescueModule)).toContain(PBXModule);
+    });
+
+    it('импортирует реестр запусков — иначе сервис крона не соберётся', () => {
+        expect(importsOf(XoDispatchRescueModule)).toContain(
+            XoLaunchRegistryModule,
+        );
+        expect(importsOf(ColdHookV2Module)).toContain(XoLaunchRegistryModule);
+        expect(importsOf(XoLaunchRegistryModule)).toContain(RedisModule);
     });
 });
 

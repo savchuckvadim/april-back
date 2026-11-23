@@ -16,6 +16,13 @@ export interface XoRescueCandidate {
      * что отработал СЕГОДНЯШНИЙ вызов хука.
      */
     hasXoWorkSincePlan: boolean;
+    /**
+     * Хук по карточке принят нашим бэкендом и ещё стоит в очереди (реестр
+     * запусков, `xo-launch.rule`). Метка «отправлен» появится, когда окно
+     * обработают; досылать сейчас — значит запустить ХО второй раз
+     * (gsr 20.11.2026: порог 5 минут, хук ждал 6).
+     */
+    awaitingQueue: boolean;
 }
 
 /** Пороговые времена прогона — считаются один раз на тик. */
@@ -38,6 +45,8 @@ export interface XoRescueThresholds {
 export type XoRescueAction = 'dispatch' | 'skip';
 
 export type XoRescueReason =
+    /** Хук принят и стоит в нашей очереди — не досылаем. */
+    | 'awaiting-queue'
     /** Робот взял в очередь, но хук не доехал — досылаем. */
     | 'marker-stuck'
     /** Звонок назначен, а работы по нему не появилось — досылаем. */
@@ -93,6 +102,12 @@ export function decideXoRescue(
 ): XoRescueVerdict {
     const { markers, xoDate, hasXoWorkSincePlan } = candidate;
 
+    // Хук доехал до нас и ждёт очереди: он не потерян, а медленный. Досылка
+    // поставила бы ХО второй раз — проверка раньше обоих признаков.
+    if (candidate.awaitingQueue) {
+        return { action: 'skip', reason: 'awaiting-queue' };
+    }
+
     // --- Признак 1: маркер ------------------------------------------------
     if (isXoDispatchPending(markers)) {
         const queuedAt = markers.queuedAt;
@@ -129,6 +144,7 @@ export function decideXoRescue(
 
 /** Человекочитаемое пояснение вердикта — в warnings прогона и логи. */
 export const XO_RESCUE_REASON_TEXT: Record<XoRescueReason, string> = {
+    'awaiting-queue': 'хук принят и ждёт обработки в очереди — не досылаем',
     'marker-stuck': 'взят в очередь, но хук не доехал',
     'orphan-xo-date': 'звонок назначен, а работы по нему не появилось',
     'marker-fresh': 'взят в очередь только что — хук ещё обрабатывается',

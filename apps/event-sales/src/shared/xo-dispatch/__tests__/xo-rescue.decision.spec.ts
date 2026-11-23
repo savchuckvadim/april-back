@@ -33,7 +33,26 @@ const candidate = (
     markers: { queuedAt: null, sentAt: null },
     xoDate: null,
     hasXoWorkSincePlan: false,
+    awaitingQueue: false,
     ...over,
+});
+
+describe('decideXoRescue — хук ждёт в нашей очереди', () => {
+    it('метка давно, подтверждения нет, но хук стоит в очереди → НЕ досылаем', () => {
+        // gsr 20.11.2026: порог 5 минут, хук ждал 6 — досылка дала бы второй ХО.
+        expect(
+            decideXoRescue(
+                candidate({
+                    markers: {
+                        queuedAt: NOW.subtract(2, 'hour'),
+                        sentAt: null,
+                    },
+                    awaitingQueue: true,
+                }),
+                thresholds,
+            ),
+        ).toEqual({ action: 'skip', reason: 'awaiting-queue' });
+    });
 });
 
 describe('decideXoRescue — признак 1: маркер робота', () => {

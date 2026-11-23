@@ -5,6 +5,7 @@ import {
     XoDispatchRescueService,
     XoRescueOptions,
 } from '../xo-dispatch-rescue.service';
+import { InMemoryLaunchRegistry } from '../launch/__tests__/in-memory-launch-registry';
 
 /**
  * Оркестрация подстраховки. Решение «брать или нет» проверяется отдельно
@@ -69,6 +70,8 @@ const makeDeps = (opts?: {
     xoDealsFail?: boolean;
     /** Коды полей, которых нет в слепке портала (не установлены). */
     withoutFields?: string[];
+    /** Реестр запусков (по умолчанию пустой: ничего не ждёт очереди). */
+    launches?: InMemoryLaunchRegistry;
 }) => {
     const companyUpdate = jest.fn().mockResolvedValue({ result: true });
     const dealUpdate = jest.fn().mockResolvedValue({ result: true });
@@ -151,9 +154,46 @@ const makeDeps = (opts?: {
         pbx as never,
         coldHook as never,
         workingHours as never,
+        (opts?.launches ?? new InMemoryLaunchRegistry()) as never,
     );
     return { service, coldHook, companyUpdate, dealUpdate, bitrix };
 };
+
+describe('XoDispatchRescueService — хук ждёт в нашей очереди', () => {
+    it('карточку с принятым и ждущим хуком не досылает, остальные — да', async () => {
+        const launches = new InMemoryLaunchRegistry();
+        await launches.markPending(DOMAIN, 'company:77', {
+            id: 'L1',
+            acceptedAt: Date.now(),
+        });
+        const { service, coldHook } = makeDeps({
+            companies: [stuckCompany('77'), stuckCompany('78')],
+            launches,
+        });
+
+        const run = await service.runForDomain(DOMAIN, options());
+
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(1);
+        expect(coldHook.createColdCallHook).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({ entityId: '78' }),
+        );
+        expect(run.skipped['awaiting-queue']).toBe(1);
+    });
+
+    it('реестр не ответил — решение по меткам, как раньше', async () => {
+        const launches = new InMemoryLaunchRegistry();
+        jest.spyOn(launches, 'pending').mockResolvedValue(null);
+        const { service, coldHook } = makeDeps({
+            companies: [stuckCompany('77')],
+            launches,
+        });
+
+        await service.runForDomain(DOMAIN, options());
+
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(1);
+    });
+});
 
 describe('XoDispatchRescueService — досылка по метке робота', () => {
     it('недоехавшую компанию досылает, отметку не ставит — её пишет обработчик', async () => {

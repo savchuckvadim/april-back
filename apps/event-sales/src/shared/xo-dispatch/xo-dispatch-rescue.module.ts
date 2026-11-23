@@ -6,6 +6,7 @@ import { ColdHookV2Module } from '../../cold-hook-v2/hook.module';
 import { PortalWorkingHoursService } from '../working-hours/portal-working-hours.service';
 import { XoDispatchRescueService } from './xo-dispatch-rescue.service';
 import { XoDispatchRescueScheduler } from './xo-dispatch-rescue.scheduler';
+import { XoLaunchRegistryModule } from './launch/xo-launch-registry.module';
 
 /**
  * Подстраховка ХО по компаниям и сделкам: крон досылает холодный звонок,
@@ -30,6 +31,8 @@ import { XoDispatchRescueScheduler } from './xo-dispatch-rescue.scheduler';
         RedisModule,
         PortalAppSettingsModule,
         ColdHookV2Module,
+        // Реестр запусков: не досылать карточку, хук по которой ждёт очереди.
+        XoLaunchRegistryModule,
     ],
     providers: [
         XoDispatchRescueService,
