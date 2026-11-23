@@ -4,6 +4,7 @@
  * отдаётся с диска временного storage. Репозиторий — в памяти.
  */
 
+import { readFileSync } from 'fs';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type {
@@ -11,6 +12,7 @@ import type {
     ResponseObject,
 } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { Test } from '@nestjs/testing';
+import sharp from 'sharp';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import {
@@ -24,6 +26,7 @@ import { MemoryProviderImageRepository } from '../provider-image/__tests__/memor
 import {
     createTempStorage,
     fakeHtml,
+    makeInterlacedPng,
     makePng,
     TempStorage,
 } from '../provider-image/__tests__/support/image-fixtures';
@@ -73,9 +76,10 @@ describe('админ-ручки картинок поставщика', () => {
             .attach('file', buffer, filename);
 
     it('загрузка → список → файл для превью → удаление', async () => {
-        const png = await makePng(120, 80);
+        // чересстрочный PNG: после загрузки хранится обычный, с его размером в записи
+        const source = await makeInterlacedPng(120, 80);
 
-        const uploaded = (await put('stamp', png).expect(200))
+        const uploaded = (await put('stamp', source).expect(200))
             .body as ProviderImageResponseDto;
         expect(uploaded).toMatchObject({
             rqId: RQ,
@@ -83,9 +87,15 @@ describe('админ-ручки картинок поставщика', () => {
             format: 'png',
             width: 120,
             height: 80,
-            size: png.length,
             originalName: 'pechat.png',
         });
+        const stored = readFileSync(
+            temp.fullPath(
+                `konstructor/provider-images/${RQ}/${uploaded.id}.png`,
+            ),
+        );
+        expect(uploaded.size).toBe(stored.length);
+        expect((await sharp(stored).metadata()).isProgressive).toBe(false);
         expect(uploaded).not.toHaveProperty('path');
 
         const list = (await request(app.getHttpServer()).get(BASE).expect(200))
@@ -105,7 +115,7 @@ describe('админ-ручки картинок поставщика', () => {
         expect(file.headers['content-type']).toBe('image/png');
         expect(file.headers['cache-control']).toBe('private, no-store');
         expect(file.headers['x-content-type-options']).toBe('nosniff');
-        expect((file.body as Buffer).equals(png)).toBe(true);
+        expect((file.body as Buffer).equals(stored)).toBe(true);
 
         await request(app.getHttpServer()).delete(`${BASE}/stamp`).expect(204);
         await request(app.getHttpServer())

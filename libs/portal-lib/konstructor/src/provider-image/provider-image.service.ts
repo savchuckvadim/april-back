@@ -18,6 +18,7 @@ import {
     cleanUploadName,
     PROVIDER_IMAGE_MAX_BYTES,
     PROVIDER_IMAGE_MAX_SIDE,
+    normalizeProviderImage,
     readProviderImageSize,
     sniffProviderImageFormat,
 } from './lib/provider-image-file.util';
@@ -28,7 +29,7 @@ export interface ProviderImageUpload {
     originalName?: string;
 }
 
-/** Загрузка после проверок: то, что идёт на диск и в запись. */
+/** Загрузка после проверок и перекодирования: то, что идёт на диск и в запись. */
 interface PreparedUpload {
     format: ProviderImageFormat;
     content: Buffer;
@@ -51,6 +52,11 @@ const errorText = (error: unknown): string =>
 /**
  * Картинки поставщика (печать, подписи, логотип): правила записи поверх
  * репозитория и файлового хранилища.
+ *
+ * Загруженная картинка перед записью перекодируется sharp в простой вид (PNG:
+ * 8 бит, RGBA, без чересстрочности; JPEG: sRGB, не прогрессивный): такие файлы
+ * react-pdf рисует точно. Лимиты 2 МБ и 6000 px проверяются на загруженном
+ * файле, а формат, размеры и размер записи берутся у перекодированного.
  *
  * Новый файл пишется раньше, чем удаляется прежний: при сбое посередине у
  * реквизитов остаётся старая картинка. Загрузки в одну пару «реквизиты и
@@ -199,7 +205,10 @@ export class ProviderImageService {
         return null;
     }
 
-    /** Формат по содержимому, размер файла, размеры в пикселях. */
+    /**
+     * Проверки загруженного файла (размер, формат по содержимому, читаемость,
+     * пиксели) и перекодирование в простой вид, который рисует react-pdf.
+     */
     private async prepareUpload(
         upload: ProviderImageUpload,
     ): Promise<PreparedUpload> {
@@ -226,11 +235,17 @@ export class ProviderImageService {
         ) {
             throw new BadRequestException(PROVIDER_IMAGE_MESSAGES.tooBig);
         }
+        // дальше работает только перекодированный файл: на диск, в размеры и
+        // в размер файла идут его значения
+        const normalized = await normalizeProviderImage(buffer, format);
+        if (!normalized) {
+            throw new BadRequestException(PROVIDER_IMAGE_MESSAGES.unreadable);
+        }
         return {
             format,
-            content: buffer,
-            width: size.width,
-            height: size.height,
+            content: normalized.data,
+            width: normalized.width,
+            height: normalized.height,
             originalName: cleanUploadName(upload.originalName),
         };
     }

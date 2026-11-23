@@ -39,7 +39,8 @@ export class ProviderImageResponseDto {
     role: ProviderImageRole;
 
     @ApiProperty({
-        description: 'Формат файла; определён по содержимому при загрузке.',
+        description:
+            'Формат файла; определён по содержимому при загрузке и после перекодирования остаётся прежним.',
         enum: PROVIDER_IMAGE_FORMATS,
         enumName: 'ProviderImageFormat',
         example: 'png',
@@ -47,21 +48,22 @@ export class ProviderImageResponseDto {
     format: ProviderImageFormat;
 
     @ApiProperty({
-        description: 'Ширина в пикселях.',
+        description: 'Ширина в пикселях перекодированного файла.',
         type: Number,
         example: 400,
     })
     width: number;
 
     @ApiProperty({
-        description: 'Высота в пикселях.',
+        description: 'Высота в пикселях перекодированного файла.',
         type: Number,
         example: 400,
     })
     height: number;
 
     @ApiProperty({
-        description: 'Размер файла в байтах.',
+        description:
+            'Размер перекодированного файла в байтах: он может отличаться от размера загруженного.',
         type: Number,
         example: 48213,
     })
@@ -119,7 +121,7 @@ export class ProviderImageResponseDto {
 export class ProviderImageUploadDto {
     @ApiProperty({
         description:
-            'Картинка PNG или JPG до 2 МБ. Формат определяется по содержимому, расширение имени не учитывается. Прежняя картинка этой роли заменяется.',
+            'Картинка PNG или JPG до 2 МБ. Формат определяется по содержимому, расширение имени не учитывается. Перед записью картинка перекодируется в простой вид (PNG 8 бит RGBA без чересстрочности, JPEG sRGB не прогрессивный). Прежняя картинка этой роли заменяется.',
         type: String,
         format: 'binary',
     })

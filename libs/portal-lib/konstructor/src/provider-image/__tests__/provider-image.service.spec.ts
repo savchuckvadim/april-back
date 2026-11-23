@@ -1,4 +1,5 @@
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import sharp from 'sharp';
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import {
     PROVIDER_IMAGE_MAX_BYTES,
@@ -11,9 +12,13 @@ import {
     brokenPng,
     createTempStorage,
     fakeHtml,
+    makeCmykJpg,
     makeGif,
+    makeInterlacedPng,
     makeJpg,
     makePng,
+    makePng16,
+    makeRotatedJpg,
     TempStorage,
 } from './support/image-fixtures';
 
@@ -57,9 +62,12 @@ describe('картинки поставщика: сервис', () => {
                 format: 'png',
                 width: 120,
                 height: 80,
-                size: png.length,
                 originalName: 'pechat.png',
             });
+            // размер записи — у файла на диске, то есть у перекодированного
+            expect(image.size).toBe(
+                readFileSync(temp.fullPath(image.path)).length,
+            );
             expect(image.path).toBe(
                 `konstructor/provider-images/${RQ}/${image.id}.png`,
             );
@@ -92,6 +100,123 @@ describe('картинки поставщика: сервис', () => {
                 'stamp',
             ]);
             expect(await service.list(OTHER_RQ)).toHaveLength(1);
+        });
+    });
+
+    describe('перекодирование при загрузке', () => {
+        /** Что sharp видит в записанном файле картинки. */
+        const stored = async (path: string) => {
+            const meta = await sharp(
+                readFileSync(temp.fullPath(path)),
+            ).metadata();
+            return {
+                format: meta.format,
+                space: meta.space,
+                depth: meta.depth,
+                channels: meta.channels,
+                interlaced: meta.isProgressive,
+                width: meta.width,
+                height: meta.height,
+            };
+        };
+
+        it('чересстрочный PNG после загрузки — обычный 8-битный sRGB RGBA', async () => {
+            const image = await service.put(
+                RQ,
+                'stamp',
+                upload(await makeInterlacedPng(60, 30)),
+            );
+            expect(await stored(image.path)).toEqual({
+                format: 'png',
+                space: 'srgb',
+                depth: 'uchar',
+                channels: 4,
+                interlaced: false,
+                width: 60,
+                height: 30,
+            });
+            expect(image).toMatchObject({
+                format: 'png',
+                width: 60,
+                height: 30,
+            });
+        });
+
+        it('16-битный PNG после загрузки — 8-битный sRGB без чересстрочности', async () => {
+            const image = await service.put(
+                RQ,
+                'stamp',
+                upload(await makePng16()),
+            );
+            expect(await stored(image.path)).toMatchObject({
+                format: 'png',
+                space: 'srgb',
+                depth: 'uchar',
+                interlaced: false,
+            });
+        });
+
+        it('CMYK JPEG после загрузки — обычный sRGB JPEG', async () => {
+            const image = await service.put(
+                RQ,
+                'logo',
+                upload(await makeCmykJpg(50, 25)),
+            );
+            expect(await stored(image.path)).toEqual({
+                format: 'jpeg',
+                space: 'srgb',
+                depth: 'uchar',
+                channels: 3,
+                interlaced: false,
+                width: 50,
+                height: 25,
+            });
+            expect(image).toMatchObject({
+                format: 'jpg',
+                width: 50,
+                height: 25,
+            });
+        });
+
+        it('запись несёт сведения перекодированного файла: размер на диске и пиксели', async () => {
+            const source = await makePng16(80, 40);
+            const image = await service.put(RQ, 'stamp', upload(source));
+
+            const onDisk = readFileSync(temp.fullPath(image.path));
+            expect(image.size).toBe(onDisk.length);
+            expect(onDisk.equals(source)).toBe(false);
+            expect(await stored(image.path)).toMatchObject({
+                width: image.width,
+                height: image.height,
+            });
+        });
+
+        it('поворот из EXIF применён к пикселям, в записи — ширина и высота после поворота', async () => {
+            const image = await service.put(
+                RQ,
+                'logo',
+                upload(await makeRotatedJpg(40, 20)),
+            );
+            expect(image).toMatchObject({ width: 20, height: 40 });
+            expect(await stored(image.path)).toMatchObject({
+                width: 20,
+                height: 40,
+            });
+        });
+
+        it('лимиты проверяются на загруженном файле: перекодирование их не обходит', async () => {
+            const wide = await makePng(PROVIDER_IMAGE_MAX_SIDE + 1, 1);
+            await expect(
+                service.put(RQ, 'stamp', upload(wide)),
+            ).rejects.toThrow(PROVIDER_IMAGE_MESSAGES.tooBig);
+            const huge = Buffer.concat([
+                await makePng16(),
+                Buffer.alloc(PROVIDER_IMAGE_MAX_BYTES, 0),
+            ]);
+            await expect(
+                service.put(RQ, 'stamp', upload(huge)),
+            ).rejects.toThrow(PROVIDER_IMAGE_MESSAGES.tooLarge);
+            expect(repository.rows).toHaveLength(0);
         });
     });
 
@@ -308,7 +433,10 @@ describe('картинки поставщика: сервис', () => {
 
             const { image, content } = await service.readFile(RQ, 'stamp');
             expect(image.role).toBe('stamp');
-            expect(content.equals(png)).toBe(true);
+            expect(
+                content.equals(readFileSync(temp.fullPath(image.path))),
+            ).toBe(true);
+            expect((await sharp(content).metadata()).format).toBe('png');
         });
 
         it('записи нет или файла нет на диске — 404', async () => {
@@ -341,7 +469,10 @@ describe('картинки поставщика: сервис', () => {
 
             expect(contents).toHaveLength(1);
             expect(contents[0]).toMatchObject({ role: 'stamp', format: 'png' });
-            expect(contents[0].data.equals(png)).toBe(true);
+            const stored = (await service.get(RQ, 'stamp')).path;
+            expect(
+                contents[0].data.equals(readFileSync(temp.fullPath(stored))),
+            ).toBe(true);
         });
 
         it('нет файла на диске — картинка пропускается, в лог уходит одна строка', async () => {

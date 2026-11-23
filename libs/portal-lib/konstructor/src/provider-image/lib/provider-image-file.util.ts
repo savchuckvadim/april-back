@@ -69,6 +69,54 @@ export const readProviderImageSize = async (
     }
 };
 
+/** Картинка в простом виде, который react-pdf рисует без сюрпризов. */
+export interface NormalizedProviderImage extends ProviderImageSize {
+    data: Buffer;
+}
+
+/** Качество JPEG при перекодировании: повторное сжатие не должно размывать печать. */
+const JPEG_QUALITY = 90;
+
+/**
+ * Перекодирование загруженной картинки в простой вид:
+ * - PNG: 8 бит на канал, sRGB с альфа-каналом (RGBA), без чересстрочности и
+ *   без палитры; 16-битные и серые PNG приводятся к нему же;
+ * - JPEG: sRGB (CMYK переводится), обычный (не прогрессивный), цветность 4:4:4.
+ *
+ * Поворот из EXIF применяется к пикселям (метаданные при записи не
+ * сохраняются), поэтому ширина и высота результата — как их покажет браузер.
+ * Формат результата тот же, что у загруженного файла. null — файл не
+ * перекодируется (повреждён).
+ */
+export const normalizeProviderImage = async (
+    buffer: Buffer,
+    format: ProviderImageFormat,
+): Promise<NormalizedProviderImage | null> => {
+    try {
+        const pipeline = sharp(buffer).autoOrient().toColourspace('srgb');
+        const { data, info } =
+            format === 'png'
+                ? await pipeline
+                      .ensureAlpha()
+                      .png({
+                          progressive: false,
+                          palette: false,
+                          compressionLevel: 9,
+                      })
+                      .toBuffer({ resolveWithObject: true })
+                : await pipeline
+                      .jpeg({
+                          progressive: false,
+                          quality: JPEG_QUALITY,
+                          chromaSubsampling: '4:4:4',
+                      })
+                      .toBuffer({ resolveWithObject: true });
+        return { data, width: info.width, height: info.height };
+    } catch {
+        return null;
+    }
+};
+
 /**
  * multer отдаёт имя файла в latin1: кириллица приходит кракозябрами. Имя из
  * символов до 0xFF читается как байты utf8; не получилось — остаётся как есть.

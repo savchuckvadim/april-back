@@ -32,6 +32,36 @@ export const makeJpg = (width = 40, height = 20): Promise<Buffer> =>
         .jpeg()
         .toBuffer();
 
+const solid = (width: number, height: number): ReturnType<typeof sharp> =>
+    sharp({
+        create: {
+            width,
+            height,
+            channels: 3,
+            background: { r: 200, g: 30, b: 30 },
+        },
+    });
+
+/** Чересстрочный (Adam7) PNG: исходник для проверки нормализации. */
+export const makeInterlacedPng = (width = 40, height = 20): Promise<Buffer> =>
+    solid(width, height).png({ progressive: true }).toBuffer();
+
+/** 16-битный PNG (16 бит на канал): исходник для проверки нормализации. */
+export const makePng16 = (width = 40, height = 20): Promise<Buffer> =>
+    solid(width, height).toColourspace('rgb16').png().toBuffer();
+
+/** JPEG в CMYK (4 канала): исходник для проверки нормализации. */
+export const makeCmykJpg = (width = 40, height = 20): Promise<Buffer> =>
+    solid(width, height).toColourspace('cmyk').jpeg().toBuffer();
+
+/** Прогрессивный JPEG: исходник для проверки нормализации. */
+export const makeProgressiveJpg = (width = 40, height = 20): Promise<Buffer> =>
+    solid(width, height).jpeg({ progressive: true }).toBuffer();
+
+/** JPEG с поворотом из EXIF (orientation 6: хранится лёжа, показывается стоя). */
+export const makeRotatedJpg = (width = 40, height = 20): Promise<Buffer> =>
+    solid(width, height).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+
 /** Настоящий GIF: формат, который загружать нельзя. */
 export const makeGif = (): Promise<Buffer> =>
     sharp({
