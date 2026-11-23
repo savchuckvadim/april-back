@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
 import { StorageModule } from '@lib/core/storage/storage.module';
+import { PBXModule } from '@lib/pbx';
 import { OfferLetterModule } from '@lib/portal-lib/konstructor';
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
+import { ComplectVariantOfferStageService } from '../modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferPdfController } from './controllers/offer-pdf.controller';
 import { OfferPdfAssetStore } from './lib/offer-pdf-asset-store';
@@ -15,7 +17,8 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
 
 /**
  * КП в PDF из JSX-шаблонов. Данные документа берёт у OfferWordModule
- * (OfferRenderDataService) — один расчёт цен и наполнения на оба формата.
+ * (OfferRenderDataService) — один расчёт цен и наполнения на оба формата;
+ * оттуда же склейка PDF вариантов (PdfMergeService).
  */
 @Module({
     imports: [
@@ -25,6 +28,8 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         OfferLetterModule,
         StorageModule,
         FileLinkModule,
+        // стадия «КП» вариантам комплекта после генерации
+        PBXModule,
     ],
     controllers: [OfferPdfController],
     providers: [
@@ -39,6 +44,7 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         OfferPdfRenderService,
         OfferPdfGenerateService,
         OfferPdfStylePreviewService,
+        ComplectVariantOfferStageService,
     ],
 })
 export class OfferPdfModule {}
