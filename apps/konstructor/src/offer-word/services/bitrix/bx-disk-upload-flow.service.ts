@@ -14,6 +14,12 @@ export interface BxDiskUploadOptions {
     uniqueNames?: boolean;
 }
 
+/** Папка на Диске: id для загрузки и ссылка (`DETAIL_URL`) для людей. */
+export interface BxDiskFolderRef {
+    id: number;
+    url: string | undefined;
+}
+
 export class BxDiskUploadFlowService {
     private rootStorageId: number | undefined;
     constructor(
@@ -28,6 +34,17 @@ export class BxDiskUploadFlowService {
         uploadedFiles: IBXDiskFolderItem[];
         folderUrl: string | undefined;
     }> {
+        const target = await this.ensureTargetFolder();
+        const uploadedFiles = await this.uploadFiles(target.id, files);
+        return { uploadedFiles, folderUrl: target.url };
+    }
+
+    /**
+     * Папка назначения: папка сделки (или компании) в хранилище группы продаж,
+     * внутри неё подпапка из `options.subfolder`. Каждая найдётся по имени или
+     * создастся. Нет хранилища группы — ошибка.
+     */
+    public async ensureTargetFolder(): Promise<BxDiskFolderRef> {
         await this.getRootFolderId();
         if (!this.rootStorageId) {
             throw new Error('Root storage folder ID is not found');
@@ -41,15 +58,34 @@ export class BxDiskUploadFlowService {
         if (!currentFolder || !currentFolder.ID) {
             throw new Error('New storage folder ID is not set');
         }
-        const target = this.options.subfolder
+        return this.options.subfolder
             ? await this.ensureSubfolder(
                   Number(currentFolder.ID),
                   this.options.subfolder,
               )
             : { id: Number(currentFolder.ID), url: currentFolder.DETAIL_URL };
+    }
 
-        const uploadedFiles = await this.uploadFiles(target.id, files);
-        return { uploadedFiles, folderUrl: target.url };
+    /**
+     * Один файл в папку. Содержимое — base64-строкой или буфером; имя берётся
+     * как есть (с `uniqueNames` Битрикс допишет номер к занятому имени).
+     */
+    public async uploadFile(
+        folderId: number,
+        name: string,
+        content: string | Buffer,
+    ): Promise<IBXDiskFolderItem> {
+        const base64 =
+            typeof content === 'string' ? content : content.toString('base64');
+        const response = await this.bitrix.disk.folder.uploadfile({
+            id: folderId,
+            data: {
+                NAME: name,
+            },
+            fileContent: [name, base64],
+            ...(this.options.uniqueNames ? { generateUniqueName: true } : {}),
+        });
+        return response.result;
     }
 
     /** Подпапка в папке сделки: найти по имени или создать. */
@@ -129,18 +165,8 @@ export class BxDiskUploadFlowService {
         files: [string, string][],
     ): Promise<IBXDiskFolderItem[]> {
         const results: IBXDiskFolderItem[] = [];
-        for (const file of files) {
-            const response = await this.bitrix.disk.folder.uploadfile({
-                id: folderId,
-                data: {
-                    NAME: file[0],
-                },
-                fileContent: file,
-                ...(this.options.uniqueNames
-                    ? { generateUniqueName: true }
-                    : {}),
-            });
-            results.push(response.result);
+        for (const [name, base64] of files) {
+            results.push(await this.uploadFile(folderId, name, base64));
             await delay(1000);
         }
         return results;

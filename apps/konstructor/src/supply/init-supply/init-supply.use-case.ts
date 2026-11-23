@@ -6,6 +6,12 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import { IBxRpaItem } from '@lib/bitrix/domain/rpa/item/interface/bx-rpa-item.interface';
 import { EBXEntity, IBXDeal } from '@lib/bitrix';
 import { InitSupplyDealFileFieldsService } from './services/file/init-supply-deal-file-fields.service';
+import { InitSupplyDiskService } from './services/disk/init-supply-disk.service';
+import {
+    buildDiskCommentLine,
+    buildDiskTimelineEntry,
+} from './lib/init-supply-disk';
+import { toTimelineCommentDirect } from '@lib/bitrix/consts/timeline.consts';
 import { InitSupplyResponseDto } from './dto/init-supply-response.dto';
 import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
@@ -19,6 +25,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
         private readonly initSupplyTimelineCommentService: InitSupplyTimelineCommentService,
         private readonly initSupplyDealFileFieldsService: InitSupplyDealFileFieldsService,
+        private readonly initSupplyDiskService: InitSupplyDiskService,
     ) {}
 
     async initSupply(dto: InitSupplyDto): Promise<InitSupplyResponseDto> {
@@ -99,6 +106,12 @@ export class InitSupplyUseCase {
         const flowTitle =
             dto.flow === InitSupplyFlow.SUPPLY ? 'Поставка' : 'Перезаключение';
 
+        // Документы заявки — на Диск, в подпапку папки сделки. Диск дополняет
+        // файловые поля: заявка создаётся при любом исходе, сбой Диска
+        // приходит в ответе причиной.
+        const disk = await this.initSupplyDiskService.save({ dto, rpaId });
+        const diskWarnings = disk.warning ? [disk.warning] : [];
+
         // страница таймлайна на каждого участника: наборы сервис смотрит по
         // отдельности
         const timelineEntries =
@@ -119,16 +132,51 @@ export class InitSupplyUseCase {
                 });
             }
 
+            // Ссылка на папку Диска отдельной страницей: при любом числе
+            // договоров заявка одна, документы лежат в одной папке.
+            if (disk.folderUrl) {
+                const diskEntry = buildDiskTimelineEntry(
+                    dto.flow,
+                    disk.folderUrl,
+                    disk.fileNames,
+                );
+                try {
+                    await bitrix.api.call('rpa.timeline.add', {
+                        typeId: rpaTypeId,
+                        itemId: rpaId,
+                        userId: dto.userId.toString(),
+                        fields: {
+                            title: diskEntry.title,
+                            description: diskEntry.description,
+                        },
+                    });
+                } catch (error) {
+                    const reason =
+                        error instanceof Error ? error.message : String(error);
+                    this.logger.warn(
+                        `${dto.domain}: ссылка на папку Диска не добавлена в таймлайн заявки ${rpaId}: ${reason}`,
+                    );
+                    diskWarnings.push(
+                        `Ссылка на папку Диска не добавлена в таймлайн заявки: ${reason}`,
+                    );
+                }
+            }
+
             if (dto.dealId) {
                 await bitrix.timeline.addTimelineComment({
                     ENTITY_ID: Number(dto.dealId),
                     ENTITY_TYPE: EBXEntity.DEAL,
-                    COMMENT: this.getCommentEntityMessage(
-                        dto.domain,
-                        rpaTypeId,
-                        rpaId,
-                        flowTitle,
-                    ),
+                    COMMENT: toTimelineCommentDirect([
+                        this.getCommentEntityMessage(
+                            dto.domain,
+                            rpaTypeId,
+                            rpaId,
+                            flowTitle,
+                        ),
+                        disk.folderUrl
+                            ? buildDiskCommentLine(disk.folderUrl)
+                            : '',
+                    ]),
                     AUTHOR_ID: dto.userId.toString(),
                 });
             }
@@ -141,6 +189,10 @@ export class InitSupplyUseCase {
             rpaResponse,
             dealFileFields: Object.keys(dealFileFields),
             rpaFields: this.withoutFileBlobs(rpaFields),
+            diskFolderUrl: disk.folderUrl,
+            ...(diskWarnings.length > 0
+                ? { diskWarning: diskWarnings.join('; ') }
+                : {}),
         };
     }
 
