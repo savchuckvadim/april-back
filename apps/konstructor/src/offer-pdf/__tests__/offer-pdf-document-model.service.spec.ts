@@ -1,5 +1,8 @@
 import { Logger } from '@nestjs/common';
-import type { ProviderImageContent } from '@lib/portal-lib/konstructor';
+import type {
+    ProviderImageContent,
+    ProviderImageRole,
+} from '@lib/portal-lib/konstructor';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
 import { OFFER_PDF_DEFAULT_SETTINGS } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
@@ -29,7 +32,15 @@ const createService = (
             .mockResolvedValue(data),
     };
     const provider = { findById: jest.fn().mockResolvedValue(rq) };
-    const providerImages = { loadContents: jest.fn(() => images) };
+    // как настоящий сервис: отдаёт только картинки запрошенных ролей
+    const providerImages = {
+        loadContents: jest.fn(
+            (_rqId: number, roles: readonly ProviderImageRole[]) =>
+                images.then(list =>
+                    list.filter(content => roles.includes(content.role)),
+                ),
+        ),
+    };
     const service = new OfferPdfDocumentModelService(
         renderData as never,
         provider as never,
@@ -250,9 +261,9 @@ describe('сборка модели PDF-КП: картинки поставщи�
         });
     });
 
-    it('«с печатями и подписями» выключено — картинки не читаются', async () => {
+    it('«с печатями и подписями» выключено — читается и печатается только логотип', async () => {
         const { service, providerImages } = createService(
-            { id: 41, director: 'Кузнецов А. В.' },
+            { id: 41, director: 'Кузнецов А. В.', position: 'Директор' },
             Promise.resolve(null),
             Promise.resolve(allImages()),
         );
@@ -261,8 +272,26 @@ describe('сборка модели PDF-КП: картинки поставщи�
             settings: { withStamps: false },
         });
 
-        expect(model.images).toEqual({});
-        expect(providerImages.loadContents).not.toHaveBeenCalled();
+        expect(providerImages.loadContents).toHaveBeenCalledTimes(1);
+        expect(providerImages.loadContents).toHaveBeenCalledWith(41, ['logo']);
+        expect(model.images).toEqual({
+            logo: { data: logoBytes, format: 'png' },
+        });
+        expect(model.signer).toEqual({
+            name: 'Кузнецов А. В.',
+            position: 'Директор',
+        });
+    });
+
+    it('«с печатями и подписями» включено — логотип читается вместе с печатью и подписью одним запросом', async () => {
+        const { service, providerImages } = createService(
+            { id: 41, director: 'Кузнецов А. В.' },
+            Promise.resolve(null),
+            Promise.resolve(allImages()),
+        );
+        await service.build({ ...dto, settings: { withStamps: true } });
+
+        expect(providerImages.loadContents).toHaveBeenCalledTimes(1);
     });
 
     it('нет реквизитов поставщика — картинки не читаются', async () => {
@@ -288,6 +317,24 @@ describe('сборка модели PDF-КП: картинки поставщи�
         expect(line).toContain('не прочитаны');
         expect(line).toContain('нет таблицы');
         expect(line).not.toContain('\n');
+    });
+
+    it('галочка выключена, таблицы нет — документ без картинок и одна строка в логе', async () => {
+        const warn = mutedWarn();
+        const { service } = createService(
+            { id: 41, director: 'Кузнецов А. В.' },
+            Promise.resolve(null),
+            Promise.reject(new Error('нет таблицы')),
+        );
+
+        const model = await service.build({
+            ...dto,
+            settings: { withStamps: false },
+        });
+
+        expect(model.images).toEqual({});
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(String(warn.mock.calls[0][0])).toContain('нет таблицы');
     });
 
     it('ошибка Prisma P2021 пишется одной строкой: «нет таблицы provider_images»', async () => {
@@ -361,6 +408,23 @@ describe('сборка модели PDF-КП: подписант без дире
         expect((await service.build(dto)).signer?.position).toBe(
             'Индивидуальный предприниматель Иванов Иван Иванович',
         );
+    });
+
+    it('галочка выключена — блока подписи нет, логотип остаётся', async () => {
+        const { service } = createService(
+            ip,
+            Promise.resolve(null),
+            Promise.resolve(allImages()),
+        );
+        const model = await service.build({
+            ...dto,
+            settings: { withStamps: false },
+        });
+
+        expect(model.signer).toBeNull();
+        expect(model.images).toEqual({
+            logo: { data: logoBytes, format: 'png' },
+        });
     });
 
     it('есть только логотип — блока подписи нет, как и раньше', async () => {

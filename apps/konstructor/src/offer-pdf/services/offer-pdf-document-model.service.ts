@@ -30,7 +30,8 @@ const cleanRqValue = (value?: string | null): string =>
     value && value !== 'null' ? value.trim() : '';
 
 /**
- * Роли картинок поставщика, которые печатает PDF-КП. Подпись главного
+ * Роли картинок поставщика, которые печатает PDF-КП при «с печатями и
+ * подписями»: печать, подпись руководителя и логотип. Подпись главного
  * бухгалтера хранится у реквизитов, в КП она пока не печатается.
  */
 const PDF_IMAGE_ROLES: readonly ProviderImageRole[] = [
@@ -38,6 +39,9 @@ const PDF_IMAGE_ROLES: readonly ProviderImageRole[] = [
     'signature_director',
     'logo',
 ];
+
+/** Логотип печатается всегда: от галочки «с печатями и подписями» он не зависит. */
+const PDF_LOGO_ROLES: readonly ProviderImageRole[] = ['logo'];
 
 /** Место картинки в `model.images` по роли; null — КП эту роль не печатает. */
 const imageSlot = (role: ProviderImageRole): keyof OfferPdfImages | null => {
@@ -98,10 +102,12 @@ export class OfferPdfDocumentModelService {
         ]);
 
         const settings = resolveOfferPdfSettings(dto.settings);
-        // печать, подпись и логотип печатаются при «с печатями и подписями»
-        const images: OfferPdfImages = settings.withStamps
-            ? await this.providerImageSet(provider)
-            : {};
+        // логотип читается всегда, печать и подпись руководителя — при «с
+        // печатями и подписями»
+        const images = await this.providerImageSet(
+            provider,
+            settings.withStamps ? PDF_IMAGE_ROLES : PDF_LOGO_ROLES,
+        );
 
         return {
             templateCode: dto.templateCode ?? OFFER_PDF_DEFAULT_TEMPLATE_CODE,
@@ -143,18 +149,20 @@ export class OfferPdfDocumentModelService {
     }
 
     /**
-     * Картинки реквизитов поставщика из provider_images. Сбой чтения (нет
-     * таблицы до миграции, база недоступна) не роняет КП: одна строка в лог и
-     * документ без картинок. Нет файла одной картинки — она пропускается.
+     * Картинки реквизитов поставщика из provider_images по перечню ролей.
+     * Сбой чтения (нет таблицы до миграции, база недоступна) не роняет КП: одна
+     * строка в лог на документ и документ без картинок. Нет файла одной
+     * картинки — она пропускается.
      */
     private async providerImageSet(
         rq: RqEntity | null,
+        roles: readonly ProviderImageRole[],
     ): Promise<OfferPdfImages> {
         if (!rq) return {};
         try {
             const contents = await this.providerImages.loadContents(
                 rq.id,
-                PDF_IMAGE_ROLES,
+                roles,
             );
             const images: OfferPdfImages = {};
             for (const { role, data, format } of contents) {

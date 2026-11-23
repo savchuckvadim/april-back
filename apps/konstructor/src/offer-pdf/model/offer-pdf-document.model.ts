@@ -26,9 +26,9 @@ export interface OfferPdfImage {
 
 /**
  * Логотип, печать, подпись руководителя — картинки реквизитов поставщика из
- * `provider_images` (роли logo, stamp, signature_director). Кладутся в модель,
- * когда включено «с печатями и подписями» и картинка загружена; нет картинки —
- * нет ключа, шаблон рисует без неё.
+ * `provider_images` (роли logo, stamp, signature_director). Логотип кладётся в
+ * модель всегда, печать и подпись — когда включено «с печатями и подписями».
+ * Нет картинки — нет ключа, шаблон рисует без неё.
  */
 export interface OfferPdfImages {
     logo?: OfferPdfImage;
