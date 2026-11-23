@@ -1,8 +1,10 @@
 import type { FC } from 'react';
 import { Text, View } from '@react-pdf/renderer';
+import { COVER_VARIANT } from '../../kit/cover/brand-cover.styles';
 import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
 import { offerCoverContent } from '../../kit/lib/cover.util';
 import { joinNonEmpty } from '../../kit/lib/text.util';
+import { sx } from '../../shared/style.util';
 import { monoCoverStyles } from './mono-cover.styles';
 import { MonoArrow } from './MonoArrow';
 import { MonoCoverPerson } from './MonoCoverPerson';
@@ -43,6 +45,11 @@ export const MonoCover: FC<OfferPdfChromeProps> = ({ model, theme }) => {
                 ) : null}
                 {cover.supply ? (
                     <Text style={styles.supply}>{cover.supply}</Text>
+                ) : null}
+                {cover.variantTitle ? (
+                    <Text style={sx(styles.supply, COVER_VARIANT)}>
+                        {cover.variantTitle}
+                    </Text>
                 ) : null}
                 {cover.recipient ? (
                     <View style={styles.recipient}>

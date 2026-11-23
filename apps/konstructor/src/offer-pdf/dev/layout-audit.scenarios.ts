@@ -69,6 +69,10 @@ const longCompany = {
     ManagerPhone: '+7 (920) 400-00-00, доб. 1234',
 };
 
+/** Название варианта в три строки: как «Набор для юриста с библиотекой и модулем» с хвостом */
+const LONG_VARIANT_TITLE =
+    'Вариант «Юрист и бухгалтер»: ГАРАНТ-Профессионал на 3 одновременных доступа с большой библиотекой, обучением и сопровождением на весь срок договора';
+
 const letterText = (paragraphs: number): string =>
     Array.from(
         { length: paragraphs },
@@ -255,5 +259,30 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
         model: {
             data: createOfferRenderDataFixture({ ProductRows: fourteenRows }),
         },
+    },
+    // вариант комплекта печатается своим документом: название на титульнике
+    // и в шапке первого листа
+    {
+        name: '16-variant-title',
+        settings: {},
+        model: { variantTitle: 'Юрист: ГАРАНТ-Профессионал на 3 доступа' },
+    },
+    // длинное название без титульника, «сначала цена»: название открывает лист
+    // письма, под ним письмо и таблица цен
+    {
+        name: '17-variant-title-long-no-cover-price-first',
+        settings: { withCover: false, isPriceFirst: true },
+        model: {
+            variantTitle: LONG_VARIANT_TITLE,
+            data: createOfferRenderDataFixture({
+                ProductRows: manyRows.slice(0, 4),
+            }),
+        },
+    },
+    // длинное название на титульнике: не должно наезжать на «для кого» и «кто подготовил»
+    {
+        name: '18-variant-title-long-cover',
+        settings: {},
+        model: { variantTitle: LONG_VARIANT_TITLE },
     },
 ];
