@@ -6,6 +6,7 @@ import {
 import { ProductRowDto } from '../../../document-generate/dto/product-row/product-row.dto';
 import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
 import { ContractDto } from '../../../dto/contract.dto';
+import { CONTRACT_LTYPE } from '../../../document-generate/type/contract.type';
 import {
     getProductSetMarks,
     type ProductSetKind,
@@ -19,7 +20,8 @@ export interface IProductRenderItemData {
     ProductName: string; // название товара Гарант-Предприятие
     ProductQuantity: string; // количество товара
     //TODO: ProductMonthQuantity: string; // количество товара в месяцах типа quantity* коэффициент контракта
-    ProductMeasure: string; // единица измерения товара
+    ProductMeasure: string; // единица измерения товара, короткая: «мес.» у сервисного договора, «шт.» у абонемента, лицензии и ключа
+    ProductMeasureCaption: string; // длинная формулировка меры портала («Лицензия 6 месяцев»), мелкой подписью в названии товара; пусто у сервисного договора и у короткого названия меры
     ProductPrice: string; // цена товара за 1 единицу измерения
     ProductSum: string; // сумма товара
     ProductSumString: string; // сумма товара  товара прописью
@@ -54,7 +56,10 @@ export interface ITotalRowItemRenderData {
     /** Цена за месяц: сумма / количество / месяцев договора (КП, «Сумма в месяц») */
     TotalPerMonthSum: string;
     TotalPerMonthSumString: string;
+    /** Короткая единица: «мес.» у сервисного договора, «шт.» у остальных */
     TotalMeasure: string;
+    /** Длинная формулировка меры портала для подписи; пусто, когда подпись не нужна */
+    TotalMeasureCaption: string;
     TotalPrepaymentQuantity: number;
     TotalPrepaymentQuantityString: string;
     TotalPrepaymentSum: string;
@@ -91,8 +96,10 @@ export interface ITotalRowItemRenderData {
 // {TotalPerMonthSum}
 // То же прописью TotalPerMonthSumString
 // {TotalPerMonthSumString}
-// Единица измерения для всех продуктов TotalMeasure
+// Единица измерения для всех продуктов TotalMeasure: короткая, «мес.» у сервисного договора, «шт.» у остальных
 // {TotalMeasure}
+// Длинная формулировка единицы (мера портала) TotalMeasureCaption: пусто у сервисного договора
+// {TotalMeasureCaption}
 // Общее для всех продуктов количество месяцев предоплаты или заключения договора TotalPrepaymentQuantity
 // {TotalPrepaymentQuantity}
 // Общее для всех продуктов количество месяцев прописью или заключения договора TotalPrepaymentQuantityString
@@ -141,10 +148,13 @@ export class OfferRenderPriceService {
     public renderTotalPrice(
         total: ProductRowDto,
         withTax: boolean,
+        /** Вид договора: по нему выбирается короткая единица «Итого» */
+        contractType?: CONTRACT_LTYPE | null,
     ): ITotalRowRenderData {
         const totalData = this.documentTotalRowService.getOfferData(
             total,
             withTax,
+            contractType,
         );
         return { TotalRow: [this.toTotalRow(totalData, withTax)] };
     }
@@ -160,6 +170,7 @@ export class OfferRenderPriceService {
             TotalPerMonthSum: totalData.total_per_month_sum,
             TotalPerMonthSumString: totalData.total_per_month_sum_string,
             TotalMeasure: totalData.total_measure,
+            TotalMeasureCaption: totalData.total_measure_caption,
             TotalPrepaymentQuantity: totalData.total_prepayment_quantity,
             TotalPrepaymentQuantityString:
                 totalData.total_prepayment_quantity_string,
@@ -195,6 +206,8 @@ export class OfferRenderPriceService {
     public renderProductPrices(
         rows: ProductRowDto[],
         contract: ContractDto,
+        /** Вид договора: по нему выбирается короткая единица строк */
+        contractType?: CONTRACT_LTYPE | null,
     ): IProductRenderData {
         const isProduct = true;
         const contractName = contract.aprilName || contract.bitrixName;
@@ -206,6 +219,7 @@ export class OfferRenderPriceService {
             isProduct,
             contractCoefficient,
             null,
+            contractType,
         );
         // getProducts отдаёт товары в порядке строк, признаки набора — тоже
         const setMarks = getProductSetMarks(rows);
@@ -217,6 +231,7 @@ export class OfferRenderPriceService {
                 ProductName: row.productName,
                 ProductQuantity: row.productQuantity.toString(),
                 ProductMeasure: row.productMeasure,
+                ProductMeasureCaption: row.productMeasureCaption,
                 ProductPrice: row.productPrice,
                 ProductSum: row.productSum,
                 ProductSumString: row.productSumString,

@@ -72,6 +72,7 @@ export class OfferRenderDataService {
         const productPrices = this.offerRenderPriceService.renderProductPrices(
             dto.rows,
             dto.contract,
+            dto.contractType,
         );
         const generalProduct =
             this.offerRenderGeneralProductService.renderTotalPrice(
@@ -90,6 +91,7 @@ export class OfferRenderDataService {
             totalPrice = this.offerRenderPriceService.renderTotalPrice(
                 dto.total,
                 withTax,
+                dto.contractType,
             );
         }
         const renderData = this.createRenderData(

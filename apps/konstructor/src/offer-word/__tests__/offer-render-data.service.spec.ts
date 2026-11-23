@@ -51,19 +51,20 @@ const createService = (infoblocks: InfoblocksData) => {
     const infoblocksService = {
         renderInfoblocks: jest.fn().mockResolvedValue(infoblocks),
     };
+    const priceService = {
+        renderProductPrices: jest.fn().mockReturnValue({ ProductRows: [] }),
+        renderTotalPrice: jest.fn().mockReturnValue({ TotalRow: [] }),
+    };
     const service = new OfferRenderDataService(
         { findById: jest.fn().mockResolvedValue(null) } as never,
         infoblocksService as never,
-        {
-            renderProductPrices: jest.fn().mockReturnValue({ ProductRows: [] }),
-            renderTotalPrice: jest.fn().mockReturnValue({ TotalRow: [] }),
-        } as never,
+        priceService as never,
         { renderTotalPrice: jest.fn().mockReturnValue({}) } as never,
         { renderProviderRq: jest.fn().mockReturnValue({}) } as never,
         { getData: jest.fn().mockReturnValue({}) } as never,
         { getData: jest.fn().mockReturnValue({}) } as never,
     );
-    return { service, infoblocksService };
+    return { service, infoblocksService, priceService };
 };
 
 /** Запрос с полями, которые читает сборка данных */
@@ -103,6 +104,24 @@ describe('OfferRenderDataService: наполнение по комплектам
         expect(data.IsComplectsSeparate).toBe(true);
         expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
         expect(data.NPA).toBe(sample.NPA);
+    });
+
+    it('вид договора запроса доходит до строк и итога: по нему выбирается единица измерения', async () => {
+        const { service, priceService } = createService(infoblocksOf({}));
+        const request = createRequest();
+
+        await service.getOfferRenderData(request);
+
+        expect(priceService.renderProductPrices).toHaveBeenCalledWith(
+            request.rows,
+            request.contract,
+            CONTRACT_LTYPE.LIC,
+        );
+        expect(priceService.renderTotalPrice).toHaveBeenCalledWith(
+            request.total,
+            false,
+            CONTRACT_LTYPE.LIC,
+        );
     });
 
     it('запрос без complects: в данных нет ни ComplectSections, ни флага', async () => {

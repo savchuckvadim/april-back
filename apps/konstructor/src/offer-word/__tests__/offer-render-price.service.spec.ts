@@ -1,6 +1,7 @@
 import { ProductRowDto } from '@app/konstructor/document-generate/dto/product-row/product-row.dto';
 import { DocumentProductRowService } from '@app/konstructor/document-generate/product-rows/product-row.service';
 import { DocumentTotalRowService } from '@app/konstructor/document-generate/product-rows/total-row.service';
+import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { OfferRenderPriceService } from '../services/render-data-services/offer-render-price.service';
 
@@ -113,5 +114,72 @@ describe('OfferRenderPriceService.renderProductPrices: признаки набо
             'Набор 2',
         ]);
         expect(items.map(item => item.IsSetFirstRow)).toEqual([true, false]);
+    });
+});
+
+describe('OfferRenderPriceService: единица измерения по виду договора', () => {
+    const service = new OfferRenderPriceService(
+        new DocumentTotalRowService(),
+        new DocumentProductRowService(),
+    );
+    /** Строка и итог с мерой портала: длинная формулировка, как на порталах с полными названиями */
+    const withMeasure = (measureName: string): ProductRowDto => {
+        const base = row('Гарант-Офис');
+        return Object.assign(base, {
+            price: { ...base.price, measure: { name: measureName } },
+            product: { ...base.product, contractCoefficient: 6 },
+        });
+    };
+
+    it('лицензия: в колонке «Ед.» «шт.», мера портала — в подписи; в «Итого» так же', () => {
+        const lic = withMeasure('Лицензия 6 месяцев');
+
+        const [item] = service.renderProductPrices(
+            [lic],
+            contract,
+            CONTRACT_LTYPE.LIC,
+        ).ProductRows;
+        const [totalRow] = service.renderTotalPrice(
+            lic,
+            false,
+            CONTRACT_LTYPE.LIC,
+        ).TotalRow;
+
+        expect(item.ProductMeasure).toBe('шт.');
+        expect(item.ProductMeasureCaption).toBe('Лицензия 6 месяцев');
+        expect(totalRow.TotalMeasure).toBe('шт.');
+        expect(totalRow.TotalMeasureCaption).toBe('Лицензия 6 месяцев');
+    });
+
+    it('сервисный договор: «мес.» и пустая подпись', () => {
+        const services = withMeasure('месяц');
+
+        const [item] = service.renderProductPrices(
+            [services],
+            contract,
+            CONTRACT_LTYPE.SERVICE,
+        ).ProductRows;
+        const [totalRow] = service.renderTotalPrice(
+            services,
+            false,
+            CONTRACT_LTYPE.SERVICE,
+        ).TotalRow;
+
+        expect(item.ProductMeasure).toBe('мес.');
+        expect(item.ProductMeasureCaption).toBe('');
+        expect(totalRow.TotalMeasure).toBe('мес.');
+        expect(totalRow.TotalMeasureCaption).toBe('');
+    });
+
+    it('вид договора не передан: единица прежняя — мера портала, подписи нет', () => {
+        const lic = withMeasure('Лицензия 6 месяцев');
+
+        const [item] = service.renderProductPrices([lic], contract).ProductRows;
+        const [totalRow] = service.renderTotalPrice(lic, false).TotalRow;
+
+        expect(item.ProductMeasure).toBe('Лицензия 6 месяцев');
+        expect(item.ProductMeasureCaption).toBe('');
+        expect(totalRow.TotalMeasure).toBe('Лицензия 6 месяцев');
+        expect(totalRow.TotalMeasureCaption).toBe('');
     });
 });

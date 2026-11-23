@@ -33,6 +33,7 @@ const totals = {
     total_month_sum_string: '(восемь тысяч сто восемьдесят семь рублей)',
     total_month_quantity: 12,
     total_measure: 'мес.',
+    total_measure_caption: '',
     total_prepayment_sum: '8 187,00',
     total_prepayment_sum_string: '(восемь тысяч сто восемьдесят семь рублей)',
     total_prepayment_quantity_string: '12 месяцев',
@@ -69,6 +70,7 @@ describe('ContractGenerateService', () => {
     let findById: jest.Mock;
     let resolveTemplate: jest.Mock;
     let getProducts: jest.Mock;
+    let getContractTotals: jest.Mock;
     let service: ContractGenerateService;
 
     beforeEach(() => {
@@ -79,6 +81,7 @@ describe('ContractGenerateService', () => {
         createPublicLink = jest.fn().mockResolvedValue(ROOT_LINK);
         findById = jest.fn().mockResolvedValue({ id: 12, name: 'ООО Гарант' });
         getProducts = jest.fn().mockReturnValue([]);
+        getContractTotals = jest.fn().mockReturnValue(totals);
         resolveTemplate = jest.fn().mockResolvedValue({
             path: TEMPLATE_PATH,
             templateId: '42',
@@ -105,7 +108,7 @@ describe('ContractGenerateService', () => {
             } as never,
             { getSpecification: jest.fn().mockReturnValue({}) } as never,
             { resolve: resolveTemplate } as never,
-            { getContractData: jest.fn().mockReturnValue(totals) } as never,
+            { getContractData: getContractTotals } as never,
         );
     });
 
@@ -192,6 +195,52 @@ describe('ContractGenerateService', () => {
         expect(result.data.productQuantity).toBe('1');
         // totals.total_month_quantity = 12, но в «Итого» — количество товара
         expect(result.data.total_quantity).toBe('1');
+    });
+
+    it('вид договора уходит в строки и итоги: по нему выбирается единица измерения', async () => {
+        await service.generateContract(dto());
+
+        // главная строка и строки цикла products — последний аргумент getProducts
+        const productCalls = getProducts.mock.calls as unknown[][];
+        expect(productCalls).toHaveLength(2);
+        for (const call of productCalls) {
+            expect(call[5]).toBe(CONTRACT_LTYPE.ABON);
+        }
+        // итоги: четвёртый аргумент getContractData
+        const totalCalls = getContractTotals.mock.calls as unknown[][];
+        expect(totalCalls[0][3]).toBe(CONTRACT_LTYPE.ABON);
+    });
+
+    it('единица главной строки и итога: короткая в полях шаблона, длинная — в полях подписи', async () => {
+        getProducts.mockReturnValue([
+            {
+                productNumber: 1,
+                productName: 'Гарант-Юрист',
+                productQuantity: 1,
+                productMeasure: 'шт.',
+                productMeasureCaption: 'Лицензия 6 месяцев',
+                productPrice: '67078.80',
+                productSum: '67078.80',
+            },
+        ]);
+        getContractTotals.mockReturnValue({
+            ...totals,
+            total_measure: 'шт.',
+            total_measure_caption: 'Лицензия 6 месяцев',
+        });
+        const result = await service.generateContract(dto());
+
+        expect(result.data.productMeasure).toBe('шт.');
+        expect(result.data.productMeasureCaption).toBe('Лицензия 6 месяцев');
+        expect(result.data.total_measure).toBe('шт.');
+        expect(result.data.total_measure_caption).toBe('Лицензия 6 месяцев');
+    });
+
+    it('без строк товара подпись единицы пуста: прочерк под неё не нужен', async () => {
+        const result = await service.generateContract(dto());
+
+        expect(result.data.productMeasureCaption).toBe('');
+        expect(result.data.total_measure_caption).toBe('');
     });
 
     it('поля эталонов: сумма договора прописью, срок, город поставщика', async () => {

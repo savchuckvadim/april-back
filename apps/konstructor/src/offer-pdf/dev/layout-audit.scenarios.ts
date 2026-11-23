@@ -61,6 +61,23 @@ const fourteenRows = Array.from({ length: 14 }, (_, index) => ({
 }));
 
 /**
+ * Строки лицензионного договора: в «Ед.» короткое «шт.», длинная мера портала
+ * печатается мелкой подписью под названием, после подписи поставки. Каждая
+ * третья подпись длинная — переносится на вторую строку.
+ */
+const captionRows = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({
+        ...base.ProductRows[0],
+        ProductNumber: String(index + 1),
+        ProductName: `ГАРАНТ-Профессионал. Комплект ${index + 1}`,
+        ProductMeasure: 'шт.',
+        ProductMeasureCaption:
+            index % 3 === 2
+                ? 'Абонемент на 12 месяцев с правом продления на льготных условиях'
+                : 'Лицензия 6 месяцев',
+    }));
+
+/**
  * Наборы для сравнения: «Итого» при них скрыто (TotalRow нет), перед первой
  * строкой каждого набора печатается заголовок «Набор N».
  */
@@ -756,7 +773,7 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
     },
     // латиница в заголовке и у получателя после документов без неё: при
     // испорченном кэше глифов буквы выпадали (glyph-loss). Сценарий идёт
-    // последним — кэш к нему уже наполнен предыдущими документами процесса.
+    // после всех документов без латиницы — кэш к нему уже наполнен.
     {
         name: '29-latin-title-after-cyrillic',
         settings: {},
@@ -764,6 +781,26 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             data: createOfferRenderDataFixture({
                 GeneralProductName: 'Гарант-Предприятие PRO',
                 RecipientCompanyName: 'test',
+            }),
+        },
+    },
+    // короткая единица «шт.» и подпись меры портала под названием (лицензия, абонемент)
+    {
+        name: '30-measure-captions',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: captionRows(6),
+            }),
+        },
+    },
+    // много строк с подписью меры: оценка высоты учитывает подпись, «Стоимость» открывает лист
+    {
+        name: '31-measure-captions-many-prices',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: captionRows(14),
             }),
         },
     },

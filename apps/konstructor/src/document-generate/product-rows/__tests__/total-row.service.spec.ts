@@ -1,5 +1,6 @@
 import { ProductRowDto } from '../../dto/product-row/product-row.dto';
 import { ClientTypeEnum } from '../../type/client.type';
+import { CONTRACT_LTYPE } from '../../type/contract.type';
 import { DocumentTotalRowService } from '../total-row.service';
 
 /** Итоговая строка набора: цена единицы, количество, месяцев в единице. */
@@ -59,6 +60,58 @@ describe('DocumentTotalRowService', () => {
             );
             expect(data.total_prepayment_sum).toBe('32748.00');
             expect(data.total_prepayment_quantity_string).toBe('4 месяца');
+        });
+    });
+
+    describe('единица измерения по виду договора', () => {
+        it('сервисный договор: «мес.» без подписи', () => {
+            const data = service.getContractData(
+                total(8187, 4, 1, 'месяц'),
+                ClientTypeEnum.ORG,
+                false,
+                CONTRACT_LTYPE.SERVICE,
+            );
+            expect(data.total_measure).toBe('мес.');
+            expect(data.total_measure_caption).toBe('');
+        });
+
+        it('лицензия: «шт.» и мера портала в подписи — в договоре и в КП', () => {
+            const lic = total(49122, 1, 6, 'Лицензия 6 месяцев');
+            const contract = service.getContractData(
+                lic,
+                ClientTypeEnum.ORG,
+                false,
+                CONTRACT_LTYPE.LIC,
+            );
+            const offer = service.getOfferData(lic, false, CONTRACT_LTYPE.LIC);
+            for (const data of [contract, offer]) {
+                expect(data.total_measure).toBe('шт.');
+                expect(data.total_measure_caption).toBe('Лицензия 6 месяцев');
+            }
+        });
+
+        it('вид договора не передан: мера портала как есть, подписи нет', () => {
+            const data = service.getOfferData(lic6, false);
+            expect(data.total_measure).toBe('лиц. 6 мес.');
+            expect(data.total_measure_caption).toBe('');
+        });
+
+        it('суммы от единицы не зависят', () => {
+            const withType = service.getOfferData(
+                lic6,
+                false,
+                CONTRACT_LTYPE.LIC,
+            );
+            const without = service.getOfferData(lic6, false);
+            expect({
+                ...withType,
+                total_measure: '',
+                total_measure_caption: '',
+            }).toEqual({
+                ...without,
+                total_measure: '',
+                total_measure_caption: '',
+            });
         });
     });
 

@@ -24,6 +24,7 @@ import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
+import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { collectSetRows } from '../../lib/collect-set-rows.util';
 import { InvoiceSetKind } from '../../types/invoice-set.types';
 
@@ -146,6 +147,7 @@ export class InvoiceRenderDataService {
                 dto.sets.general,
                 'general',
                 dto.contract,
+                dto.contractType,
                 withTax,
             );
             prices.push(...generals);
@@ -155,6 +157,7 @@ export class InvoiceRenderDataService {
                 dto.sets.alternative,
                 'alternative',
                 dto.contract,
+                dto.contractType,
                 withTax,
             );
             prices.push(...alternatives);
@@ -167,6 +170,7 @@ export class InvoiceRenderDataService {
         rowGroup: ProductRowSetDto[],
         setKind: InvoiceSetKind,
         contract: ContractDto,
+        contractType: CONTRACT_LTYPE,
         withTax: boolean = false,
     ): IInvoicePriceData[] {
         const prices: IInvoicePriceData[] = [];
@@ -176,11 +180,13 @@ export class InvoiceRenderDataService {
                 rows: this.offerRenderPriceService.renderProductPrices(
                     rows,
                     contract,
+                    contractType,
                 ),
                 // счёт как КП: бюджетнику на 4 месяца — на 4 месяца
                 total: this.offerRenderPriceService.renderTotalPrice(
                     set.total[0],
                     withTax || false,
+                    contractType,
                 ),
                 setKind,
                 setIndex,
