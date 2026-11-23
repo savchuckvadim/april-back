@@ -3,6 +3,7 @@ import {
     IInfblockRenderData,
 } from '@app/konstructor/document-generate/infoblocks/infoblock-render-data.service';
 import {
+    createAlternativeSetFixture,
     createComplectSectionFixture,
     createOfferRenderDataFixture,
     productRowsWithSets,
@@ -202,6 +203,64 @@ const separateComplects = (
         ([, , sectionGroups]) => sectionGroups,
     ),
 });
+
+/**
+ * Наполнение наборов для сравнения: по набору «Набор N» (как заголовок набора
+ * в таблице цен — по нему аудит находит плашки наборов, SET_TITLE_PATTERN в
+ * layout-audit) и по комплектам в нём. Комплекты названы «Комплект N. » — по
+ * ним аудит находит заголовки комплектов.
+ */
+type AuditComplect = readonly [
+    name: string,
+    supplyName: string,
+    IInfblockGroupsRenderData[],
+];
+
+const alternativeSets = (
+    sets: ReadonlyArray<ReadonlyArray<AuditComplect>>,
+): Partial<IOfferWordRenderData> => ({
+    IsAlternativeComplects: true,
+    AlternativeComplectSections: sets.map((complects, setIndex) =>
+        createAlternativeSetFixture(
+            setIndex + 1,
+            complects.map(([name, supplyName, sectionGroups], index) =>
+                createComplectSectionFixture(
+                    `Комплект ${index + 1}. ${name}`,
+                    supplyName,
+                    sectionGroups,
+                ),
+            ),
+        ),
+    ),
+});
+
+/** Общий набор из двух строк и три набора для сравнения по две строки: заголовки «Набор 1» – «Набор 3» в таблице цен */
+const threeSetsByTwoRows = productRowsWithSets(
+    base.ProductRows,
+    Array.from({ length: 3 }, (_, setIndex) => [
+        setRow(`ГАРАНТ-Профессионал. Набор ${setIndex + 1}, основной комплект`),
+        setRow(`Правовой консалтинг, набор ${setIndex + 1}`),
+    ]),
+);
+
+/**
+ * Три набора для сравнения по два комплекта с большими описаниями: у каждого
+ * комплекта по двенадцать длинных региональных блоков в первой группе.
+ */
+const threeSetsByTwoBigComplects = alternativeSets(
+    [1, 2, 3].map((set): AuditComplect[] => [
+        [
+            `ГАРАНТ-Профессионал. Бухгалтерия, набор ${set}`,
+            `Интернет ${set} ОД`,
+            withRegions(12),
+        ],
+        [
+            `ГАРАНТ-Профессионал. Юрист, набор ${set}`,
+            `Интернет ${set + 2} ОД`,
+            base.infoblocksByGroups.slice(1),
+        ],
+    ]),
+);
 
 export interface AuditScenario {
     name: string;
@@ -560,6 +619,139 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
                     ['ГАРАНТ-Профессионал. Кадры', '', hugeBlocks()],
                 ]),
             ),
+        },
+    },
+    // наполнение наборов для сравнения: два набора по одному комплекту, список
+    // с короткими описаниями; в таблице цен те же два набора
+    {
+        name: '30-alternative-two-sets-one-complect',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: twoSetsByTwoRows,
+                TotalRow: undefined,
+                ...alternativeSets([
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Юрист',
+                            'Интернет 5 ОД',
+                            base.infoblocksByGroups.slice(2),
+                        ],
+                    ],
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Бухгалтерия',
+                            'Интернет 1 ОД',
+                            base.infoblocksByGroups.slice(0, 2),
+                        ],
+                    ],
+                ]),
+            }),
+        },
+    },
+    // три набора по два комплекта, описания «много»: длинные тексты, заголовки
+    // наборов и комплектов приходятся на разные места листа
+    {
+        name: '31-alternative-three-sets-two-complects-big',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.BIG },
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: threeSetsByTwoRows,
+                TotalRow: undefined,
+                ...threeSetsByTwoBigComplects,
+            }),
+        },
+    },
+    // те же три набора при «сначала цена»: таблица цен идёт перед наполнением
+    {
+        name: '32-alternative-three-sets-two-complects-big-price-first',
+        settings: {
+            descriptionMode: DocumentFieldDescriptionMode.BIG,
+            isPriceFirst: true,
+        },
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: threeSetsByTwoRows,
+                TotalRow: undefined,
+                ...threeSetsByTwoBigComplects,
+            }),
+        },
+    },
+    // общий набор по комплектам, затем два набора для сравнения; таблица с
+    // разделами и описаниями «средне»
+    {
+        name: '33-alternative-after-separate-complects-table-groups',
+        settings: {
+            viewMode: DocumentFieldViewMode.TABLE_WITH_GROUP,
+            descriptionMode: DocumentFieldDescriptionMode.MEDIUM,
+        },
+        model: {
+            data: createOfferRenderDataFixture({
+                ...separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        withRegions(12),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        base.infoblocksByGroups.slice(1),
+                    ],
+                ]),
+                ProductRows: twoSetsByTwoRows,
+                TotalRow: undefined,
+                ...alternativeSets([
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Юрист',
+                            'Интернет 5 ОД',
+                            withRegions(12),
+                        ],
+                        [
+                            'ГАРАНТ-Профессионал. Кадры',
+                            'Интернет 1 ОД',
+                            base.infoblocksByGroups,
+                        ],
+                    ],
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Бухгалтерия',
+                            'Интернет 1 ОД',
+                            withRegions(35),
+                        ],
+                    ],
+                ]),
+            }),
+        },
+    },
+    // три набора по одному комплекту, список без описаний: у «Модерна» и
+    // «Искры» названия в две колонки
+    {
+        name: '34-alternative-three-sets-list-names',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.NO },
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: threeSetsByTwoRows,
+                TotalRow: undefined,
+                ...alternativeSets([
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Бухгалтерия',
+                            'Интернет 3 ОД',
+                            withRegions(35),
+                        ],
+                    ],
+                    [
+                        [
+                            'ГАРАНТ-Профессионал. Юрист',
+                            'Интернет 1 ОД',
+                            base.infoblocksByGroups,
+                        ],
+                    ],
+                    [['ГАРАНТ-Профессионал. Кадры', '', withRegions(12)]],
+                ]),
+            }),
         },
     },
     // латиница в заголовке и у получателя после документов без неё: при

@@ -3,6 +3,7 @@ import {
     COMPLECT_HEAD_BAR,
     COMPLECT_HEAD_MARGIN_BOTTOM,
     COMPLECT_HEAD_MARGIN_TOP,
+    COMPLECT_HEAD_MARGIN_TOP_UNDER_SET,
     COMPLECT_HEAD_PADDING,
     COMPLECT_TITLE_LINE_HEIGHT,
     complectTitleSize,
@@ -15,12 +16,14 @@ const CHAR_WIDTH = 0.6;
  * Высота заголовка комплекта до раскладки — для места под начало длинного
  * пункта (метка разрыва перед ним). Оценка с запасом: строк выходит не
  * меньше настоящего. Название переносится по ширине, подпись поставки — одна
- * строка.
+ * строка. Отступ сверху меньше, когда над заголовком плашка набора для
+ * сравнения (`underSet`).
  */
 export const estimateComplectHeadHeight = (
     theme: OfferPdfTheme,
     title: string,
     supplyName: string,
+    underSet = false,
 ): number => {
     const size = complectTitleSize(theme.sizes.lg);
     const width =
@@ -33,7 +36,8 @@ export const estimateComplectHeadHeight = (
         size * COMPLECT_TITLE_LINE_HEIGHT,
         theme.sizes.base * theme.lineHeight,
     );
-    return Math.ceil(
-        lines * line + COMPLECT_HEAD_MARGIN_TOP + COMPLECT_HEAD_MARGIN_BOTTOM,
-    );
+    const marginTop = underSet
+        ? COMPLECT_HEAD_MARGIN_TOP_UNDER_SET
+        : COMPLECT_HEAD_MARGIN_TOP;
+    return Math.ceil(lines * line + marginTop + COMPLECT_HEAD_MARGIN_BOTTOM);
 };

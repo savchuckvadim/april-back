@@ -1,9 +1,16 @@
 import { StyleSheet } from '@react-pdf/renderer';
 import { themedStyles } from '../theme/themed-styles';
 import {
+    ALTERNATIVE_BLOCK_MARGIN_BOTTOM,
+    ALTERNATIVE_BLOCK_MARGIN_TOP,
+    ALTERNATIVE_SET_MARGIN_BOTTOM,
+    ALTERNATIVE_SET_MARGIN_TOP,
+    ALTERNATIVE_SET_PADDING_HORIZONTAL,
+    ALTERNATIVE_SET_PADDING_VERTICAL,
     COMPLECT_HEAD_BAR,
     COMPLECT_HEAD_MARGIN_BOTTOM,
     COMPLECT_HEAD_MARGIN_TOP,
+    COMPLECT_HEAD_MARGIN_TOP_UNDER_SET,
     COMPLECT_HEAD_PADDING,
     COMPLECT_TITLE_LINE_HEIGHT,
     complectTitleSize,
@@ -52,6 +59,29 @@ export const infoblocksStyles = themedStyles(theme => {
             paddingLeft: COMPLECT_HEAD_PADDING,
             borderLeftWidth: COMPLECT_HEAD_BAR,
             borderLeftColor: colors.accent,
+        },
+        /** Под плашкой набора для сравнения отступ сверху меньше */
+        complectHeadUnderSet: {
+            marginTop: COMPLECT_HEAD_MARGIN_TOP_UNDER_SET,
+        },
+        /** Заголовок блока наполнения наборов для сравнения: поверх стиля заголовка раздела */
+        alternativeBlockTitle: {
+            marginTop: ALTERNATIVE_BLOCK_MARGIN_TOP,
+            marginBottom: ALTERNATIVE_BLOCK_MARGIN_BOTTOM,
+        },
+        /** Плашка набора для сравнения: заливка шапки таблицы цен, как у заголовков наборов там */
+        alternativeSetHead: {
+            marginTop: ALTERNATIVE_SET_MARGIN_TOP,
+            marginBottom: ALTERNATIVE_SET_MARGIN_BOTTOM,
+            paddingVertical: ALTERNATIVE_SET_PADDING_VERTICAL,
+            paddingHorizontal: ALTERNATIVE_SET_PADDING_HORIZONTAL,
+            backgroundColor: colors.shade,
+        },
+        alternativeSetTitle: {
+            fontSize: titleSize,
+            fontWeight: 'bold',
+            color: colors.accent,
+            ...titleLine,
         },
         complectTitle: {
             fontSize: titleSize,

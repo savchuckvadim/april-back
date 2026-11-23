@@ -1,16 +1,10 @@
-import { IInfblockGroupsRenderData } from '@app/konstructor/document-generate/infoblocks/infoblock-render-data.service';
 import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
+import { printedAlternativeSets } from './alternative-sets.util';
 import { groupsWithItems } from './infoblock-description.util';
-
-/** Комплект общего набора, который печатается своим разделом наполнения */
-export interface PrintedComplectSection {
-    /** Название комплекта; пусто, если не передано */
-    title: string;
-    /** Подпись поставки; пусто, если не передана */
-    supplyName: string;
-    /** Группы комплекта, в которых есть хоть один блок */
-    groups: IInfblockGroupsRenderData[];
-}
+import {
+    printedSectionsOf,
+    type PrintedComplectSection,
+} from './printed-section.util';
 
 /**
  * Разделы наполнения по комплектам. Печатаются, когда в данных стоит
@@ -25,24 +19,24 @@ export const printedComplectSections = (
     >,
 ): PrintedComplectSection[] | null => {
     if (!data.IsComplectsSeparate) return null;
-    const sections = (data.ComplectSections ?? [])
-        .map(
-            (section): PrintedComplectSection => ({
-                title: section.ComplectTitle?.trim() ?? '',
-                supplyName: section.ComplectSupplyName?.trim() ?? '',
-                groups: groupsWithItems(section.infoblocksByGroups ?? []),
-            }),
-        )
-        .filter(section => section.groups.length > 0);
+    const sections = printedSectionsOf(data.ComplectSections ?? []);
     return sections.length > 0 ? sections : null;
 };
 
-/** В документе есть что печатать в разделе наполнения: по комплектам или одним списком */
+/**
+ * В документе есть что печатать в разделе наполнения: по комплектам, одним
+ * списком или наполнение наборов для сравнения
+ */
 export const hasInfoblocksToPrint = (
     data: Pick<
         IOfferWordRenderData,
-        'IsComplectsSeparate' | 'ComplectSections' | 'infoblocksByGroups'
+        | 'IsComplectsSeparate'
+        | 'ComplectSections'
+        | 'infoblocksByGroups'
+        | 'IsAlternativeComplects'
+        | 'AlternativeComplectSections'
     >,
 ): boolean =>
     printedComplectSections(data) !== null ||
-    groupsWithItems(data.infoblocksByGroups ?? []).length > 0;
+    groupsWithItems(data.infoblocksByGroups ?? []).length > 0 ||
+    printedAlternativeSets(data) !== null;

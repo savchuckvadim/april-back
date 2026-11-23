@@ -122,7 +122,10 @@ const lostChars = (line: LayoutLine): number => {
 const isHeading = (node: LayoutNode): boolean =>
     node.type === 'TEXT' && (node.style?.fontSize ?? 0) >= 13;
 
-/** Заголовок набора для сравнения в таблице цен: «Набор 1», «Набор 2» */
+/**
+ * Заголовок набора для сравнения: «Набор 1», «Набор 2» — в таблице цен и на
+ * плашке набора в блоке «Наполнение наборов для сравнения»
+ */
 const SET_TITLE_PATTERN = /^Набор \d+$/;
 
 const isSetTitle = (node: LayoutNode): boolean =>
@@ -298,7 +301,8 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 detail: 'заголовок последний на странице',
             });
         }
-        // заголовок набора для сравнения без своей первой строки: ушёл вниз листа один
+        // заголовок набора для сравнения без своей первой строки или, на плашке
+        // наполнения, без своего комплекта: ушёл вниз листа один
         if (lastContent && isSetTitle(lastContent.node)) {
             issues.push({
                 page: number,

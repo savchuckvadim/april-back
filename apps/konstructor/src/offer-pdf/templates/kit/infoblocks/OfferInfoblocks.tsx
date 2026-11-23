@@ -7,6 +7,8 @@ import { SurfaceGate } from '../document/SurfaceGate';
 import { HEADING_PRESENCE } from '../document/section.layout';
 import { SplitGate } from './SplitGate';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
+import { AlternativeInfoblocks } from './AlternativeInfoblocks';
+import { printedAlternativeSets } from './alternative-sets.util';
 import { ComplectInfoblocks } from './ComplectInfoblocks';
 import { printedComplectSections } from './complect-sections.util';
 import { groupsWithItems } from './infoblock-description.util';
@@ -22,13 +24,17 @@ export interface OfferInfoblocksProps {
  * Информационное наполнение комплекта: список или таблица, описание по режиму.
  * Общий набор из нескольких комплектов с видом «по комплектам»
  * (`IsComplectsSeparate`) печатается разделами: у каждого комплекта свой
- * заголовок и своё наполнение в том же виде и режиме описаний.
+ * заголовок и своё наполнение в том же виде и режиме описаний. После наполнения
+ * общего набора идёт блок «Наполнение наборов для сравнения»
+ * (`IsAlternativeComplects`): у каждого набора свой заголовок и наполнение его
+ * комплектов, вид и описания те же.
  */
 export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
     const { data, settings } = model;
     const sections = printedComplectSections(data);
     const groups = groupsWithItems(data.infoblocksByGroups ?? []);
-    if (!sections && groups.length === 0) return null;
+    const alternatives = printedAlternativeSets(data);
+    if (!sections && groups.length === 0 && !alternatives) return null;
     const base = baseStyles(theme);
 
     return (
@@ -54,7 +60,7 @@ export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
                             theme={theme}
                         />
                     ))
-                ) : (
+                ) : groups.length > 0 ? (
                     <>
                         {data.GeneralProductName ? (
                             <Text style={infoblocksStyles(theme).complectName}>
@@ -67,7 +73,14 @@ export const OfferInfoblocks: FC<OfferInfoblocksProps> = ({ model, theme }) => {
                             theme={theme}
                         />
                     </>
-                )}
+                ) : null}
+                {alternatives ? (
+                    <AlternativeInfoblocks
+                        sets={alternatives}
+                        settings={settings}
+                        theme={theme}
+                    />
+                ) : null}
             </View>
         </>
     );
