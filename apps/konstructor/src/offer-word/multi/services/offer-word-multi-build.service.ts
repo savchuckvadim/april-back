@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
+import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
+import { ComplectModeEnum } from '@app/konstructor/modules/inner-deal/type/complect-composition.type';
 import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { OfferWordCoreGenerateService } from '../../services/offer-word-core/offer-word-core-generate.service';
 import { InvoiceWordCoreGenerateService } from '../../services/invoice-word-core/invoice-word-core-generate.service';
@@ -10,6 +12,10 @@ import { IPreparedDocument } from '../../interface/document.interface';
 import { OfferWordCoreGenerateResult } from '../../types/offer-word-core-generate.types';
 import { getOfferDocumentProductName } from '../../lib/get-offer-document-product-name.util';
 import { getInvoiceDocumentProductName } from '../../lib/get-invoice-document-product-name';
+import {
+    describeInvoiceNotBuilt,
+    getErrorReason,
+} from '../../lib/invoice-not-built.util';
 import { OfferWordMultiGenerateDto } from '../dto/offer-word-multi-generate.dto';
 import {
     DocumentVariantsMode,
@@ -17,6 +23,7 @@ import {
     ResolvedDocumentVariants,
 } from '../lib/variants/resolve-document-variants';
 import { mergeDocumentVariants } from '../lib/variants/merge-document-variants';
+import { mergeGeneralSets } from '../lib/variants/merge-general-sets';
 import {
     groupVariantsByContractType,
     withVariant,
@@ -38,6 +45,10 @@ export interface IOfferWordMultiBuildResult {
     warnings: string[];
     mode: DocumentVariantsMode;
 }
+
+/** Типы договора у вариантов одного договора разные: счёт делится по типам. */
+const INVOICE_SPLIT_BY_CONTRACT_TYPE_WARNING =
+    'Счёт разделён по типам договора: у наборов разные типы';
 
 interface RenderedOffers {
     core: OfferWordCoreGenerateResult;
@@ -70,7 +81,8 @@ export class OfferWordMultiBuildService {
      * merged — один документ с объединённым наполнением и общим итогом;
      * independent — рендер на участника: PDF склеиваются в один, а при
      * separateDocuments (или Word) отдаются по документу на участника.
-     * Счета — по договору: группа участников на тип договора.
+     * Счёт следует за договором: single_contract — один счёт на все
+     * варианты, multi_contract — по счёту на вариант.
      */
     async build(
         dto: OfferWordMultiGenerateDto,
@@ -103,10 +115,11 @@ export class OfferWordMultiBuildService {
                 );
             }
         } catch (error) {
-            // счёт — дополнение к КП: без него КП всё равно отдаём
-            this.logger.error(
-                `${dto.domain}: счета не собрались — ${(error as Error)?.message}`,
-            );
+            // счёт — дополнение к КП: КП отдаём в любом случае и сообщаем
+            // менеджеру причину
+            const reason = getErrorReason(error);
+            this.logger.error(`${dto.domain}: счета не собрались — ${reason}`);
+            this.addWarning(warnings, describeInvoiceNotBuilt(reason));
         }
 
         if (warnings.length) {
@@ -248,7 +261,14 @@ export class OfferWordMultiBuildService {
         }
     }
 
-    /** Счёт на договор: участники группируются по типу договора. */
+    /**
+     * Счёт следует за договором: один договор — один счёт. Число счетов
+     * задаёт режим договоров `composition.mode`:
+     * single_contract — один счёт на все варианты;
+     * multi_contract — по счёту на каждый вариант;
+     * compare, один вариант или запрос без `composition` — счёт на открытый
+     * (первый) вариант, как раньше.
+     */
     private async buildInvoicesByContract(
         dto: OfferWordMultiGenerateDto,
         resolved: ResolvedDocumentVariants,
@@ -256,28 +276,121 @@ export class OfferWordMultiBuildService {
         isPdf: boolean,
         warnings: string[],
     ): Promise<IPreparedDocument[]> {
-        if (resolved.mode === 'single' || resolved.mode === 'compare') {
-            // счёт выставляется на то, что выбрано, — на открытый вариант
-            return this.buildInvoiceDocuments(
-                withVariant(dto, resolved.variants[0]),
-                year,
-                isPdf,
-            );
+        const contractMode =
+            resolved.variants.length > 1 ? dto.composition?.mode : undefined;
+
+        switch (contractMode) {
+            case ComplectModeEnum.SINGLE_CONTRACT:
+                return this.buildSingleContractInvoices(
+                    dto,
+                    resolved,
+                    year,
+                    isPdf,
+                    warnings,
+                );
+            case ComplectModeEnum.MULTI_CONTRACT:
+                return this.buildInvoicePerVariant(
+                    dto,
+                    resolved,
+                    year,
+                    isPdf,
+                    warnings,
+                );
+            default:
+                // счёт выставляется на то, что выбрано, — на открытый вариант
+                return this.buildInvoiceDocuments(
+                    withVariant(dto, resolved.variants[0]),
+                    year,
+                    isPdf,
+                    warnings,
+                );
+        }
+    }
+
+    /**
+     * Один договор — один счёт: варианты сливаются, наборы `sets.general`
+     * сводятся в один набор. Типы договора у вариантов одинаковые (экран
+     * разных типов не допускает). Запасной путь для разных типов: варианты
+     * группируются по типу договора, каждая группа получает один счёт,
+     * менеджер видит предупреждение.
+     */
+    private async buildSingleContractInvoices(
+        dto: OfferWordMultiGenerateDto,
+        resolved: ResolvedDocumentVariants,
+        year: string,
+        isPdf: boolean,
+        warnings: string[],
+    ): Promise<IPreparedDocument[]> {
+        const groups = groupVariantsByContractType(resolved.variants);
+        if (groups.length > 1) {
+            this.addWarning(warnings, INVOICE_SPLIT_BY_CONTRACT_TYPE_WARNING);
         }
 
         const invoices: IPreparedDocument[] = [];
-        for (const group of groupVariantsByContractType(resolved.variants)) {
-            const merged = mergeDocumentVariants(group);
-            warnings.push(...merged.warnings);
+        for (const group of groups) {
+            const variant = this.mergeIntoSingleInvoiceVariant(group, warnings);
             invoices.push(
                 ...(await this.buildInvoiceDocuments(
-                    withVariant(dto, merged.variant),
+                    withVariant(dto, variant),
                     year,
                     isPdf,
+                    warnings,
                 )),
             );
         }
         return invoices;
+    }
+
+    /** Каждый вариант идёт своим договором — на каждый свой счёт. */
+    private async buildInvoicePerVariant(
+        dto: OfferWordMultiGenerateDto,
+        resolved: ResolvedDocumentVariants,
+        year: string,
+        isPdf: boolean,
+        warnings: string[],
+    ): Promise<IPreparedDocument[]> {
+        const invoices: IPreparedDocument[] = [];
+        for (const variant of resolved.variants) {
+            invoices.push(
+                ...(await this.buildInvoiceDocuments(
+                    withVariant(dto, variant),
+                    year,
+                    isPdf,
+                    warnings,
+                )),
+            );
+        }
+        return invoices;
+    }
+
+    /**
+     * Группа вариантов → один вариант с одним набором в `sets.general`:
+     * сборка счёта печатает по файлу на каждый набор.
+     */
+    private mergeIntoSingleInvoiceVariant(
+        group: readonly DocumentVariantDto[],
+        warnings: string[],
+    ): DocumentVariantDto {
+        const merged = mergeDocumentVariants(group);
+        const general = mergeGeneralSets(merged.variant.sets.general);
+        for (const warning of [...merged.warnings, ...general.warnings]) {
+            this.addWarning(warnings, warning);
+        }
+
+        return {
+            ...merged.variant,
+            sets: {
+                ...merged.variant.sets,
+                general: general.set ? [general.set] : [],
+            },
+        };
+    }
+
+    /** Одинаковое предупреждение от нескольких групп договоров — одной строкой. */
+    private addWarning(warnings: string[], warning: string): void {
+        if (!warnings.includes(warning)) {
+            warnings.push(warning);
+        }
     }
 
     private async buildOfferDocument(
@@ -326,12 +439,17 @@ export class OfferWordMultiBuildService {
         dto: OfferWordByTemplateGenerateDto,
         year: string,
         isPdf: boolean,
+        warnings: string[],
     ): Promise<IPreparedDocument[]> {
         const invoiceCoreResult =
             await this.invoiceGenerateService.execute(dto);
+        if (invoiceCoreResult.notBuiltReason) {
+            this.addWarning(
+                warnings,
+                describeInvoiceNotBuilt(invoiceCoreResult.notBuiltReason),
+            );
+        }
         const results: IPreparedDocument[] = [];
-        let isAlternative = false;
-        let invoiceCount = 0;
 
         for (const saved of invoiceCoreResult.savedResults) {
             let serverLink: string = saved.docxLink;
@@ -360,17 +478,16 @@ export class OfferWordMultiBuildService {
 
             results.push({
                 link: serverLink,
+                // имя — по набору, из которого собран счёт
                 name: getInvoiceDocumentProductName(
                     dto,
-                    isAlternative,
-                    invoiceCount,
+                    saved.setKind,
+                    saved.setIndex,
+                    results.length,
                 ),
                 type: 'invoice',
                 absolutePath,
             });
-
-            isAlternative = true;
-            invoiceCount++;
         }
 
         return results;

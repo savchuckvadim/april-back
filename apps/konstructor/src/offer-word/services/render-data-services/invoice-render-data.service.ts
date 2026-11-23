@@ -25,10 +25,14 @@ import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
 import { collectSetRows } from '../../lib/collect-set-rows.util';
+import { InvoiceSetKind } from '../../types/invoice-set.types';
 
-type IInvoicePriceData = {
+export type IInvoicePriceData = {
     rows: IProductRenderData;
     total: ITotalRowRenderData;
+    /** Набор, из которого собран счёт: вид и индекс в `sets.general`/`sets.alternative`. */
+    setKind: InvoiceSetKind;
+    setIndex: number;
 };
 export type IInvoiceRenderData = IOfferRenderRecipientData &
     IInvoiceRenderGeneralData &
@@ -140,6 +144,7 @@ export class InvoiceRenderDataService {
         if (needGeneral) {
             const generals = this.getSetGroupRows(
                 dto.sets.general,
+                'general',
                 dto.contract,
                 withTax,
             );
@@ -148,6 +153,7 @@ export class InvoiceRenderDataService {
         if (isMultipleInvoice) {
             const alternatives = this.getSetGroupRows(
                 dto.sets.alternative,
+                'alternative',
                 dto.contract,
                 withTax,
             );
@@ -158,13 +164,14 @@ export class InvoiceRenderDataService {
     }
 
     private getSetGroupRows(
-        rowGroup: ProductRowSetDto[], // general or alternative
+        rowGroup: ProductRowSetDto[],
+        setKind: InvoiceSetKind,
         contract: ContractDto,
         withTax: boolean = false,
     ): IInvoicePriceData[] {
         const prices: IInvoicePriceData[] = [];
-        rowGroup.forEach(general => {
-            const rows = this.getRowsFromSetItemRow(general.rows);
+        rowGroup.forEach((set, setIndex) => {
+            const rows = this.getRowsFromSetItemRow(set.rows);
             prices.push({
                 rows: this.offerRenderPriceService.renderProductPrices(
                     rows,
@@ -172,9 +179,11 @@ export class InvoiceRenderDataService {
                 ),
                 // счёт как КП: бюджетнику на 4 месяца — на 4 месяца
                 total: this.offerRenderPriceService.renderTotalPrice(
-                    general.total[0],
+                    set.total[0],
                     withTax || false,
                 ),
+                setKind,
+                setIndex,
             });
         });
         return prices;

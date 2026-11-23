@@ -5,6 +5,12 @@ import {
     BULL_MODULE_QUEUE_PROCESS,
 } from '@nestjs/bull/dist/bull.constants';
 import { RedisModule } from '@lib/core/redis/redis.module';
+import {
+    DocumentTemplateModule,
+    DocumentTemplateService,
+} from '@lib/portal-lib/konstructor/document-template';
+import { InvoiceTemplateService } from '@app/konstructor/modules/invoice-template';
+import { InvoiceTemplateSourceService } from '../services/invoice-word-core/invoice-template-source.service';
 import { OfferWordModule } from '../offer-word.module';
 import { OfferWordWorkerModule } from '../offer-word-worker.module';
 
@@ -70,6 +76,21 @@ describe('OfferWordWorkerModule: очереди КП слушает только
         );
 
         expect(missing).toEqual([]);
+    });
+
+    // Сборку счёта выполняют сервисы OfferWordModule (воркер берёт их через
+    // use case), поэтому подбор шаблона и его модуль живут там же.
+    it('подбор шаблона счёта подключён в OfferWordModule: провайдер и модуль подбора', () => {
+        expect(metadata('providers', OfferWordModule)).toContain(
+            InvoiceTemplateSourceService,
+        );
+        expect(metadata('imports', OfferWordModule)).toContain(
+            DocumentTemplateModule,
+        );
+        // сервису нужны оба источника шаблонов
+        expect(
+            metadata('design:paramtypes', InvoiceTemplateSourceService),
+        ).toEqual([InvoiceTemplateService, DocumentTemplateService]);
     });
 
     it('модуль воркеров подключает konstructor и не подключает admin', () => {

@@ -30,6 +30,8 @@ import { OfferGenerateQueueService } from './services/queue/offer-generate-queue
 import { InvoiceWordCoreGenerateService } from './services/invoice-word-core/invoice-word-core-generate.service';
 import { InvoiceRenderDataService } from './services/render-data-services/invoice-render-data.service';
 import { InvoiceTemplateModule } from '@app/konstructor/modules/invoice-template';
+import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
+import { InvoiceTemplateSourceService } from './services/invoice-word-core/invoice-template-source.service';
 import { OfferBxTimelineService } from './services/bitrix/offer-bx-timeline.service';
 import { PBXModule } from '@lib/pbx';
 import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document-save-flow.service';
@@ -64,6 +66,8 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         LibreOfficeModule,
         InnerDealModule,
         InvoiceTemplateModule,
+        // подбор шаблона счёта по порталу, поставщику, клиенту и поставке
+        DocumentTemplateModule,
         PBXModule,
     ],
     controllers: [
@@ -89,6 +93,7 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         OfferWordCancelWatcher,
         OfferGenerateQueueService,
         InvoiceWordCoreGenerateService,
+        InvoiceTemplateSourceService,
         InvoiceRenderDataService,
         OfferBxTimelineService,
         BitrixDocumentSaveFlowService,
