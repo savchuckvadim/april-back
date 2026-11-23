@@ -19,6 +19,7 @@ export type LayoutIssueKind =
     | 'fixed-out-of-page'
     | 'orphan-heading'
     | 'orphan-set-title'
+    | 'orphan-complect-title'
     | 'orphan-totals'
     | 'text-overlap'
     | 'textless-page';
@@ -108,6 +109,16 @@ const SET_TITLE_PATTERN = /^Набор \d+$/;
 
 const isSetTitle = (node: LayoutNode): boolean =>
     node.type === 'TEXT' && SET_TITLE_PATTERN.test(textOf(node));
+
+/**
+ * Заголовок комплекта в наполнении по комплектам: «Комплект 1. …». Так
+ * названы комплекты в сценариях аудита; название и подпись поставки — один
+ * текстовый блок.
+ */
+const COMPLECT_TITLE_PATTERN = /^Комплект \d+\. /;
+
+const isComplectTitle = (node: LayoutNode): boolean =>
+    node.type === 'TEXT' && COMPLECT_TITLE_PATTERN.test(textOf(node));
 
 const clip = (text: string): string => text.slice(0, 60);
 
@@ -262,6 +273,15 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 kind: 'orphan-set-title',
                 text: clip(textOf(lastContent.node)),
                 detail: 'заголовок набора последний на странице',
+            });
+        }
+        // заголовок комплекта без своей первой группы: ушёл вниз листа один
+        if (lastContent && isComplectTitle(lastContent.node)) {
+            issues.push({
+                page: number,
+                kind: 'orphan-complect-title',
+                text: clip(textOf(lastContent.node)),
+                detail: 'заголовок комплекта последний на странице',
             });
         }
     });

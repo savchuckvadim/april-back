@@ -4,9 +4,11 @@
  * фикстурой тестов/аудита PDF-КП. Данные вымышленные.
  */
 import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
+import { IComplectSectionRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-infoblocks.service';
 import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 import {
     IInfblockGroupsRenderData,
+    IInfblockGroupsSeparatedRenderData,
     IInfblockRenderData,
 } from '@app/konstructor/document-generate/infoblocks/infoblock-render-data.service';
 
@@ -127,6 +129,67 @@ const groups: IInfblockGroupsRenderData[] = [
     },
 ];
 
+/**
+ * Раздел комплекта: поля наполнения считаются по его группам так же, как
+ * на верхнем уровне данных; в `separated` — то, что сервис раскладывает по
+ * типам групп.
+ */
+export const createComplectSectionFixture = (
+    title: string,
+    supplyName: string,
+    sectionGroups: IInfblockGroupsRenderData[],
+    separated: Partial<IInfblockGroupsSeparatedRenderData> = {},
+): IComplectSectionRenderData => {
+    const simple = sectionGroups.flatMap(group => group.infoblocks);
+    const half = Math.ceil(simple.length / 2);
+    return {
+        ComplectTitle: title,
+        ComplectSupplyName: supplyName,
+        infoblocksByGroups: sectionGroups,
+        simpleInfoblocks: simple,
+        simpleInfoblocksByColumns: [
+            { columnOne: simple.slice(0, half), columnTwo: simple.slice(half) },
+        ],
+        NPA: [],
+        Comments: [],
+        CaseLaw: [],
+        Free: [],
+        Special: [],
+        STAR: [],
+        Academy: [],
+        Consalting: [],
+        PacketsEr: [],
+        Ers: [],
+        FreeBlocks: [],
+        LegalTech: [],
+        ...separated,
+    };
+};
+
+/** Два комплекта общего набора: у каждого свои группы наполнения. */
+const complectSections: IComplectSectionRenderData[] = [
+    createComplectSectionFixture(
+        'ГАРАНТ-Профессионал. Бухгалтерия',
+        'Интернет 3 ОД',
+        [groups[0], groups[1], groups[3]],
+        {
+            NPA: groups[0].infoblocks,
+            Comments: groups[1].infoblocks,
+            Special: groups[3].infoblocks,
+        },
+    ),
+    createComplectSectionFixture(
+        'ГАРАНТ-Профессионал. Юрист',
+        'Интернет 1 ОД',
+        [groups[2], groups[4]],
+        {
+            CaseLaw: groups[2].infoblocks,
+            Academy: [groups[4].infoblocks[2]],
+            Consalting: [groups[4].infoblocks[0]],
+        },
+    ),
+];
+
 const productRow = (
     number: string,
     name: string,
@@ -182,6 +245,10 @@ export const createOfferRenderDataFixture = (
     Ers: [],
     FreeBlocks: [],
     LegalTech: [],
+    // два комплекта для циклов Word-шаблона; печать по комплектам выключена —
+    // IsComplectsSeparate включают тесты и аудит PDF, когда нужен этот вид
+    ComplectSections: complectSections,
+    IsComplectsSeparate: false,
 
     ProductRows: [
         productRow(

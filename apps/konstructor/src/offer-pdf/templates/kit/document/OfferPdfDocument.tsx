@@ -3,7 +3,7 @@ import { Document, Page } from '@react-pdf/renderer';
 import type { OfferPdfPageFrame } from '../../../lib/pdf-layout';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
-import { groupsWithItems } from '../infoblocks/infoblock-description.util';
+import { hasInfoblocksToPrint } from '../infoblocks';
 import { OfferLetter } from '../letter/OfferLetter';
 import { variantTitleOf } from '../lib/variant-title.util';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
@@ -49,8 +49,7 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     // вариант комплекта печатается своим документом: название — в шапке первого листа
     const variantTitle = variantTitleOf(model);
     const letterOnSheets = !pages.letterInPromo;
-    const hasInfoblocks =
-        groupsWithItems(data.infoblocksByGroups ?? []).length > 0;
+    const hasInfoblocks = hasInfoblocksToPrint(data);
     // поток из одного наполнения, которого нет, — пустой лист не печатаем
     const isPrintable = (flow: OfferSheetFlow): boolean =>
         flow.withLetter ||

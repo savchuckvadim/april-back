@@ -122,9 +122,23 @@ export const mergeTotals = (
 };
 
 /**
+ * Комплекты со своим наполнением всех участников подряд: у слитого документа
+ * каждый комплект получает свой раздел. Ни у кого их нет — пусто, документ
+ * печатается как раньше.
+ */
+const mergeComplectSections = (
+    variants: readonly DocumentVariantDto[],
+): Pick<DocumentVariantDto, 'complects'> => {
+    const complects = variants.flatMap(item => item.complects ?? []);
+    return complects.length > 0 ? { complects } : {};
+};
+
+/**
  * Несколько участников → один: наполнение объединено, строки подряд по
  * наборам, итог общий. Договор, ОД и тип договора — первого участника: в
  * этом режиме они у всех одинаковые (один договор), проверка на фронте.
+ * Комплекты со своим наполнением (`complects`) идут подряд списками участников,
+ * вид их печати (`complectsMode`) — от первого участника.
  */
 export const mergeDocumentVariants = (
     variants: readonly DocumentVariantDto[],
@@ -148,6 +162,7 @@ export const mergeDocumentVariants = (
                 .filter(Boolean)
                 .join(' + '),
             complect: mergeComplects(variants.map(item => item.complect)),
+            ...mergeComplectSections(variants),
             rows: variants.flatMap(item => item.rows),
             sets: {
                 general: variants.flatMap(item => item.sets.general),

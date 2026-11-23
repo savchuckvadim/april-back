@@ -1,12 +1,28 @@
 import { StyleSheet } from '@react-pdf/renderer';
 import { themedStyles } from '../theme/themed-styles';
-import { FRAME, GRID, nameColumnWidth } from './infoblocks.layout';
+import {
+    COMPLECT_HEAD_BAR,
+    COMPLECT_HEAD_MARGIN_BOTTOM,
+    COMPLECT_HEAD_MARGIN_TOP,
+    COMPLECT_HEAD_PADDING,
+    COMPLECT_TITLE_LINE_HEIGHT,
+    complectTitleSize,
+    FRAME,
+    GRID,
+    nameColumnWidth,
+} from './infoblocks.layout';
 
 const cellPadding = { paddingVertical: 3, paddingHorizontal: 4 } as const;
 
 export const infoblocksStyles = themedStyles(theme => {
-    const { colors, sizes } = theme;
+    const { colors, sizes, lineHeight } = theme;
     const nameCol = nameColumnWidth(theme);
+    // название комплекта крупнее строки обёртки — тогда задаёт свой интерлиньяж
+    const titleSize = complectTitleSize(sizes.lg);
+    const titleLine =
+        titleSize > sizes.base * lineHeight
+            ? { lineHeight: COMPLECT_TITLE_LINE_HEIGHT }
+            : {};
     /**
      * Рамка таблицы — на строках, как в таблице цен: обёртка при разрыве
      * тянется до низа листа, и её рамка рисовала пустую клетку под последней
@@ -28,6 +44,26 @@ export const infoblocksStyles = themedStyles(theme => {
             fontWeight: 'bold',
             color: colors.accent,
             marginBottom: 4,
+        },
+        /** Заголовок комплекта в разделе по комплектам: полоса акцента слева */
+        complectHead: {
+            marginTop: COMPLECT_HEAD_MARGIN_TOP,
+            marginBottom: COMPLECT_HEAD_MARGIN_BOTTOM,
+            paddingLeft: COMPLECT_HEAD_PADDING,
+            borderLeftWidth: COMPLECT_HEAD_BAR,
+            borderLeftColor: colors.accent,
+        },
+        complectTitle: {
+            fontSize: titleSize,
+            fontWeight: 'bold',
+            color: colors.accent,
+            ...titleLine,
+        },
+        /** Подпись поставки под названием комплекта */
+        complectSupply: {
+            fontSize: sizes.base,
+            fontWeight: 'normal',
+            color: colors.muted,
         },
         groupTitle: {
             fontSize: sizes.lg,

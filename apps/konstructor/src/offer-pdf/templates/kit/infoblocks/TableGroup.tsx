@@ -7,6 +7,7 @@ import { GroupHead } from './GroupHead';
 import { HeadWithFirst } from './HeadWithFirst';
 import { isLongInfoblock } from './infoblock-description.util';
 import { TABLE_DESC_CHARS, TABLE_GROUP_HEAD } from './infoblocks.layout';
+import type { InfoblocksLead } from './infoblocks-lead';
 import { NamesRows } from './NamesRows';
 import { TableRows } from './TableRows';
 
@@ -14,13 +15,23 @@ export interface TableGroupProps {
     group: IInfblockGroupsRenderData;
     mode: DocumentFieldDescriptionMode;
     theme: OfferPdfTheme;
+    /** Блок перед шапкой группы: у первой группы раздела комплекта */
+    lead?: InfoblocksLead;
+    /** Шапка группы печатается; false — таблица без разделов, строки одним списком */
+    withHead?: boolean;
 }
 
 /**
  * Группа в таблице: шапка вместе с первой строкой (с первой парой, когда
  * названия идут в две колонки), затем остальные строки.
  */
-export const TableGroup: FC<TableGroupProps> = ({ group, mode, theme }) => {
+export const TableGroup: FC<TableGroupProps> = ({
+    group,
+    mode,
+    theme,
+    lead,
+    withHead = true,
+}) => {
     const withDescription = mode !== DocumentFieldDescriptionMode.NO;
     const firstCount = withDescription ? 1 : 2;
     const [first] = group.infoblocks;
@@ -28,7 +39,12 @@ export const TableGroup: FC<TableGroupProps> = ({ group, mode, theme }) => {
     return (
         <>
             <HeadWithFirst
-                head={<GroupHead name={group.groupsName} theme={theme} />}
+                lead={lead}
+                head={
+                    withHead ? (
+                        <GroupHead name={group.groupsName} theme={theme} />
+                    ) : null
+                }
                 first={
                     withDescription ? (
                         <DescriptionRow
@@ -48,7 +64,7 @@ export const TableGroup: FC<TableGroupProps> = ({ group, mode, theme }) => {
                     withDescription &&
                     isLongInfoblock(first, mode, TABLE_DESC_CHARS)
                 }
-                headHeight={TABLE_GROUP_HEAD}
+                headHeight={withHead ? TABLE_GROUP_HEAD : 0}
             />
             <TableRows
                 items={group.infoblocks.slice(firstCount)}

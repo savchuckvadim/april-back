@@ -3,6 +3,7 @@ import {
     IInfblockRenderData,
 } from '@app/konstructor/document-generate/infoblocks/infoblock-render-data.service';
 import {
+    createComplectSectionFixture,
     createOfferRenderDataFixture,
     productRowsWithSets,
 } from '../__tests__/fixtures/offer-pdf-model.fixture';
@@ -10,6 +11,7 @@ import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
 } from '../model/offer-document-settings.type';
+import { IOfferWordRenderData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-data.service';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfSettingsInput } from '../model/offer-pdf-settings';
 
@@ -176,6 +178,30 @@ const hugeBlocks = (): IInfblockGroupsRenderData[] => [
     },
     ...base.infoblocksByGroups.slice(1),
 ];
+
+/**
+ * Общий набор из нескольких комплектов, наполнение «по комплектам». Названия
+ * начинаются с «Комплект N. » — по ним аудит находит заголовки комплектов
+ * (COMPLECT_TITLE_PATTERN в layout-audit).
+ */
+const separateComplects = (
+    complects: ReadonlyArray<
+        readonly [name: string, supplyName: string, IInfblockGroupsRenderData[]]
+    >,
+): Partial<IOfferWordRenderData> => ({
+    IsComplectsSeparate: true,
+    ComplectSections: complects.map(
+        ([name, supplyName, sectionGroups], index) =>
+            createComplectSectionFixture(
+                `Комплект ${index + 1}. ${name}`,
+                supplyName,
+                sectionGroups,
+            ),
+    ),
+    infoblocksByGroups: complects.flatMap(
+        ([, , sectionGroups]) => sectionGroups,
+    ),
+});
 
 export interface AuditScenario {
     name: string;
@@ -391,5 +417,149 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
         name: '22-variant-title-long-cover',
         settings: {},
         model: { variantTitle: LONG_VARIANT_TITLE },
+    },
+    // наполнение по комплектам: два комплекта, список с короткими описаниями
+    {
+        name: '23-complects-separate-two',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        base.infoblocksByGroups.slice(0, 2),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        base.infoblocksByGroups.slice(2),
+                    ],
+                ]),
+            ),
+        },
+    },
+    // два комплекта, описания «много»: длинные тексты, наполнение первого уходит на следующий лист
+    {
+        name: '24-complects-separate-two-list-big',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.BIG },
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        withRegions(12),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        base.infoblocksByGroups.slice(1),
+                    ],
+                ]),
+            ),
+        },
+    },
+    // три комплекта, длинное наполнение, таблица с разделами и описаниями «средне»:
+    // заголовки комплектов приходятся на разные места листа
+    {
+        name: '25-complects-separate-three-table-groups-long',
+        settings: {
+            viewMode: DocumentFieldViewMode.TABLE_WITH_GROUP,
+            descriptionMode: DocumentFieldDescriptionMode.MEDIUM,
+        },
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        withRegions(35),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        base.infoblocksByGroups.slice(1),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Кадры',
+                        'Интернет 5 ОД',
+                        withRegions(12),
+                    ],
+                ]),
+            ),
+        },
+    },
+    // три комплекта, список без описаний: у «Модерна» и «Искры» названия в две колонки
+    {
+        name: '26-complects-separate-three-list-names',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.NO },
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        withRegions(35),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        withRegions(12),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Кадры',
+                        'Интернет 5 ОД',
+                        base.infoblocksByGroups,
+                    ],
+                ]),
+            ),
+        },
+    },
+    // два комплекта, таблица без разделов: первая строка каждого — огромное описание
+    {
+        name: '27-complects-separate-two-huge-table',
+        settings: {
+            viewMode: DocumentFieldViewMode.TABLE,
+            descriptionMode: DocumentFieldDescriptionMode.BIG,
+        },
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        hugeBlocks(),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        hugeBlocks(),
+                    ],
+                ]),
+            ),
+        },
+    },
+    // три комплекта, список, огромные описания первыми в каждом комплекте; у третьего нет подписи поставки
+    {
+        name: '28-complects-separate-three-huge-list',
+        settings: { descriptionMode: DocumentFieldDescriptionMode.BIG },
+        model: {
+            data: createOfferRenderDataFixture(
+                separateComplects([
+                    [
+                        'ГАРАНТ-Профессионал. Бухгалтерия',
+                        'Интернет 3 ОД',
+                        hugeBlocks(),
+                    ],
+                    [
+                        'ГАРАНТ-Профессионал. Юрист',
+                        'Интернет 1 ОД',
+                        hugeBlocks(),
+                    ],
+                    ['ГАРАНТ-Профессионал. Кадры', '', hugeBlocks()],
+                ]),
+            ),
+        },
     },
 ];
