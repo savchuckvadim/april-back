@@ -1,5 +1,7 @@
 import { renderTranscriptWithTimecodes } from '@lib/call-lib/transcription/types/transcript-segment.types';
 import { Process, Processor } from '@nestjs/bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
+import { callReportJobCallContext } from './call-report-job-context';
 import { Logger, Optional } from '@nestjs/common';
 import { Job } from 'bull';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
@@ -146,9 +148,14 @@ export class CallReportProcessor {
      * admin/ai-analytics/facts-catchup (dryRun — тоже через джобу).
      */
     @Process(JobNames.CALL_REPORT_FACTS_CATCHUP)
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_FACTS_CATCHUP}`,
+        'Очередь: догон фактов разборов',
+    )
     async handleFactsCatchup(
         job: Job<FactsCatchupJobData>,
     ): Promise<CallReportFactsCatchupResult> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         if (!this.factsCatchup) {
             throw new Error(
                 'Догон фактов не подключён: нет провайдера CallReportFactsCatchupUseCase',
@@ -169,9 +176,14 @@ export class CallReportProcessor {
      * продолжение.
      */
     @Process(JobNames.CALL_REPORT_SMART_BACKFILL)
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_SMART_BACKFILL}`,
+        'Очередь: дописывание карточек разборов',
+    )
     async handleSmartBackfill(
         job: Job<SmartBackfillJobData>,
     ): Promise<CallReportSmartBackfillResult> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         if (!this.smartBackfill) {
             throw new Error(
                 'Дописывание полей карточек не подключено: нет провайдера CallReportSmartBackfillUseCase',
@@ -194,9 +206,14 @@ export class CallReportProcessor {
      * admin/ai-analytics/reanalyze (и dryRun — тоже через джобу).
      */
     @Process(JobNames.CALL_REPORT_REANALYZE)
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_REANALYZE}`,
+        'Очередь: переразбор звонков',
+    )
     async handleReanalyze(
         job: Job<ReanalysisJobData>,
     ): Promise<CallReportReanalyzeResult> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         if (!this.reanalyze) {
             throw new Error(
                 'Переразбор истории не подключён: нет провайдера CallReportReanalyzeUseCase',
@@ -217,9 +234,14 @@ export class CallReportProcessor {
      * golden-set/run. Без провайдера джоба падает с понятной причиной.
      */
     @Process(JobNames.CALL_REPORT_RETEST)
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_RETEST}`,
+        'Очередь: повторный разбор выборки',
+    )
     async handleRetest(
         job: Job<CallReportRetestJobData>,
     ): Promise<CallReportRetestResult> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         if (!this.retest) {
             throw new Error(
                 'Срез test-retest не подключён: нет провайдера CallReportRetestUseCase',
@@ -237,7 +259,12 @@ export class CallReportProcessor {
         name: JobNames.CALL_REPORT_TRANSCRIBE,
         concurrency: resolveConcurrency('CALL_REPORT_CONCURRENCY', 3),
     })
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_TRANSCRIBE}`,
+        'Очередь: распознавание звонка',
+    )
     async handleTranscribe(job: Job<CallReportJobPayload>): Promise<void> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         const { domain, activityId } = job.data;
         this.logger.log(
             `TRANSCRIBE: ${domain}, activity ${activityId} (job ${job.id})`,
@@ -266,9 +293,14 @@ export class CallReportProcessor {
         name: JobNames.CALL_REPORT_ANALYZE,
         concurrency: resolveConcurrency('CALL_REPORT_ANALYZE_CONCURRENCY', 2),
     })
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_ANALYZE}`,
+        'Очередь: разбор звонка',
+    )
     async handleAnalyze(
         job: Job<CallReportAnalyzeStagePayload | CallReportJobPayload>,
     ): Promise<void> {
+        annotateCallContext(() => callReportJobCallContext(job.data));
         const { domain, activityId } = job.data;
         this.logger.log(
             `ANALYZE: ${domain}, activity ${activityId} (job ${job.id})`,

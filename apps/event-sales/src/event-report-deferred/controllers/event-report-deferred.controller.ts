@@ -1,6 +1,10 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BackgroundCalls } from '@lib/core/call-context';
+import { annotateCallContext, BackgroundCalls } from '@lib/core/call-context';
+import {
+    EVENT_REPORT_OPERATION,
+    eventReportCallContext,
+} from '../../event-report/lib/event-report-call-context';
 import {
     EventReportDeferredRequestDto,
     EventReportDeferredResultDto,
@@ -56,6 +60,13 @@ export class EventReportDeferredController {
     async deferred(
         @Body() dto: EventReportDeferredRequestDto,
     ): Promise<EventReportDeferredResultDto> {
+        annotateCallContext(() => ({
+            ...eventReportCallContext(
+                dto.payload,
+                EVENT_REPORT_OPERATION.deferred,
+            ),
+            domain: dto.domain,
+        }));
         return this.service.execute(dto);
     }
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { DEAL_MOVEMENT_REQUESTERS } from '@lib/sales-ai-analytics';
 import { resolveTimezoneByDomain } from '@lib/shared/lib/date';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
@@ -33,6 +34,7 @@ export class DealMovementScheduler {
     ) {}
 
     @Cron(DEAL_MOVEMENT_CRON, { name: DEAL_MOVEMENT_CRON_NAME })
+    @CallSource(`cron:${DEAL_MOVEMENT_CRON_NAME}`, 'Крон: движение сделок')
     async tick(now: Date = new Date()): Promise<void> {
         const domains = await this.enabledDomains();
         if (domains.length === 0) return;

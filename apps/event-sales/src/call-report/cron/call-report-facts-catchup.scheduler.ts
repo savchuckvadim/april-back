@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
 import {
@@ -55,6 +56,10 @@ export class CallReportFactsCatchupScheduler implements OnModuleInit {
     }
 
     @Cron(NIGHTLY_AT_MSK_0130, { name: FACTS_CATCHUP_NIGHTLY_CRON_NAME })
+    @CallSource(
+        `cron:${FACTS_CATCHUP_NIGHTLY_CRON_NAME}`,
+        'Крон: догон фактов разборов',
+    )
     async tick(now: Date = new Date()): Promise<void> {
         const domains = await this.roster.resolve();
         for (const entry of domains) {

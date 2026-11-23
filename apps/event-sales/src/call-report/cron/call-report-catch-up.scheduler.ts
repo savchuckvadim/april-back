@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
@@ -54,6 +55,7 @@ export class CallReportCatchUpScheduler implements OnModuleInit {
     }
 
     @Cron(DAILY_AT_MSK_2100, { name: 'call-report-catch-up' })
+    @CallSource('cron:call-report-catch-up', 'Крон: догон разборов звонков')
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

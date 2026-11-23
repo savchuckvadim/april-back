@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Process, Processor } from '@nestjs/bull';
+import {
+    annotateCallContext,
+    callEntity,
+    CallSource,
+} from '@lib/core/call-context';
 import { Job } from 'bull';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
@@ -54,7 +59,15 @@ export class PresentationFlowProcessor {
     }
 
     @Process(JobNames.EVENT_SALES_PRESENTATION_FLOW)
+    @CallSource(
+        `queue:${JobNames.EVENT_SALES_PRESENTATION_FLOW}`,
+        'Отчёт «Звонки»: презентация',
+    )
     async handle(job: Job<PresentationFlowJobData>): Promise<void> {
+        annotateCallContext({
+            domain: job.data.domain,
+            entity: callEntity('deal', job.data.baseDealId),
+        });
         const ref = {
             domain: job.data.domain,
             flow: 'pres-flow' as const,

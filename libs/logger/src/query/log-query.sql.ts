@@ -20,12 +20,13 @@ export const LOG_DOMAIN_EXPR =
     "extract(message, '([a-z0-9-]+[.]bitrix24[.][a-z]+)'))";
 
 /** Время строки в ISO-подобном виде (UTC): сериализация не зависит от клиента. */
-const AT_EXPR = "formatDateTime(timestamp, '%Y-%m-%dT%H:%i:%S.%fZ')";
+export const LOG_AT_EXPR = "formatDateTime(timestamp, '%Y-%m-%dT%H:%i:%S.%fZ')";
 
-const WINDOW = 'timestamp >= now64(3) - toIntervalHour({hours:UInt32})';
+export const LOG_WINDOW =
+    'timestamp >= now64(3) - toIntervalHour({hours:UInt32})';
 
 /** Условия фильтра, кроме окна времени. */
-function filterConditions(
+export function logFilterConditions(
     filter: LogQueryFilter,
     params: LogSql['params'],
 ): string[] {
@@ -57,18 +58,18 @@ function filterConditions(
     return conditions;
 }
 
-const where = (conditions: string[]): string =>
+export const logWhere = (conditions: string[]): string =>
     conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
 /** Последние строки журнала по фильтру. */
 export function buildRowsSql(filter: LogQueryFilter, limit: number): LogSql {
     const params: LogSql['params'] = { hours: filter.hours, limit };
-    const conditions = [WINDOW, ...filterConditions(filter, params)];
+    const conditions = [LOG_WINDOW, ...logFilterConditions(filter, params)];
     return {
-        query: `SELECT ${AT_EXPR} AS at, app, env, level, context, message, meta,
+        query: `SELECT ${LOG_AT_EXPR} AS at, app, env, level, context, message, meta,
        substring(trace, 1, 4000) AS trace, ${LOG_DOMAIN_EXPR} AS domain
 FROM ${APP_LOGS_TABLE}
-${where(conditions)}
+${logWhere(conditions)}
 ORDER BY timestamp DESC
 LIMIT {limit:UInt32}`,
         params,
@@ -84,7 +85,7 @@ export function buildAppsSql(filter: LogQueryFilter): LogSql {
     const params: LogSql['params'] = { hours: filter.hours };
     const conditions = [
         'timestamp >= now64(3) - toIntervalHour({hours:UInt32} * 2)',
-        ...filterConditions({ ...filter, level: undefined }, params),
+        ...logFilterConditions({ ...filter, level: undefined }, params),
     ];
     const current = 'timestamp >= now64(3) - toIntervalHour({hours:UInt32})';
     return {
@@ -96,7 +97,7 @@ export function buildAppsSql(filter: LogQueryFilter): LogSql {
        countIf(NOT ${current}) AS prevTotal,
        formatDateTime(max(timestamp), '%Y-%m-%dT%H:%i:%S.%fZ') AS lastAt
 FROM ${APP_LOGS_TABLE}
-${where(conditions)}
+${logWhere(conditions)}
 GROUP BY app
 ORDER BY errors DESC, total DESC`,
         params,
@@ -107,8 +108,8 @@ ORDER BY errors DESC, total DESC`,
 export function buildTopErrorsSql(filter: LogQueryFilter, top: number): LogSql {
     const params: LogSql['params'] = { hours: filter.hours, top };
     const conditions = [
-        WINDOW,
-        ...filterConditions({ ...filter, level: undefined }, params),
+        LOG_WINDOW,
+        ...logFilterConditions({ ...filter, level: undefined }, params),
     ];
     params.patternLevel = filter.level ?? 'error';
     conditions.push('level = {patternLevel:String}');
@@ -121,7 +122,7 @@ export function buildTopErrorsSql(filter: LogQueryFilter, top: number): LogSql {
        formatDateTime(max(timestamp), '%Y-%m-%dT%H:%i:%S.%fZ') AS lastAt,
        groupUniqArray(6)(${LOG_DOMAIN_EXPR}) AS domains
 FROM ${APP_LOGS_TABLE}
-${where(conditions)}
+${logWhere(conditions)}
 GROUP BY app, pattern
 ORDER BY count DESC
 LIMIT {top:UInt32}`,
@@ -133,8 +134,8 @@ LIMIT {top:UInt32}`,
 export function buildDomainsSql(filter: LogQueryFilter, top: number): LogSql {
     const params: LogSql['params'] = { hours: filter.hours, top };
     const conditions = [
-        WINDOW,
-        ...filterConditions({ ...filter, level: undefined }, params),
+        LOG_WINDOW,
+        ...logFilterConditions({ ...filter, level: undefined }, params),
         `${LOG_DOMAIN_EXPR} != ''`,
     ];
     return {
@@ -143,7 +144,7 @@ export function buildDomainsSql(filter: LogQueryFilter, top: number): LogSql {
        countIf(level = 'warn') AS warnings,
        count() AS total
 FROM ${APP_LOGS_TABLE}
-${where(conditions)}
+${logWhere(conditions)}
 GROUP BY domain
 ORDER BY errors DESC, warnings DESC, total DESC
 LIMIT {top:UInt32}`,

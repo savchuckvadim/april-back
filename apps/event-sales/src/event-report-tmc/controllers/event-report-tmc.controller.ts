@@ -9,7 +9,13 @@ import {
     Query,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    annotateCallContext,
+    callActor,
+    callEntity,
+} from '@lib/core/call-context';
 import { EventFlowOperationDto } from '../../event-report/dto/response/event-flow-operation.dto';
+import { EVENT_REPORT_OPERATION } from '../../event-report/lib/event-report-call-context';
 import { TmcPresentationApprovedDto } from '../dto/tmc-presentation-approved.dto';
 import { TmcPresentationApprovalService } from '../services/tmc-presentation-approval.service';
 import { mergeRobotParams } from '../lib/merge-robot-params.util';
@@ -85,6 +91,12 @@ export class EventReportTmcController {
         method: 'GET' | 'POST',
     ): Promise<EventFlowOperationDto> {
         const domain = dto.auth?.domain ?? dto.domain ?? '';
+        annotateCallContext(() => ({
+            operation: EVENT_REPORT_OPERATION.tmcApproval,
+            domain: domain || undefined,
+            entity: callEntity('deal', dto.tmcDealId),
+            actor: callActor(dto.managerId),
+        }));
         // Пометка портала в meta: без неё строки ручки не видны в журнале,
         // отфильтрованном по порталу, и отказ робота неотличим от молчания.
         const meta = domain ? { domain } : {};

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { SendCallReportWeeklyUseCase } from '@lib/call-lib/call-report/weekly-report/send-call-report-weekly.use-case';
 
@@ -21,6 +22,7 @@ export class CallReportWeeklyScheduler {
     ) {}
 
     @Cron('0 16 * * 5', { name: 'call-report-weekly' })
+    @CallSource('cron:call-report-weekly', 'Крон: недельная сводка по звонкам')
     async tick(): Promise<void> {
         const portals = await this.portalAiSettings
             .findEnabled()

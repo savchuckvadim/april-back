@@ -45,6 +45,15 @@ export function normalizeLogFilter(filter: LogQueryFilter): LogQueryFilter {
     };
 }
 
+/** Сколько строк вернуть: 1…500, по умолчанию 100. */
+export const normalizeLogLimit = (limit?: number): number =>
+    clampInt(
+        limit ?? LOG_QUERY_ROWS.fallback,
+        1,
+        LOG_QUERY_ROWS.max,
+        LOG_QUERY_ROWS.fallback,
+    );
+
 /**
  * Журналы всех приложений для админки и ИИ: строки по фильтру и сводка с
  * выводами (по приложениям, частым ошибкам, порталам).
@@ -56,12 +65,7 @@ export class LogQueryService {
     async rows(filter: LogQueryFilter, limit?: number): Promise<LogRowView[]> {
         return this.repository.rows(
             normalizeLogFilter(filter),
-            clampInt(
-                limit ?? LOG_QUERY_ROWS.fallback,
-                1,
-                LOG_QUERY_ROWS.max,
-                LOG_QUERY_ROWS.fallback,
-            ),
+            normalizeLogLimit(limit),
         );
     }
 

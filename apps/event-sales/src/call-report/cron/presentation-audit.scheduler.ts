@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { CallRefusalAuditService } from '../services/call-refusal-audit.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
@@ -50,6 +51,7 @@ export class PresentationAuditScheduler implements OnModuleInit {
     }
 
     @Cron(DAILY_AT_MSK_0800, { name: 'presentation-audit' })
+    @CallSource('cron:presentation-audit', 'Крон: аудит презентаций')
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

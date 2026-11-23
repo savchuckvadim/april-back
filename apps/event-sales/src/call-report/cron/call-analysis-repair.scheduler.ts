@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     CallAnalysisRepairUseCase,
@@ -61,6 +62,10 @@ export class CallAnalysisRepairScheduler {
     ) {}
 
     @Cron(CALL_ANALYSIS_REPAIR_CRON, { name: CALL_ANALYSIS_REPAIR_CRON_NAME })
+    @CallSource(
+        `cron:${CALL_ANALYSIS_REPAIR_CRON_NAME}`,
+        'Крон: дозаполнение упавших разборов',
+    )
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

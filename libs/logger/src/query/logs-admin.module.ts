@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { LogsAdminController } from './admin/logs-admin.controller';
+import { BitrixFailuresAdminController } from './admin/bitrix-failures-admin.controller';
 import { LogQueryModule } from './log-query.module';
 
 /**
@@ -9,6 +10,6 @@ import { LogQueryModule } from './log-query.module';
  */
 @Module({
     imports: [LogQueryModule],
-    controllers: [LogsAdminController],
+    controllers: [LogsAdminController, BitrixFailuresAdminController],
 })
 export class LogsAdminModule {}

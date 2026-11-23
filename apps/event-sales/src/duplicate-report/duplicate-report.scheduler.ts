@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { getErrorString } from '@/shared/lib/utils/get-error-string.util';
 import {
     EnumPortalAppCode,
@@ -63,6 +64,7 @@ export class DuplicateReportScheduler {
     ) {}
 
     @Cron(CronExpression.EVERY_HOUR, { name: 'event-sales-duplicate-report' })
+    @CallSource('cron:event-sales-duplicate-report', 'Крон: отчёт по дублям')
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains) return;

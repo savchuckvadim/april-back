@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -49,6 +50,7 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
     }
 
     @Cron(CronExpression.EVERY_10_MINUTES, { name: 'lead-request-sla' })
+    @CallSource('cron:lead-request-sla', 'Крон: SLA заявок')
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

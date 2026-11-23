@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { TranscriptionBudgetAlertUseCase } from '../use-cases/transcription-budget-alert.use-case';
 import { CallReportDomainRosterService } from './call-report-domain-roster.service';
 
@@ -31,6 +32,10 @@ export class TranscriptionBudgetAlertScheduler {
     @Cron(TRANSCRIPTION_BUDGET_ALERT_CRON, {
         name: TRANSCRIPTION_BUDGET_ALERT_CRON_NAME,
     })
+    @CallSource(
+        `cron:${TRANSCRIPTION_BUDGET_ALERT_CRON_NAME}`,
+        'Крон: бюджет распознавания',
+    )
     async tick(now: Date = new Date()): Promise<void> {
         const domains = await this.roster.resolve();
         for (const entry of domains) {

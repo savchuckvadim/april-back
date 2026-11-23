@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { LogQueryRepository } from './log-query.repository';
 import { LogQueryService } from './log-query.service';
+import { BitrixFailureQueryService } from './bitrix-failures/bitrix-failures.service';
 
 /**
  * Чтение журналов ClickHouse — ТОЛЬКО сервисы. Ручки админки —
@@ -8,7 +9,7 @@ import { LogQueryService } from './log-query.service';
  * отсюда же (ошибки портала клиента для ИИ).
  */
 @Module({
-    providers: [LogQueryRepository, LogQueryService],
-    exports: [LogQueryService],
+    providers: [LogQueryRepository, LogQueryService, BitrixFailureQueryService],
+    exports: [LogQueryService, BitrixFailureQueryService],
 })
 export class LogQueryModule {}

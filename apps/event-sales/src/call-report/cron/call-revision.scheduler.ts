@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { CallRevisionService } from '../services/call-revision.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
@@ -42,6 +43,7 @@ export class CallRevisionScheduler implements OnModuleInit {
     }
 
     @Cron(NIGHTLY_AT_MSK_2330, { name: 'call-revision' })
+    @CallSource('cron:call-revision', 'Крон: ревизия разборов')
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

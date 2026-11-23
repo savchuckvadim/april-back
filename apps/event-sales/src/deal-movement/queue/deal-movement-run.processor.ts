@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
+import {
+    annotateCallContext,
+    callEntity,
+    CallSource,
+} from '@lib/core/call-context';
 import { Job } from 'bull';
 import { JobNames, QueueNames } from '@lib/queue';
 import type {
@@ -34,7 +39,12 @@ export class DealMovementRunProcessor {
     ) {}
 
     @Process({ name: JobNames.EVENT_SALES_DEAL_MOVEMENT_RUN, concurrency: 1 })
+    @CallSource(
+        `queue:${JobNames.EVENT_SALES_DEAL_MOVEMENT_RUN}`,
+        'Очередь: движение сделок (из админки)',
+    )
     async handle(job: Job<DealMovementJobData>): Promise<void> {
+        annotateCallContext({ domain: job.data.domain });
         const { domain, dryRun, requestedBy } = job.data;
         this.logger.log(
             `Движение сделок ${domain}: ${dryRun ? 'подсчёт' : 'счёт'} из админки`,
@@ -52,7 +62,15 @@ export class DealMovementRunProcessor {
     }
 
     @Process({ name: JobNames.EVENT_SALES_DEAL_MOVEMENT_PROBE, concurrency: 1 })
+    @CallSource(
+        `queue:${JobNames.EVENT_SALES_DEAL_MOVEMENT_PROBE}`,
+        'Очередь: движение сделок (проверка записи)',
+    )
     async probe(job: Job<DealMovementProbeJobData>): Promise<void> {
+        annotateCallContext({
+            domain: job.data.domain,
+            entity: callEntity('deal', job.data.dealId),
+        });
         await this.probes.run(job.data);
     }
 

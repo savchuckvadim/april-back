@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { WsService } from '@/core/ws/ws.service';
 import { getErrorDetails } from '@/shared';
+import { annotateCallContext, callActor } from '@lib/core/call-context';
 import { SalesBatchGroupBuffer } from '../../../shared/batch';
 import { SalesHookStatusService } from './sales-hook-status.service';
 import { SalesHookRegistryService } from './sales-hook-registry.service';
@@ -9,6 +10,7 @@ import { SalesHookJobData } from '../contracts/sales-hook-job.type';
 import { SalesHookExecutionContext } from '../contracts/sales-hook-use-case.contract';
 import { SALES_HOOK_WS_EVENTS } from '../constants/sales-hook.const';
 import { EnumSalesHookCode } from '../constants/sales-hook-code.enum';
+import { SALES_HOOK_OPERATION } from '../constants/sales-hook-operation.const';
 
 /**
  * Исполнитель операции sales-хука — общий для всех хуков и обоих путей
@@ -28,6 +30,12 @@ export class SalesHookRunnerService {
 
     async run(job: SalesHookJobData): Promise<void> {
         const { domain, hook, operationId } = job;
+        // Подпись тревог и журнала сбоев Битрикса: какой хук, чей запуск.
+        annotateCallContext(() => ({
+            operation: SALES_HOOK_OPERATION[hook],
+            domain,
+            actor: callActor(job.initiatorUserId),
+        }));
 
         // Нет статуса — операцию не выполняем: защититься от «слепого» job'а
         // (статус протух или job подделан) важнее, чем доделать работу.

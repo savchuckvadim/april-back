@@ -1,4 +1,5 @@
 import { Process, Processor } from '@nestjs/bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
@@ -22,9 +23,14 @@ export class AnalysisPreviewProcessor {
     constructor(private readonly preview: AnalysisPreviewUseCase) {}
 
     @Process(JobNames.CALL_REPORT_ANALYSIS_PREVIEW)
+    @CallSource(
+        `queue:${JobNames.CALL_REPORT_ANALYSIS_PREVIEW}`,
+        'Очередь: предпросмотр разбора звонка',
+    )
     async handle(
         job: Job<AnalysisPreviewJobData>,
     ): Promise<AnalysisPreviewState> {
+        annotateCallContext({ domain: job.data.domain });
         this.logger.log(
             `CALL_REPORT_ANALYSIS_PREVIEW: ${job.data.domain}, расшифровка ${job.data.transcriptionId}`,
         );

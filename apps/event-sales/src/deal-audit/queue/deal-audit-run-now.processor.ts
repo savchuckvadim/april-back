@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
 import { Job } from 'bull';
 import { DealAuditRunNowJobData, JobNames, QueueNames } from '@lib/queue';
 import { DealAuditScheduler } from '../deal-audit.scheduler';
@@ -22,7 +23,12 @@ export class DealAuditRunNowProcessor {
     constructor(private readonly scheduler: DealAuditScheduler) {}
 
     @Process({ name: JobNames.EVENT_SALES_DEAL_AUDIT_RUN_NOW, concurrency: 1 })
+    @CallSource(
+        `queue:${JobNames.EVENT_SALES_DEAL_AUDIT_RUN_NOW}`,
+        'Очередь: аудит сделок (ручной прогон)',
+    )
     async handle(job: Job<DealAuditRunNowJobData>): Promise<void> {
+        annotateCallContext({ domain: job.data.domain });
         const { domain } = job.data;
         this.logger.log(`Аудит сделок ${domain}: ручной прогон из админки`);
         const started = await this.scheduler.runNowAndWait(domain);

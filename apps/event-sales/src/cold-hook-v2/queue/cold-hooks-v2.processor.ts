@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
+import { annotateCallContext, CallSource } from '@lib/core/call-context';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import {
@@ -13,6 +14,10 @@ import {
     IColdHookSilenceHandlerData,
 } from '../type/cold-hook-silence.interface';
 import { ColdHooksHandlerV2Service } from '../services/silence/cold-hooks-handler.service';
+import {
+    COLD_CALL_OPERATION,
+    coldCallWindowCallContext,
+} from '../lib/cold-call-call-context';
 
 /**
  * Сколько окон разных порталов обрабатывается одновременно (env
@@ -57,6 +62,10 @@ export class ColdHooksV2Processor {
     ) {}
 
     @Process({ name: JobNames.EVENT_COLD_CALL_V2, concurrency: XO_LANES })
+    @CallSource(
+        `queue:${JobNames.EVENT_COLD_CALL_V2}`,
+        COLD_CALL_OPERATION.window,
+    )
     async handle(job: Job<IColdHookSilenceHandlerData>): Promise<void> {
         const { collected, payload } = job.data;
         const lane = await this.lanes.acquire({
@@ -66,6 +75,9 @@ export class ColdHooksV2Processor {
         if (lane.status !== 'acquired' && (await this.requeue(job, lane))) {
             return;
         }
+        annotateCallContext(() =>
+            coldCallWindowCallContext(payload.domain, collected),
+        );
 
         const firstQueuedAt = job.data.lane?.firstQueuedAt ?? job.timestamp;
         this.logger.log(

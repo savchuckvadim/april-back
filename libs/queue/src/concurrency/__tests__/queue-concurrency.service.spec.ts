@@ -23,6 +23,7 @@ const makeRedis = () => {
                 return Promise.resolve(next);
             },
             expire: () => Promise.resolve(1),
+            get: (key: string) => Promise.resolve(locks.get(key) ?? null),
             set: (key: string, value: string) => {
                 if (locks.has(key)) return Promise.resolve(null);
                 locks.set(key, value);
@@ -33,17 +34,27 @@ const makeRedis = () => {
                 counters.delete(key);
                 return Promise.resolve(1);
             },
-            // Lua release-if-owner: удаляет лок только при совпадении токена.
-            eval: (_script: string, _n: number, key: string, arg: string) => {
-                if (locks.get(key) === arg) {
-                    locks.delete(key);
-                    return Promise.resolve(1);
-                }
-                return Promise.resolve(0);
+            // Оба Lua-скрипта сравнивают значение лока с ARGV[1]: перехват
+            // (в скрипте есть "set") подменяет его на ARGV[2], снятие — удаляет.
+            eval: (
+                script: string,
+                _n: number,
+                key: string,
+                ...args: string[]
+            ) => {
+                if (locks.get(key) !== args[0]) return Promise.resolve(0);
+                if (script.includes('"set"')) locks.set(key, args[1]);
+                else locks.delete(key);
+                return Promise.resolve(1);
             },
         },
     };
 };
+
+const LOCK_KEY = 'queue:event-sales-flow:lock:a.bitrix24.ru:company:431';
+const DOMAIN_KEY = 'queue:event-sales-flow:domain:a.bitrix24.ru:active';
+/** Лок, оставшийся от процесса, которого больше нет (выкладка). */
+const lockOfDeadProcess = (ownerId: string) => `${ownerId}@previous-boot`;
 
 const makeService = (redis: ReturnType<typeof makeRedis>) =>
     new QueueConcurrencyService({
@@ -164,6 +175,123 @@ describe('QueueConcurrencyService', () => {
 
         expect(first.acquired).toBe(true);
         expect(second.acquired).toBe(true);
+    });
+
+    /*
+     * Выкладка обрывает отчёт посреди работы: лок клиента и место домена
+     * остаются в Redis на 10 минут, а повторная доставка перекладывается
+     * только 7,5 минуты — и отчёт падал с «очередь перегружена». Поэтому
+     * операция узнаёт свой лок по id и забирает его.
+     */
+    describe('перехват своего лока после перезапуска', () => {
+        const OWNED = { ...REQUEST, ownerId: 'op-1' };
+
+        it('лок той же операции от прошлого запуска забирается сразу', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+            redis.counters.set(DOMAIN_KEY, 1);
+
+            const slot = await makeService(redis).acquire(OWNED);
+
+            expect(slot.acquired).toBe(true);
+            expect(redis.locks.get(LOCK_KEY)).not.toBe(
+                lockOfDeadProcess('op-1'),
+            );
+        });
+
+        it('место домена второй раз не занимается и возвращается после работы', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+            redis.counters.set(DOMAIN_KEY, 1);
+
+            const slot = await makeService(redis).acquire(OWNED);
+            expect(redis.counters.get(DOMAIN_KEY)).toBe(1);
+
+            await slot.release();
+            expect(redis.locks.has(LOCK_KEY)).toBe(false);
+            expect(redis.counters.get(DOMAIN_KEY)).toBe(0);
+        });
+
+        it('проходит и при заполненном портале: оборваны были оба отчёта', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+            redis.counters.set(DOMAIN_KEY, REQUEST.maxPerDomain);
+
+            const slot = await makeService(redis).acquire(OWNED);
+
+            expect(slot.acquired).toBe(true);
+        });
+
+        it('лок ДРУГОЙ операции не трогается — клиент занят', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-2'));
+            redis.counters.set(DOMAIN_KEY, 1);
+
+            const slot = await makeService(redis).acquire(OWNED);
+
+            expect(slot.acquired).toBe(false);
+            expect(slot.reason).toBe('entity-busy');
+            expect(redis.locks.get(LOCK_KEY)).toBe(lockOfDeadProcess('op-2'));
+            expect(redis.counters.get(DOMAIN_KEY)).toBe(1);
+        });
+
+        it('свой лок ЭТОГО ЖЕ запуска не забирается: прошлая доставка могла не закончиться', async () => {
+            const redis = makeRedis();
+            const service = makeService(redis);
+            const first = await service.acquire(OWNED);
+            const held = redis.locks.get(LOCK_KEY);
+
+            const second = await service.acquire(OWNED);
+
+            expect(first.acquired).toBe(true);
+            expect(second.acquired).toBe(false);
+            expect(second.reason).toBe('entity-busy');
+            expect(redis.locks.get(LOCK_KEY)).toBe(held);
+        });
+
+        it('лок без владельца не забирается', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, 'plain-token');
+
+            const slot = await makeService(redis).acquire(OWNED);
+
+            expect(slot.acquired).toBe(false);
+            expect(redis.locks.get(LOCK_KEY)).toBe('plain-token');
+        });
+
+        it('без ownerId чужой лок с владельцем ждётся, как раньше', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+
+            const slot = await makeService(redis).acquire(REQUEST);
+
+            expect(slot.acquired).toBe(false);
+            expect(slot.reason).toBe('entity-busy');
+        });
+
+        it('счётчик домена истёк до перехвата — release не уводит его в минус', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+
+            const slot = await makeService(redis).acquire(OWNED);
+            await slot.release();
+
+            expect(
+                [...redis.counters.values()].every(value => value >= 0),
+            ).toBe(true);
+        });
+
+        it('перехваченный лок снимается только своим release', async () => {
+            const redis = makeRedis();
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-1'));
+            const slot = await makeService(redis).acquire(OWNED);
+
+            // TTL истёк, клиента занял следующий отчёт.
+            redis.locks.set(LOCK_KEY, lockOfDeadProcess('op-9'));
+            await slot.release();
+
+            expect(redis.locks.get(LOCK_KEY)).toBe(lockOfDeadProcess('op-9'));
+        });
     });
 
     it('Redis недоступен — джоб выполняется, очередь важнее оптимизации', async () => {

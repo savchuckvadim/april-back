@@ -12,6 +12,7 @@ import { ResponseInterceptor } from '../interceptors/response.interceptor';
 import { cors } from '../config/cors/cors.config';
 import { swaggerBasicAuth } from './swagger-basic-auth.middleware';
 import { interactiveCallContextMiddleware } from '../call-context/call-context.middleware';
+import { setProcessAppName } from '../call-context/process-app-name';
 import { APP_ROLE_ENV, AppRole, resolveAppRole } from './app-role';
 import { applyStandbyMode } from './standby-mode';
 import { createGlobalValidationPipe } from './global-validation-pipe';
@@ -61,6 +62,10 @@ export async function bootstrapApp(
     rootModule: Parameters<typeof NestFactory.create>[0],
     options: BootstrapOptions,
 ): Promise<INestApplication> {
+    // Имя приложения — в подпись тревог Битрикса и журнал сбоев. До create:
+    // кроны и очереди стартуют в init и должны видеть его с первого тика.
+    setProcessAppName(options.name);
+
     // bufferLogs: логи до useLogger копятся и выводятся уже через наш логгер.
     const app = await NestFactory.create(rootModule, {
         cors,

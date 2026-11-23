@@ -5,8 +5,13 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueConcurrencyService } from '@/modules/queue/concurrency/queue-concurrency.service';
 import { WsService } from '@/core/ws';
-import { runAsInteractive } from '@lib/core/call-context';
+import {
+    annotateCallContext,
+    CallSource,
+    runAsInteractive,
+} from '@lib/core/call-context';
 import { EVENT_FLOW_WS_EVENTS } from '../constants/event-flow.const';
+import { eventReportCallContext } from '../lib/event-report-call-context';
 import { EnumEventFlowStatus } from '../dto/response/event-flow-operation.dto';
 import { EventFlowJobData } from '../dto/event-flow-job.dto';
 import { EventFlowStatusService } from '../services/status/event-flow-status.service';
@@ -35,9 +40,11 @@ const MAX_PER_DOMAIN = 2;
 const SLOT_RETRY_DELAY_MS = 3000;
 
 /**
- * Потолок перекладываний (~7,5 мин при 3 с). Клиентский лок живёт 300 с,
- * так что упереться в потолок можно только при аномалии — тогда отчёт
- * честно падает с внятной ошибкой, а не висит в очереди вечно.
+ * Потолок перекладываний (~7,5 мин при 3 с). Клиентский лок живёт 600 с —
+ * дольше потолка, поэтому лок оборванной доставки повторная забирает по id
+ * операции (ownerId ниже), а не пережидает. Упереться в потолок можно только
+ * при аномалии — тогда отчёт честно падает с внятной ошибкой, а не висит в
+ * очереди вечно.
  */
 const MAX_SLOT_RETRIES = 150;
 
@@ -77,6 +84,7 @@ export class EventFlowProcessor {
     }
 
     @Process({ name: JobNames.EVENT_SALES_FLOW, concurrency: FLOW_CONCURRENCY })
+    @CallSource(`queue:${JobNames.EVENT_SALES_FLOW}`)
     async handle(job: Job<EventFlowJobData>): Promise<void> {
         const { operationId, domain, socketId, dto } = job.data;
         const waitedMs = Date.now() - job.timestamp;
@@ -131,6 +139,9 @@ export class EventFlowProcessor {
             domain,
             entityKey: this.entityKey(dto),
             maxPerDomain: MAX_PER_DOMAIN,
+            // Выкладка оборвала отчёт — его лок клиента остался в Redis.
+            // По id операции повторная доставка забирает свой лок сразу.
+            ownerId: operationId,
         });
         if (!slot.acquired) {
             await this.requeue(job, slot.reason);
@@ -154,9 +165,14 @@ export class EventFlowProcessor {
             // считалась бы фоном — тогда отчёты стояли бы в ограничителе
             // Битрикса за кронами (см. @lib/core/call-context).
             const useCase = isTmcReport(dto) ? this.tmcUseCase : this.useCase;
+            // Подпись тревог и журнала сбоев Битрикса: отчёт, карточка,
+            // сотрудник — внутри интерактивного контекста отчёта.
             const result = await runAsInteractive(
                 `queue:${QueueNames.EVENT_SALES_FLOW}`,
-                () => useCase.execute(dto, socketId),
+                () => {
+                    annotateCallContext(() => eventReportCallContext(dto));
+                    return useCase.execute(dto, socketId);
+                },
             );
             const done = await this.status.setDone(
                 domain,

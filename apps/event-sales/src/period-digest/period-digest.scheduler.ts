@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { CallSource } from '@lib/core/call-context';
 import { RopReportTicker } from '@lib/rop-reports';
 import {
     PERIOD_DIGEST_CRON,
@@ -25,6 +26,7 @@ export class PeriodDigestScheduler {
     ) {}
 
     @Cron(PERIOD_DIGEST_CRON, { name: PERIOD_DIGEST_CRON_NAME })
+    @CallSource(`cron:${PERIOD_DIGEST_CRON_NAME}`, 'Крон: итоги периода')
     async tick(now: Date = new Date()): Promise<void> {
         await this.ticker.tick(this.definition, now);
     }
