@@ -4,6 +4,7 @@ import { OfferWordCoreGenerateService } from '../offer-word-core/offer-word-core
 import { OfferWordPdfExportService } from '../pdf-export/offer-word-pdf-export.service';
 import { StorageService } from '@lib/core/storage';
 import { InnerDealService } from '@app/konstructor/modules/inner-deal/services/inner-deal.service';
+import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 
 /**
  * Эфемерный сценарий: ядро без публичной ссылки на DOCX → PDF в память → оба файла с диска удалены.
@@ -16,6 +17,7 @@ export class OfferWordEphemeralPdfDocumentService {
         private readonly offerWordPdfExportService: OfferWordPdfExportService,
         private readonly storageService: StorageService,
         private readonly innerDealService: InnerDealService,
+        private readonly supplyEnricher: SupplyPayloadEnricherService,
     ) {}
 
     /**
@@ -23,9 +25,11 @@ export class OfferWordEphemeralPdfDocumentService {
      * слот пула освобождается сразу, файлы всё равно вычищаются.
      */
     async buildPdfBufferRemovingFiles(
-        dto: OfferWordByTemplateGenerateDto,
+        input: OfferWordByTemplateGenerateDto,
         signal?: AbortSignal,
     ): Promise<{ pdfBuffer: Buffer; pdfFileName: string }> {
+        // Подписи поставок — те же, что в КП: supply, rows, total и sets с бэка по code
+        const dto = await this.supplyEnricher.enrichPayload(input);
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
         const templateId = BigInt(dto.templateId);

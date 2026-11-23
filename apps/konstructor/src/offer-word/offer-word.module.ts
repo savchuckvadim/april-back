@@ -38,6 +38,7 @@ import { OfferTemplateModule } from '@app/konstructor/modules/offer-template/off
 import { OfferRenderGeneralProductService } from './services/render-data-services/offer-render-general-product.service';
 import { OfferWordMultiGenerateController } from './multi/controllers/offer-word-multi-generate.controller';
 import { OfferWordMultiBuildService } from './multi/services/offer-word-multi-build.service';
+import { OfferWordMultiSupplyEnrichService } from './multi/services/offer-word-multi-supply-enrich.service';
 import { OfferWordMultiGenerateUseCase } from './multi/use-cases/offer-word-multi-generate.use-case';
 import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-generate-multi-queue.service';
 
@@ -95,6 +96,7 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         DocumentBuildService,
         // КП v2 — мультивариантность: отдельный путь рядом со старым
         OfferWordMultiBuildService,
+        OfferWordMultiSupplyEnrichService,
         OfferWordMultiGenerateUseCase,
         OfferGenerateMultiQueueService,
     ],

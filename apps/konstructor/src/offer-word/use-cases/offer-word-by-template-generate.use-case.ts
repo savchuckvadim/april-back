@@ -30,13 +30,10 @@ export class OfferWordByTemplateGenerateUseCase {
         invoiceLinks: IResultDocumentLink[];
         portalFolderId: number;
     }> {
-        // Подписи поставок для КП — с бэка по code (легаси-тексты сильнее).
-        const dto: OfferWordByTemplateGenerateDto = {
-            ...input,
-            supply: await this.supplyEnricher.enrichSupply(input.supply),
-            rows: await this.supplyEnricher.enrichRows(input.rows),
-            total: await this.supplyEnricher.enrichRow(input.total),
-        };
+        // Подписи поставок для КП и счёта (supply, rows, total, sets) — с бэка
+        // по code (легаси-тексты сильнее).
+        const dto: OfferWordByTemplateGenerateDto =
+            await this.supplyEnricher.enrichPayload(input);
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
         const onlyBitrixSave = Boolean(dto.onlyBitrixSave) || true;
