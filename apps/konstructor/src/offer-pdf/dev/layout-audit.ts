@@ -18,6 +18,7 @@ export type LayoutIssueKind =
     | 'out-of-page'
     | 'fixed-out-of-page'
     | 'orphan-heading'
+    | 'orphan-set-title'
     | 'orphan-totals'
     | 'text-overlap'
     | 'textless-page';
@@ -101,6 +102,12 @@ const bottomOf = (box: LayoutBox): number => box.top + box.height;
 /** Заголовок раздела: кегль заметно крупнее базового */
 const isHeading = (node: LayoutNode): boolean =>
     node.type === 'TEXT' && (node.style?.fontSize ?? 0) >= 13;
+
+/** Заголовок набора для сравнения в таблице цен: «Набор 1», «Набор 2» */
+const SET_TITLE_PATTERN = /^Набор \d+$/;
+
+const isSetTitle = (node: LayoutNode): boolean =>
+    node.type === 'TEXT' && SET_TITLE_PATTERN.test(textOf(node));
 
 const clip = (text: string): string => text.slice(0, 60);
 
@@ -246,6 +253,15 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 kind: 'orphan-heading',
                 text: clip(textOf(lastContent.node)),
                 detail: 'заголовок последний на странице',
+            });
+        }
+        // заголовок набора для сравнения без своей первой строки: ушёл вниз листа один
+        if (lastContent && isSetTitle(lastContent.node)) {
+            issues.push({
+                page: number,
+                kind: 'orphan-set-title',
+                text: clip(textOf(lastContent.node)),
+                detail: 'заголовок набора последний на странице',
             });
         }
     });

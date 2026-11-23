@@ -2,7 +2,10 @@ import {
     IInfblockGroupsRenderData,
     IInfblockRenderData,
 } from '@app/konstructor/document-generate/infoblocks/infoblock-render-data.service';
-import { createOfferRenderDataFixture } from '../__tests__/fixtures/offer-pdf-model.fixture';
+import {
+    createOfferRenderDataFixture,
+    productRowsWithSets,
+} from '../__tests__/fixtures/offer-pdf-model.fixture';
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
@@ -53,6 +56,66 @@ const fourteenRows = Array.from({ length: 14 }, (_, index) => ({
     ProductNumber: String(index + 1),
     ProductName: `ГАРАНТ-Профессионал. Комплект ${index + 1}`,
 }));
+
+/**
+ * Наборы для сравнения: «Итого» при них скрыто (TotalRow нет), перед первой
+ * строкой каждого набора печатается заголовок «Набор N».
+ */
+const setRow = (name: string) => ({
+    ...base.ProductRows[0],
+    ProductName: name,
+});
+
+/** Общий набор из двух строк и два набора для сравнения по две строки */
+const twoSetsByTwoRows = productRowsWithSets(base.ProductRows, [
+    [
+        setRow('ГАРАНТ-Профессионал. Бухгалтерия, 1 одновременный доступ'),
+        setRow('Правовой консалтинг'),
+    ],
+    [
+        setRow('ГАРАНТ-Профессионал. Бухгалтерия, 3 одновременных доступа'),
+        setRow('Правовой консалтинг и Академия ГАРАНТ'),
+    ],
+]);
+
+/** Семь наборов для сравнения (предел) по одной строке */
+const sevenSetsByOneRow = productRowsWithSets(
+    base.ProductRows,
+    Array.from({ length: 7 }, (_, index) => [
+        setRow(`ГАРАНТ-Профессионал. Вариант комплекта ${index + 1}`),
+    ]),
+);
+
+/**
+ * Длинная таблица с наборами: ряды названий в две строки, разрывы листа
+ * приходятся на разные места, в том числе на границы наборов.
+ */
+const longTableWithSets = productRowsWithSets(
+    fourteenRows.slice(0, 4),
+    Array.from({ length: 5 }, (_, setIndex) =>
+        Array.from({ length: 3 }, (_, rowIndex) =>
+            setRow(
+                `ГАРАНТ-Профессионал. Комплект ${setIndex + 1}.${rowIndex + 1} с длинным названием для переноса строки`,
+            ),
+        ),
+    ),
+);
+
+/**
+ * Двенадцать строк общего набора (нечётные с названием в две строки) и четыре
+ * набора по одной строке: в «Классике» разрыв листа приходится на заголовок
+ * «Набор 1» — он обязан уйти на следующий лист вместе со своей строкой.
+ */
+const titleNearPageEnd = productRowsWithSets(
+    Array.from({ length: 12 }, (_, index) =>
+        setRow(
+            `Общий набор, строка ${index + 1}${index % 2 ? ' с длинным названием для переноса строки в таблице' : ''}`,
+        ),
+    ),
+    Array.from({ length: 4 }, (_, setIndex) => [
+        setRow(`Набор ${setIndex + 1}, строка 1`),
+    ]),
+);
 
 const longCompany = {
     MyCompanyName: 'ООО «Гарант-Сервис Воронеж, Липецк, Тамбов и Белгород»',
@@ -254,6 +317,50 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
         settings: {},
         model: {
             data: createOfferRenderDataFixture({ ProductRows: fourteenRows }),
+        },
+    },
+    // общий набор из двух строк и два набора для сравнения по две строки: заголовки «Набор 1», «Набор 2», «Итого» нет
+    {
+        name: '16-compare-sets-two-by-two',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: twoSetsByTwoRows,
+                TotalRow: undefined,
+            }),
+        },
+    },
+    // семь наборов для сравнения по одной строке
+    {
+        name: '17-compare-sets-seven-by-one',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: sevenSetsByOneRow,
+                TotalRow: undefined,
+            }),
+        },
+    },
+    // длинная таблица с наборами после наполнения: разрыв листа рядом с заголовками наборов
+    {
+        name: '18-compare-sets-long-table',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: longTableWithSets,
+                TotalRow: undefined,
+            }),
+        },
+    },
+    // разрыв листа у заголовка набора: заголовок не остаётся последним на листе
+    {
+        name: '19-compare-sets-title-near-page-end',
+        settings: {},
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: titleNearPageEnd,
+                TotalRow: undefined,
+            }),
         },
     },
 ];

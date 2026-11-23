@@ -10,6 +10,7 @@ import { PEARL_THEME } from '../templates/pearl/pearl.theme';
 import {
     createOfferPdfModelFixture,
     createOfferRenderDataFixture,
+    productRowsWithSets,
 } from './fixtures/offer-pdf-model.fixture';
 
 const settings = (patch: Partial<typeof OFFER_PDF_DEFAULT_SETTINGS> = {}) => ({
@@ -176,6 +177,34 @@ describe('когда таблица цен большая', () => {
         }
     });
 
+    it('наборы для сравнения: короткая таблица с заголовком остаётся при наполнении, большая уходит на новый лист', () => {
+        const withSets = (general: number, sets: number[]) =>
+            createOfferPdfModelFixture({
+                data: createOfferRenderDataFixture({
+                    TotalRow: undefined,
+                    ProductRows: productRowsWithSets(
+                        Array.from(
+                            { length: general },
+                            () => base.ProductRows[0],
+                        ),
+                        sets.map(count =>
+                            Array.from(
+                                { length: count },
+                                () => base.ProductRows[0],
+                            ),
+                        ),
+                    ),
+                }),
+            });
+
+        for (const theme of [CLASSIC_THEME, PEARL_THEME]) {
+            // общая строка и набор из одной строки: три строки с заголовком не рвутся
+            expect(priceStartsOwnSheet(withSets(2, [1]), theme)).toBe(false);
+            // общий набор из двух строк и два набора по две
+            expect(priceStartsOwnSheet(withSets(2, [2, 2]), theme)).toBe(true);
+        }
+    });
+
     it('планка — 40 % вместимости листа: таблица ниже неё продолжает лист', () => {
         const rows = Array.from({ length: 4 }, () => ({
             ...base.ProductRows[0],
@@ -210,7 +239,11 @@ describe('оценка высоты раздела «Стоимость»', () =
         });
         const three = estimatePriceBlockHeight(CLASSIC_THEME, {
             ...base,
-            rows: [row('Гарант-Юрист'), row('Гарант-Юрист'), row('Гарант-Юрист')],
+            rows: [
+                row('Гарант-Юрист'),
+                row('Гарант-Юрист'),
+                row('Гарант-Юрист'),
+            ],
         });
         const long = estimatePriceBlockHeight(CLASSIC_THEME, {
             ...base,
@@ -223,6 +256,62 @@ describe('оценка высоты раздела «Стоимость»', () =
         });
         expect(three).toBeGreaterThan(one);
         expect(long).toBeGreaterThan(one);
+    });
+
+    it('строки-заголовки наборов для сравнения добавляют высоту', () => {
+        const plain = [row('Гарант-Юрист'), row('Гарант-Юрист')];
+        const titled = [
+            row('Гарант-Юрист'),
+            {
+                ...row('Гарант-Юрист'),
+                IsSetFirstRow: true,
+                ProductSetTitle: 'Набор 1',
+            },
+        ];
+        const twoTitles = [
+            {
+                ...row('Гарант-Юрист'),
+                IsSetFirstRow: true,
+                ProductSetTitle: 'Набор 1',
+            },
+            {
+                ...row('Гарант-Юрист'),
+                IsSetFirstRow: true,
+                ProductSetTitle: 'Набор 2',
+            },
+        ];
+        const heightOf = (rows: typeof plain) =>
+            estimatePriceBlockHeight(CLASSIC_THEME, { ...base, rows });
+
+        expect(heightOf(titled)).toBeGreaterThan(heightOf(plain));
+        expect(heightOf(twoTitles)).toBeGreaterThan(heightOf(titled));
+        // высота заголовка — ячейка с рамкой и строка текста кегля таблицы: не больше строки товара
+        const perTitle = heightOf(titled) - heightOf(plain);
+        const { sizes, lineHeight } = CLASSIC_THEME;
+        expect(perTitle).toBeGreaterThanOrEqual(sizes.sm * lineHeight);
+        expect(perTitle).toBeLessThan(sizes.sm * lineHeight * 2 + 12);
+    });
+
+    it('признак первой строки без заголовка и строки общего набора высоту не меняют', () => {
+        const plain = [row('Гарант-Юрист'), row('Гарант-Юрист')];
+        const marked = [
+            {
+                ...row('Гарант-Юрист'),
+                IsSetFirstRow: false,
+                ProductSetTitle: '',
+            },
+            {
+                ...row('Гарант-Юрист'),
+                IsSetFirstRow: true,
+                ProductSetTitle: '',
+            },
+        ];
+
+        expect(
+            estimatePriceBlockHeight(CLASSIC_THEME, { ...base, rows: marked }),
+        ).toBe(
+            estimatePriceBlockHeight(CLASSIC_THEME, { ...base, rows: plain }),
+        );
     });
 
     it('без итога и с фразой об акции высота меняется в нужную сторону', () => {
