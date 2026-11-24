@@ -22,7 +22,7 @@ export interface PriceProductRowProps {
     theme: OfferPdfTheme;
 }
 
-/** Строка товара: номер, название с подписями (поставка, мера портала), количество, цены */
+/** Строка товара: номер, название с поставкой, количество, цены */
 export const PriceProductRow: FC<PriceProductRowProps> = ({
     row,
     index,
@@ -55,11 +55,6 @@ export const PriceProductRow: FC<PriceProductRowProps> = ({
                             {row.SupplyNameMarketing ? (
                                 <Text style={styles.sub}>
                                     {row.SupplyNameMarketing}
-                                </Text>
-                            ) : null}
-                            {row.ProductMeasureCaption ? (
-                                <Text style={styles.sub}>
-                                    {row.ProductMeasureCaption}
                                 </Text>
                             ) : null}
                         </>

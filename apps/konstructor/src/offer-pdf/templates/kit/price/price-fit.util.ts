@@ -9,7 +9,7 @@ import { hasSetTitle, type PriceSetTitleSource } from './price-set-title.util';
 
 /** Символов в строке колонки «Наименование» — меньше, чем помещается на деле */
 const NAME_LINE_CHARS = 34;
-/** Символов в строке подписи под названием: поставка и длинная формулировка меры */
+/** Символов в строке подписи поставки под названием */
 const SUPPLY_LINE_CHARS = 42;
 /** Символов в строке заголовка набора для сравнения (он идёт во всю ширину таблицы) */
 const SET_TITLE_LINE_CHARS = 80;
@@ -25,7 +25,6 @@ const TOTALS_LINES = 5;
 export interface PriceBlockRow extends PriceSetTitleSource {
     ProductName: string;
     SupplyNameMarketing?: string;
-    ProductMeasureCaption?: string;
 }
 
 export interface PriceBlockInput {
@@ -60,17 +59,17 @@ export const estimatePriceBlockHeight = (
               linesOf(row.ProductSetTitle, SET_TITLE_LINE_CHARS) *
                   line(sizes.sm)
             : 0;
-    // подпись под названием (поставка, мера портала): кегль xs и один пункт отступа
-    const subCaption = (text: string | undefined): number =>
-        text ? linesOf(text, SUPPLY_LINE_CHARS) * line(sizes.xs) + 1 : 0;
     const body = rows.reduce(
         (sum, row) =>
             sum +
             setTitle(row) +
             CELL_FRAME +
             linesOf(row.ProductName, NAME_LINE_CHARS) * line(sizes.sm) +
-            subCaption(row.SupplyNameMarketing) +
-            subCaption(row.ProductMeasureCaption),
+            (row.SupplyNameMarketing
+                ? linesOf(row.SupplyNameMarketing, SUPPLY_LINE_CHARS) *
+                      line(sizes.xs) +
+                  1
+                : 0),
         0,
     );
     const totals = withTotals

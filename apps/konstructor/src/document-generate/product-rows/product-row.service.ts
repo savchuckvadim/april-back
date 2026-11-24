@@ -3,17 +3,12 @@ import { ProductRowDto } from '../dto/product-row/product-row.dto';
 import { ProductTypeEnum } from '../dto/product/product.dto';
 import { ClientTypeEnum } from '../type/client.type';
 import { formatRuble, formatMoney, getCaseMonthes } from '../lib/rubles.util';
-import { resolveDocumentMeasure } from '../lib/resolve-document-measure.util';
-import { CONTRACT_LTYPE } from '../type/contract.type';
 
 export interface Product {
     productNumber: number;
     productName: string;
     productQuantity: number;
-    /** Короткая единица документа: «мес.» у сервисного договора, «шт.» у остальных */
     productMeasure: string;
-    /** Длинная мера портала для подписи в названии товара; пусто, когда подпись не нужна */
-    productMeasureCaption: string;
     productPrice: string;
     productSum: string;
     productSumString: string;
@@ -50,11 +45,6 @@ export class DocumentProductRowService {
         contractCoefficient: number,
         /** Договор: тип клиента (бюджетник — одна единица). КП и счёт: null — количество как есть. */
         clientType: ClientTypeEnum | null,
-        /**
-         * Вид договора (service | abon | lic | key): по нему выбирается
-         * короткая единица. Не передан — единица остаётся названием меры портала.
-         */
-        contractType?: CONTRACT_LTYPE | null,
     ): Product[] {
         const contractFullName = isProduct
             ? `${contractName} длительность ${contractCoefficient} мес.`
@@ -141,17 +131,12 @@ export class DocumentProductRowService {
                 .filter(Boolean)
                 .join(' ');
             const quantityString = row.product.quantityForKp || '';
-            const measure = resolveDocumentMeasure(
-                contractType,
-                row.price.measure.name,
-            );
 
             products.push({
                 productNumber: i + 1,
                 productName: row.name,
                 productQuantity: productQuantity,
-                productMeasure: measure.short,
-                productMeasureCaption: measure.caption,
+                productMeasure: row.price.measure.name,
                 productPrice,
                 productSum,
                 productSumString,

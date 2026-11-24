@@ -11,7 +11,6 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { formatRuble } from '../../../document-generate/lib/rubles.util';
-import { resolveDocumentMeasure } from '../../../document-generate/lib/resolve-document-measure.util';
 import { ClientTypeEnum } from '../../../document-generate/type/client.type';
 import {
     getMonthTitleAccusative,
@@ -204,14 +203,12 @@ export class SupplyReportDataService {
             isProduct,
             contractCoefficient,
             clientTypeCode,
-            contractType,
         );
 
         // Обрабатываем итоги
         const totalData = this.getSupplyTotal(
             contractFullTotal,
             clientTypeCode,
-            contractType,
         );
 
         // Обрабатываем реквизиты клиента
@@ -600,7 +597,6 @@ export class SupplyReportDataService {
         isProduct: boolean,
         contractCoefficient: number,
         clientType: ClientTypeEnum,
-        contractType: CONTRACT_LTYPE,
     ): Record<string, string | number>[] {
         void clientType; // в Laravel аргумент тоже не используется — оставлен ради совпадения сигнатур
 
@@ -612,17 +608,12 @@ export class SupplyReportDataService {
             const productQuantity = row.price?.quantity ?? 0;
             const productContractCoefficient =
                 row.product?.contractCoefficient ?? 1;
-            const measure = resolveDocumentMeasure(
-                contractType,
-                row.price?.measure?.name,
-            );
 
             return {
                 productNumber: index + 1,
                 productName: `${contractFullName}(${row.name})`,
                 productQuantity,
-                productMeasure: measure.short,
-                productMeasureCaption: measure.caption,
+                productMeasure: row.price?.measure?.name ?? '',
                 productPrice: toMoneyString(row.price?.current),
                 productSum: toMoneyString(row.price?.sum),
                 // вид размещения показываем только у гарантовских строк
@@ -650,7 +641,6 @@ export class SupplyReportDataService {
     private getSupplyTotal(
         total: ProductRowDto | undefined,
         clientType: ClientTypeEnum,
-        contractType: CONTRACT_LTYPE,
     ): Record<string, string | number> {
         void clientType;
 
@@ -675,10 +665,6 @@ export class SupplyReportDataService {
         const totalQuantityString = getMonthTitleAccusative(totalQuantity);
         const contractSumString = `(${formatRuble(Number(contractSum))})`;
         const totalSumMonthString = `(${formatRuble(Number(totalSumMonth))})`;
-        const measure = resolveDocumentMeasure(
-            contractType,
-            total.price?.measure?.name,
-        );
 
         return {
             total_product_name: total.name ?? '',
@@ -693,8 +679,7 @@ export class SupplyReportDataService {
             total_quantity_string: totalQuantityString,
             total_month_sum: totalSumMonth,
             total_month_sum_string: totalSumMonthString,
-            total_measure: measure.short,
-            total_measure_caption: measure.caption,
+            total_measure: total.price?.measure?.name ?? '',
         };
     }
 

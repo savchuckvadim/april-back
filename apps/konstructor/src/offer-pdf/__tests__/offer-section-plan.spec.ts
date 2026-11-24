@@ -258,28 +258,6 @@ describe('оценка высоты раздела «Стоимость»', () =
         expect(long).toBeGreaterThan(one);
     });
 
-    it('подпись меры под названием добавляет высоту, пустая подпись — нет', () => {
-        const heightOf = (caption: string | undefined) =>
-            estimatePriceBlockHeight(CLASSIC_THEME, {
-                ...base,
-                rows: [
-                    {
-                        ...row('Гарант-Юрист', 'Интернет версия'),
-                        ProductMeasureCaption: caption,
-                    },
-                ],
-            });
-        const without = heightOf(undefined);
-
-        expect(heightOf('')).toBe(without);
-        expect(heightOf('Лицензия 6 месяцев')).toBeGreaterThan(without);
-        // подпись короче строки: добавляется одна строка кегля xs и пункт отступа (оценка округляется вверх)
-        const { sizes, lineHeight } = CLASSIC_THEME;
-        const added = heightOf('Лицензия 6 месяцев') - without;
-        expect(added).toBeGreaterThanOrEqual(sizes.xs * lineHeight);
-        expect(added).toBeLessThanOrEqual(sizes.xs * lineHeight + 2);
-    });
-
     it('строки-заголовки наборов для сравнения добавляют высоту', () => {
         const plain = [row('Гарант-Юрист'), row('Гарант-Юрист')];
         const titled = [

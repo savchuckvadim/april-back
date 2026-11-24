@@ -91,10 +91,7 @@ export type ContractGenerateTemplateProps = {
     productNumber: string;
     productName: string;
     productQuantity: string;
-    /** Короткая единица: «мес.» у сервисного договора, «шт.» у остальных */
     productMeasure: string;
-    /** Длинная мера портала («Лицензия 6 месяцев») для подписи; пусто, когда подпись не нужна */
-    productMeasureCaption: string;
     productPrice: string;
     productSum: string;
     products: Product[];
@@ -102,10 +99,7 @@ export type ContractGenerateTemplateProps = {
     total_month_sum_string: string;
     /** Всего месяцев действия договора */
     total_quantity: string;
-    /** Короткая единица: «мес.» у сервисного договора, «шт.» у остальных */
     total_measure: string;
-    /** Длинная мера портала для подписи; пусто, когда подпись не нужна */
-    total_measure_caption: string;
     total_prepayment_sum: string;
     total_prepayment_sum_string: string;
     total_prepayment_quantity_string: string;

@@ -2,17 +2,12 @@ import { ProductRowDto } from '../dto/product-row/product-row.dto';
 import { Injectable } from '@nestjs/common';
 import { ClientTypeEnum } from '../type/client.type';
 import { formatRuble, formatMoney, getCaseMonthes } from '../lib/rubles.util';
-import { resolveDocumentMeasure } from '../lib/resolve-document-measure.util';
-import { CONTRACT_LTYPE } from '../type/contract.type';
 
 interface IContractTotalRowData {
     total_product_name: string;
     total_month_sum: string;
     total_month_sum_string: string;
-    /** Короткая единица документа: «мес.» у сервисного договора, «шт.» у остальных */
     total_measure: string;
-    /** Длинная мера портала для подписи; пусто, когда подпись не нужна */
-    total_measure_caption: string;
 }
 export interface ITotalRowData extends IContractTotalRowData {
     total_prepayment_quantity: number;
@@ -93,10 +88,8 @@ export class DocumentTotalRowService {
         total: ProductRowDto,
         clientType: ClientTypeEnum,
         withTax: boolean,
-        /** Вид договора: по нему выбирается короткая единица; нет — мера портала как есть */
-        contractType?: CONTRACT_LTYPE | null,
     ): ITotalRowData {
-        const result = this.buildTotals(total, withTax, contractType);
+        const result = this.buildTotals(total, withTax);
         if (clientType !== ClientTypeEnum.ORG_STATE) return result;
         return {
             ...result,
@@ -118,10 +111,8 @@ export class DocumentTotalRowService {
     public getOfferData(
         total: ProductRowDto,
         withTax: boolean,
-        /** Вид договора: по нему выбирается короткая единица; нет — мера портала как есть */
-        contractType?: CONTRACT_LTYPE | null,
     ): IOfferTotalRowData {
-        const result = this.buildTotals(total, withTax, contractType);
+        const result = this.buildTotals(total, withTax);
         const months = total.price.quantity * total.product.contractCoefficient;
         const perMonthNum =
             months > 0 ? Number((total.price.sum / months).toFixed(2)) : 0;
@@ -133,15 +124,7 @@ export class DocumentTotalRowService {
     }
 
     /** Общие итоги набора: предоплата — вся сумма за весь срок. */
-    private buildTotals(
-        total: ProductRowDto,
-        withTax: boolean,
-        contractType?: CONTRACT_LTYPE | null,
-    ): ITotalRowData {
-        const measure = resolveDocumentMeasure(
-            contractType,
-            total.price.measure.name,
-        );
+    private buildTotals(total: ProductRowDto, withTax: boolean): ITotalRowData {
         const contractSumNum = Number(total.price.sum.toFixed(2));
         const totalSumMonthNum = Number(total.price.current.toFixed(2));
 
@@ -199,8 +182,7 @@ export class DocumentTotalRowService {
             total_product_name: total.name,
             total_month_sum: totalSumMonth,
             total_month_sum_string: totalSumMonthString,
-            total_measure: measure.short,
-            total_measure_caption: measure.caption,
+            total_measure: total.price.measure.name,
             total_prepayment_quantity: totalMonthQuantity,
             total_prepayment_quantity_string: totalMonthQuantityString,
             total_prepayment_sum: contractSum,

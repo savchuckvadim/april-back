@@ -1,15 +1,9 @@
 import { ProductRowDto } from '../../dto/product-row/product-row.dto';
 import { ClientTypeEnum } from '../../type/client.type';
-import { CONTRACT_LTYPE } from '../../type/contract.type';
 import { DocumentProductRowService } from '../product-row.service';
 
-/** Строка: цена до скидки и со скидкой за единицу, количество, мера портала. */
-const row = (
-    base: number,
-    current: number,
-    quantity: number,
-    measureName = 'мес.',
-): ProductRowDto =>
+/** Строка: цена до скидки и со скидкой за единицу, количество. */
+const row = (base: number, current: number, quantity: number): ProductRowDto =>
     ({
         name: 'Гарант-Офис',
         price: {
@@ -18,7 +12,7 @@ const row = (
             quantity,
             sum: current * quantity,
             month: base,
-            measure: { name: measureName },
+            measure: { name: 'мес.' },
             discount: { precent: current / base },
         },
         product: { name: 'Гарант-Офис', contract: { contract: null } },
@@ -123,87 +117,6 @@ describe('DocumentProductRowService.getProducts', () => {
             );
             expect(product.productContractName).toBe('');
             expect(product.productWithContractName).toBe('Академия PRO');
-        });
-    });
-
-    describe('единица измерения по виду договора', () => {
-        const unitsOf = (
-            measureName: string,
-            contractType?: CONTRACT_LTYPE | null,
-        ) => {
-            const [product] = service.getProducts(
-                [row(60000, 48000, 1, measureName)],
-                'Договор',
-                true,
-                6,
-                null,
-                contractType,
-            );
-            return {
-                measure: product.productMeasure,
-                caption: product.productMeasureCaption,
-            };
-        };
-
-        it('сервисный договор: «мес.» без подписи', () => {
-            expect(unitsOf('месяц', CONTRACT_LTYPE.SERVICE)).toEqual({
-                measure: 'мес.',
-                caption: '',
-            });
-        });
-
-        it('абонемент, лицензия, ключ: «шт.» и длинная мера портала в подписи', () => {
-            expect(
-                unitsOf('Абонемент 12 месяцев', CONTRACT_LTYPE.ABON),
-            ).toEqual({ measure: 'шт.', caption: 'Абонемент 12 месяцев' });
-            expect(unitsOf('Лицензия 6 месяцев', CONTRACT_LTYPE.LIC)).toEqual({
-                measure: 'шт.',
-                caption: 'Лицензия 6 месяцев',
-            });
-            expect(unitsOf('Лицензия', CONTRACT_LTYPE.KEY)).toEqual({
-                measure: 'шт.',
-                caption: 'Лицензия',
-            });
-        });
-
-        it('короткая мера портала подписи не даёт', () => {
-            expect(unitsOf('шт.', CONTRACT_LTYPE.LIC)).toEqual({
-                measure: 'шт.',
-                caption: '',
-            });
-        });
-
-        it('вид договора не передан: мера портала как есть, подписи нет', () => {
-            expect(unitsOf('Лицензия 6 месяцев')).toEqual({
-                measure: 'Лицензия 6 месяцев',
-                caption: '',
-            });
-            expect(unitsOf('Лицензия 6 месяцев', null)).toEqual({
-                measure: 'Лицензия 6 месяцев',
-                caption: '',
-            });
-        });
-
-        it('единица считается для каждой строки отдельно', () => {
-            const products = service.getProducts(
-                [
-                    row(1000, 1000, 1, 'Лицензия 6 месяцев'),
-                    row(2000, 2000, 1, 'шт.'),
-                ],
-                'Договор',
-                true,
-                6,
-                ClientTypeEnum.ORG,
-                CONTRACT_LTYPE.LIC,
-            );
-            expect(products.map(item => item.productMeasure)).toEqual([
-                'шт.',
-                'шт.',
-            ]);
-            expect(products.map(item => item.productMeasureCaption)).toEqual([
-                'Лицензия 6 месяцев',
-                '',
-            ]);
         });
     });
 
