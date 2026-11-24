@@ -5,3 +5,4 @@ export * from './dto/create-region.dto';
 export * from './lib/region-entity.util';
 export * from './region.module';
 export * from './lib/portal-price.util';
+export * from './region.admin.module';

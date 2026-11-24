@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { InfogroupController } from './controllers/infogroup.controller';
 import { InfogroupService } from './services/infogroup.service';
 import { InfogroupRepository } from './repositories/infogroup.repository';
 import { InfogroupPrismaRepository } from './repositories/infogroup.prisma.repository';
 
+/**
+ * Сервисный модуль групп инфоблоков гаранта: провайдеры и экспорт сервиса,
+ * без контроллеров. Контроллер `/infogroup` (создание и правка групп) вынесен
+ * в {@link InfogroupAdminModule}, чтобы публичное приложение konstructor,
+ * импортирующее модуль ради InfogroupService, его не регистрировало.
+ */
 @Module({
-    controllers: [InfogroupController],
     providers: [
         InfogroupService,
         {

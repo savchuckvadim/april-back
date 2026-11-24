@@ -45,6 +45,28 @@ import { OfferPdfModule } from '../offer-pdf/offer-pdf.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferWordWorkerModule } from '../offer-word/offer-word-worker.module';
 import { InitSupplyModule } from '../supply/init-supply/init-supply.module';
+import { GarantModule } from '@lib/garant/garant.module';
+import { RegionController } from '@lib/garant/region/region.controller';
+import { PortalRegionController } from '@lib/garant/region/portal-region/portal.region.controller';
+import { ComplectController } from '@lib/garant/complect/complect.controller';
+import { ContractController } from '@lib/garant/contract/contract.controller';
+import { SupplyController } from '@lib/garant/supply/supply.controller';
+import { InfoblockController } from '@lib/garant/infoblock/infoblock.controller';
+import { InfogroupController } from '@lib/garant/infogroup/controllers/infogroup.controller';
+import { AdminGarantPackageController } from '@lib/garant/package/controllers/package.admin.controller';
+import { AdminGarantProfPriceController } from '@lib/garant/price/controllers/prof-price.admin.controller';
+import { CatalogTableAdminController } from '@lib/garant/catalog-table/controllers/catalog-table.admin.controller';
+import { CatalogSeedAdminController } from '@lib/garant/catalog-install/controllers/catalog-seed.admin.controller';
+import { RegionAdminModule } from '@lib/garant/region/region.admin.module';
+import { ComplectAdminModule } from '@lib/garant/complect/complect.admin.module';
+import { ContractAdminModule } from '@lib/garant/contract/contract.admin.module';
+import { SupplyAdminModule } from '@lib/garant/supply/supply.admin.module';
+import { InfoblockAdminModule } from '@lib/garant/infoblock/infoblock.admin.module';
+import { InfogroupAdminModule } from '@lib/garant/infogroup/infogroup.admin.module';
+import { AdminGarantPackageModule } from '@lib/garant/package/package.admin.module';
+import { AdminGarantProfPriceModule } from '@lib/garant/price/price.admin.module';
+import { CatalogTableAdminModule } from '@lib/garant/catalog-table/catalog-table.admin.module';
+import { CatalogSeedAdminModule } from '@lib/garant/catalog-install/catalog-install.admin.module';
 
 /**
  * Статическая проверка DI-графа ВСЕГО приложения konstructor.
@@ -76,6 +98,12 @@ import { InitSupplyModule } from '../supply/init-supply/init-supply.module';
  * Отдельного корня воркера очередей нет: OfferWordWorkerModule подключён в
  * KonstructorAppModule и проверяется вместе со всем приложением. Отдельный
  * обход потерял бы глобальные модули корня и дал бы ложные срабатывания.
+ *
+ * Отдельные утверждения закрывают публичную поверхность: приложение
+ * konstructor не регистрирует контроллеры справочников Гаранта (libs/garant).
+ * Они пишут цены регионов портала, комплекты, поставки и договоры, а
+ * глобального гарда авторизации в приложении нет. Контроллеры живут в
+ * *AdminModule разделов Гаранта и подключаются только в apps/admin.
  *
  * Тест не ловит: зависимости, которые провайдер берёт у ModuleRef.get() в
  * рантайме, ошибки внутри фабрик, значения окружения, а также другие
@@ -160,6 +188,8 @@ interface ModuleNode {
     problems: string[];
     providerCount: number;
     controllerCount: number;
+    /** Классы контроллеров, которые регистрирует сам модуль. */
+    controllers: Ctor[];
 }
 
 interface DiReport {
@@ -170,6 +200,8 @@ interface DiReport {
     modules: string[];
     providerCount: number;
     controllerCount: number;
+    /** Все классы контроллеров, зарегистрированные модулями графа. */
+    controllerClasses: Ctor[];
     /** Сколько зависимостей конструкторов и фабрик проверено. */
     dependencyCount: number;
 }
@@ -373,6 +405,7 @@ const buildGraph = async (
             problems: [],
             providerCount: 0,
             controllerCount: 0,
+            controllers: [],
         };
         nodes.set(entry, node);
 
@@ -511,6 +544,7 @@ const buildGraph = async (
                 );
                 return;
             }
+            node.controllers.push(raw);
             addClassUnit(raw.name, raw, raw);
             addEnhancers(raw);
         });
@@ -618,9 +652,46 @@ const analyseDiGraph = async (root: Ctor): Promise<DiReport> => {
             (sum, node) => sum + node.controllerCount,
             0,
         ),
+        controllerClasses: [
+            ...new Set(nodes.flatMap(node => node.controllers)),
+        ],
         dependencyCount,
     };
 };
+
+/**
+ * Контроллеры справочников Гаранта (libs/garant): ручки правки цен, регионов
+ * портала, комплектов, поставок, договоров, инфоблоков и пакетов. Публичное
+ * приложение konstructor их не регистрирует. Список явный: новый контроллер
+ * Гаранта дописывают сюда.
+ */
+const GARANT_CONTROLLERS: ReadonlyArray<Ctor> = [
+    RegionController,
+    PortalRegionController,
+    ComplectController,
+    ContractController,
+    SupplyController,
+    InfoblockController,
+    InfogroupController,
+    AdminGarantPackageController,
+    AdminGarantProfPriceController,
+    CatalogTableAdminController,
+    CatalogSeedAdminController,
+];
+
+/** Модули Гаранта, которые несут контроллеры: konstructor их не импортирует. */
+const GARANT_ADMIN_MODULES: ReadonlyArray<Ctor> = [
+    RegionAdminModule,
+    ComplectAdminModule,
+    ContractAdminModule,
+    SupplyAdminModule,
+    InfoblockAdminModule,
+    InfogroupAdminModule,
+    AdminGarantPackageModule,
+    AdminGarantProfPriceModule,
+    CatalogTableAdminModule,
+    CatalogSeedAdminModule,
+];
 
 describe('DI-граф приложения konstructor', () => {
     let report: DiReport;
@@ -664,6 +735,41 @@ describe('DI-граф приложения konstructor', () => {
 
     it('каждая зависимость провайдера и контроллера доступна своему модулю', () => {
         expect(report.problems).toEqual([]);
+    });
+
+    it('контроллеры справочников Гаранта в приложении не зарегистрированы', () => {
+        const registered = new Set<unknown>(report.controllerClasses);
+        const leaked = GARANT_CONTROLLERS.filter(controller =>
+            registered.has(controller),
+        ).map(controller => controller.name);
+        expect(leaked).toEqual([]);
+    });
+
+    it('модули Гаранта с контроллерами в граф приложения не входят', () => {
+        const reached = new Set(report.modules);
+        const leaked = GARANT_ADMIN_MODULES.filter(module =>
+            reached.has(module.name),
+        ).map(module => module.name);
+        expect(leaked).toEqual([]);
+    });
+
+    it('утверждения про Гарант содержательны: GarantModule в графе, список состоит из настоящих контроллеров и модулей с контроллерами', () => {
+        expect(new Set(report.modules)).toContain(GarantModule.name);
+        expect(new Set(GARANT_CONTROLLERS).size).toBe(
+            GARANT_CONTROLLERS.length,
+        );
+        for (const controller of GARANT_CONTROLLERS) {
+            expect(controller).toBeDefined();
+            expect(Reflect.getMetadata(CONTROLLER_WATERMARK, controller)).toBe(
+                true,
+            );
+        }
+        for (const module of GARANT_ADMIN_MODULES) {
+            expect(module).toBeDefined();
+            expect(
+                asList(Reflect.getMetadata('controllers', module)).length,
+            ).toBeGreaterThan(0);
+        }
     });
 });
 
@@ -935,6 +1041,24 @@ describe('анализатор DI-графа: чувствительность �
         expect(
             (await analyseDiGraph(rootOf(controllerModule))).problems,
         ).toEqual(['ControllerModule: NeedsLeafController → Leaf']);
+    });
+
+    it('отчёт называет классы контроллеров всех модулей графа, в том числе вложенных', async () => {
+        const nested = moduleOf('NestedModule', {
+            imports: [LeafModule],
+            controllers: [NeedsLeafController],
+        });
+        const outer = moduleOf('OuterModule', {
+            imports: [nested],
+            controllers: [GuardedController],
+            providers: [NeedsLeafGuard],
+        });
+        const report = await analyseDiGraph(rootOf(outer));
+        expect(new Set(report.controllerClasses)).toEqual(
+            new Set<unknown>([NeedsLeafController, GuardedController]),
+        );
+        const clean = await analyseDiGraph(rootOf(LeafModule));
+        expect(clean.controllerClasses).toEqual([]);
     });
 
     it('параметр без токена (примитив или интерфейс) получает подсказку про @Inject', async () => {

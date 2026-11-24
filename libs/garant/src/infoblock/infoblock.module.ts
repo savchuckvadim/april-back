@@ -2,9 +2,14 @@ import { Module } from '@nestjs/common';
 import { InfoblockPrismaRepository } from './infoblock.prisma.repository';
 import { InfoblockService } from './infoblock.service';
 import { InfoblockRepository } from './infoblock.repository';
-import { InfoblockController } from './infoblock.controller';
+
+/**
+ * Сервисный модуль инфоблоков гаранта: провайдеры и экспорт сервиса, без
+ * контроллеров. Контроллер `/infoblock` вынесен в {@link InfoblockAdminModule},
+ * чтобы публичное приложение konstructor, импортирующее модуль ради
+ * InfoblockService, его не регистрировало.
+ */
 @Module({
-    controllers: [InfoblockController],
     providers: [
         InfoblockService,
         {

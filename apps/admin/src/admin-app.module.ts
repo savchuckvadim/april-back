@@ -53,6 +53,16 @@ import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
 import { AdminGarantProfPriceModule } from '@lib/garant/price';
+// Легаси-контроллеры справочников Гаранта (`/region`, `/portal-region/*`,
+// `/complect`, `/contracts`, `/supply`, `/infoblock`, `/infogroup`): живут
+// только в админке, под её глобальным гардом. Сервисные модули Гаранта их
+// не регистрируют, поэтому konstructor их не публикует.
+import { RegionAdminModule } from '@lib/garant/region';
+import { ComplectAdminModule } from '@lib/garant/complect';
+import { ContractAdminModule } from '@lib/garant/contract';
+import { SupplyAdminModule } from '@lib/garant/supply';
+import { InfoblockAdminModule } from '@lib/garant/infoblock';
+import { InfogroupAdminModule } from '@lib/garant/infogroup';
 import { CatalogTableAdminModule } from '@lib/garant/catalog-table';
 import { CatalogSeedAdminModule } from '@lib/garant/catalog-install';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
@@ -149,6 +159,14 @@ import {
         // (чтобы не протекали в Swagger konstructor).
         AdminGarantPackageModule,
         AdminGarantProfPriceModule,
+        // Те же пути, что раньше отдавал GarantModule: /region, /portal-region/*,
+        // /complect, /contracts, /supply, /infoblock, /infogroup.
+        RegionAdminModule,
+        ComplectAdminModule,
+        ContractAdminModule,
+        SupplyAdminModule,
+        InfoblockAdminModule,
+        InfogroupAdminModule,
         // Каталог «Гарант»: эталонные таблицы (скачать текущее состояние,
         // поправить, загрузить обратно) и сид справочников константной сеткой.
         CatalogTableAdminModule,
