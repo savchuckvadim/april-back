@@ -5,6 +5,7 @@ import { XoDispatchRescueModule } from './shared/xo-dispatch/xo-dispatch-rescue.
 import { LeadHookModule } from './lead-hook/lead-hook.module';
 import { EventReportModule } from './event-report/event-report.module';
 import { EventReportDeferredModule } from './event-report-deferred/event-report-deferred.module';
+import { EventDocumentReportModule } from './event-document-report/event-document-report.module';
 import { EventSupportModule } from './event-support/event-support.module';
 import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
 import { SalesHooksModule } from './sales-hooks/sales-hooks.module';
@@ -25,6 +26,9 @@ import { PresentationFlowModule } from './presentation-flow/presentation-flow.mo
         // Досылка хвоста прямого исполнения отчёта (POST /flow/deferred):
         // аддитивно к EventReportModule, существующий flow не трогает.
         EventReportDeferredModule,
+        // Поток документов конструктора (КП, счёт, договор, поставка):
+        // только воркер очереди, HTTP-ручек нет.
+        EventDocumentReportModule,
         EventSupportModule,
         EventSalesBxRecordsModule,
         // Новое семейство sales-хуков: silence + очередь операций + WS

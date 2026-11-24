@@ -28,6 +28,32 @@ export interface KpiRowCmdRef {
     cmd: string;
 }
 
+/** В какие списки пишет {@link KpiListFlowService.flow}. */
+export const KPI_LIST_FLOW_SCOPE = {
+    /** «ОП KPI» и «ОП История» — обычное событие. */
+    both: 'both',
+    /**
+     * Только «ОП История»: в KPI такое событие засчитывается отдельной
+     * дедуплицированной записью (документы конструктора — один раз на
+     * сделку), а в ленте истории видно каждое.
+     */
+    history: 'history',
+} as const;
+
+export type KpiListFlowScope =
+    (typeof KPI_LIST_FLOW_SCOPE)[keyof typeof KPI_LIST_FLOW_SCOPE];
+
+/** Необязательные настройки {@link KpiListFlowService.flow}. */
+export interface KpiListFlowOptions {
+    /** В какие списки писать; по умолчанию — в оба. */
+    scope?: KpiListFlowScope;
+    /**
+     * Строка не имеет смысла без типа события: если его варианта на списке
+     * нет, строка пропускается с предупреждением, а не создаётся «без типа».
+     */
+    requireEventTypeItem?: boolean;
+}
+
 /**
  * Создаёт элементы в списках `sales_kpi` и `sales_history` для одного
  * KPI-события (план/отчёт/перенос/...).
@@ -60,13 +86,20 @@ export class KpiListFlowService {
      *                  менять нельзя — сломается идемпотентность элементов)
      * @param buffer  групповой batch-буфер (структурный контракт; подходит
      *                и ColdHookBatchGroupBuffer, и любой его аналог)
+     * @param options  в какие списки писать и обязателен ли тип события;
+     *                 по умолчанию — оба списка, тип не обязателен
      */
     flow(
         payload: KpiEventPayload,
         entityId: string | number,
         buffer: IBatchGroupBuffer,
+        options: KpiListFlowOptions = {},
     ): KpiRowCmdRef[] {
-        const lists = this.collectLists();
+        const scope = options.scope ?? KPI_LIST_FLOW_SCOPE.both;
+        const lists = this.collectLists().filter(
+            list =>
+                scope === KPI_LIST_FLOW_SCOPE.both || list.type === 'history',
+        );
         if (lists.length === 0) {
             this.logger.warn('Списки sales_kpi/sales_history не настроены');
             return [];
@@ -76,6 +109,13 @@ export class KpiListFlowService {
         const refs: KpiRowCmdRef[] = [];
 
         lists.forEach(list => {
+            if (
+                options.requireEventTypeItem &&
+                !this.eventTypeItemInstalled(list, payload)
+            ) {
+                this.warnEventTypeItemMissing(list, payload);
+                return;
+            }
             const model = new KpiEventItemModel(
                 list,
                 this.payloadForList(payload, list),
@@ -188,11 +228,7 @@ export class KpiListFlowService {
                 dedup.requireEventTypeItem &&
                 !this.eventTypeItemInstalled(list, payload)
             ) {
-                this.logger.warn(
-                    `item event_type="${payload.items.event_type ?? '—'}" не установлен ` +
-                        `в списке ${list.type} — запись «${payload.name}» пропущена ` +
-                        `(нужен install items KPI-списка)`,
-                );
+                this.warnEventTypeItemMissing(list, payload);
                 continue;
             }
 
@@ -278,6 +314,17 @@ export class KpiListFlowService {
             );
             return null;
         }
+    }
+
+    private warnEventTypeItemMissing(
+        list: IPBXList,
+        payload: KpiEventPayload,
+    ): void {
+        this.logger.warn(
+            `item event_type="${payload.items.event_type ?? '—'}" не установлен ` +
+                `в списке ${list.type} — запись «${payload.name}» пропущена ` +
+                `(нужен install items KPI-списка)`,
+        );
     }
 
     /** Установлен ли на портале item event_type, который несёт payload. */
