@@ -223,7 +223,7 @@ export class OfferWordByTemplateGenerateDto {
         required: false,
         default: false,
         description:
-            'true — в ответе link ведёт на PDF (DOCX сохраняется и конвертируется); false или не передавать — link на DOCX',
+            'true — документы отдаются в DOCX; false или не передавать — DOCX конвертируется в PDF (при сбое конвертации остаётся DOCX)',
     })
     @IsOptional()
     @IsBoolean()

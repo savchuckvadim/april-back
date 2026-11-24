@@ -15,9 +15,11 @@ import {
 import { OfferWordCoreGenerateResult } from '../types/offer-word-core-generate.types';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
 import {
+    InvoiceWordCoreExecuteOptions,
     InvoiceWordCoreGenerateResult,
     InvoiceWordCoreGenerateService,
 } from '../services/invoice-word-core/invoice-word-core-generate.service';
+import { InvoiceDocumentsBuildService } from '../services/invoice-word-core/invoice-documents-build.service';
 import {
     OfferWordPdfExportParams,
     OfferWordPdfExportService,
@@ -138,7 +140,7 @@ describe('OfferWordMultiBuildService', () => {
     >;
     let renderInvoice: jest.Mock<
         Promise<InvoiceCoreResult>,
-        [OfferWordByTemplateGenerateDto]
+        [OfferWordByTemplateGenerateDto, InvoiceWordCoreExecuteOptions?]
     >;
     let buildPublicPdfLink: jest.Mock<
         Promise<string>,
@@ -188,14 +190,19 @@ describe('OfferWordMultiBuildService', () => {
                 fileName: 'merged.pdf',
             });
 
+        const pdfExport = {
+            buildPublicPdfLink,
+        } as unknown as OfferWordPdfExportService;
         service = new OfferWordMultiBuildService(
             { execute: renderOffer } as unknown as OfferWordCoreGenerateService,
-            {
-                execute: renderInvoice,
-            } as unknown as InvoiceWordCoreGenerateService,
-            {
-                buildPublicPdfLink,
-            } as unknown as OfferWordPdfExportService,
+            // сборку счетов делает общий с PDF-КП сервис поверх тех же моков
+            new InvoiceDocumentsBuildService(
+                {
+                    execute: renderInvoice,
+                } as unknown as InvoiceWordCoreGenerateService,
+                pdfExport,
+            ),
+            pdfExport,
             { merge } as unknown as PdfMergeService,
         );
     });
@@ -487,6 +494,56 @@ describe('OfferWordMultiBuildService', () => {
                 'Счёт Гарант-Бухгалтер - Проксима 3 ОД',
             ]);
             expect(result.warnings).toEqual([]);
+        });
+
+        it('multi_contract: нумерация счетов сквозная — счета второго договора продолжают номера первого', async () => {
+            // на каждый договор по два счёта: основной набор и набор для сравнения
+            invoiceSets = [
+                { setKind: 'general', setIndex: 0 },
+                { setKind: 'alternative', setIndex: 0 },
+            ];
+            await service.build(
+                request({
+                    invoice: { ...generalInvoice, needManyInvoices: true },
+                    variants: [lawyer(), accountant()],
+                    composition: composition(ComplectModeEnum.MULTI_CONTRACT),
+                }),
+            );
+
+            expect(
+                renderInvoice.mock.calls.map(([, options]) => options),
+            ).toEqual([{ numberOffset: 0 }, { numberOffset: 2 }]);
+        });
+
+        it('single_contract, типы договора разные: счёт второй группы продолжает нумерацию первой', async () => {
+            await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [
+                        setVariant('a', CONTRACT_LTYPE.ABON, 100, 'Интернет 5'),
+                        setVariant('b', CONTRACT_LTYPE.LIC, 50, 'Интернет 1'),
+                        setVariant('c', CONTRACT_LTYPE.ABON, 200, 'Проксима 3'),
+                    ],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT),
+                }),
+            );
+
+            expect(
+                renderInvoice.mock.calls.map(([, options]) => options),
+            ).toEqual([{ numberOffset: 0 }, { numberOffset: 1 }]);
+        });
+
+        it('один вызов сборки счетов — сдвиг номера нулевой: первый счёт получает введённый номер', async () => {
+            await service.build(
+                request({
+                    invoice: generalInvoice,
+                    variants: [lawyer(), accountant()],
+                    composition: composition(ComplectModeEnum.SINGLE_CONTRACT),
+                }),
+            );
+
+            expect(renderInvoice).toHaveBeenCalledTimes(1);
+            expect(renderInvoice.mock.calls[0][1]).toEqual({ numberOffset: 0 });
         });
 
         it('single_contract, типы договора разные — по счёту на тип договора, группа сведена в один набор, есть предупреждение', async () => {

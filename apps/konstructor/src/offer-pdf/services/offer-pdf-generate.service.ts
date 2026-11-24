@@ -2,15 +2,24 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
+import { basename } from 'path';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { StorageService, StorageType } from '@lib/core/storage/storage.service';
 import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 import { ComplectVariantOfferStageService } from '@app/konstructor/modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
 import { IPreparedDocument } from '@app/konstructor/offer-word/interface/document.interface';
 import { getOfferDocumentProductName } from '@app/konstructor/offer-word/lib/get-offer-document-product-name.util';
+import {
+    describeInvoiceNotBuilt,
+    getErrorReason,
+} from '@app/konstructor/offer-word/lib/invoice-not-built.util';
+import { resolveDocumentVariants } from '@app/konstructor/offer-word/multi/lib/variants/resolve-document-variants';
+import { withVariant } from '@app/konstructor/offer-word/multi/lib/variants/with-variant';
 import { BitrixDocumentSaveFlowService } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
+import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
 import { PdfMergeService } from '@app/konstructor/offer-word/services/pdf-export/pdf-merge.service';
+import { InvoiceBuildRequest } from '@app/konstructor/offer-word/types/invoice-build-request.type';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
 import {
     OfferPdfPrintPlan,
@@ -26,15 +35,18 @@ import {
 
 /** Итог прикрепления к сделке Битрикса */
 export interface OfferPdfDealResult {
-    /** Все файлы загружены на Диск Битрикса и упомянуты в таймлайне сделки */
+    /** Все файлы (КП и счета) загружены на Диск Битрикса и упомянуты в таймлайне сделки */
     savedToDeal: boolean;
-    /** Ссылка на первый файл в Битриксе — когда загрузка удалась */
+    /** Ссылка на первый файл КП в Битриксе — когда загрузка удалась */
     bitrixLink: string | null;
     /** Почему к сделке не прикрепили — текст для пользователя */
     dealMessage: string | null;
 }
 
-/** Один готовый файл генерации: вариант, склейка вариантов или единственное КП. */
+/**
+ * Один готовый файл генерации: вариант, склейка вариантов или единственное КП;
+ * та же форма у файла счёта.
+ */
 export interface OfferPdfGeneratedFile {
     /** Публичная ссылка на PDF на нашем сервере */
     link: string;
@@ -60,7 +72,15 @@ export interface OfferPdfGenerateResult extends OfferPdfDealResult {
     missingAssets: string[];
     /** Все файлы: один, либо по файлу на вариант при separateDocuments и сбое склейки */
     links?: OfferPdfGeneratedFile[];
-    /** Что не сошлось при слиянии вариантов и почему файлы не склеены */
+    /**
+     * Счета в PDF (при сбое перевода — в DOCX), по одному на набор. Пусто, когда
+     * счёт не запрашивали или не удалось собрать: причина — в warnings.
+     */
+    invoiceLinks: OfferPdfGeneratedFile[];
+    /**
+     * Что не сошлось при слиянии вариантов, почему файлы не склеены и почему не
+     * собран счёт («Счёт не сформирован: <причина>»)
+     */
     warnings?: string[];
 }
 
@@ -91,8 +111,10 @@ interface SavedPdf {
 
 interface DealAttachment {
     deal: OfferPdfDealResult;
-    /** Ссылка в Битриксе для каждого файла по порядку; null — файл не загрузился */
+    /** Ссылка в Битриксе для каждого файла КП по порядку; null — файл не загрузился */
     bitrixLinks: Array<string | null>;
+    /** То же для каждого счёта по порядку */
+    invoiceBitrixLinks: Array<string | null>;
 }
 
 /**
@@ -109,6 +131,14 @@ const MERGE_FAILED_WARNING =
  * затем (если не отключено) Диск Битрикса и таймлайн сделки — теми же
  * сервисами, что и Word-поток. Сбой Битрикса документ не отменяет:
  * ссылка на сервер отдаётся всегда, причина — в dealMessage.
+ *
+ * Счёт (generate, если в запросе есть invoice с нужным флагом) собирает
+ * тот же сервис и тот же шаблон счёта, что у Word-КП: шаблон подбирается
+ * по порталу, поставщику, типу клиента и виду поставки, DOCX переводится
+ * в PDF (сбой перевода оставляет DOCX). Счета идут по открытому варианту
+ * запроса, как у Word-КП без разбивки по договорам. Они уходят в сделку тем
+ * же обращением, что КП, с типом invoice, и в тот же комментарий таймлайна.
+ * Сбой счёта КП никогда не отменяет: причина попадает в warnings.
  *
  * Варианты комплекта печатаются так же, как у Word-КП: режим определяет
  * resolveDocumentVariants, что и сколько печатать — planOfferPdfPrint.
@@ -131,6 +161,7 @@ export class OfferPdfGenerateService {
         private readonly supplyEnricher: SupplyPayloadEnricherService,
         private readonly pdfMerge: PdfMergeService,
         private readonly variantStage: ComplectVariantOfferStageService,
+        private readonly invoiceDocuments: InvoiceDocumentsBuildService,
     ) {}
 
     /**
@@ -155,7 +186,7 @@ export class OfferPdfGenerateService {
     }
 
     async generate(dto: OfferPdfGenerateDto): Promise<OfferPdfGenerateResult> {
-        const { plan, documents } = await this.renderDocuments(dto);
+        const { prepared, plan, documents } = await this.renderDocuments(dto);
         const warnings = [...plan.warnings];
         const files = await this.composeFiles(dto, plan, documents, warnings);
 
@@ -163,10 +194,12 @@ export class OfferPdfGenerateService {
         for (const file of files) {
             saved.push(await this.saveToStorage(dto, file));
         }
-        const { deal, bitrixLinks } =
+        // счёт — дополнение к КП: что бы с ним ни случилось, КП уже сохранено
+        const invoices = await this.buildInvoices(prepared, warnings);
+        const { deal, bitrixLinks, invoiceBitrixLinks } =
             dto.saveToDeal === false
-                ? this.notAttached(saved)
-                : await this.attachToDeal(dto, saved);
+                ? this.notAttached(saved, invoices)
+                : await this.attachToDeal(dto, saved, invoices);
 
         // файлы готовы: варианты КП получают стадию «КП» (предпросмотр её не ставит)
         await this.markVariantsOffer(dto);
@@ -187,8 +220,114 @@ export class OfferPdfGenerateService {
                 size: file.size,
                 bitrixLink: bitrixLinks[index] ?? null,
             })),
+            invoiceLinks: await this.invoiceLinksOf(
+                invoices,
+                invoiceBitrixLinks,
+            ),
             warnings,
         };
+    }
+
+    /**
+     * Счета КП: тот же сервис и шаблон счёта, что у Word-КП, перевод в PDF.
+     * Счёта нет в запросе, флаги выключены — пусто. Любой сбой не бросается:
+     * причина уходит в warnings, КП остаётся.
+     */
+    private async buildInvoices(
+        prepared: OfferPdfGenerateDto,
+        warnings: string[],
+    ): Promise<IPreparedDocument[]> {
+        const invoice = prepared.invoice;
+        if (!invoice?.needGeneralInvoice && !invoice?.needManyInvoices) {
+            return [];
+        }
+
+        try {
+            const result = await this.invoiceDocuments.build(
+                this.invoiceRequestOf(prepared, invoice),
+                { year: dayjs().format('YYYY'), isPdf: true },
+            );
+            if (result.notBuiltReason) {
+                this.addWarning(
+                    warnings,
+                    describeInvoiceNotBuilt(result.notBuiltReason),
+                );
+            }
+            return result.documents;
+        } catch (error) {
+            const reason = getErrorReason(error);
+            this.logger.error(
+                `КП PDF (${prepared.domain}): счета не собрались — ${reason}`,
+            );
+            this.addWarning(warnings, describeInvoiceNotBuilt(reason));
+            return [];
+        }
+    }
+
+    /**
+     * Запрос на счёт по открытому (первому) варианту. Домен, поставщик, тип
+     * клиента и поставка идут в подбор шаблона счёта так же, как у Word-КП:
+     * у разных поставщиков и типов клиента (юрлицо, физлицо, ИП, бюджет)
+     * разные формы счёта.
+     */
+    private invoiceRequestOf(
+        prepared: OfferPdfGenerateDto,
+        invoice: NonNullable<OfferPdfGenerateDto['invoice']>,
+    ): InvoiceBuildRequest {
+        const open = withVariant(
+            prepared,
+            resolveDocumentVariants(prepared).variants[0],
+        );
+        return {
+            domain: open.domain,
+            userId: open.userId,
+            providerId: open.providerId,
+            clientType: open.clientType,
+            invoiceTemplateId: open.invoiceTemplateId,
+            supply: open.supply,
+            recipient: open.recipient,
+            contractType: open.contractType,
+            contract: open.contract,
+            sets: open.sets,
+            invoice,
+        };
+    }
+
+    /** Одно предупреждение — одной строкой, сколько бы раз оно ни возникло. */
+    private addWarning(warnings: string[], warning: string): void {
+        if (!warnings.includes(warning)) {
+            warnings.push(warning);
+        }
+    }
+
+    /** Ответ по счетам: та же форма, что у файлов КП. */
+    private async invoiceLinksOf(
+        invoices: IPreparedDocument[],
+        bitrixLinks: Array<string | null>,
+    ): Promise<OfferPdfGeneratedFile[]> {
+        const links: OfferPdfGeneratedFile[] = [];
+        for (const [index, invoice] of invoices.entries()) {
+            links.push({
+                link: invoice.link,
+                fileName: basename(invoice.absolutePath),
+                name: invoice.name,
+                size: await this.fileSize(invoice.absolutePath),
+                bitrixLink: bitrixLinks[index] ?? null,
+            });
+        }
+        return links;
+    }
+
+    /** Размер файла в хранилище; не прочитался — 0, ответ из-за этого не падает. */
+    private async fileSize(absolutePath: string): Promise<number> {
+        try {
+            return (await this.storage.readFile(absolutePath)).length;
+        } catch (error) {
+            this.logger.warn(
+                `КП PDF: размер файла ${basename(absolutePath)} не определён — ${getErrorReason(error)}`,
+            );
+            return 0;
+        }
     }
 
     /**
@@ -211,9 +350,11 @@ export class OfferPdfGenerateService {
      * план печати и рендер документов по одному: react-pdf тяжёлый, а машина
      * общая.
      */
-    private async renderDocuments(
-        dto: OfferPdfGenerateDto,
-    ): Promise<{ plan: OfferPdfPrintPlan; documents: PrintedDocument[] }> {
+    private async renderDocuments(dto: OfferPdfGenerateDto): Promise<{
+        prepared: OfferPdfGenerateDto;
+        plan: OfferPdfPrintPlan;
+        documents: PrintedDocument[];
+    }> {
         const prepared = await this.supplyEnricher.enrichWithVariants(dto);
         const plan = planOfferPdfPrint(prepared);
 
@@ -227,7 +368,7 @@ export class OfferPdfGenerateService {
                 rendered: await this.renderService.render(model),
             });
         }
-        return { plan, documents };
+        return { prepared, plan, documents };
     }
 
     /**
@@ -313,15 +454,21 @@ export class OfferPdfGenerateService {
     }
 
     /** В Битрикс не ходили: ни ссылок, ни причины. */
-    private notAttached(saved: SavedPdf[]): DealAttachment {
+    private notAttached(
+        saved: SavedPdf[],
+        invoices: IPreparedDocument[],
+    ): DealAttachment {
         return {
             deal: { savedToDeal: false, bitrixLink: null, dealMessage: null },
             bitrixLinks: saved.map(() => null),
+            invoiceBitrixLinks: invoices.map(() => null),
         };
     }
 
     /**
-     * Диск Битрикса + комментарий в таймлайн, все файлы одним обращением.
+     * Диск Битрикса + комментарий в таймлайн, все файлы (КП и счета) одним
+     * обращением: КП с типом offer, счета с типом invoice. Ссылки на счета
+     * идут в тот же комментарий таймлайна.
      * saveDocuments без onlyBitrixSave при сбое Диска сам подставляет
      * серверные ссылки — тогда bitrixLink пустой, а комментарий всё равно
      * уходит.
@@ -329,13 +476,26 @@ export class OfferPdfGenerateService {
     private async attachToDeal(
         dto: OfferPdfGenerateDto,
         saved: SavedPdf[],
+        invoices: IPreparedDocument[],
     ): Promise<DealAttachment> {
-        const documents: IPreparedDocument[] = saved.map(file => ({
-            absolutePath: file.absolutePath,
-            link: file.link,
-            name: file.name,
-            type: 'offer',
-        }));
+        const documents: IPreparedDocument[] = [
+            ...saved.map(
+                (file): IPreparedDocument => ({
+                    absolutePath: file.absolutePath,
+                    link: file.link,
+                    name: file.name,
+                    type: 'offer',
+                }),
+            ),
+            ...invoices.map(
+                (invoice): IPreparedDocument => ({
+                    absolutePath: invoice.absolutePath,
+                    link: invoice.link,
+                    name: invoice.name,
+                    type: 'invoice',
+                }),
+            ),
+        ];
         const target = {
             domain: dto.domain,
             companyId: dto.companyId,
@@ -348,7 +508,7 @@ export class OfferPdfGenerateService {
                 documents,
                 onlyBitrixSave: false,
             });
-            const bitrixLinks = saved.map((file, index) => {
+            const allBitrixLinks = documents.map((file, index) => {
                 const uploaded = result.documents[index];
                 return uploaded && uploaded.link !== file.link
                     ? uploaded.link
@@ -358,17 +518,18 @@ export class OfferPdfGenerateService {
                 ...target,
                 documents: result.documents,
             });
-            const uploadedCount = bitrixLinks.filter(Boolean).length;
+            const uploadedCount = allBitrixLinks.filter(Boolean).length;
             return {
                 deal: {
-                    savedToDeal: uploadedCount === saved.length,
-                    bitrixLink: bitrixLinks[0],
+                    savedToDeal: uploadedCount === documents.length,
+                    bitrixLink: allBitrixLinks[0],
                     dealMessage: this.uploadMessage(
                         uploadedCount,
-                        saved.length,
+                        documents.length,
                     ),
                 },
-                bitrixLinks,
+                bitrixLinks: allBitrixLinks.slice(0, saved.length),
+                invoiceBitrixLinks: allBitrixLinks.slice(saved.length),
             };
         } catch (error) {
             const reason =
@@ -383,6 +544,7 @@ export class OfferPdfGenerateService {
                     dealMessage: `Не удалось прикрепить файл к сделке: ${reason}`,
                 },
                 bitrixLinks: saved.map(() => null),
+                invoiceBitrixLinks: invoices.map(() => null),
             };
         }
     }

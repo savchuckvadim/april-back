@@ -28,6 +28,7 @@ import { OfferWordEphemeralPdfQueueService } from './services/queue/offer-word-e
 import { OfferWordCancelWatcher } from './services/queue/offer-word-cancel-watcher.service';
 import { OfferGenerateQueueService } from './services/queue/offer-generate-queue.service';
 import { InvoiceWordCoreGenerateService } from './services/invoice-word-core/invoice-word-core-generate.service';
+import { InvoiceDocumentsBuildService } from './services/invoice-word-core/invoice-documents-build.service';
 import { InvoiceRenderDataService } from './services/render-data-services/invoice-render-data.service';
 import { InvoiceTemplateModule } from '@app/konstructor/modules/invoice-template';
 import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
@@ -94,6 +95,7 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         OfferWordCancelWatcher,
         OfferGenerateQueueService,
         InvoiceWordCoreGenerateService,
+        InvoiceDocumentsBuildService,
         InvoiceTemplateSourceService,
         InvoiceRenderDataService,
         OfferBxTimelineService,
@@ -112,6 +114,9 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         OfferBxTimelineService,
         // Склейка PDF вариантов нужна и PDF-КП (offer-pdf)
         PdfMergeService,
+        // Счёт PDF-КП собирает тот же сервис и тот же шаблон счёта, что у Word-КП
+        // (подбор шаблона, рендер DOCX, перевод в PDF)
+        InvoiceDocumentsBuildService,
         // Зависимости процессоров из OfferWordWorkerModule
         OfferWordByTemplateGenerateUseCase,
         OfferWordMultiGenerateUseCase,

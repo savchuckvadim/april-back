@@ -11,7 +11,10 @@ import {
 } from 'class-validator';
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
 import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
-import { OfferWordByTemplateGenerateDto } from '../../offer-word/dto/offer-word-generate-request.dto';
+import {
+    InvoiceDataDto,
+    OfferWordByTemplateGenerateDto,
+} from '../../offer-word/dto/offer-word-generate-request.dto';
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
@@ -131,13 +134,16 @@ export class OfferPdfLetterDto {
 
 /**
  * Запрос на КП в PDF: те же данные, что для Word-шаблона (цены, наполнение,
- * реквизиты, получатель, менеджер), без полей Word-шаблона и счёта, плюс
- * код PDF-шаблона, настройки, письмо и номер документа.
+ * реквизиты, получатель, менеджер), без полей Word-шаблона, плюс код
+ * PDF-шаблона, настройки, письмо и номер документа. Счёт необязателен: он
+ * собирается тем же сервисом и тем же шаблоном счёта, что у Word-КП, и
+ * переводится в PDF.
  */
 export class OfferPdfGenerateDto extends OmitType(
     OfferWordByTemplateGenerateDto,
     [
         'templateId',
+        // у Word-КП оба поля обязательны, у PDF-КП они необязательны и описаны ниже
         'invoiceTemplateId',
         'invoice',
         'isWord',
@@ -145,6 +151,26 @@ export class OfferPdfGenerateDto extends OmitType(
         'onlyBitrixSave',
     ] as const,
 ) {
+    @ApiPropertyOptional({
+        description:
+            'Данные счёта: нужен ли общий счёт и счета по наборам для сравнения, дата оплаты, номер. Нужен хотя бы один из флагов needGeneralInvoice и needManyInvoices: тогда после КП собираются счета тем же шаблоном, что у Word-КП (шаблон подбирается по порталу, поставщику, типу клиента и виду поставки), и переводятся в PDF. Без поля счёт не делается. Превью (preview) счёт не собирает никогда.',
+        type: InvoiceDataDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => InvoiceDataDto)
+    invoice?: InvoiceDataDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Идентификатор шаблона счёта. Пустой или не передан — шаблон подбирается сам по порталу, поставщику, типу клиента и виду поставки.',
+        type: String,
+        example: '',
+    })
+    @IsOptional()
+    @IsString()
+    invoiceTemplateId?: string;
+
     @ApiPropertyOptional({
         description:
             'Код встроенного PDF-шаблона (список — GET /offer-pdf/templates).',
