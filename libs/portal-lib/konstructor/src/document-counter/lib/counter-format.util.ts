@@ -6,6 +6,15 @@ interface FormatNumberParts {
     year: boolean;
 }
 
+/**
+ * Правило шага счётчика: значение, которое получит следующий документ.
+ * Единый источник для `next` (инкремент в транзакции репозитория) и
+ * `preview` (просмотр без записи), чтобы два пути не разошлись.
+ */
+export function nextCounterValue(count: number, size: number): number {
+    return count + size;
+}
+
 export function formatDocumentNumber(
     pivot: FormatNumberParts,
     currentCount: number,

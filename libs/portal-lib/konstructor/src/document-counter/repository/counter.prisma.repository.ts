@@ -9,6 +9,7 @@ import {
 } from '../lib/counter.types';
 import { CounterType } from '../lib/counter-type.enum';
 import { CreateDocumentCounterDto } from '../document-counter.dto';
+import { nextCounterValue } from '../lib/counter-format.util';
 
 @Injectable()
 export class CounterPrismaRepository implements CounterRepository {
@@ -140,7 +141,7 @@ export class CounterPrismaRepository implements CounterRepository {
                 select: { count: true },
             });
 
-            const newCount = pivot.count + size;
+            const newCount = nextCounterValue(pivot.count, size);
 
             await tx.rq_counter.update({
                 where: {

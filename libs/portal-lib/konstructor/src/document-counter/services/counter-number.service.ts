@@ -4,6 +4,7 @@ import { CounterType } from '../lib/counter-type.enum';
 import {
     formatDocumentNumber,
     fallbackDocumentNumber,
+    nextCounterValue,
 } from '../lib/counter-format.util';
 
 @Injectable()
@@ -43,6 +44,25 @@ export class CounterNumberService {
         }
 
         return formatDocumentNumber(pivot, pivot.count);
+    }
+
+    /**
+     * Возвращает номер, который выдаст следующий getNextNumber, без записи
+     * в базу: счётчик остаётся прежним. Шаг считается той же функцией
+     * nextCounterValue, что и инкремент в репозитории. Если между просмотром
+     * и выдачей номер возьмёт другой документ, выданное число окажется больше.
+     */
+    async previewNextNumber(rqId: number, type: CounterType): Promise<string> {
+        const pivot = await this.repo.findPivot(rqId, type);
+
+        if (!pivot) {
+            return fallbackDocumentNumber(rqId);
+        }
+
+        return formatDocumentNumber(
+            pivot,
+            nextCounterValue(pivot.count, pivot.size),
+        );
     }
 
     /**

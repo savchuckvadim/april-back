@@ -54,6 +54,32 @@ export class CounterNumberController {
         return { number };
     }
 
+    @ApiOperation({
+        summary: 'Следующий номер без выдачи',
+        description:
+            'Следующий номер без выдачи: число может уйти другому документу, ' +
+            'если между просмотром и формированием номер возьмёт кто-то ещё. ' +
+            'Счётчик остаётся прежним, в базу ничего не пишется. Формат и ' +
+            'значение совпадают с ответом ближайшего next. Если для пары ' +
+            'rqId + type нет связи со счётчиком, отдаётся запасной номер, ' +
+            'как у next и peek.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Номер, который выдаст следующий next',
+        type: DocumentNumberResponseDto,
+    })
+    @ApiParam({ name: 'rqId', type: Number })
+    @ApiParam({ name: 'type', enum: CounterType })
+    @Get('preview/:rqId/:type')
+    async previewNextNumber(
+        @Param('rqId', ParseIntPipe) rqId: number,
+        @Param('type', new ParseEnumPipe(CounterType)) type: CounterType,
+    ) {
+        const number = await this.numberService.previewNextNumber(rqId, type);
+        return { number };
+    }
+
     /**
      * Почти админский эндпоинт: задаёт текущее значение счётчика,
      * от которого будет вестись дальнейший отсчёт.
