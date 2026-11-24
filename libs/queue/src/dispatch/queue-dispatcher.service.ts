@@ -59,6 +59,9 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT_SALES_DEAL_AUDIT_RUN)
         private readonly eventSalesDealAuditRunQueue: Queue,
 
+        @InjectQueue(QueueNames.EVENT_SALES_DOCUMENT_FLOW)
+        private readonly eventSalesDocumentFlowQueue: Queue,
+
         @InjectQueue(QueueNames.EVENT_SALES_DEAL_MOVEMENT_RUN)
         private readonly eventSalesDealMovementRunQueue: Queue,
 
@@ -166,6 +169,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SALES_DEAL_AUDIT_RUN:
                 return this.eventSalesDealAuditRunQueue;
+
+            case QueueNames.EVENT_SALES_DOCUMENT_FLOW:
+                return this.eventSalesDocumentFlowQueue;
 
             case QueueNames.EVENT_SALES_DEAL_MOVEMENT_RUN:
                 return this.eventSalesDealMovementRunQueue;

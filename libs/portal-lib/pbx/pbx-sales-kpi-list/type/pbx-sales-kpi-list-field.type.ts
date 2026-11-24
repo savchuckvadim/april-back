@@ -268,6 +268,72 @@ export const PBX_SALES_KPI_LIST_FIELDS = [
                 SORT: 140,
                 VALUE: 'Доработка',
             },
+            /*
+             * Документные события конструктора (КП, счёт, договор, поставка):
+             * пишет поток документов event-document-report. Названия — как у
+             * вариантов, заведённых легаси на порталах, чтобы установка не
+             * создавала дубли. Варианты «(презентация)» идут только в KPI.
+             */
+            {
+                bitrixCode: 'EV_OFFER',
+                code: 'ev_offer',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Предложение',
+                SORT: 150,
+                VALUE: 'Предложение',
+            },
+            {
+                bitrixCode: 'EV_INVOICE',
+                code: 'ev_invoice',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Счет',
+                SORT: 160,
+                VALUE: 'Счет',
+            },
+            {
+                bitrixCode: 'EV_OFFER_PRES',
+                code: 'ev_offer_pres',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Предложение(презентация)',
+                SORT: 170,
+                VALUE: 'Предложение(презентация)',
+            },
+            {
+                bitrixCode: 'EV_INVOICE_PRES',
+                code: 'ev_invoice_pres',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Счет(презентация)',
+                SORT: 180,
+                VALUE: 'Счет(презентация)',
+            },
+            {
+                bitrixCode: 'EV_CONTRACT',
+                code: 'ev_contract',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Договор',
+                SORT: 190,
+                VALUE: 'Договор',
+            },
+            {
+                bitrixCode: 'EV_SUPPLY',
+                code: 'ev_supply',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Поставка',
+                SORT: 200,
+                VALUE: 'Поставка',
+            },
         ],
     },
     {
@@ -337,6 +403,40 @@ export const PBX_SALES_KPI_LIST_FIELDS = [
                 name: 'Не состоялся',
                 SORT: 60,
                 VALUE: 'Не состоялся',
+            },
+            /*
+             * Действия над документом. Сейчас пишется только «Отправлен»;
+             * «Подписан» и «Оплачен» заведены под следующие этапы.
+             */
+            {
+                bitrixCode: 'ACT_SEND',
+                code: 'act_send',
+                fieldCode: 'event_action',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Отправлен',
+                SORT: 70,
+                VALUE: 'Отправлен',
+            },
+            {
+                bitrixCode: 'ACT_SIGN',
+                code: 'act_sign',
+                fieldCode: 'event_action',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Подписан',
+                SORT: 80,
+                VALUE: 'Подписан',
+            },
+            {
+                bitrixCode: 'ACT_PAY',
+                code: 'act_pay',
+                fieldCode: 'event_action',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Оплачен',
+                SORT: 90,
+                VALUE: 'Оплачен',
             },
         ],
     },

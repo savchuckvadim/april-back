@@ -125,6 +125,9 @@ export enum JobNames {
     /** Аудит сделок: прогон портала «как у крона» по кнопке админки */
     EVENT_SALES_DEAL_AUDIT_RUN_NOW = 'event-sales-deal-audit-run-now',
 
+    /** Поток документов: событие «документ сформирован» из конструктора */
+    EVENT_SALES_DOCUMENT_FLOW = 'event-sales-document-flow',
+
     /** Движение сделок: прогон портала по кнопке админки (подсчёт или счёт) */
     EVENT_SALES_DEAL_MOVEMENT_RUN = 'event-sales-deal-movement-run',
     /** Движение сделок: проверка записи в ленту на одной сделке (кнопка админки, пишет в портал) */

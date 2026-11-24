@@ -7,5 +7,6 @@ export * from './constants/queue-names.enum';
 export * from './constants/job-names.enum';
 export * from './constants/transcribe-job-handler-id.enum';
 export * from './constants/deal-audit-run-job';
+export * from './constants/sales-document-event-job';
 export * from './constants/job-names.enum';
 export * from './constants/queue-names.enum';
