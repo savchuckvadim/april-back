@@ -25,7 +25,10 @@ import {
 } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
 import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
-import { InvoiceTemplateSourceService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-template-source.service';
+import {
+    InvoiceTemplateRequest,
+    InvoiceTemplateSourceService,
+} from '@app/konstructor/offer-word/services/invoice-word-core/invoice-template-source.service';
 import { InvoiceWordCoreGenerateService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-word-core-generate.service';
 import {
     OfferWordPdfExportParams,
@@ -532,15 +535,16 @@ describe('генерация PDF-КП: подбор шаблона счёта', 
             await ctx.service.generate(requestWithInvoice({ clientType }));
 
             expect(ctx.resolveTemplate).toHaveBeenCalledTimes(1);
-            expect(ctx.resolveTemplate).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    domain: 'test.bitrix24.ru',
-                    providerId: 12,
-                    clientType,
-                    supply: expect.objectContaining({ type: 'internet' }),
-                    invoiceTemplateId: '',
-                }),
-            );
+            const [request] = ctx.resolveTemplate.mock.calls[0] as [
+                InvoiceTemplateRequest,
+            ];
+            expect(request).toMatchObject({
+                domain: 'test.bitrix24.ru',
+                providerId: 12,
+                clientType,
+                invoiceTemplateId: '',
+            });
+            expect(request.supply?.type).toBe('internet');
         },
     );
 
