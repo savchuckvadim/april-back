@@ -1,4 +1,3 @@
-import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { StorageService, StorageType } from '@lib/core/storage';
 import Docxtemplater from 'docxtemplater';
@@ -22,8 +21,15 @@ import {
     InvoiceTemplateSourceService,
 } from './invoice-template-source.service';
 import { InvoiceSetKind } from '../../types/invoice-set.types';
+import { InvoiceBuildRequest } from '../../types/invoice-build-request.type';
+import { formatInvoiceNumber } from '../../lib/invoice-number.util';
 
-const RESULT_PATH = `konstructor/invoice-document/${dayjs().format('YYYY')}`;
+/**
+ * Год берётся на каждый вызов: константа на уровне модуля застыла бы на годе
+ * старта процесса, и после Нового года ссылки вели бы в несуществующую папку.
+ */
+const getResultRoot = (year: string): string =>
+    `konstructor/invoice-document/${year}`;
 
 /**
  * Только генерация оферты по шаблону: загрузка шаблона, render data, запись DOCX.
@@ -67,6 +73,16 @@ export interface InvoiceWordCoreExecuteResult {
     notBuiltReason?: string;
 }
 
+/** Как собирать счета одной генерации. */
+export interface InvoiceWordCoreExecuteOptions {
+    /**
+     * Сколько счетов этой генерации уже выпущено прежними вызовами: следующий
+     * получает номер N-<сдвиг>. Сквозной сдвиг не даёт счетам разных
+     * договоров одной генерации повторить номер.
+     */
+    numberOffset?: number;
+}
+
 @Injectable()
 export class InvoiceWordCoreGenerateService {
     constructor(
@@ -79,7 +95,8 @@ export class InvoiceWordCoreGenerateService {
     ) {}
 
     async execute(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: InvoiceBuildRequest,
+        options: InvoiceWordCoreExecuteOptions = {},
     ): Promise<InvoiceWordCoreExecuteResult> {
         const template = await this.invoiceTemplateSource.resolve(dto);
         const savedResults: InvoiceWordCoreGenerateResult[] = [];
@@ -96,8 +113,10 @@ export class InvoiceWordCoreGenerateService {
         ////////////////////////////////////////////////////////////////////
         const renderData =
             await this.invoiceRenderDataService.getInvoiceRenderData(dto);
-        const singleItemRenderData =
-            this.getInvoiceSingleRenderdata(renderData);
+        const singleItemRenderData = this.getInvoiceSingleRenderdata(
+            renderData,
+            options.numberOffset ?? 0,
+        );
         for (const item of singleItemRenderData) {
             const saved = await this.renderSingleInvoice(
                 item.data,
@@ -155,7 +174,8 @@ export class InvoiceWordCoreGenerateService {
         doc: Docxtemplater,
     ): Promise<{ docxLink: string; docxPath: string; resultFileName: string }> {
         // сохранить файл на диск и вернуть ссылку на файл
-        const resultPath = this.getResultPath(domain, userId);
+        const year = dayjs().format('YYYY');
+        const resultPath = this.getResultPath(domain, userId, year);
         const resultFileName = this.getResultSavedFileName();
 
         const buf = doc.toBuffer();
@@ -170,7 +190,7 @@ export class InvoiceWordCoreGenerateService {
             Number(userId),
             'konstructor',
             'invoice-document',
-            dayjs().format('YYYY'),
+            year,
             resultFileName,
         );
         const baseUrl = this.configService.get('APP_URL') as string;
@@ -231,21 +251,35 @@ export class InvoiceWordCoreGenerateService {
         return doc;
     }
 
+    /**
+     * Данные по счёту на набор. Номер счёта — по порядку выпуска в генерации:
+     * первый N, следующие N-1, N-2… (`numberOffset` — сколько счетов уже
+     * выпущено прежними вызовами).
+     */
     protected getInvoiceSingleRenderdata(
         renderData: IInvoiceRenderData,
+        numberOffset = 0,
     ): InvoiceSingleRenderItem[] {
-        return renderData.prices.map(price => ({
+        return renderData.prices.map((price, index) => ({
             data: {
                 ...renderData,
                 ...price.rows,
                 ...price.total,
+                InvoiceNumber: formatInvoiceNumber(
+                    renderData.InvoiceNumber,
+                    numberOffset + index,
+                ),
             },
             setKind: price.setKind,
             setIndex: price.setIndex,
         }));
     }
-    protected getResultPath(domain: string, userId: string): string {
-        return `${RESULT_PATH}/${domain}/${userId}`;
+    protected getResultPath(
+        domain: string,
+        userId: string,
+        year: string = dayjs().format('YYYY'),
+    ): string {
+        return `${getResultRoot(year)}/${domain}/${userId}`;
     }
     protected getResultSavedFileName(): string {
         const uuid = randomUUID();

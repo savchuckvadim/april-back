@@ -5,13 +5,12 @@ import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/docum
 import { ComplectModeEnum } from '@app/konstructor/modules/inner-deal/type/complect-composition.type';
 import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { OfferWordCoreGenerateService } from '../../services/offer-word-core/offer-word-core-generate.service';
-import { InvoiceWordCoreGenerateService } from '../../services/invoice-word-core/invoice-word-core-generate.service';
+import { InvoiceDocumentsBuildService } from '../../services/invoice-word-core/invoice-documents-build.service';
 import { OfferWordPdfExportService } from '../../services/pdf-export/offer-word-pdf-export.service';
 import { PdfMergeService } from '../../services/pdf-export/pdf-merge.service';
 import { IPreparedDocument } from '../../interface/document.interface';
 import { OfferWordCoreGenerateResult } from '../../types/offer-word-core-generate.types';
 import { getOfferDocumentProductName } from '../../lib/get-offer-document-product-name.util';
-import { getInvoiceDocumentProductName } from '../../lib/get-invoice-document-product-name';
 import {
     describeInvoiceNotBuilt,
     getErrorReason,
@@ -50,6 +49,15 @@ export interface IOfferWordMultiBuildResult {
 const INVOICE_SPLIT_BY_CONTRACT_TYPE_WARNING =
     'Счёт разделён по типам договора: у наборов разные типы';
 
+/**
+ * Сквозная нумерация счетов одной генерации: сколько счетов уже выпущено.
+ * Счета разных договоров идут отдельными вызовами сборки, и без общего
+ * счётчика у каждого вызова номер начинался бы заново.
+ */
+interface InvoiceNumbering {
+    issued: number;
+}
+
 interface RenderedOffers {
     core: OfferWordCoreGenerateResult;
     offers: IPreparedDocument[];
@@ -69,7 +77,7 @@ export class OfferWordMultiBuildService {
 
     constructor(
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
-        private readonly invoiceGenerateService: InvoiceWordCoreGenerateService,
+        private readonly invoiceDocuments: InvoiceDocumentsBuildService,
         private readonly pdfExportService: OfferWordPdfExportService,
         private readonly pdfMergeService: PdfMergeService,
     ) {}
@@ -112,6 +120,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    { issued: 0 },
                 );
             }
         } catch (error) {
@@ -249,6 +258,7 @@ export class OfferWordMultiBuildService {
      * multi_contract — по счёту на каждый вариант;
      * compare, один вариант или запрос без `composition` — счёт на открытый
      * (первый) вариант, как раньше.
+     * Номера счетов сквозные (`numbering`): первый N, следующие N-1, N-2…
      */
     private async buildInvoicesByContract(
         dto: OfferWordMultiGenerateDto,
@@ -256,6 +266,7 @@ export class OfferWordMultiBuildService {
         year: string,
         isPdf: boolean,
         warnings: string[],
+        numbering: InvoiceNumbering,
     ): Promise<IPreparedDocument[]> {
         const contractMode =
             resolved.variants.length > 1 ? dto.composition?.mode : undefined;
@@ -268,6 +279,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    numbering,
                 );
             case ComplectModeEnum.MULTI_CONTRACT:
                 return this.buildInvoicePerVariant(
@@ -276,6 +288,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    numbering,
                 );
             default:
                 // счёт выставляется на то, что выбрано, — на открытый вариант
@@ -284,6 +297,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    numbering,
                 );
         }
     }
@@ -301,6 +315,7 @@ export class OfferWordMultiBuildService {
         year: string,
         isPdf: boolean,
         warnings: string[],
+        numbering: InvoiceNumbering,
     ): Promise<IPreparedDocument[]> {
         const groups = groupVariantsByContractType(resolved.variants);
         if (groups.length > 1) {
@@ -316,6 +331,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    numbering,
                 )),
             );
         }
@@ -329,6 +345,7 @@ export class OfferWordMultiBuildService {
         year: string,
         isPdf: boolean,
         warnings: string[],
+        numbering: InvoiceNumbering,
     ): Promise<IPreparedDocument[]> {
         const invoices: IPreparedDocument[] = [];
         for (const variant of resolved.variants) {
@@ -338,6 +355,7 @@ export class OfferWordMultiBuildService {
                     year,
                     isPdf,
                     warnings,
+                    numbering,
                 )),
             );
         }
@@ -416,61 +434,29 @@ export class OfferWordMultiBuildService {
         };
     }
 
+    /**
+     * Счета одного вызова: сборку делает общий с PDF-КП сервис. Номер
+     * продолжает нумерацию прежних вызовов этой генерации.
+     */
     private async buildInvoiceDocuments(
         dto: OfferWordByTemplateGenerateDto,
         year: string,
         isPdf: boolean,
         warnings: string[],
+        numbering: InvoiceNumbering,
     ): Promise<IPreparedDocument[]> {
-        const invoiceCoreResult =
-            await this.invoiceGenerateService.execute(dto);
-        if (invoiceCoreResult.notBuiltReason) {
+        const result = await this.invoiceDocuments.build(dto, {
+            year,
+            isPdf,
+            numberOffset: numbering.issued,
+        });
+        if (result.notBuiltReason) {
             this.addWarning(
                 warnings,
-                describeInvoiceNotBuilt(invoiceCoreResult.notBuiltReason),
+                describeInvoiceNotBuilt(result.notBuiltReason),
             );
         }
-        const results: IPreparedDocument[] = [];
-
-        for (const saved of invoiceCoreResult.savedResults) {
-            let serverLink: string = saved.docxLink;
-            let absolutePath: string = saved.docxPath;
-
-            if (isPdf) {
-                try {
-                    serverLink = await this.pdfExportService.buildPublicPdfLink(
-                        {
-                            docxAbsolutePath: saved.docxPath,
-                            docxFileName: saved.resultFileName,
-                            domain: dto.domain,
-                            userId: dto.userId,
-                            year,
-                            type: 'invoice',
-                        },
-                    );
-                    absolutePath = saved.docxPath.replace(/\.docx$/i, '.pdf');
-                } catch (error) {
-                    this.logger.warn(
-                        'PDF invoice conversion failed, falling back to DOCX',
-                        (error as Error)?.message,
-                    );
-                }
-            }
-
-            results.push({
-                link: serverLink,
-                // имя — по набору, из которого собран счёт
-                name: getInvoiceDocumentProductName(
-                    dto,
-                    saved.setKind,
-                    saved.setIndex,
-                    results.length,
-                ),
-                type: 'invoice',
-                absolutePath,
-            });
-        }
-
-        return results;
+        numbering.issued += result.documents.length;
+        return result.documents;
     }
 }

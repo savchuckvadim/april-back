@@ -1,4 +1,4 @@
-import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
+import { InvoiceBuildRequest } from '../../types/invoice-build-request.type';
 import { Injectable } from '@nestjs/common';
 import { ProviderService } from '@lib/portal-lib/konstructor/provider';
 
@@ -61,7 +61,7 @@ export class InvoiceRenderDataService {
     ) {}
 
     public async getInvoiceRenderData(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: InvoiceBuildRequest,
     ): Promise<IInvoiceRenderData> {
         const provider = await this.providerService.findById(
             Number(dto.providerId),
@@ -93,7 +93,7 @@ export class InvoiceRenderDataService {
     }
 
     private getInvoiceGeneralData(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: InvoiceBuildRequest,
     ): IInvoiceRenderGeneralData {
         const nowDate = formatRu(dayjs(), 'D MMMM YYYY [г.]');
         const rawInvoicePaymentDate = dto.invoice.invoiceDate || '';
@@ -134,7 +134,7 @@ export class InvoiceRenderDataService {
     }
 
     private getInvoicePrices(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: InvoiceBuildRequest,
         withTax: boolean,
     ): IInvoicePriceData[] {
         const isMultipleInvoice = this.getIsMultipleInvoice(dto);
@@ -194,7 +194,7 @@ export class InvoiceRenderDataService {
         return collectSetRows(setItemRow);
     }
 
-    private getIsMultipleInvoice(dto: OfferWordByTemplateGenerateDto): boolean {
+    private getIsMultipleInvoice(dto: InvoiceBuildRequest): boolean {
         const withAlternative =
             dto.invoice.needManyInvoices && dto.sets.alternative.length > 0;
         return withAlternative;
