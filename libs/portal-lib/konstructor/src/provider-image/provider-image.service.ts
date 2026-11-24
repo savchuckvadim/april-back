@@ -29,6 +29,15 @@ export interface ProviderImageUpload {
     originalName?: string;
 }
 
+/** Необязательные сведения о записи при загрузке. */
+export interface ProviderImagePutOptions {
+    /**
+     * Запись `files`, из которой перенесена картинка (временный перенос из
+     * легаси). Не задано — прежнее значение при замене остаётся.
+     */
+    legacyFileId?: number | null;
+}
+
 /** Загрузка после проверок и перекодирования: то, что идёт на диск и в запись. */
 interface PreparedUpload {
     format: ProviderImageFormat;
@@ -111,6 +120,7 @@ export class ProviderImageService {
         rqId: number,
         roleInput: string,
         upload: ProviderImageUpload,
+        options: ProviderImagePutOptions = {},
     ): Promise<ProviderImageEntity> {
         const role = this.parseRole(roleInput);
         this.checkRqId(rqId);
@@ -135,6 +145,7 @@ export class ProviderImageService {
                     height: prepared.height,
                     size: prepared.content.length,
                     originalName: prepared.originalName,
+                    legacyFileId: options.legacyFileId,
                 });
             } catch (error) {
                 await this.discardFile(path);

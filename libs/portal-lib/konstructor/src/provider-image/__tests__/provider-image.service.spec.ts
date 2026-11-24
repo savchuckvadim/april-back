@@ -276,6 +276,38 @@ describe('картинки поставщика: сервис', () => {
         });
     });
 
+    describe('перенос из легаси: legacyFileId', () => {
+        it('необязательный параметр кладёт legacyFileId в запись', async () => {
+            const image = await service.put(
+                RQ,
+                'stamp',
+                upload(await makePng()),
+                { legacyFileId: 345 },
+            );
+            expect(image.legacyFileId).toBe(345);
+            expect(repository.rows[0].legacyFileId).toBe(345);
+        });
+
+        it('без параметра у новой записи null, а при замене прежнее значение остаётся', async () => {
+            const plain = await service.put(
+                RQ,
+                'logo',
+                upload(await makePng()),
+            );
+            expect(plain.legacyFileId).toBeNull();
+
+            await service.put(RQ, 'stamp', upload(await makePng()), {
+                legacyFileId: 7,
+            });
+            const replaced = await service.put(
+                RQ,
+                'stamp',
+                upload(await makeJpg()),
+            );
+            expect(replaced.legacyFileId).toBe(7);
+        });
+    });
+
     describe('удаление', () => {
         it('убирает запись и файл', async () => {
             const image = await service.put(

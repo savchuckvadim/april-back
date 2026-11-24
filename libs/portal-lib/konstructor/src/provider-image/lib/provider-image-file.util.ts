@@ -121,7 +121,7 @@ export const normalizeProviderImage = async (
  * multer отдаёт имя файла в latin1: кириллица приходит кракозябрами. Имя из
  * символов до 0xFF читается как байты utf8; не получилось — остаётся как есть.
  */
-const recodeLatin1Name = (name: string): string => {
+export const recodeLatin1Name = (name: string): string => {
     if ([...name].some(char => char.charCodeAt(0) > 0xff)) return name;
     const recoded = Buffer.from(name, 'latin1').toString('utf8');
     return recoded.includes('�') ? name : recoded;
