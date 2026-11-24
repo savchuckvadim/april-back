@@ -5,3 +5,4 @@ export * from './lib/complect-entity.util';
 export * from './complect.module';
 export * from './dto/create-complect.dto';
 export * from './dto/create-complect.dto';
+export * from './complect.admin.module';
