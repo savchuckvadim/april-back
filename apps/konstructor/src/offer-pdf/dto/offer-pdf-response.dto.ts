@@ -77,7 +77,10 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
     palettes: OfferPdfPaletteItemDto[];
 }
 
-/** Один готовый файл КП: единственный, склейка вариантов или файл варианта. */
+/**
+ * Один готовый файл: у КП единственный, склейка вариантов или файл варианта;
+ * та же форма у файла счёта.
+ */
 export class OfferPdfGeneratedFileDto implements OfferPdfGeneratedFile {
     @ApiProperty({
         description: 'Публичная ссылка на PDF на нашем сервере.',
@@ -167,7 +170,7 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
 
     @ApiProperty({
         description:
-            'Все файлы загружены на Диск Битрикса и упомянуты в таймлайне сделки.',
+            'Все файлы (КП и счета) загружены на Диск Битрикса и упомянуты в таймлайне сделки.',
         type: Boolean,
         example: true,
     })
@@ -175,7 +178,7 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
 
     @ApiProperty({
         description:
-            'Ссылка на первый файл в Битриксе; пусто — загрузка не удалась.',
+            'Ссылка на первый файл КП в Битриксе; пусто — загрузка не удалась.',
         type: String,
         nullable: true,
         example: 'https://portal.bitrix24.ru/disk/file/42',
@@ -198,9 +201,16 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
     })
     links?: OfferPdfGeneratedFileDto[];
 
+    @ApiProperty({
+        description:
+            'Счета к КП: файл на каждый набор, по порядку (общий счёт, затем счета наборов для сравнения). Формат PDF; при сбое перевода в PDF файл остаётся DOCX. Шаблон счёта подбирается так же, как у Word-КП, по порталу, поставщику, типу клиента и виду поставки. Пусто — счёт не запрашивали (нет invoice или оба флага выключены) или он не собран: причина в warnings. Сбой счёта КП не отменяет.',
+        type: [OfferPdfGeneratedFileDto],
+    })
+    invoiceLinks: OfferPdfGeneratedFileDto[];
+
     @ApiPropertyOptional({
         description:
-            'Что не сошлось при слиянии вариантов (сроки, скидки) и почему файлы не склеены — для показа менеджеру.',
+            'Что не сошлось при слиянии вариантов (сроки, скидки), почему файлы не склеены и почему не собран счёт («Счёт не сформирован: <причина>») — для показа менеджеру.',
         type: [String],
         example: [],
     })

@@ -22,6 +22,7 @@ import {
     IDocumentSaveFlowResult,
 } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
+import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
 import { PdfMergeService } from '@app/konstructor/offer-word/services/pdf-export/pdf-merge.service';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
@@ -176,6 +177,11 @@ const setup = async ({
                 provide: ComplectVariantOfferStageService,
                 useValue: { markOffer },
             },
+            // эти запросы без счёта: сервис счетов не вызывается
+            {
+                provide: InvoiceDocumentsBuildService,
+                useValue: { build: jest.fn() },
+            },
         ],
     }).compile();
 
@@ -298,6 +304,8 @@ describe('генерация PDF-КП: запрос без вариантов', 
                     bitrixLink: `${BITRIX_LINK}/1`,
                 },
             ],
+            // счёта в запросе нет — список пуст
+            invoiceLinks: [],
             warnings: [],
         });
     });
