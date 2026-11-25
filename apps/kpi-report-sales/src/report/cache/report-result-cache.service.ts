@@ -37,6 +37,15 @@ export class ReportResultCacheService {
         });
     }
 
+    /**
+     * Удаляет конверт (и ready, и error). Нужен «Пересчитать»: пока воркер
+     * считает заново, повторный POST поллинга идёт уже без forceRefresh и
+     * без удаления получил бы прежний результат из долгого кэша.
+     */
+    async drop(app: string, domain: string, key: string): Promise<void> {
+        await this.appCache.delete({ app, domain, key });
+    }
+
     async setReady<T>(
         app: string,
         domain: string,

@@ -98,8 +98,9 @@ export class GetCallingStatisticDto {
 
     @ApiPropertyOptional({
         description:
-            'Пересчитать, игнорируя кэш; свежий результат перезапишет кэш. ' +
-            'Также это рычаг повтора после status error.',
+            'Пересчитать заново, игнорируя кэш; свежий результат перезапишет ' +
+            'кэш, в том числе долгий кэш закрытых прошлых периодов (кнопка ' +
+            '«Пересчитать»). Также это рычаг повтора после status error.',
         type: Boolean,
         default: false,
         example: false,

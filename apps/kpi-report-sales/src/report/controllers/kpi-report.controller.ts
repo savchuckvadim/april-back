@@ -26,6 +26,10 @@ import {
 } from '../../shared/lib/date-util';
 import { ReportResultCacheService } from '../cache/report-result-cache.service';
 import {
+    CachedReportResponse,
+    toCachedReportResponse,
+} from '../cache/report-cached-response.util';
+import {
     buildCallingStatJobId,
     buildCallingStatResultKey,
     buildKpiReportJobId,
@@ -73,14 +77,16 @@ export class KpiReportController {
             'либо поллингом (повторный POST до status ready). Даты: ' +
             'YYYY-MM-DD (обе границы включительно) или легаси DD.MM.YYYY ' +
             '(dateTo эксклюзивна). Без mode — легаси-синхронный расчёт, ' +
-            'ответ сырым массивом ReportData[].',
+            'ответ сырым массивом ReportData[]. Период целиком в прошлых ' +
+            'месяцах хранится в кэше 180 дней (в ответе closedPeriod и ' +
+            'generatedAt); пересчёт — forceRefresh: true.',
     })
     @ApiBody({ type: ReportGetRequestDto })
     @ApiOkResponse({
         type: KpiReportGetResponseDto,
         description:
-            'Конверт {status, data?, requestKey, message?}; в легаси-режиме ' +
-            '(без mode) — сырой массив ReportData[].',
+            'Конверт {status, data?, requestKey, generatedAt?, closedPeriod?, ' +
+            'message?}; в легаси-режиме (без mode) — сырой массив ReportData[].',
     })
     async getReport(
         @Body() dto: ReportGetRequestDto,
@@ -110,14 +116,16 @@ export class KpiReportController {
             'DD.MM.YYYY (dateTo эксклюзивна). Дроп команд лимитером — ' +
             'громкая ошибка расчёта, а не тихо неполные счётчики ' +
             '(инцидент 2026-07-28). Без mode — легаси-синхронный расчёт, ' +
-            'ответ сырым массивом.',
+            'ответ сырым массивом. Период целиком в прошлых месяцах ' +
+            'хранится в кэше 180 дней (в ответе closedPeriod и ' +
+            'generatedAt); пересчёт — forceRefresh: true.',
     })
     @ApiBody({ type: GetCallingStatisticDto })
     @ApiOkResponse({
         type: CallingStatisticResponseDto,
         description:
-            'Конверт {status, data?, requestKey, message?}; в легаси-режиме ' +
-            '(без mode) — сырой массив элементов.',
+            'Конверт {status, data?, requestKey, generatedAt?, closedPeriod?, ' +
+            'message?}; в легаси-режиме (без mode) — сырой массив элементов.',
     })
     async getCallingStatistic(
         @Body() dto: GetCallingStatisticDto,
@@ -158,23 +166,14 @@ export class KpiReportController {
             usersKey,
         );
 
-        if (dto.forceRefresh !== true) {
-            const envelope = await this.resultCache.getEnvelope<ReportData[]>(
-                KPI_REPORT_CACHE_APP,
-                dto.domain,
-                resultKey,
-            );
-            if (envelope?.status === 'ready') {
-                return { status: 'ready', data: envelope.data, requestKey };
-            }
-            if (envelope?.status === 'error') {
-                return {
-                    status: 'error',
-                    message: envelope.message,
-                    requestKey,
-                };
-            }
-        }
+        const cached = await this.cachedOrDrop<ReportData[]>(
+            KPI_REPORT_CACHE_APP,
+            dto,
+            resultKey,
+            requestKey,
+            period,
+        );
+        if (cached) return cached;
 
         const jobData: ReportKpiJob = {
             domain: dto.domain,
@@ -225,21 +224,10 @@ export class KpiReportController {
             usersKey,
         );
 
-        if (dto.forceRefresh !== true) {
-            const envelope = await this.resultCache.getEnvelope<
-                CallingStatisticResponseDto['data']
-            >(CALLING_STAT_CACHE_APP, dto.domain, resultKey);
-            if (envelope?.status === 'ready') {
-                return { status: 'ready', data: envelope.data, requestKey };
-            }
-            if (envelope?.status === 'error') {
-                return {
-                    status: 'error',
-                    message: envelope.message,
-                    requestKey,
-                };
-            }
-        }
+        const cached = await this.cachedOrDrop<
+            CallingStatisticResponseDto['data']
+        >(CALLING_STAT_CACHE_APP, dto, resultKey, requestKey, period);
+        if (cached) return cached;
 
         const jobData: CallingStatisticJob = {
             domain: dto.domain,
@@ -265,6 +253,31 @@ export class KpiReportController {
             this.jobOpts(),
         );
         return { status: 'queued', requestKey };
+    }
+
+    /**
+     * Готовый ответ из кэша либо null — тогда ставим задачу. forceRefresh
+     * («Пересчитать») кэш не читает и сразу удаляет прежний конверт: повторный
+     * POST поллинга идёт уже без флага и иначе выдал бы старый результат
+     * из долгого кэша за свежий.
+     */
+    private async cachedOrDrop<T>(
+        app: string,
+        dto: { domain: string; forceRefresh?: boolean },
+        resultKey: string,
+        requestKey: string,
+        period: NormalizedReportPeriod,
+    ): Promise<CachedReportResponse<T> | null> {
+        if (dto.forceRefresh === true) {
+            await this.resultCache.drop(app, dto.domain, resultKey);
+            return null;
+        }
+        return toCachedReportResponse(
+            await this.resultCache.getEnvelope<T>(app, dto.domain, resultKey),
+            requestKey,
+            period.toIsoInclusive,
+            new Date(),
+        );
     }
 
     private normalizePeriodOr400(

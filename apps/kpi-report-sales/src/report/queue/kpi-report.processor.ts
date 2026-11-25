@@ -8,6 +8,8 @@ import { PBXService } from '@/modules/pbx';
 import { ReportKpiUseCase } from '../use-cases/kpi-report.use-case';
 import { CallingStatisticUseCase } from '../use-cases/kpi-calling-statistic.use-case';
 import { ReportResultCacheService } from '../cache/report-result-cache.service';
+import { buildReportDonePayload } from '../cache/report-done-payload.util';
+import { normalizeReportPeriod } from '../../shared/lib/date-util';
 import {
     CALLING_STAT_CACHE_APP,
     KPI_REPORT_CACHE_APP,
@@ -45,10 +47,19 @@ export class SalesKpiReportQueueProcessor {
             const useCase = new ReportKpiUseCase();
             await useCase.init(domain, this.pbx, this.resultCache);
             const data = await useCase.generateKpiReport(filters);
-            this.notify(socketId, KPI_REPORT_WS_EVENTS.REPORT_DONE, {
-                requestKey,
-                data,
-            });
+            this.notify(
+                socketId,
+                KPI_REPORT_WS_EVENTS.REPORT_DONE,
+                buildReportDonePayload(
+                    requestKey,
+                    data,
+                    // filters уже нормализованы контроллером (dateTo — ISO
+                    // включительно); повторная нормализация идемпотентна.
+                    normalizeReportPeriod(filters.dateFrom, filters.dateTo)
+                        .toIsoInclusive,
+                    new Date(),
+                ),
+            );
         } catch (error) {
             await this.handleFailure(
                 job,
@@ -70,10 +81,17 @@ export class SalesKpiReportQueueProcessor {
                 bitrix.api,
                 this.resultCache,
             ).get({ domain, filters });
-            this.notify(socketId, KPI_REPORT_WS_EVENTS.CALLING_DONE, {
-                requestKey,
-                data,
-            });
+            this.notify(
+                socketId,
+                KPI_REPORT_WS_EVENTS.CALLING_DONE,
+                buildReportDonePayload(
+                    requestKey,
+                    data,
+                    normalizeReportPeriod(filters.dateFrom, filters.dateTo)
+                        .toIsoInclusive,
+                    new Date(),
+                ),
+            );
         } catch (error) {
             await this.handleFailure(
                 job,
