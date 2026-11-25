@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+    REPORT_VIEW_COMMON_TAB_NAMES,
     REPORT_VIEW_TAB_CODES,
     type ReportViewTabCode,
 } from '@lib/portal-lib/store/app-settings';
@@ -19,9 +20,10 @@ import type {
 export class PortalViewStateDto implements PortalViewState {
     @ApiProperty({
         description:
-            'Коды вкладок отчёта, скрытых у всех на портале; вкладку «Все» ' +
-            'скрыть нельзя. Без дублей и неизвестных кодов; пусто — видны все ' +
-            'вкладки, доступные по правам.',
+            'Коды вкладок отчёта, скрытых у всех на портале. Без дублей и ' +
+            'неизвестных кодов; пусто — видны все вкладки, доступные по ' +
+            `правам. Хотя бы одна из вкладок ${REPORT_VIEW_COMMON_TAB_NAMES} ` +
+            'всегда остаётся видимой.',
         type: String,
         isArray: true,
         enum: [...REPORT_VIEW_TAB_CODES],
@@ -86,6 +88,16 @@ export class PortalViewTabOptionDto implements PortalViewTabOption {
         example: 'Разборы звонков',
     })
     name: string;
+
+    @ApiProperty({
+        description:
+            `Вкладку видят все сотрудники портала (${REPORT_VIEW_COMMON_TAB_NAMES}); ` +
+            'остальные показываются по правам. Хотя бы одна такая вкладка ' +
+            'должна оставаться видимой: последнюю из них скрыть нельзя.',
+        type: Boolean,
+        example: false,
+    })
+    common: boolean;
 }
 
 /** Вариант бейджа для списка основных: общий бейдж или пункт методики портала. */

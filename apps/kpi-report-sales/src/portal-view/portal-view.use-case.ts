@@ -4,6 +4,7 @@ import {
     Injectable,
     Logger,
 } from '@nestjs/common';
+import { hidesEveryCommonReportTab } from '@lib/portal-lib/store/app-settings';
 import { CallListPointsProvider } from '../ai-analytics/calls/calls-list-points.provider';
 import { RequesterAccessService } from '../ai-analytics/domain/access/requester-access.service';
 import type { AiRequestBaseDto } from '../ai-analytics/dto/ai-request-base.dto';
@@ -29,7 +30,9 @@ import { PortalViewWriter } from './portal-view.writer';
 /**
  * Запрос сохранения → изменения без повторов. Неизвестный общий бейдж —
  * 400: так опечатка во фронте не уходит в настройку молча. Пункты методики
- * («m:…») остаются как есть — методика портала может смениться.
+ * («m:…») остаются как есть — методика портала может смениться. Скрыть
+ * сразу все вкладки, которые видят все сотрудники, нельзя — тоже 400: у
+ * сотрудника без прав на остальные вкладки не осталось бы ни одной.
  */
 function toChanges(request: PortalViewSaveRequestDto): PortalViewChanges {
     const badgesMain =
@@ -39,10 +42,15 @@ function toChanges(request: PortalViewSaveRequestDto): PortalViewChanges {
     if (badgesMain && unknownGeneralBadgeIds(badgesMain).length > 0) {
         throw new BadRequestException(PORTAL_VIEW_MESSAGES.unknownBadge);
     }
+    const tabsHidden =
+        request.tabsHidden === undefined
+            ? undefined
+            : normalizeTabsHidden(request.tabsHidden);
+    if (tabsHidden && hidesEveryCommonReportTab(tabsHidden)) {
+        throw new BadRequestException(PORTAL_VIEW_MESSAGES.noCommonTab);
+    }
     return {
-        ...(request.tabsHidden === undefined
-            ? {}
-            : { tabsHidden: normalizeTabsHidden(request.tabsHidden) }),
+        ...(tabsHidden === undefined ? {} : { tabsHidden }),
         ...(request.chartsEnabled === undefined
             ? {}
             : { chartsEnabled: request.chartsEnabled }),

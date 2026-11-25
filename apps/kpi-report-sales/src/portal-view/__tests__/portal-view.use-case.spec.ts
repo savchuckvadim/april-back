@@ -64,6 +64,7 @@ describe('PortalViewUseCase.get', () => {
 
         expect(points.forDomain).toHaveBeenCalledWith(DOMAIN);
         expect(options.tabs.map(tab => tab.code)).toEqual([
+            'all',
             'events',
             'callings',
             'merged',
@@ -75,7 +76,11 @@ describe('PortalViewUseCase.get', () => {
         expect(options.tabs).toContainEqual({
             code: 'call_reviews',
             name: 'Разборы звонков',
+            common: false,
         });
+        expect(
+            options.tabs.filter(tab => tab.common).map(tab => tab.code),
+        ).toEqual(['all', 'events', 'callings', 'merged', 'digest']);
 
         const general = options.badges.filter(
             badge => badge.group === 'general',
@@ -243,6 +248,47 @@ describe('PortalViewUseCase.save', () => {
             expect.objectContaining({
                 reportViewTabsHidden: '',
                 reportViewBadgesMain: '',
+            }),
+        );
+    });
+
+    it('скрыть сразу все вкладки, которые видят все сотрудники, нельзя: 400, запись не идёт', async () => {
+        const { useCase, writer, author } = buildUseCase(GROUP_ACCESS);
+
+        const call = useCase.save(
+            saveRequest({
+                tabsHidden: [
+                    'all',
+                    'events',
+                    'callings',
+                    'merged',
+                    'digest',
+                    'ai',
+                ],
+            }),
+        );
+
+        await expect(call).rejects.toBeInstanceOf(BadRequestException);
+        await expect(call).rejects.toThrow(
+            'оставьте хотя бы одну из этих вкладок',
+        );
+        expect(writer.write).not.toHaveBeenCalled();
+        expect(author.nameOf).not.toHaveBeenCalled();
+    });
+
+    it('«Все» и все таблицы отчёта можно скрыть, пока виден «Дайджест»', async () => {
+        const { useCase, writer } = buildUseCase(GROUP_ACCESS);
+
+        await useCase.save(
+            saveRequest({
+                tabsHidden: ['all', 'events', 'callings', 'merged'],
+            }),
+        );
+
+        expect(writer.write).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                reportViewTabsHidden: 'all,events,callings,merged',
             }),
         );
     });

@@ -82,7 +82,9 @@ export class PortalViewController {
         description: 'Настройки отчёта меняет руководитель группы и выше.',
     })
     @ApiBadRequestResponse({
-        description: 'Неизвестный общий бейдж в списке основных.',
+        description:
+            'Неизвестный общий бейдж в списке основных либо попытка ' +
+            'скрыть сразу все вкладки, которые видят все сотрудники.',
     })
     async saveView(
         @Body() dto: PortalViewSaveRequestDto,

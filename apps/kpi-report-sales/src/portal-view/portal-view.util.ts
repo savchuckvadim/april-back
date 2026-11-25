@@ -1,6 +1,7 @@
 import { isCallBadgeId } from '@lib/sales-ai-analytics';
 import {
     isReportViewTabCode,
+    keepCommonReportTabVisible,
     type ReportViewTabCode,
 } from '@lib/portal-lib/store/app-settings';
 import { AI_ANALYTICS_LEADER_ROLES } from '../ai-analytics/constants/ai-analytics.const';
@@ -78,9 +79,13 @@ export function normalizeTabsHidden(
     return uniqueList(items).filter(isReportViewTabCode);
 }
 
-/** Скрытые вкладки из строки настройки: только известные коды, без дублей. */
+/**
+ * Скрытые вкладки из строки настройки: только известные коды, без дублей.
+ * Настройку можно поправить и в админке, поэтому здесь же страховка: если
+ * скрыты все вкладки, которые видят все сотрудники, «Все» остаётся видимой.
+ */
 export function parseTabsHidden(raw: unknown): ReportViewTabCode[] {
-    return normalizeTabsHidden(parseCsvList(raw));
+    return keepCommonReportTabVisible(normalizeTabsHidden(parseCsvList(raw)));
 }
 
 /** Основные бейджи из строки настройки: известные идентификаторы по порядку. */

@@ -1,3 +1,4 @@
+import { REPORT_VIEW_COMMON_TAB_NAMES } from '@lib/portal-lib/store/app-settings';
 import type { VendorSettingKey } from '@lib/vendor-settings';
 
 /** Тег Swagger: страница «Настройки отчёта» — часть отчёта KPI. */
@@ -43,6 +44,7 @@ export const PORTAL_VIEW_MESSAGES = {
     badgePattern:
         'Бейдж — строчная латиница, цифры и знаки «.», «_», «-»; пункт методики — с приставкой «m:»',
     unknownTab: 'Неизвестная вкладка отчёта в списке скрытых',
+    noCommonTab: `Нельзя скрыть сразу все вкладки, которые видят все сотрудники (${REPORT_VIEW_COMMON_TAB_NAMES}): оставьте хотя бы одну из этих вкладок`,
 } as const;
 
 /** Подписи сохраняемых полей — для строки журнала «кто что менял». */

@@ -10,6 +10,7 @@ import {
     MaxLength,
 } from 'class-validator';
 import {
+    REPORT_VIEW_COMMON_TAB_NAMES,
     REPORT_VIEW_TAB_CODES,
     type ReportViewTabCode,
 } from '@lib/portal-lib/store/app-settings';
@@ -35,8 +36,10 @@ export class PortalViewSaveRequestDto
     @ApiPropertyOptional({
         description:
             'Коды вкладок, которые скрыть у всех на портале (весь список ' +
-            'заменяется). Пустой список — показывать все вкладки. Вкладку ' +
-            `«Все» скрыть нельзя. Не больше ${PORTAL_VIEW_LIMITS.tabs} кодов.`,
+            'заменяется). Пустой список — показывать все вкладки. Скрыть ' +
+            'сразу все вкладки, которые видят все сотрудники ' +
+            `(${REPORT_VIEW_COMMON_TAB_NAMES}), нельзя: хотя бы одна из них ` +
+            `остаётся. Не больше ${PORTAL_VIEW_LIMITS.tabs} кодов.`,
         type: String,
         isArray: true,
         enum: [...REPORT_VIEW_TAB_CODES],

@@ -47,12 +47,28 @@ describe('portal-view.util: вкладки', () => {
     it('parseTabsHidden: неизвестные коды и дубли отбрасываются, порядок сохраняется', () => {
         expect(
             parseTabsHidden(' finance, nope ,ai,finance,all, call_reviews'),
-        ).toEqual(['finance', 'ai', 'call_reviews']);
+        ).toEqual(['finance', 'ai', 'all', 'call_reviews']);
     });
 
-    it('вкладку «Все» скрыть нельзя: её код не принимается', () => {
-        expect(parseTabsHidden('all,events')).toEqual(['events']);
-        expect(normalizeTabsHidden(['all'])).toEqual([]);
+    it('вкладку «Все» можно скрыть: её код принимается', () => {
+        expect(parseTabsHidden('all,events')).toEqual(['all', 'events']);
+        expect(normalizeTabsHidden(['all'])).toEqual(['all']);
+    });
+
+    it('parseTabsHidden: в настройке скрыты все общие вкладки — «Все» остаётся видимой', () => {
+        expect(parseTabsHidden('all,events,callings,merged,digest,ai')).toEqual(
+            ['events', 'callings', 'merged', 'digest', 'ai'],
+        );
+    });
+
+    it('parseTabsHidden: видна хотя бы одна общая вкладка — список не меняется', () => {
+        expect(parseTabsHidden('all,events,callings,merged,ai')).toEqual([
+            'all',
+            'events',
+            'callings',
+            'merged',
+            'ai',
+        ]);
     });
 
     it('normalizeTabsHidden: дубли и неизвестные отбрасываются', () => {

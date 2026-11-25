@@ -71,10 +71,9 @@ describe('PortalViewSaveRequestDto', () => {
         expect(dto.badgesMain).toEqual([]);
     });
 
-    it('вкладки: только коды из справочника, «all» и мусор отклоняются', async () => {
-        await expect(validateSave({ tabsHidden: ['all'] })).rejects.toThrow(
-            BadRequestException,
-        );
+    it('вкладки: только коды из справочника, мусор отклоняется; «all» — допустимый код', async () => {
+        const dto = await validateSave({ tabsHidden: ['all', 'ai'] });
+        expect(dto.tabsHidden).toEqual(['all', 'ai']);
         await expect(
             validateSave({ tabsHidden: ['finance', 'zzz'] }),
         ).rejects.toBeInstanceOf(BadRequestException);

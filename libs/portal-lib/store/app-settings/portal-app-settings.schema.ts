@@ -24,7 +24,10 @@ import {
     PERIOD_DIGEST_DEFAULT_KINDS,
     PERIOD_DIGEST_KIND_OPTIONS,
 } from './lib/period-digest-kinds.const';
-import { REPORT_VIEW_TABS } from './lib/report-view.const';
+import {
+    REPORT_VIEW_COMMON_TAB_NAMES,
+    REPORT_VIEW_TABS,
+} from './lib/report-view.const';
 import { TRANSCRIPTION_CHUNKING_DEFAULTS } from './lib/transcription-chunking.const';
 
 /** Статусы движения сделок словами — для описаний настроек. */
@@ -827,8 +830,10 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             description:
                 'Вкладки KPI-отчёта, которые не показываются никому на ' +
                 'портале. Пусто — видны все вкладки, доступные по правам. ' +
-                'Вкладку «Все» скрыть нельзя. Меняется на странице «Настройки ' +
-                'отчёта» руководителем группы и выше.',
+                `Вкладки ${REPORT_VIEW_COMMON_TAB_NAMES} видят все ` +
+                'сотрудники, поэтому хотя бы одна из них остаётся видимой: ' +
+                'если скрыть все, «Все» всё равно покажется. Меняется на ' +
+                'странице «Настройки отчёта» руководителем группы и выше.',
             type: 'string',
             default: '',
             isList: true,

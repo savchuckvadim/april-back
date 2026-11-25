@@ -9,9 +9,16 @@ import type {
 } from './portal-view.types';
 import { methodologyBadgeId } from './portal-view.util';
 
-/** Вкладки, которые можно скрыть (вкладку «Все» скрыть нельзя — её здесь нет). */
+/**
+ * Вкладки, которые можно скрыть. `common` — вкладку видят все сотрудники:
+ * хотя бы одна такая должна оставаться видимой.
+ */
 export function buildTabOptions(): PortalViewTabOption[] {
-    return REPORT_VIEW_TABS.map(({ code, name }) => ({ code, name }));
+    return REPORT_VIEW_TABS.map(({ code, name, common }) => ({
+        code,
+        name,
+        common,
+    }));
 }
 
 /** Общие бейджи справочника: подпись, подсказка и «основной» — как в справочнике. */

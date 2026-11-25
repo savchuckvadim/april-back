@@ -60,6 +60,8 @@ export interface PortalViewStamp {
 export interface PortalViewTabOption {
     code: string;
     name: string;
+    /** Вкладку видят все сотрудники: хотя бы одна такая остаётся видимой. */
+    common: boolean;
 }
 
 export interface PortalViewBadgeOption {
