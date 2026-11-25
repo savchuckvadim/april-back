@@ -114,6 +114,9 @@ export interface MethodologyCondition {
     checkpoint?: string;
 }
 
+/** Предел длины названия бейджа-фильтра пункта, в знаках. */
+export const CHECKPOINT_BADGE_MAX_LENGTH = 28;
+
 export interface MethodologyCheckpoint {
     code: string;
     /** Формулировка, которую менеджер увидит в разборе дословно. */
@@ -126,6 +129,17 @@ export interface MethodologyCheckpoint {
     hint?: string;
     /** Продукт, к которому привязан пункт (например, garant). */
     product?: string;
+    /**
+     * Короткое название бейджа-фильтра в списке разборов (до
+     * CHECKPOINT_BADGE_MAX_LENGTH знаков); не задано — в фильтре
+     * показывается формулировка пункта.
+     */
+    badge?: string;
+    /**
+     * Бейдж показывается в строке фильтров сразу; остальные пункты
+     * добавляются выбором из списка. На разбор звонка не влияет.
+     */
+    badgeMain?: boolean;
     /** Правило кода (все условия — И): пункт считается по фактам, у модели не спрашивается. */
     rule?: MethodologyCondition[];
 }

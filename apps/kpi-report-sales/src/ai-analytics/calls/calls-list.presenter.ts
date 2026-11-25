@@ -3,16 +3,37 @@
  * фильтров и сборка строки ответа. Чистые функции.
  */
 import { adminPageBounds } from '@lib/call-lib/admin-list/admin-list.util';
+import { CALL_BADGES } from '@lib/sales-ai-analytics';
 import { callTypeTitle } from '../call-page/call-page-titles.util';
-import { CALLS_LIST_PAGE_LIMITS } from './calls-list.const';
+import {
+    CALLS_LIST_PAGE_LIMITS,
+    CALLS_LIST_POINT_BADGE_PREFIX,
+} from './calls-list.const';
 import { summarizeCallReviews } from './calls-list.filter';
+import {
+    isMainPoint,
+    type CallListMainOverride,
+} from './calls-list-badges.filter';
+import { pointStatusAt } from './calls-list-points.util';
 import type {
+    CallListBadgeContext,
     CallListIndex,
+    CallListPointFilter,
     CallListQuery,
     CallListRow,
 } from './calls-list.types';
+import type { CallsListItemBadgeDto } from './dto/calls-list-badges.dto';
 import type { CallsListRequestDto } from './dto/calls-list-request.dto';
 import type { CallsListItemDto } from './dto/calls-list.dto';
+
+/** Бейджи пунктов методики: на один код — один, побеждает последний. */
+function dedupePointFilters(
+    points: readonly CallListPointFilter[],
+): CallListPointFilter[] {
+    const byCode = new Map<string, CallListPointFilter>();
+    for (const { code, state } of points) byCode.set(code, { code, state });
+    return [...byCode.values()];
+}
 
 /** Фильтры запроса с значениями по умолчанию; границы оценки — по порядку. */
 export function callListQueryOf(dto: CallsListRequestDto): CallListQuery {
@@ -28,6 +49,8 @@ export function callListQueryOf(dto: CallsListRequestDto): CallListQuery {
         scoreMin,
         scoreMax,
         review: dto.review ?? 'any',
+        badges: [...new Set(dto.badges ?? [])],
+        points: dedupePointFilters(dto.points ?? []),
         sort: dto.sort ?? 'date_desc',
         page,
         pageSize,
@@ -40,6 +63,39 @@ export interface CallListItemContext {
     requesterId: string | null;
     clients: ReadonlyMap<string, string>;
     urls: ReadonlyMap<string, string>;
+    /** Пункты методики портала и позиции кодов в выборке. */
+    points: CallListBadgeContext;
+    /** «Основные» бейджи портала; null — по справочнику и методике. */
+    mainOverride: CallListMainOverride;
+}
+
+/**
+ * Бейджи строки: общие бейджи-проблемы звонка (по порядку справочника), затем
+ * основные пункты методики, не исполненные в этом звонке (по порядку методики).
+ */
+export function presentItemBadges(
+    row: CallListRow,
+    context: Pick<CallListItemContext, 'points' | 'mainOverride'>,
+): CallsListItemBadgeDto[] {
+    const problems = CALL_BADGES.filter(
+        def => def.problem && row.badges.includes(def.id),
+    ).map(def => ({ id: def.id, title: def.title, tone: def.tone }));
+    const { pointIndex, pointDefs } = context.points;
+    const missed = pointDefs
+        .filter(def => {
+            const index = pointIndex.get(def.code);
+            return (
+                isMainPoint(def, context.mainOverride) &&
+                index !== undefined &&
+                pointStatusAt(row.points, index) === 'missed'
+            );
+        })
+        .map(def => ({
+            id: `${CALLS_LIST_POINT_BADGE_PREFIX}${def.code}`,
+            title: def.label,
+            tone: 'warn' as const,
+        }));
+    return [...problems, ...missed];
 }
 
 /** Строка ответа из строки выборки. */
@@ -65,6 +121,7 @@ export function presentCallListItem(
             index.reviews[row.transcriptionId] ?? [],
             requesterId,
         ),
+        badges: presentItemBadges(row, context),
         url: urls.get(row.transcriptionId) ?? null,
     };
 }

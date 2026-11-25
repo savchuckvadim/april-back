@@ -1,11 +1,19 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { CallPageLeadService, CallPageLinkService } from '@lib/call-lib';
+import { PortalViewReader } from '../../portal-view/portal-view.reader';
 import {
     normalizeUserId,
     type RequesterAccess,
 } from '../domain/access/perimeter.util';
 import { CallClientTitlesService } from './call-client-titles.service';
 import { CALLS_LIST_MESSAGES, CALLS_LIST_ROLES } from './calls-list.const';
+import {
+    badgeFacets,
+    callTypesLockOf,
+    filterByBadges,
+    pointFacets,
+    type CallListMainOverride,
+} from './calls-list-badges.filter';
 import {
     callListFacets,
     filterCallRows,
@@ -14,7 +22,10 @@ import {
     visibleCallRows,
 } from './calls-list.filter';
 import { CallListIndexLoader } from './calls-list-index.loader';
+import { pointIndexMap } from './calls-list-points.util';
+import { CallListPointsProvider } from './calls-list-points.provider';
 import { callListQueryOf, presentCallListItem } from './calls-list.presenter';
+import type { CallListBadgeContext } from './calls-list.types';
 import type { CallsListRequestDto } from './dto/calls-list-request.dto';
 import type { CallsListResponseDto } from './dto/calls-list.dto';
 
@@ -36,14 +47,25 @@ export function assertCallsListAccess(access: RequesterAccess): void {
  * фильтры, порядок и страница применяются к ней в памяти. Только на
  * строки страницы читаются клиенты звонков и выпускаются ссылки.
  * Менеджеру раздел закрыт (403) — отзывы руководителей он не видит.
+ *
+ * Бейджи звонков и пункты методики портала — фильтры поверх прочих: сначала
+ * менеджеры, типы, оценка и отзывы (`base`), затем выбранные бейджи. Счётчики
+ * бейджей и пунктов считаются по `base`: сколько звонков останется, если
+ * добавить бейдж к выбранным. Какие бейджи видны в строке фильтров сразу —
+ * из настроек отчёта портала («Вид отчёта», `PortalViewReader`); портал не
+ * выбирал — основные по справочнику бейджей и по отметкам методики.
  */
 @Injectable()
 export class CallsListUseCase {
+    private readonly logger = new Logger(CallsListUseCase.name);
+
     constructor(
         private readonly index: CallListIndexLoader,
         private readonly clients: CallClientTitlesService,
         private readonly links: CallPageLinkService,
         private readonly leads: CallPageLeadService,
+        private readonly points: CallListPointsProvider,
+        private readonly portalView: PortalViewReader,
     ) {}
 
     async execute(
@@ -52,11 +74,20 @@ export class CallsListUseCase {
         now: Date = new Date(),
     ): Promise<CallsListResponseDto> {
         assertCallsListAccess(access);
-        const index = await this.index.load(dto.domain, dto.from, dto.to, now);
+        const [index, portalPoints, mainOverride] = await Promise.all([
+            this.index.load(dto.domain, dto.from, dto.to, now),
+            this.points.forDomain(dto.domain),
+            this.mainBadges(dto.domain),
+        ]);
         const query = callListQueryOf(dto);
         const visible = visibleCallRows(index, access);
+        const base = filterCallRows(visible, index.reviews, query);
+        const badgeContext: CallListBadgeContext = {
+            pointIndex: pointIndexMap(index.pointCodes),
+            pointDefs: portalPoints.defs,
+        };
         const matched = sortCallRows(
-            filterCallRows(visible, index.reviews, query),
+            filterByBadges(base, query, badgeContext),
             query.sort,
         );
         const rows = pageOfRows(matched, query.page, query.pageSize);
@@ -73,13 +104,37 @@ export class CallsListUseCase {
                     requesterId,
                     clients,
                     urls,
+                    points: badgeContext,
+                    mainOverride,
                 }),
             ),
             total: matched.length,
             page: query.page,
             pageSize: query.pageSize,
-            facets: callListFacets(visible, index.managerNames),
+            facets: {
+                ...callListFacets(visible, index.managerNames),
+                badges: badgeFacets(base, query, badgeContext, mainOverride),
+                points: pointFacets(base, query, badgeContext, mainOverride),
+                methodology: portalPoints.methodology,
+            },
+            callTypesLock: callTypesLockOf(query.points, portalPoints.defs),
         };
+    }
+
+    /**
+     * Набор «основных» бейджей портала (id общего бейджа или «m:» и код
+     * пункта); null — портал не выбирал. Настройки не прочитались — тоже
+     * null: список работает с набором по умолчанию, это не ошибка запроса.
+     */
+    private async mainBadges(domain: string): Promise<CallListMainOverride> {
+        try {
+            return await this.portalView.badgesMain(domain);
+        } catch (error) {
+            this.logger.warn(
+                `Основные бейджи портала ${domain} не прочитаны, берём набор по умолчанию: ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 
     /**

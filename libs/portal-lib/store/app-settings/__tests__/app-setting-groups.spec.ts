@@ -50,7 +50,7 @@ describe('внутренняя документация категорий на�
      * отправила бы сотрудника искать несуществующую настройку.
      */
     const SETTING_ONLY_PREFIX =
-        /^(lead_intake_|lead_work_|lead_client_|xo_rescue_|tmc_approval_rescue_|reject_revive_|deal_audit_|deal_movement_|duplicate_report_|period_digest_|with_|checklist_|ai_analytics_|bitrix_|visibility_|support_monitor_|call_transcription_)[a-z0-9_]*[a-z0-9]$/;
+        /^(lead_intake_|lead_work_|lead_client_|xo_rescue_|tmc_approval_rescue_|reject_revive_|deal_audit_|deal_movement_|duplicate_report_|period_digest_|with_|checklist_|ai_analytics_|bitrix_|visibility_|report_view_|support_monitor_|call_transcription_)[a-z0-9_]*[a-z0-9]$/;
 
     it.each(Object.entries(APP_SETTING_GROUP_DOCS))(
         '%s: упомянутые коды настроек существуют, клиентских оборотов нет',
@@ -184,6 +184,18 @@ describe('категории настроек приложений', () => {
                 'visibility_employee_default',
             ),
         ).toBe('kpi_sales_visibility');
+        // Вид отчёта — своя категория, а не «Прочее».
+        for (const code of [
+            'report_view_tabs_hidden',
+            'report_view_charts_enabled',
+            'report_view_badges_main',
+            'report_view_updated_by',
+            'report_view_updated_at',
+        ]) {
+            expect(
+                resolveAppSettingGroup(EnumPortalAppCode.kpiSales, code),
+            ).toBe('kpi_report_view');
+        }
     });
 
     it('группы отдаются в порядке справочника и только использованные', () => {

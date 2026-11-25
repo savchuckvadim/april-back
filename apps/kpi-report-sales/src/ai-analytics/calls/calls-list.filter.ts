@@ -3,6 +3,7 @@
  * звонков» поверх выборки периода. Чистые функции: периметр, фильтры и
  * автор «моего» отзыва приходят параметрами.
  */
+import { pageOf } from '@lib/shared/lib/list-query';
 import { callTypeTitle } from '../call-page/call-page-titles.util';
 import {
     filterByPerimeter,
@@ -103,8 +104,7 @@ export function pageOfRows<T>(
     page: number,
     pageSize: number,
 ): T[] {
-    const start = (page - 1) * pageSize;
-    return rows.slice(start, start + pageSize);
+    return pageOf(rows, page, pageSize);
 }
 
 const round1 = (value: number): number => Math.round(value * 10) / 10;

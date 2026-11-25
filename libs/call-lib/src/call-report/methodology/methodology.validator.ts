@@ -9,6 +9,7 @@ import {
     ANCHOR_BANDS,
     CAP_MAX_MAX,
     CAP_MAX_MIN,
+    CHECKPOINT_BADGE_MAX_LENGTH,
     CHECKPOINT_CODE_PATTERN,
     CHECKPOINT_EVIDENCE_KINDS,
     METHODOLOGY_CAP_TARGETS,
@@ -62,6 +63,45 @@ function parseTypes(
         }
     }
     return types;
+}
+
+/**
+ * Бейдж пункта: пусто или null — не задан; не строка или длиннее предела —
+ * ошибка. Возвращает обрезанное название либо undefined.
+ */
+function parseBadge(
+    input: unknown,
+    path: string,
+    errors: string[],
+): string | undefined {
+    if (input === undefined || input === null) return undefined;
+    if (typeof input !== 'string') {
+        errors.push(`${path}.badge: название бейджа — строка`);
+        return undefined;
+    }
+    const badge = input.trim();
+    if (badge === '') return undefined;
+    if (badge.length > CHECKPOINT_BADGE_MAX_LENGTH) {
+        errors.push(
+            `${path}.badge: название бейджа — не длиннее ${CHECKPOINT_BADGE_MAX_LENGTH} знаков`,
+        );
+        return undefined;
+    }
+    return badge;
+}
+
+/** Признак «бейдж в строке фильтров сразу»: только true или false. */
+function parseBadgeMain(
+    input: unknown,
+    path: string,
+    errors: string[],
+): boolean {
+    if (input === undefined) return false;
+    if (typeof input !== 'boolean') {
+        errors.push(`${path}.badgeMain: укажите true или false`);
+        return false;
+    }
+    return input;
 }
 
 function parseCheckpoints(
@@ -131,6 +171,10 @@ function parseCheckpoints(
         if (hint !== null) checkpoint.hint = hint;
         const product = text(item.product);
         if (product !== null) checkpoint.product = product;
+        const badge = parseBadge(item.badge, path, errors);
+        if (badge !== undefined) checkpoint.badge = badge;
+        if (parseBadgeMain(item.badgeMain, path, errors))
+            checkpoint.badgeMain = true;
         if (rule !== undefined) checkpoint.rule = rule;
         result.push(checkpoint);
     });

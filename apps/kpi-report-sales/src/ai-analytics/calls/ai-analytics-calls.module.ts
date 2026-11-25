@@ -1,10 +1,17 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { PortalSessionModule } from '@lib/auth';
-import { CallPageLinkModule, TranscriptionStoreModule } from '@lib/call-lib';
+import {
+    CallPageLinkModule,
+    MethodologyModule,
+    TranscriptionStoreModule,
+} from '@lib/call-lib';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
+import { PortalViewReader } from '../../portal-view/portal-view.reader';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { CallClientTitlesService } from './call-client-titles.service';
 import { CallListIndexLoader } from './calls-list-index.loader';
+import { CallListPointsProvider } from './calls-list-points.provider';
 import { CallsListController } from './calls-list.controller';
 import { CallsListUseCase } from './calls-list.use-case';
 
@@ -17,9 +24,13 @@ import { CallsListUseCase } from './calls-list.use-case';
  * Выборка звонков, обратная связь, периметр и кэш — из ядра
  * (`AiAnalyticsCoreModule`), ссылки на страницы разбора —
  * `CallPageLinkModule`, сущность звонка — `TranscriptionStoreModule`
- * (только сервисы), имена менеджеров и названия клиентов — портал
- * (`PBXModule`). Собственный @Module: корневой модуль его только
- * импортирует.
+ * (только сервисы), пункты методики портала для фильтров —
+ * `MethodologyModule` (реестр методик, без контроллеров), имена менеджеров
+ * и названия клиентов — портал (`PBXModule`). Основные бейджи портала —
+ * читатель «Вида отчёта» (`PortalViewReader`): объявлен здесь своим
+ * провайдером поверх `PortalAppSettingsModule`, без импорта
+ * `PortalViewModule` — иначе срез тянул бы за собой чужой контроллер.
+ * Собственный @Module: корневой модуль его только импортирует.
  */
 @Module({
     imports: [
@@ -28,8 +39,16 @@ import { CallsListUseCase } from './calls-list.use-case';
         PortalSessionModule,
         CallPageLinkModule,
         TranscriptionStoreModule,
+        MethodologyModule,
+        PortalAppSettingsModule,
     ],
     controllers: [CallsListController],
-    providers: [CallListIndexLoader, CallClientTitlesService, CallsListUseCase],
+    providers: [
+        CallListIndexLoader,
+        CallListPointsProvider,
+        PortalViewReader,
+        CallClientTitlesService,
+        CallsListUseCase,
+    ],
 })
 export class AiAnalyticsCallsModule {}

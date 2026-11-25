@@ -114,6 +114,58 @@ describe('TimedCache', () => {
     });
 });
 
+describe('TimedCache: чтение и запись без загрузки', () => {
+    it('peek отдаёт живую запись и не загружает отсутствующую', async () => {
+        const clock = makeClock();
+        const cache = new TimedCache<string>(60_000, clock.now);
+
+        expect(cache.peek('a')).toBeUndefined();
+        await cache.get('a', () => Promise.resolve('A'));
+
+        expect(cache.peek('a')).toBe('A');
+        clock.advance(60_000);
+        expect(cache.peek('a')).toBeUndefined();
+    });
+
+    it('set кладёт значение напрямую — get его не перезагружает', async () => {
+        const cache = new TimedCache<string>(60_000);
+        const load = jest.fn().mockResolvedValue('из загрузки');
+
+        cache.set('a', 'A');
+
+        expect(cache.peek('a')).toBe('A');
+        expect(await cache.get('a', load)).toBe('A');
+        expect(load).not.toHaveBeenCalled();
+    });
+
+    it('set перезаписывает запись и соблюдает потолок', () => {
+        const clock = makeClock();
+        const cache = new TimedCache<string>(60_000, clock.now, 2);
+
+        cache.set('a', 'A1');
+        clock.advance(1);
+        cache.set('b', 'B');
+        clock.advance(1);
+        cache.set('a', 'A2');
+        clock.advance(1);
+        cache.set('c', 'C');
+
+        expect(cache.size).toBe(2);
+        expect(cache.peek('a')).toBe('A2');
+        expect(cache.peek('b')).toBeUndefined();
+        expect(cache.peek('c')).toBe('C');
+    });
+
+    it('при выключенном кэше set ничего не кладёт', () => {
+        const cache = new TimedCache<string>(0);
+
+        cache.set('a', 'A');
+
+        expect(cache.size).toBe(0);
+        expect(cache.peek('a')).toBeUndefined();
+    });
+});
+
 describe('TimedCache: потолок записей', () => {
     it('сверх потолка выбрасываются самые старые записи', async () => {
         const clock = makeClock();

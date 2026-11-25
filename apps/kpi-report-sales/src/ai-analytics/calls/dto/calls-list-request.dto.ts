@@ -12,18 +12,23 @@ import {
     Max,
     MaxLength,
     Min,
+    ValidateNested,
 } from 'class-validator';
+import { CALL_BADGE_IDS, type CallBadgeId } from '@lib/sales-ai-analytics';
 import { AiRequestBaseDto } from '../../dto/ai-request-base.dto';
 import {
+    CALLS_LIST_BADGES_MAX,
     CALLS_LIST_FILTER_MAX_ITEMS,
     CALLS_LIST_MAX_DAYS,
     CALLS_LIST_PAGE_LIMITS,
+    CALLS_LIST_POINTS_MAX,
     CALLS_LIST_REVIEW_FILTERS,
     CALLS_LIST_SCORE_RANGE,
     CALLS_LIST_SORTS,
     type CallsListReviewFilter,
     type CallsListSort,
 } from '../calls-list.const';
+import { CallsListPointFilterDto } from './calls-list-badges.dto';
 import { IsCallsListPeriod } from './calls-period.validator';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -67,6 +72,7 @@ export class CallsListRequestDto extends AiRequestBaseDto {
     @IsOptional()
     @IsArray()
     @ArrayMaxSize(CALLS_LIST_FILTER_MAX_ITEMS)
+    @IsString({ each: true })
     @Matches(USER_ID_PATTERN, {
         each: true,
         message: 'Менеджер — числовой id сотрудника',
@@ -129,6 +135,41 @@ export class CallsListRequestDto extends AiRequestBaseDto {
     @IsString()
     @IsIn(CALLS_LIST_REVIEW_FILTERS)
     review?: CallsListReviewFilter;
+
+    @ApiPropertyOptional({
+        description:
+            'Общие бейджи-фильтры (значения facets.badges[].id). Несколько ' +
+            'бейджей сужают список: звонок должен нести их все; бейджи итога ' +
+            'разговора (outcome_*) сочетаются между собой по «или». Пусто — ' +
+            'без фильтра по бейджам.',
+        type: String,
+        enum: CALL_BADGE_IDS,
+        isArray: true,
+        example: ['step_missing', 'outcome_refused'],
+    })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(CALLS_LIST_BADGES_MAX)
+    @IsString({ each: true })
+    @IsIn(CALL_BADGE_IDS, { each: true })
+    badges?: CallBadgeId[];
+
+    @ApiPropertyOptional({
+        description:
+            'Бейджи пунктов методики портала (значения facets.points[]): код ' +
+            'пункта и состояние — исполнен или не исполнен. Звонки, где пункт ' +
+            'не проверялся или не относится к разговору, не попадают ни в одно ' +
+            'из состояний. Несколько пунктов сужают список: звонок должен ' +
+            'подходить под все. На один код — один бейдж, побеждает последний.',
+        type: [CallsListPointFilterDto],
+        example: [{ code: 'pres.spirals_min', state: 'missed' }],
+    })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(CALLS_LIST_POINTS_MAX)
+    @ValidateNested({ each: true })
+    @Type(() => CallsListPointFilterDto)
+    points?: CallsListPointFilterDto[];
 
     @ApiPropertyOptional({
         description:
