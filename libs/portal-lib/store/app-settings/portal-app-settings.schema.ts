@@ -24,6 +24,7 @@ import {
     PERIOD_DIGEST_DEFAULT_KINDS,
     PERIOD_DIGEST_KIND_OPTIONS,
 } from './lib/period-digest-kinds.const';
+import { REPORT_VIEW_TABS } from './lib/report-view.const';
 import { TRANSCRIPTION_CHUNKING_DEFAULTS } from './lib/transcription-chunking.const';
 
 /** Статусы движения сделок словами — для описаний настроек. */
@@ -815,6 +816,65 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'верны. Дата не может быть в будущем. Учитывается только ' +
                 'при roster_confirm_required = true; иначе ростер считается ' +
                 'подтверждённым, если заполнен ai_analytics_levels.',
+            type: 'string',
+            default: '',
+        }),
+        // --- Вид KPI-отчёта: что скрыто и какие бейджи видны (страница
+        // «Настройки отчёта»). Читают фронт kpi-sales и список разборов.
+        reportViewTabsHidden: setting({
+            code: 'report_view_tabs_hidden',
+            name: 'Вид отчёта: скрытые вкладки',
+            description:
+                'Вкладки KPI-отчёта, которые не показываются никому на ' +
+                'портале. Пусто — видны все вкладки, доступные по правам. ' +
+                'Вкладку «Все» скрыть нельзя. Меняется на странице «Настройки ' +
+                'отчёта» руководителем группы и выше.',
+            type: 'string',
+            default: '',
+            isList: true,
+            options: REPORT_VIEW_TABS.map(tab => ({
+                code: tab.code,
+                name: tab.name,
+            })),
+        }),
+        reportViewChartsEnabled: setting({
+            code: 'report_view_charts_enabled',
+            name: 'Вид отчёта: показывать графики',
+            description:
+                'Выключено — графики в KPI-отчёте не показываются никому на ' +
+                'портале, остаются таблицы. На телефоне графики скрыты всегда, ' +
+                'независимо от настройки.',
+            type: 'boolean',
+            default: true,
+        }),
+        reportViewBadgesMain: setting({
+            code: 'report_view_badges_main',
+            name: 'Вид отчёта: основные бейджи списка разборов',
+            description:
+                'Какие бейджи-фильтры видны в списке «Разборы звонков» сразу: ' +
+                'идентификаторы общих бейджей и пунктов методики (с приставкой ' +
+                '«m:») через запятую, в порядке показа. Пусто — набор по ' +
+                'умолчанию: основные из справочника и отмеченные в методике. ' +
+                'Задаётся на странице «Настройки отчёта».',
+            type: 'string',
+            default: '',
+        }),
+        reportViewUpdatedBy: setting({
+            code: 'report_view_updated_by',
+            name: 'Вид отчёта: кто менял последним',
+            description:
+                'Служебное: имя и Bitrix-id сотрудника, который последним ' +
+                'сохранил настройки отчёта. Заполняется само при сохранении, ' +
+                'руками не правится.',
+            type: 'string',
+            default: '',
+        }),
+        reportViewUpdatedAt: setting({
+            code: 'report_view_updated_at',
+            name: 'Вид отчёта: когда меняли',
+            description:
+                'Служебное: дата и время последнего сохранения настроек отчёта ' +
+                '(ISO). Заполняется само.',
             type: 'string',
             default: '',
         }),

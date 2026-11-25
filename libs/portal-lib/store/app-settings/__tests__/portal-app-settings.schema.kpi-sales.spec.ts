@@ -32,6 +32,32 @@ const CONTRACT: Record<
         type: 'string',
         default: 'own',
     },
+    // Вид KPI-отчёта (страница «Настройки отчёта»): по умолчанию видно всё.
+    reportViewTabsHidden: {
+        code: 'report_view_tabs_hidden',
+        type: 'string',
+        default: '',
+    },
+    reportViewChartsEnabled: {
+        code: 'report_view_charts_enabled',
+        type: 'boolean',
+        default: true,
+    },
+    reportViewBadgesMain: {
+        code: 'report_view_badges_main',
+        type: 'string',
+        default: '',
+    },
+    reportViewUpdatedBy: {
+        code: 'report_view_updated_by',
+        type: 'string',
+        default: '',
+    },
+    reportViewUpdatedAt: {
+        code: 'report_view_updated_at',
+        type: 'string',
+        default: '',
+    },
     aiAnalyticsEnabled: {
         code: 'ai_analytics_enabled',
         type: 'boolean',
@@ -291,6 +317,9 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         expect(values.aiAnalyticsOwnerReportEnabled).toBe(false);
         expect(values.aiAnalyticsOwnerReportKinds).toBe('month');
         expect(values.aiAnalyticsOwnerReportDryRun).toBe(true);
+        expect(values.reportViewTabsHidden).toBe('');
+        expect(values.reportViewChartsEnabled).toBe(true);
+        expect(values.reportViewBadgesMain).toBe('');
     });
 
     it('resolve перекрывает дефолт сохранённым и держит остальные ключи дефолтными', async () => {
