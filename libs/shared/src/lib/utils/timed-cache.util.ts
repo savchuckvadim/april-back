@@ -70,6 +70,27 @@ export class TimedCache<T> {
         return loading;
     }
 
+    /**
+     * Живая запись без загрузки: нет или срок истёк — undefined. Для случаев,
+     * когда решение «брать из памяти или читать заново» принимает вызывающий
+     * (например, по метке свежести рядом с данными).
+     */
+    peek(key: string): T | undefined {
+        const entry = this.entries.get(key);
+        return entry && this.now() - entry.loadedAt < this.ttlMs
+            ? entry.value
+            : undefined;
+    }
+
+    /** Положить значение напрямую, без загрузки; при выключенном кэше — ничего. */
+    set(key: string, value: T): void {
+        if (this.ttlMs <= 0) return;
+        // Перезапись в конец: порядок Map — порядок свежести.
+        this.entries.delete(key);
+        this.entries.set(key, { value, loadedAt: this.now() });
+        this.evict();
+    }
+
     /** Сбросить запись: следующий `get` загрузит заново. */
     delete(key: string): void {
         this.entries.delete(key);
