@@ -9,10 +9,15 @@ import {
 } from './json-value.util';
 import { mapLiteReport } from './analytics-lite-report.mapper';
 import {
+    CHECKPOINT_STATUSES,
+    type CheckpointStatus,
+} from '../../call-report/methodology/methodology.types';
+import {
     AnalyticsCallLiteRow,
     AnalyticsLiteMethodology,
     AnalyticsLiteNextStep,
     AnalyticsLiteObjection,
+    AnalyticsLitePoint,
     AnalyticsLiteRiskEvidence,
     AnalyticsLiteSection,
 } from '../types/analytics-lite.types';
@@ -95,7 +100,34 @@ export function mapMethodology(
         spiralsMinFull: outcome ? asNumber(outcome.spiralsMinFull) : null,
         dealProgress: progress ? asNumber(progress.score) : null,
         capsApplied: caps.length,
+        points: mapPoints(outcome),
     };
+}
+
+/**
+ * Пункты методики со статусами (checkpoints разбора): только объекты с
+ * непустым кодом и статусом из справочника; повтор кода — первое вхождение.
+ * Нет методики или массива → [].
+ */
+function mapPoints(
+    methodology: Record<string, unknown> | null,
+): AnalyticsLitePoint[] {
+    const seen = new Set<string>();
+    const points: AnalyticsLitePoint[] = [];
+    for (const item of asRecordArray(methodology?.checkpoints)) {
+        const code = asString(item.code);
+        const status = item.status;
+        if (code === null || seen.has(code) || !isCheckpointStatus(status)) {
+            continue;
+        }
+        seen.add(code);
+        points.push({ code, status });
+    }
+    return points;
+}
+
+function isCheckpointStatus(value: unknown): value is CheckpointStatus {
+    return (CHECKPOINT_STATUSES as readonly unknown[]).includes(value);
 }
 
 /**

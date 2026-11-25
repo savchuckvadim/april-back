@@ -243,6 +243,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                     spiralsMinFull: 3,
                     dealProgress: 3,
                     capsApplied: 1,
+                    points: [],
                 },
                 // Факты отчёта: в этом разборе их нет — null и пустые списки.
                 report: {
@@ -434,6 +435,107 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
 
         const byType = await service.loadLite({ ...QUERY, callType: 'cold' });
         expect(byType.rows.map(row => row.transcriptionId)).toEqual(['1']);
+    });
+
+    it('пункты методики со статусами попадают в лёгкую строку', async () => {
+        const { service } = makeService({
+            lite: [liteRow('1', '7')],
+            ai: [
+                aiRecord('1', AGENT_ANALYSIS_TYPE, {
+                    methodology: {
+                        code: 'polyansky',
+                        checkpoints: [
+                            {
+                                code: 'pres.spirals_min',
+                                title: 'Витки',
+                                status: 'done',
+                            },
+                            {
+                                code: 'pres.needs_confirmed',
+                                title: 'Потребности',
+                                status: 'missed',
+                            },
+                            {
+                                code: 'cold.no_price',
+                                title: 'Цена',
+                                status: 'not_applicable',
+                            },
+                        ],
+                    },
+                }),
+            ],
+        });
+        const { rows } = await service.loadLite(QUERY);
+
+        expect(rows[0].methodology?.points).toEqual([
+            { code: 'pres.spirals_min', status: 'done' },
+            { code: 'pres.needs_confirmed', status: 'missed' },
+            { code: 'cold.no_price', status: 'not_applicable' },
+        ]);
+    });
+
+    it('пункты с неизвестным статусом, не-объекты и без кода отбрасываются', async () => {
+        const { service } = makeService({
+            lite: [liteRow('1', '7')],
+            ai: [
+                aiRecord('1', AGENT_ANALYSIS_TYPE, {
+                    methodology: {
+                        checkpoints: [
+                            'строка',
+                            null,
+                            { code: 'a.unknown', status: 'maybe' },
+                            { code: '', status: 'done' },
+                            { status: 'done' },
+                            { code: 'a.ok', status: 'done' },
+                        ],
+                    },
+                }),
+            ],
+        });
+        const { rows } = await service.loadLite(QUERY);
+
+        expect(rows[0].methodology?.points).toEqual([
+            { code: 'a.ok', status: 'done' },
+        ]);
+    });
+
+    it('повтор кода пункта — остаётся первое вхождение', async () => {
+        const { service } = makeService({
+            lite: [liteRow('1', '7')],
+            ai: [
+                aiRecord('1', AGENT_ANALYSIS_TYPE, {
+                    methodology: {
+                        checkpoints: [
+                            { code: 'pres.x', status: 'missed' },
+                            { code: 'pres.x', status: 'done' },
+                        ],
+                    },
+                }),
+            ],
+        });
+        const { rows } = await service.loadLite(QUERY);
+
+        expect(rows[0].methodology?.points).toEqual([
+            { code: 'pres.x', status: 'missed' },
+        ]);
+    });
+
+    it('разбор без методики или без массива пунктов — points пустой', async () => {
+        const { service } = makeService({
+            lite: [liteRow('1', '7'), liteRow('2', '7')],
+            ai: [
+                aiRecord('1', AGENT_ANALYSIS_TYPE, {
+                    callType: 'call',
+                    score: 7,
+                }),
+                aiRecord('2', AGENT_ANALYSIS_TYPE, {
+                    methodology: { code: 'x', checkpoints: 'не массив' },
+                }),
+            ],
+        });
+        const { rows } = await service.loadLite(QUERY);
+
+        expect(rows.map(row => row.methodology?.points)).toEqual([[], []]);
     });
 
     it('ais грузятся порциями по 500 id', async () => {

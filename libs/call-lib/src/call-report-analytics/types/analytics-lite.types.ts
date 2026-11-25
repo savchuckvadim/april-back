@@ -8,6 +8,7 @@
  * handled / outcome, nextStep {set, date}, riskFlags, coachingPriority,
  * weightedScore, versions.
  */
+import type { CheckpointStatus } from '../../call-report/methodology/methodology.types';
 
 /** Раздел разговора (GREETING, NEEDS, …) с фразой «как было» и вариантами. */
 export interface AnalyticsLiteSection {
@@ -148,6 +149,13 @@ export interface AnalyticsLiteReportFacts {
     selfIntro: AnalyticsLiteSelfIntro | null;
 }
 
+/** Статус одного пункта методики в разборе звонка. */
+export interface AnalyticsLitePoint {
+    /** Код пункта методики (`pres.spirals_min`). */
+    code: string;
+    status: CheckpointStatus;
+}
+
 /**
  * Факты методики и продвижения из разбора (dto.methodology, dto.dealProgress,
  * dto.capsTriggered): без методики на портале code и счётчики пунктов —
@@ -167,6 +175,13 @@ export interface AnalyticsLiteMethodology {
     dealProgress: number | null;
     /** Сколько ограничителей срезали оценку (ядро + методика). */
     capsApplied: number;
+    /**
+     * Статусы пунктов методики по звонку — для фильтров списка разборов.
+     * У звонка с разбором выборка `loadLite` заполняет всегда (без
+     * методики — пусто); старые сериализованные строки поля не несут —
+     * читатель готов к `undefined`.
+     */
+    points?: AnalyticsLitePoint[];
 }
 
 /**
