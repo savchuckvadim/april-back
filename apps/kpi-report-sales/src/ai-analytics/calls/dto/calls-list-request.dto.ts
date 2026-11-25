@@ -72,6 +72,7 @@ export class CallsListRequestDto extends AiRequestBaseDto {
     @IsOptional()
     @IsArray()
     @ArrayMaxSize(CALLS_LIST_FILTER_MAX_ITEMS)
+    @IsString({ each: true })
     @Matches(USER_ID_PATTERN, {
         each: true,
         message: 'Менеджер — числовой id сотрудника',

@@ -112,7 +112,7 @@ export class CallsListBadgeFacetDto implements CallListBadgeFacet {
             'сочетается с остальными по «и».',
         enum: CALL_BADGE_FAMILIES,
         nullable: true,
-        example: null,
+        example: 'outcome',
     })
     family: CallBadgeFamily | null;
 
