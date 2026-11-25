@@ -16,6 +16,10 @@ export * from './model/sections.util';
 export * from './model/risk-flags.util';
 // 11.11.2026: сигнал руководителю — ошибка менеджера, а не возражение клиента.
 export * from './model/manager-signal.rules';
+// Проекция lite-строки для правила сигнала (пульс, бейджи списка разборов).
+export * from './model/manager-signal.lite';
+// Бейджи списка разборов звонков: справочник и вычисление по lite-строке.
+export * from './model/call-badges';
 export * from './model/pulse';
 export * from './model/agenda';
 export * from './model/score-scale';

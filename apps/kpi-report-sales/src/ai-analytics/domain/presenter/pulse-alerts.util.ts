@@ -10,13 +10,12 @@
  * до 11.11 вида по новому правилу может не быть, они идут как urgent.
  * handled — есть alert_handled. Чистые функции над lite-строками.
  */
-import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     isActiveRiskKind,
     ManagerSignal,
-    ManagerSignalCallView,
     pickWorstSection,
-    resolveManagerSignal,
+    resolveLiteSignal,
+    SignalSourceRow,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import {
@@ -32,29 +31,15 @@ export const ALERT_QUOTE_MAX_LENGTH = 300;
 export const isActiveAlertKind = (kind: string): kind is AiAnalyticsAlertKind =>
     isActiveRiskKind(kind);
 
-/** Поля lite-строки, по которым решается сигнал. */
-export type AlertSourceRow = Pick<
-    DatedLiteRow,
-    'riskFlags' | 'riskEvidence' | 'objections' | 'sections'
-> &
-    Partial<Pick<DatedLiteRow, 'style' | 'methodology'>>;
+/** Поля lite-строки, по которым решается сигнал (реализация — в @lib/sales-ai-analytics). */
+export type AlertSourceRow = SignalSourceRow;
 
 /** Проекция lite-строки для правила сигнала; старые строки без style/methodology — null. */
-export function toSignalView(row: AlertSourceRow): ManagerSignalCallView {
-    return {
-        riskFlags: row.riskFlags,
-        riskEvidence: row.riskEvidence ?? [],
-        objections: row.objections,
-        sections: row.sections,
-        presentationDone: row.style?.presentationDone ?? null,
-        needsFound: row.style?.needsFound ?? null,
-        spiralsFull: row.methodology?.spiralsFull ?? null,
-    };
-}
+export { toSignalView } from '@lib/sales-ai-analytics';
 
 /** Сигнал по звонку: витрина учитывает все действующие флаги, включая «дверь закрыта». */
 export const resolveAlertSignal = (row: AlertSourceRow): ManagerSignal | null =>
-    resolveManagerSignal(toSignalView(row), CALL_REPORT_ACTIVE_RISK_FLAG_CODES);
+    resolveLiteSignal(row);
 
 /** Вид сигнала по разбору или null — повода для руководителя нет. */
 export const resolveAlertKind = (
