@@ -20,10 +20,15 @@ const createMocks = () => ({
     queue: { dispatch: jest.fn(() => Promise.resolve(undefined)) },
     resultCache: {
         getEnvelope: jest.fn(() => Promise.resolve(null)),
+        drop: jest.fn(() => Promise.resolve(undefined)),
         setReady: jest.fn(),
         setError: jest.fn(),
     },
 });
+
+/** Порядок вызовов моков: удаление конверта должно идти до постановки задачи. */
+const callOrder = (mock: jest.Mock): number =>
+    mock.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY;
 
 const createController = (mocks: ReturnType<typeof createMocks>) =>
     new KpiReportController(
@@ -68,13 +73,25 @@ const reportDto = (
         ...overrides,
     }) as ReportGetRequestDto;
 
+/** «Сейчас» для границы закрытого периода: 25.11.2026 (часы сервера). */
+const FIXED_NOW = new Date(2026, 10, 25, 12, 0);
+const GENERATED_AT = '2026-11-12T07:40:12.000Z';
+
 describe('KpiReportController (режим queue)', () => {
-    it('кэш-хит ready → мгновенный ответ с данными, без dispatch', async () => {
+    beforeEach(() => {
+        jest.useFakeTimers().setSystemTime(FIXED_NOW);
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('кэш-хит ready → мгновенный ответ с данными, датой расчёта и closedPeriod, без dispatch', async () => {
         const mocks = createMocks();
         mocks.resultCache.getEnvelope.mockResolvedValueOnce({
             status: 'ready',
             data: [{ id: 1 }],
-            generatedAt: 'x',
+            generatedAt: GENERATED_AT,
         } as never);
         const controller = createController(mocks);
 
@@ -84,9 +101,37 @@ describe('KpiReportController (режим queue)', () => {
             status: 'ready',
             data: [{ id: 1 }],
             requestKey: '2026-07-01|2026-07-30|1_2',
+            generatedAt: GENERATED_AT,
+            closedPeriod: true,
         });
         expect(mocks.queue.dispatch).not.toHaveBeenCalled();
         expect(mocks.pbx.init).not.toHaveBeenCalled();
+    });
+
+    it('кэш-хит открытого периода (задевает текущий месяц) → closedPeriod false', async () => {
+        const mocks = createMocks();
+        mocks.resultCache.getEnvelope.mockResolvedValueOnce({
+            status: 'ready',
+            data: [],
+            generatedAt: GENERATED_AT,
+        } as never);
+        const controller = createController(mocks);
+
+        const result = asEnvelope(
+            await controller.getCallingStatistic(
+                callingDto({
+                    filters: {
+                        departament: [{ ID: '1', NAME: 'И', LAST_NAME: 'И' }],
+                        dateFrom: '2026-11-01',
+                        dateTo: '2026-11-25',
+                    } as never,
+                }),
+            ),
+        );
+
+        expect(result.status).toBe('ready');
+        expect(result.closedPeriod).toBe(false);
+        expect(result.generatedAt).toBe(GENERATED_AT);
     });
 
     it('error-конверт → status error с message, без авто-редиспатча', async () => {
@@ -179,6 +224,34 @@ describe('KpiReportController (режим queue)', () => {
         expect(result.status).toBe('queued');
     });
 
+    it('forceRefresh удаляет прежний конверт до постановки задачи — поллинг не получит старый результат', async () => {
+        const mocks = createMocks();
+        const controller = createController(mocks);
+
+        await controller.getCallingStatistic(
+            callingDto({ forceRefresh: true }),
+        );
+
+        expect(mocks.resultCache.drop).toHaveBeenCalledWith(
+            'calling-stat',
+            DOMAIN,
+            'v1:result:2026-07-01_2026-07-30:1_2',
+        );
+        expect(callOrder(mocks.resultCache.drop)).toBeLessThan(
+            callOrder(mocks.queue.dispatch),
+        );
+    });
+
+    it('без forceRefresh конверт не удаляется', async () => {
+        const mocks = createMocks();
+        const controller = createController(mocks);
+
+        await controller.getCallingStatistic(callingDto());
+        await controller.getReport(reportDto());
+
+        expect(mocks.resultCache.drop).not.toHaveBeenCalled();
+    });
+
     it('невалидные даты → 400 BadRequest с русским сообщением', async () => {
         const mocks = createMocks();
         const controller = createController(mocks);
@@ -221,12 +294,12 @@ describe('KpiReportController (режим queue)', () => {
         );
     });
 
-    it('kpi-report/get: кэш-хит ready отдаёт данные без dispatch', async () => {
+    it('kpi-report/get: кэш-хит ready отдаёт данные, дату расчёта и closedPeriod без dispatch', async () => {
         const mocks = createMocks();
         mocks.resultCache.getEnvelope.mockResolvedValueOnce({
             status: 'ready',
             data: [{ id: 1 }],
-            generatedAt: 'x',
+            generatedAt: GENERATED_AT,
         } as never);
         const controller = createController(mocks);
 
@@ -236,7 +309,108 @@ describe('KpiReportController (режим queue)', () => {
             status: 'ready',
             data: [{ id: 1 }],
             requestKey: '2026-07-01|2026-07-30|1',
+            generatedAt: GENERATED_AT,
+            closedPeriod: true,
         });
         expect(mocks.queue.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('kpi-report/get: кэш-хит периода, кончающегося первым днём текущего месяца → closedPeriod false', async () => {
+        const mocks = createMocks();
+        mocks.resultCache.getEnvelope.mockResolvedValueOnce({
+            status: 'ready',
+            data: [],
+            generatedAt: GENERATED_AT,
+        } as never);
+        const controller = createController(mocks);
+
+        const result = await controller.getReport(
+            reportDto({
+                filters: {
+                    ...reportDto().filters,
+                    dateFrom: '2026-10-15',
+                    dateTo: '2026-11-01',
+                },
+            }),
+        );
+
+        expect(result).toMatchObject({
+            status: 'ready',
+            closedPeriod: false,
+            generatedAt: GENERATED_AT,
+        });
+    });
+
+    it('kpi-report/get: кэш-хит периода, кончающегося последним днём прошлого месяца → closedPeriod true', async () => {
+        const mocks = createMocks();
+        mocks.resultCache.getEnvelope.mockResolvedValueOnce({
+            status: 'ready',
+            data: [],
+            generatedAt: GENERATED_AT,
+        } as never);
+        const controller = createController(mocks);
+
+        const result = await controller.getReport(
+            reportDto({
+                filters: {
+                    ...reportDto().filters,
+                    dateFrom: '2026-10-01',
+                    dateTo: '2026-10-31',
+                },
+            }),
+        );
+
+        expect(result).toMatchObject({ status: 'ready', closedPeriod: true });
+    });
+
+    it('kpi-report/get: error-конверт → status error с message, без авто-редиспатча', async () => {
+        const mocks = createMocks();
+        mocks.resultCache.getEnvelope.mockResolvedValueOnce({
+            status: 'error',
+            message: 'Битрикс не вернул команды',
+            generatedAt: GENERATED_AT,
+        } as never);
+        const controller = createController(mocks);
+
+        const result = await controller.getReport(reportDto());
+
+        expect(result).toEqual({
+            status: 'error',
+            message: 'Битрикс не вернул команды',
+            requestKey: '2026-07-01|2026-07-30|1',
+        });
+        expect(mocks.queue.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('kpi-report/get: forceRefresh не читает кэш даже для закрытого периода и ставит задачу', async () => {
+        const mocks = createMocks();
+        const controller = createController(mocks);
+
+        const result = await controller.getReport(
+            reportDto({ forceRefresh: true }),
+        );
+
+        expect(mocks.resultCache.getEnvelope).not.toHaveBeenCalled();
+        expect(mocks.resultCache.drop).toHaveBeenCalledWith(
+            'kpi-report',
+            DOMAIN,
+            'v1:result:2026-07-01_2026-07-30:1',
+        );
+        expect(callOrder(mocks.resultCache.drop)).toBeLessThan(
+            callOrder(mocks.queue.dispatch),
+        );
+        expect(mocks.queue.dispatch).toHaveBeenCalledWith(
+            QueueNames.SALES_KPI_REPORT,
+            JobNames.SALES_KPI_REPORT_GENERATE,
+            expect.objectContaining({
+                resultKey: 'v1:result:2026-07-01_2026-07-30:1',
+            }) as Record<string, unknown>,
+            'kpi-report:v1:example.bitrix24.ru:2026-07-01_2026-07-30:1',
+            expect.anything(),
+        );
+        expect(result).toEqual({
+            status: 'queued',
+            requestKey: '2026-07-01|2026-07-30|1',
+        });
     });
 });

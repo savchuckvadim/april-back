@@ -2,8 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
+    IsBoolean,
     IsIn,
     IsInt,
+    IsISO8601,
     IsOptional,
     IsString,
     Min,
@@ -119,6 +121,30 @@ export class CallingStatisticResponseDto {
     @IsOptional()
     @IsString()
     requestKey?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Когда результат рассчитан (дата и время в формате ISO 8601). ' +
+            'Приходит со статусом ready — фронт показывает её рядом с ' +
+            'кнопкой «Пересчитать».',
+        type: String,
+        example: '2026-11-12T07:40:12.000Z',
+    })
+    @IsOptional()
+    @IsISO8601()
+    generatedAt?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Период целиком лежит в прошлых месяцах: результат хранится ' +
+            '180 дней и сам не пересчитывается, пересчёт — запросом с ' +
+            'forceRefresh: true. Приходит со статусом ready.',
+        type: Boolean,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    closedPeriod?: boolean;
 
     @ApiPropertyOptional({
         description: 'Текст ошибки расчёта (status error).',

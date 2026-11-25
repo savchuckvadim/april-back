@@ -21,10 +21,8 @@ import {
     buildCallingStatResultKey,
     buildReportUsersKey,
 } from '../cache/report-cache-key.util';
-import {
-    CALLING_STAT_CACHE_APP,
-    KPI_RESULT_TTL_SECONDS,
-} from '../constants/report-queue.const';
+import { reportResultTtlSeconds } from '../cache/report-cache-ttl.util';
+import { CALLING_STAT_CACHE_APP } from '../constants/report-queue.const';
 
 const VOXIMPLANT_METHOD = 'voximplant.statistic.get';
 
@@ -150,8 +148,9 @@ export class CallingStatisticUseCase {
                 usersKey,
             ),
             result,
-            // Транспортный буфер доставки очереди, не кэш (2026-07-30)
-            KPI_RESULT_TTL_SECONDS,
+            // Закрытый период — долгий кэш (решение 2026-11-25), открытый —
+            // транспортный буфер доставки очереди, не кэш (2026-07-30).
+            reportResultTtlSeconds(period.toIsoInclusive, new Date()),
         );
     }
 }

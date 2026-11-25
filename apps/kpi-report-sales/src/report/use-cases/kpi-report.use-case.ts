@@ -28,10 +28,8 @@ import {
     buildKpiReportResultKey,
     buildReportUsersKey,
 } from '../cache/report-cache-key.util';
-import {
-    KPI_REPORT_CACHE_APP,
-    KPI_RESULT_TTL_SECONDS,
-} from '../constants/report-queue.const';
+import { reportResultTtlSeconds } from '../cache/report-cache-ttl.util';
+import { KPI_REPORT_CACHE_APP } from '../constants/report-queue.const';
 
 /**
  * KPI-отчёт отдела продаж: батч lists.element.get (сотрудник × действие),
@@ -149,8 +147,9 @@ export class ReportKpiUseCase {
                 usersKey,
             ),
             report,
-            // Транспортный буфер доставки очереди, не кэш (2026-07-30)
-            KPI_RESULT_TTL_SECONDS,
+            // Закрытый период — долгий кэш (решение 2026-11-25), открытый —
+            // транспортный буфер доставки очереди, не кэш (2026-07-30).
+            reportResultTtlSeconds(period.toIsoInclusive, new Date()),
         );
     }
 

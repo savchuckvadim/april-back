@@ -156,23 +156,75 @@ describe('ReportKpiUseCase', () => {
         expect(mocks.cache.setReady).not.toHaveBeenCalled();
     });
 
-    it('успех пишет ready-конверт с транспортным TTL (не кэш)', async () => {
-        const mocks = createMocks([chunk(fullTotals('1'))]);
-        const useCase = new ReportKpiUseCase();
-        await useCase.init(
-            'example.bitrix24.ru',
-            mocks.pbx as never,
-            mocks.cache as never,
-        );
+    describe('TTL записи кэша (сейчас — 25.11.2026)', () => {
+        const CLOSED_TTL = 180 * 24 * 3600;
+        const BUFFER_TTL = 180;
 
-        await useCase.generateKpiReport(filters('2026-06-01', '2026-06-30'));
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(new Date(2026, 10, 25, 12, 0));
+        });
 
-        expect(mocks.cache.setReady).toHaveBeenCalledWith(
-            'kpi-report',
-            'example.bitrix24.ru',
-            'v1:result:2026-06-01_2026-06-30:1',
-            expect.any(Array),
-            180,
-        );
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const generateAndReadWrite = async (
+            dateFrom: string,
+            dateTo: string,
+        ): Promise<{ app: unknown; key: unknown; ttl: unknown }> => {
+            const mocks = createMocks([chunk(fullTotals('1'))]);
+            const useCase = new ReportKpiUseCase();
+            await useCase.init(
+                'example.bitrix24.ru',
+                mocks.pbx as never,
+                mocks.cache as never,
+            );
+
+            await useCase.generateKpiReport(filters(dateFrom, dateTo));
+
+            expect(mocks.cache.setReady).toHaveBeenCalledTimes(1);
+            const call = mocks.cache.setReady.mock
+                .calls[0] as unknown as unknown[];
+            return { app: call[0], key: call[2], ttl: call[4] };
+        };
+
+        it('закрытый период (прошлые месяцы) → долгий TTL 180 суток', async () => {
+            const { app, key, ttl } = await generateAndReadWrite(
+                '2026-06-01',
+                '2026-06-30',
+            );
+
+            expect(app).toBe('kpi-report');
+            expect(key).toBe('v1:result:2026-06-01_2026-06-30:1');
+            expect(ttl).toBe(CLOSED_TTL);
+        });
+
+        it('закрытый период в легаси-формате (dateTo эксклюзивна) → долгий TTL', async () => {
+            const { key, ttl } = await generateAndReadWrite(
+                '01.10.2026',
+                '01.11.2026',
+            );
+
+            expect(key).toBe('v1:result:2026-10-01_2026-10-31:1');
+            expect(ttl).toBe(CLOSED_TTL);
+        });
+
+        it('открытый период (задевает текущий месяц) → буфер 180 секунд', async () => {
+            const { ttl } = await generateAndReadWrite(
+                '2026-11-01',
+                '2026-11-25',
+            );
+
+            expect(ttl).toBe(BUFFER_TTL);
+        });
+
+        it('период, кончающийся первым днём текущего месяца → буфер 180 секунд', async () => {
+            const { ttl } = await generateAndReadWrite(
+                '2026-10-01',
+                '2026-11-01',
+            );
+
+            expect(ttl).toBe(BUFFER_TTL);
+        });
     });
 });

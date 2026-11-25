@@ -120,23 +120,68 @@ describe('CallingStatisticUseCase', () => {
         expect(cache.setReady).not.toHaveBeenCalled();
     });
 
-    it('успех пишет ready-конверт с транспортным TTL (не кэш)', async () => {
-        const api = createApi([chunk(fullTotals('1'))]);
-        const cache = createCache();
-        const useCase = new CallingStatisticUseCase(
-            api as never,
-            cache as never,
-        );
+    describe('TTL записи кэша (сейчас — 25.11.2026)', () => {
+        const CLOSED_TTL = 180 * 24 * 3600;
+        const BUFFER_TTL = 180;
 
-        await useCase.get(dto('2026-06-01', '2026-06-30'));
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(new Date(2026, 10, 25, 12, 0));
+        });
 
-        expect(cache.setReady).toHaveBeenCalledWith(
-            'calling-stat',
-            'example.bitrix24.ru',
-            'v1:result:2026-06-01_2026-06-30:1',
-            expect.any(Array),
-            180,
-        );
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const getAndReadWrite = async (
+            dateFrom: string,
+            dateTo: string,
+        ): Promise<{ app: unknown; key: unknown; ttl: unknown }> => {
+            const api = createApi([chunk(fullTotals('1'))]);
+            const cache = createCache();
+            const useCase = new CallingStatisticUseCase(
+                api as never,
+                cache as never,
+            );
+
+            await useCase.get(dto(dateFrom, dateTo));
+
+            expect(cache.setReady).toHaveBeenCalledTimes(1);
+            const call = cache.setReady.mock.calls[0] as unknown as unknown[];
+            return { app: call[0], key: call[2], ttl: call[4] };
+        };
+
+        it('закрытый период (прошлые месяцы) → долгий TTL 180 суток', async () => {
+            const { app, key, ttl } = await getAndReadWrite(
+                '2026-06-01',
+                '2026-06-30',
+            );
+
+            expect(app).toBe('calling-stat');
+            expect(key).toBe('v1:result:2026-06-01_2026-06-30:1');
+            expect(ttl).toBe(CLOSED_TTL);
+        });
+
+        it('закрытый период в легаси-формате (dateTo эксклюзивна) → долгий TTL', async () => {
+            const { key, ttl } = await getAndReadWrite(
+                '01.10.2026',
+                '01.11.2026',
+            );
+
+            expect(key).toBe('v1:result:2026-10-01_2026-10-31:1');
+            expect(ttl).toBe(CLOSED_TTL);
+        });
+
+        it('открытый период (задевает текущий месяц) → буфер 180 секунд', async () => {
+            const { ttl } = await getAndReadWrite('2026-11-01', '2026-11-25');
+
+            expect(ttl).toBe(BUFFER_TTL);
+        });
+
+        it('период, кончающийся первым днём текущего месяца → буфер 180 секунд', async () => {
+            const { ttl } = await getAndReadWrite('2026-10-01', '2026-11-01');
+
+            expect(ttl).toBe(BUFFER_TTL);
+        });
     });
 
     it('сотрудник без ID — пустые callings, команды по нему не строятся', async () => {
