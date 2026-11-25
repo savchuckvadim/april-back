@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    CHECKPOINT_BADGE_MAX_LENGTH,
     CHECKPOINT_EVIDENCE_KINDS,
     METHODOLOGY_CAP_TARGETS,
     METHODOLOGY_CONDITION_OPS,
@@ -112,6 +113,23 @@ export class MethodologyCheckpointDto implements MethodologyCheckpoint {
         type: String,
     })
     product?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Короткое название бейджа-фильтра в списке разборов (до 28 знаков); не задано — показывается формулировка пункта.',
+        example: 'Три спирали',
+        type: String,
+        maxLength: CHECKPOINT_BADGE_MAX_LENGTH,
+    })
+    badge?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Бейдж виден в строке фильтров сразу; остальные добавляются выбором из списка. На разбор не влияет.',
+        example: true,
+        type: Boolean,
+    })
+    badgeMain?: boolean;
 
     @ApiPropertyOptional({
         description:

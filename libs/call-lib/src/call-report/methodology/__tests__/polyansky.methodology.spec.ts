@@ -6,6 +6,7 @@ import {
 } from '../polyansky.methodology';
 import {
     capsForType,
+    CHECKPOINT_BADGE_MAX_LENGTH,
     checkpointsForType,
     methodologyVersionTag,
 } from '../methodology.types';
@@ -54,6 +55,35 @@ describe('POLYANSKY_METHODOLOGY', () => {
             ).not.toMatch(/[A-Za-z]{3,}/);
             expect(checkpoint.title.length).toBeLessThanOrEqual(140);
         }
+    });
+
+    it('у каждого пункта своё короткое название бейджа; основные бейджи есть у каждого типа', () => {
+        const badges = POLYANSKY_METHODOLOGY.checkpoints.map(c => c.badge);
+        for (const badge of badges) {
+            expect(badge).toBeDefined();
+            expect((badge ?? '').length).toBeGreaterThan(0);
+            expect((badge ?? '').length).toBeLessThanOrEqual(
+                CHECKPOINT_BADGE_MAX_LENGTH,
+            );
+            expect((badge ?? '').replace(/E-mail|ИСКРА/g, '')).not.toMatch(
+                /[A-Za-z]{3,}/,
+            );
+        }
+        expect(new Set(badges).size).toBe(badges.length);
+        for (const type of POLYANSKY_METHODOLOGY.types) {
+            const main = checkpointsForType(POLYANSKY_METHODOLOGY, type).filter(
+                checkpoint => checkpoint.badgeMain === true,
+            );
+            expect({ type, main: main.length > 0 }).toEqual({
+                type,
+                main: true,
+            });
+        }
+        expect(
+            POLYANSKY_METHODOLOGY.checkpoints.find(
+                c => c.code === 'pres.spirals_min',
+            ),
+        ).toMatchObject({ badge: 'Три спирали', badgeMain: true });
     });
 
     it('спирали считаются только у презентаций, не меньше трёх витков', () => {

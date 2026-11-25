@@ -257,4 +257,103 @@ describe('parseMethodology', () => {
         if (!result.ok) return;
         expect(result.value.caps).toHaveLength(CORE_CAPS.length);
     });
+
+    /** Первый пункт минимального конфига — для правок полей бейджа. */
+    const firstCheckpoint = (input: Record<string, unknown>) =>
+        (input.checkpoints as Record<string, unknown>[])[0];
+
+    it('бейдж пункта обрезается по краям и сохраняется', () => {
+        const input = minimal();
+        firstCheckpoint(input).badge = '  Три спирали ';
+        const result = parseMethodology(input);
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.value.checkpoints[0].badge).toBe('Три спирали');
+    });
+
+    it('пустой, пробельный или null бейдж не даёт ошибки и не попадает в пункт', () => {
+        for (const badge of ['', '   ', null]) {
+            const input = minimal();
+            firstCheckpoint(input).badge = badge;
+            const result = parseMethodology(input);
+            expect(result.ok).toBe(true);
+            if (!result.ok) return;
+            expect(result.value.checkpoints[0]).not.toHaveProperty('badge');
+        }
+    });
+
+    it('бейдж ровно из 28 знаков проходит, из 29 — ошибка', () => {
+        const fits = minimal();
+        firstCheckpoint(fits).badge = 'a'.repeat(28);
+        expect(parseMethodology(fits).ok).toBe(true);
+
+        const tooLong = minimal();
+        firstCheckpoint(tooLong).badge = 'a'.repeat(29);
+        expect(parseMethodology(tooLong)).toEqual({
+            ok: false,
+            errors: [
+                expect.stringContaining(
+                    'checkpoints[0].badge: название бейджа — не длиннее 28 знаков',
+                ),
+            ],
+        });
+    });
+
+    it('бейдж не строка — ошибка', () => {
+        const input = minimal();
+        firstCheckpoint(input).badge = 5;
+        expect(parseMethodology(input)).toEqual({
+            ok: false,
+            errors: [
+                expect.stringContaining(
+                    'checkpoints[0].badge: название бейджа — строка',
+                ),
+            ],
+        });
+    });
+
+    it('badgeMain: true сохраняется, false в пункт не попадает', () => {
+        const main = minimal();
+        firstCheckpoint(main).badgeMain = true;
+        const mainResult = parseMethodology(main);
+        expect(mainResult.ok).toBe(true);
+        if (!mainResult.ok) return;
+        expect(mainResult.value.checkpoints[0].badgeMain).toBe(true);
+
+        const off = minimal();
+        firstCheckpoint(off).badgeMain = false;
+        const offResult = parseMethodology(off);
+        expect(offResult.ok).toBe(true);
+        if (!offResult.ok) return;
+        expect(offResult.value.checkpoints[0]).not.toHaveProperty('badgeMain');
+    });
+
+    it('badgeMain не boolean — ошибка', () => {
+        const input = minimal();
+        firstCheckpoint(input).badgeMain = 'да';
+        expect(parseMethodology(input)).toEqual({
+            ok: false,
+            errors: [
+                expect.stringContaining(
+                    'checkpoints[0].badgeMain: укажите true или false',
+                ),
+            ],
+        });
+    });
+
+    it('неизвестный ключ пункта отбрасывается, бейдж и badgeMain остаются', () => {
+        const input = minimal();
+        const checkpoint = firstCheckpoint(input);
+        checkpoint.junk = 'мусор';
+        checkpoint.badge = 'Бейдж';
+        checkpoint.badgeMain = true;
+        const result = parseMethodology(input);
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.value.checkpoints[0]).not.toHaveProperty('junk');
+        expect(result.value.checkpoints[0]).toMatchObject({
+            badge: 'Бейдж',
+            badgeMain: true,
+        });
+    });
 });

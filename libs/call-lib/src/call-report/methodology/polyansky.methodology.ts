@@ -21,6 +21,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'common.final_summary',
         title: 'Резюмировал договорённости в конце разговора и получил подтверждение клиента',
+        badge: 'Резюме договорённостей',
+        badgeMain: true,
         types: [
             'cold',
             'call',
@@ -36,6 +38,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'cold.utp_unique',
         title: 'В поводе звонка есть новинка или уникальность',
+        badge: 'Повод: новинка',
         types: ['cold'],
         evidence: 'quote',
         mandatory: true,
@@ -43,6 +46,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'cold.utp_benefit',
         title: 'В поводе звонка названа выгода для клиента: время, риски, актуальность',
+        badge: 'Повод: выгода',
         types: ['cold'],
         evidence: 'quote',
         mandatory: true,
@@ -50,6 +54,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'cold.utp_cta',
         title: 'Повод звонка заканчивается призывом: посмотреть, протестировать, назначить показ',
+        badge: 'Повод: призыв',
+        badgeMain: true,
         types: ['cold'],
         evidence: 'quote',
         mandatory: true,
@@ -57,6 +63,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'cold.no_bad_opener',
         title: 'Не начал с «хочу предложить услуги», «сотрудничество» или «рассказать о продукции»',
+        badge: 'Без плохого начала',
         types: ['cold'],
         evidence: 'fact',
         mandatory: true,
@@ -65,6 +72,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'cold.no_price',
         title: 'Не обсуждал стоимость и договор до презентации',
+        badge: 'Без цены до показа',
+        badgeMain: true,
         types: ['cold'],
         evidence: 'fact',
         mandatory: true,
@@ -73,6 +82,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'call.diag_garant_exp',
         title: 'Выяснил, знаком ли клиент с Гарантом и какой у него опыт',
+        badge: 'Опыт с Гарантом',
         types: ['call'],
         evidence: 'quote',
         mandatory: true,
@@ -81,6 +91,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'call.email',
         title: 'Получил e-mail для доступа или зафиксировал причину отказа его дать',
+        badge: 'E-mail получен',
+        badgeMain: true,
         types: ['call'],
         evidence: 'quote',
         mandatory: true,
@@ -88,6 +100,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'call.offer_concrete',
         title: 'Предложение показа конкретное: 10–15 минут, бесплатный доступ, на задачах клиента',
+        badge: 'Конкретный показ',
+        badgeMain: true,
         types: ['call'],
         evidence: 'quote',
         mandatory: true,
@@ -96,6 +110,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.format_agreed',
         title: 'Согласовал время и формат показа «от ваших задач»',
+        badge: 'Формат показа согласован',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -103,6 +118,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.needs_three_questions',
         title: 'Спросил, какими источниками пользуется клиент, что в них важно и что отнимает время',
+        badge: 'Три вопроса о потребностях',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -110,6 +126,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.needs_confirmed',
         title: 'Резюмировал потребности вслух, расставил приоритеты, клиент согласился с планом показа',
+        badge: 'Потребности подтверждены',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -117,6 +135,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.spirals_min',
         title: 'Полных спиралей «потребность → свойство → связка → выгода → вопрос» не меньше трёх',
+        badge: 'Три спирали',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'fact',
         mandatory: true,
@@ -125,6 +145,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.block_no_need',
         title: 'Каждый показанный блок связан с потребностью клиента',
+        badge: 'Блоки под потребности',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'fact',
         mandatory: true,
@@ -133,6 +155,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.feedback_per_block',
         title: 'После каждого смыслового блока задал клиенту вопрос',
+        badge: 'Вопрос после блока',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'fact',
         mandatory: true,
@@ -141,6 +165,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.iskra_real_question',
         title: 'ИСКРА показана на реальном вопросе клиента',
+        badge: 'ИСКРА на вопросе клиента',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -149,6 +174,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.dialogue',
         title: 'Клиент говорил, а не слушал монолог',
+        badge: 'Диалог, не монолог',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'fact',
         mandatory: true,
@@ -157,6 +184,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.objection_elicited',
         title: 'Сам спросил, что может помешать принять решение',
+        badge: 'Спросил о помехах',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -164,6 +192,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.summary_by_needs',
         title: 'Резюмировал показ через потребности клиента и спросил, остались ли вопросы',
+        badge: 'Итог показа по потребностям',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -171,6 +200,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.desire',
         title: 'Спросил, как клиент смотрит на сотрудничество и как будет решать задачи без этих возможностей',
+        badge: 'Спросил о сотрудничестве',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -178,6 +208,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.kit_12m',
         title: 'Предложил лицензию на 12 месяцев с максимальной скидкой, альтернативы на 6 и 3',
+        badge: 'Предложил 12 месяцев',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: false,
@@ -185,6 +216,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.invoice_why',
         title: 'Объяснил, что счёт фиксирует условия и ни к чему не обязывает',
+        badge: 'Объяснил счёт',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -192,6 +224,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.payment_when',
         title: 'Выяснил, когда возможна оплата и когда узнать решение',
+        badge: 'Срок оплаты выяснен',
+        badgeMain: true,
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
@@ -199,6 +233,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'pres.lpr_help',
         title: 'Предложил подключиться к разговору с руководителем или подготовить для него аргументы',
+        badge: 'Помощь с руководителем',
         types: ['presentation'],
         evidence: 'quote',
         mandatory: false,
@@ -207,6 +242,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.prev_agreement',
         title: 'Вспомнил конкретную прошлую договорённость: что клиент должен был сделать',
+        badge: 'Прошлая договорённость',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -214,6 +250,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.result_asked',
         title: 'Спросил о результате: что попробовали, как отнёсся руководитель, что сказали коллеги',
+        badge: 'Спросил о результате',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -221,6 +258,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.no_formal_question',
         title: 'Не ограничился формальным «ну что, подумали?», «определились?»',
+        badge: 'Без формального вопроса',
         types: [...REPEAT],
         evidence: 'fact',
         mandatory: true,
@@ -228,6 +266,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.opinion_value_first',
         title: 'Сначала получил мнение о ценности, потом перешёл к сомнениям',
+        badge: 'Сначала ценность',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -235,6 +274,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.barrier_steps',
         title: 'Отработал барьер по шагам: принял, уточнил, вернул к потребности, дал аргумент, получил обратную связь',
+        badge: 'Барьер по шагам',
+        badgeMain: true,
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -242,6 +283,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.removal_checked',
         title: 'Проверил, снято ли возражение: «этот вопрос прояснили?»',
+        badge: 'Проверил снятие возражения',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -249,6 +291,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.close_attempt',
         title: 'Сделал прямую попытку закрытия: предложил перейти к оформлению',
+        badge: 'Попытка закрытия',
+        badgeMain: true,
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -256,6 +300,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.price_after_value',
         title: 'Вернулся к ценности, прежде чем обсуждать цену',
+        badge: 'Ценность перед ценой',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
@@ -263,6 +308,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.no_early_discount',
         title: 'Не предлагал скидку до выяснения причины сомнений',
+        badge: 'Без ранней скидки',
+        badgeMain: true,
         types: ['refine', 'decision', 'payment'],
         evidence: 'fact',
         mandatory: true,
@@ -270,6 +317,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.invoice_followthrough',
         title: 'Договорился, что произойдёт после счёта: кто согласует и когда оплата',
+        badge: 'Что после счёта',
         types: ['decision', 'payment'],
         evidence: 'quote',
         mandatory: true,
@@ -277,6 +325,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
     {
         code: 'rep.user_self_interest',
         title: 'Спросил, хотел бы клиент сам работать с системой как пользователь',
+        badge: 'Интерес как пользователя',
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: false,
