@@ -52,3 +52,30 @@ export const CALLS_LIST_MESSAGES = {
     leadersOnly: 'Раздел доступен руководителям',
     period: `Период — не длиннее ${CALLS_LIST_MAX_DAYS} дней, начало не позже конца`,
 } as const;
+
+/**
+ * Сколько живёт в памяти процесса разобранная выборка периода. Короткий
+ * срок: память — ускорение серии кликов по фильтрам, а не второй кэш;
+ * сброс секции Redis (отзыв руководителя) снимает её сразу — по метке
+ * (см. CallListIndexLoader).
+ */
+export const CALLS_LIST_MEMO_TTL_MS = 45_000;
+
+/** Сколько выборок (портал × период) держит память процесса одновременно. */
+export const CALLS_LIST_MEMO_MAX_ENTRIES = 8;
+
+/** Состояния пункта методики в фильтре: исполнен и не исполнен. */
+export const CALLS_LIST_POINT_STATES = ['done', 'missed'] as const;
+export type CallsListPointState = (typeof CALLS_LIST_POINT_STATES)[number];
+
+/** Сколько общих бейджей можно выбрать в фильтре (справочник короче). */
+export const CALLS_LIST_BADGES_MAX = 30;
+
+/** Сколько бейджей пунктов методики можно выбрать в фильтре. */
+export const CALLS_LIST_POINTS_MAX = 20;
+
+/**
+ * Приставка кода бейджа пункта методики: в строке списка и в наборе
+ * «основных» бейджей пункт отличается от общего бейджа (`m:pres.spirals_min`).
+ */
+export const CALLS_LIST_POINT_BADGE_PREFIX = 'm:' as const;

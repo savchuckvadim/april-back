@@ -1,5 +1,9 @@
+import type { CheckpointStatus } from '@lib/call-lib/call-report/methodology/methodology.types';
+import { encodePoints, pointIndexMap } from '../calls-list-points.util';
 import type {
+    CallListBadgeContext,
     CallListIndex,
+    CallListPointDef,
     CallListQuery,
     CallListReview,
     CallListRow,
@@ -16,7 +20,41 @@ export const rowOf = (
     durationSec: 120,
     callType: 'cold',
     aiScore: 5,
+    badges: [],
+    points: '',
     ...fields,
+});
+
+/** Статусы пунктов звонка в записи по кодам выборки (нет в `statuses` — не проверялся). */
+export const pointsOf = (
+    codes: readonly string[],
+    statuses: Record<string, CheckpointStatus>,
+): string =>
+    encodePoints(
+        Object.entries(statuses).map(([code, status]) => ({ code, status })),
+        codes,
+    );
+
+/** Пункт методики портала для фильтров. */
+export const pointDefOf = (
+    code: string,
+    fields: Partial<CallListPointDef> = {},
+): CallListPointDef => ({
+    code,
+    label: `Пункт ${code}`,
+    title: `Формулировка пункта ${code}`,
+    callTypes: ['presentation'],
+    main: false,
+    ...fields,
+});
+
+/** Контекст фильтров по бейджам: описания пунктов и коды выборки. */
+export const badgeContextOf = (
+    pointDefs: readonly CallListPointDef[],
+    pointCodes: readonly string[],
+): CallListBadgeContext => ({
+    pointIndex: pointIndexMap(pointCodes),
+    pointDefs,
 });
 
 export const reviewOf = (
@@ -38,6 +76,8 @@ export const queryOf = (
     scoreMin: null,
     scoreMax: null,
     review: 'any',
+    badges: [],
+    points: [],
     sort: 'date_desc',
     page: 1,
     pageSize: 25,
@@ -48,4 +88,5 @@ export const indexOf = (
     rows: CallListRow[],
     reviews: CallListIndex['reviews'] = {},
     managerNames: CallListIndex['managerNames'] = {},
-): CallListIndex => ({ rows, reviews, managerNames });
+    pointCodes: string[] = [],
+): CallListIndex => ({ rows, pointCodes, reviews, managerNames });

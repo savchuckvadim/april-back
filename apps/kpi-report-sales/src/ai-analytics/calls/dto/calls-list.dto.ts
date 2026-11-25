@@ -1,9 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type {
-    CallListCallTypeFacet,
-    CallListManagerFacet,
-    CallListReviewsSummary,
-} from '../calls-list.types';
+import type { CallListReviewsSummary } from '../calls-list.types';
+import { CallsListItemBadgeDto } from './calls-list-badges.dto';
+import { CallsListFacetsDto } from './calls-list-facets.dto';
 
 /** Мой отзыв о разборе — коротко, для колонки списка. */
 export class CallsListMyReviewDto {
@@ -150,6 +148,14 @@ export class CallsListItemDto {
 
     @ApiProperty({
         description:
+            'Бейджи строки: проблемы звонка (общие бейджи с пометкой «проблема») ' +
+            'и невыполненные основные пункты методики портала (id с приставкой «m:»).',
+        type: [CallsListItemBadgeDto],
+    })
+    badges: CallsListItemBadgeDto[];
+
+    @ApiProperty({
+        description:
             'Адрес страницы разбора на сайте «Отчёта» — личная ссылка ' +
             'руководителя с правом на отзыв (7 дней). Обычная ссылка — если ' +
             'личную выпустить нельзя; null — ссылки нет (не настроен секрет ' +
@@ -160,75 +166,6 @@ export class CallsListItemDto {
             'https://next.april-app.ru/call/7wl-3q2x8Yk0mXo1p7cT5vB9nW4sZ6aQeR/lead/eyJ2IjoxfQ.abc',
     })
     url: string | null;
-}
-
-/** Значение фасета менеджеров. */
-export class CallsListManagerFacetDto implements CallListManagerFacet {
-    @ApiProperty({
-        description: 'Bitrix-id менеджера — значение фильтра managerIds.',
-        type: String,
-        example: '447',
-    })
-    id: string;
-
-    @ApiProperty({
-        description: 'Имя «Фамилия Имя»; null — имя не прочиталось.',
-        type: String,
-        nullable: true,
-        example: 'Иванова Мария',
-    })
-    name: string | null;
-
-    @ApiProperty({
-        description: 'Разборов этого менеджера за период.',
-        type: Number,
-        example: 41,
-    })
-    count: number;
-}
-
-/** Значение фасета типов звонка. */
-export class CallsListCallTypeFacetDto implements CallListCallTypeFacet {
-    @ApiProperty({
-        description: 'Код типа — значение фильтра callTypes.',
-        type: String,
-        example: 'presentation',
-    })
-    code: string;
-
-    @ApiProperty({
-        description: 'Тип словами; null — подписи нет.',
-        type: String,
-        nullable: true,
-        example: 'Презентация',
-    })
-    title: string | null;
-
-    @ApiProperty({
-        description: 'Разборов этого типа за период.',
-        type: Number,
-        example: 17,
-    })
-    count: number;
-}
-
-/** Фасеты периода — варианты для фильтров. */
-export class CallsListFacetsDto {
-    @ApiProperty({
-        description:
-            'Менеджеры с разборами за период (только видимые пользователю), ' +
-            'по имени. Фильтры запроса и страница на них не влияют.',
-        type: [CallsListManagerFacetDto],
-    })
-    managers: CallsListManagerFacetDto[];
-
-    @ApiProperty({
-        description:
-            'Типы звонка с разборами за период, по числу звонков. Фильтры ' +
-            'запроса и страница на них не влияют.',
-        type: [CallsListCallTypeFacetDto],
-    })
-    callTypes: CallsListCallTypeFacetDto[];
 }
 
 /** Страница списка разборов. */
@@ -265,4 +202,15 @@ export class CallsListResponseDto {
         type: CallsListFacetsDto,
     })
     facets: CallsListFacetsDto;
+
+    @ApiProperty({
+        description:
+            'Типы звонка, к которым относятся выбранные бейджи методики ' +
+            '(пересечение типов выбранных пунктов; пусто — общих типов нет); ' +
+            'null — выбранные бейджи типы не ограничивают.',
+        type: [String],
+        nullable: true,
+        example: ['presentation'],
+    })
+    callTypesLock: string[] | null;
 }

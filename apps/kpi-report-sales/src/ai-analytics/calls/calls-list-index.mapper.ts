@@ -3,6 +3,7 @@
  * записей обратной связи. Чистые функции без DI.
  */
 import {
+    callBadgesOf,
     parseCallReviewPayload,
     toScore10,
     type DatedLiteRow,
@@ -10,26 +11,41 @@ import {
 import { normalizeUserId } from '../domain/access/perimeter.util';
 import type { AiAnalyticsFeedbackRecord } from '../store/ai-analytics-feedback.store';
 import type { CallListReview, CallListRow } from './calls-list.types';
+import { collectPointCodes, encodePoints } from './calls-list-points.util';
+
+/** Звонки периода с разбором и коды пунктов методики, встретившиеся в них. */
+export interface CallListRows {
+    rows: CallListRow[];
+    pointCodes: string[];
+}
 
 /**
- * Звонки периода с разбором — новые сверху. Звонок без глубокого разбора
- * в раздел не попадает: страница такого звонка открылась бы пустой.
+ * Звонки периода с разбором — новые сверху — и коды пунктов методики
+ * (по алфавиту): статусы пунктов каждого звонка записаны по этим кодам.
+ * Звонок без глубокого разбора в раздел не попадает: страница такого
+ * звонка открылась бы пустой.
  */
-export function toCallListRows(rows: readonly DatedLiteRow[]): CallListRow[] {
-    return rows
-        .filter(row => row.analysisPresent)
-        .map(row => ({
-            transcriptionId: row.transcriptionId,
-            managerId: normalizeUserId(row.managerId),
-            startedAt: row.callStartedAt.toISOString(),
-            durationSec:
-                typeof row.durationSec === 'number' && row.durationSec > 0
-                    ? Math.round(row.durationSec)
-                    : null,
-            callType: row.callType,
-            aiScore: toScore10(row.score),
-        }))
-        .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+export function buildCallListRows(rows: readonly DatedLiteRow[]): CallListRows {
+    const analysed = rows.filter(row => row.analysisPresent);
+    const pointCodes = collectPointCodes(analysed);
+    return {
+        pointCodes,
+        rows: analysed
+            .map(row => ({
+                transcriptionId: row.transcriptionId,
+                managerId: normalizeUserId(row.managerId),
+                startedAt: row.callStartedAt.toISOString(),
+                durationSec:
+                    typeof row.durationSec === 'number' && row.durationSec > 0
+                        ? Math.round(row.durationSec)
+                        : null,
+                callType: row.callType,
+                aiScore: toScore10(row.score),
+                badges: callBadgesOf(row),
+                points: encodePoints(row.methodology?.points, pointCodes),
+            }))
+            .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
+    };
 }
 
 /**
