@@ -93,6 +93,39 @@ describe('реестр: сайт «Отчёта» для страниц по с�
     });
 });
 
+/** Ссылка на чат поддержки для клиентов: кнопка в шапке «Отчёта». */
+describe('реестр: ссылка на чат поддержки', () => {
+    it('в группе поддержки, не секрет, без значения по умолчанию, с понятным описанием', () => {
+        const setting = vendorSettingOf('SUPPORT_CHAT_URL');
+        expect(isVendorSettingKey('SUPPORT_CHAT_URL')).toBe(true);
+        expect(setting.group).toBe('support');
+        expect(setting.label).toBe('Ссылка на чат поддержки для клиентов');
+        expect(setting.secret).toBe(false);
+        expect(setting.defaultValue).toBeUndefined();
+        expect(setting.example).toBe(
+            'https://april-dev.bitrix24.ru/online/support',
+        );
+        expect(setting.description).toContain('Пусто — кнопки нет');
+        expect(setting.howTo).toContain('с https://');
+        expect(VENDOR_SECRET_KEYS).not.toContain('SUPPORT_CHAT_URL');
+    });
+
+    it('группа поддержки упоминает чат клиентов; проверка — полный http(s)-адрес', () => {
+        expect(VENDOR_SETTING_GROUP_INFO.support.description).toContain(
+            'ссылка на чат поддержки',
+        );
+        const validate = vendorSettingOf('SUPPORT_CHAT_URL').validate!;
+        expect(
+            validate('https://april-dev.bitrix24.ru/online/support'),
+        ).toBeNull();
+        expect(validate('http://chat.example.ru/support')).toBeNull();
+        expect(validate('april-dev.bitrix24.ru/online/support')).toContain(
+            'https://',
+        );
+        expect(validate('ftp://chat.example.ru')).toContain('https://');
+    });
+});
+
 /** Настройки шлюза модели переехали из env в админку (11.11.2026). */
 describe('реестр: шлюз модели разборов', () => {
     it('своя группа сразу после ключей AI; свой запасной поставщик — среди ключей AI', () => {

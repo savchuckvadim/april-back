@@ -72,6 +72,7 @@ export const VENDOR_SETTING_KEYS = [
     ...TELEGRAM_BOT_SETTING_KEYS,
     ...WIDGET_URL_SETTING_KEYS,
     'REPORT_SALES_PUBLIC_URL',
+    'SUPPORT_CHAT_URL',
 ] as const;
 export type VendorSettingKey = (typeof VENDOR_SETTING_KEYS)[number];
 
@@ -125,7 +126,7 @@ export const VENDOR_SETTING_GROUP_INFO: Readonly<
     support: {
         title: 'Модуль технической поддержки',
         description:
-            'Ключи сервисов, которыми пользуется бот поддержки и монитор обращений.',
+            'Ключи сервисов, которыми пользуется бот поддержки и монитор обращений, и ссылка на чат поддержки, которую клиенты видят в «Отчёте».',
     },
     'telegram-bots': {
         title: 'Telegram-боты',
@@ -204,6 +205,17 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
         howTo: 'console.anthropic.com → API Keys → Create Key, скопировать ключ сюда. Добавьте api.anthropic.com в хосты прокси.',
         secret: true,
         example: 'sk-ant-…',
+    },
+    {
+        key: 'SUPPORT_CHAT_URL',
+        group: 'support',
+        label: 'Ссылка на чат поддержки для клиентов',
+        description:
+            'Адрес чата открытой линии поддержки. Открывается в новом окне по кнопке с телефонной трубкой в шапке «Отчёта». Пусто — кнопки нет. Действует в течение минуты.',
+        howTo: 'Битрикс24 портала поддержки → Контакт-центр → Онлайн-чат (или Открытые линии → нужная линия) → ссылка на публичную страницу чата. Скопируйте адрес целиком, с https://.',
+        secret: false,
+        example: 'https://april-dev.bitrix24.ru/online/support',
+        validate: validateUrl,
     },
     ...TELEGRAM_BOT_SETTINGS,
     widgetUrl(
