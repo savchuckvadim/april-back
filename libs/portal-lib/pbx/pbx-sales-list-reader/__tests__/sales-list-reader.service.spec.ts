@@ -142,12 +142,14 @@ describe('SalesListReaderService («робот» списков отчётнос
         expect(get).toHaveBeenCalledWith({
             IBLOCK_ID: '10',
             filter: {
-                PROPERTY_5: ['D_601', 'CO_33'],
+                // Свойства — с «=»: без него Битрикс перебирает весь список.
+                '=PROPERTY_5': ['D_601', 'CO_33'],
                 // Значение выпадающего списка — bitrixId элемента, не код.
-                PROPERTY_2: [201],
+                '=PROPERTY_2': [201],
+                // Даты — диапазоном, тут «=» не нужен.
                 '>PROPERTY_1': '2026-08-11',
                 '<PROPERTY_1': '2026-08-17',
-                PROPERTY_4: '187',
+                '=PROPERTY_4': '187',
             },
         });
     });

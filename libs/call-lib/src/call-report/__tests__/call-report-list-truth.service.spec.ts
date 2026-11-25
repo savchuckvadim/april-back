@@ -152,7 +152,7 @@ describe('CallReportListTruthService — семья сущностей из эл
 
         expect(family?.mainDealId).toBe(175244);
         expect(
-            (filters[0].filter as Record<string, unknown>).PROPERTY_5,
+            (filters[0].filter as Record<string, unknown>)['=PROPERTY_5'],
         ).toEqual(['L_77']);
     });
 
@@ -168,7 +168,7 @@ describe('CallReportListTruthService — семья сущностей из эл
 
         expect(family?.mainDealId).toBe(175244);
         expect(
-            (filters[0].filter as Record<string, unknown>).PROPERTY_5,
+            (filters[0].filter as Record<string, unknown>)['=PROPERTY_5'],
         ).toEqual(['C_44']);
     });
 
@@ -355,7 +355,7 @@ describe('CallReportListTruthService — семья сущностей из эл
 
         expect(search.crmRefs).toEqual(['D_601', 'CO_232232', 'C_44']);
         const filter = filters[0].filter as Record<string, string[]>;
-        expect(filter.PROPERTY_5).toEqual(['D_601', 'CO_232232', 'C_44']);
+        expect(filter['=PROPERTY_5']).toEqual(['D_601', 'CO_232232', 'C_44']);
         expect(filter['>PROPERTY_1']).toBe('2026-09-11');
         expect(filter['<PROPERTY_1']).toBe('2026-09-17');
         expect(filters).toHaveLength(2);

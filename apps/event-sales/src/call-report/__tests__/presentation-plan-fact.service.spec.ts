@@ -235,8 +235,8 @@ describe('PresentationPlanFactService (план-факт по презентац
                 { filter: Record<string, unknown> },
             ][]
         ).map(([payload]) => payload.filter);
-        expect(filters[0].PROPERTY_3).toEqual([itemId('sales_kpi_plan')]);
-        expect(filters[1].PROPERTY_3).toEqual([itemId('sales_kpi_done')]);
+        expect(filters[0]['=PROPERTY_3']).toEqual([itemId('sales_kpi_plan')]);
+        expect(filters[1]['=PROPERTY_3']).toEqual([itemId('sales_kpi_done')]);
     });
 
     it('планов нет — пустой результат без обращения к разборам', async () => {

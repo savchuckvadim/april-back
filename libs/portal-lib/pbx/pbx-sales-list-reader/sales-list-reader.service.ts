@@ -24,7 +24,9 @@ const FIELD_VALUE_LIMIT = 400;
  * (ReportKpiUseCase) и резолв сырых PROPERTY_N в человекочитаемые записи.
  *
  * Канон фильтров (важно, выверено по kpi-report):
- *  - ключ фильтра свойства — bitrixCamelId поля из слепка портала;
+ *  - ключ фильтра свойства — bitrixCamelId поля из слепка портала; для
+ *    привязок, типа, действия и ответственного — с «=» (точное совпадение,
+ *    см. exactKey): без него Битрикс перебирает весь список;
  *  - значения выпадающих списков фильтруются по bitrixId ЭЛЕМЕНТА
  *    (field.items), не по коду и не по названию;
  *  - даты — по полю «Дата события» (event_date) префиксами '>' / '<';
@@ -89,14 +91,14 @@ export class SalesListReaderService {
 
         if (query.crmRefs?.length) {
             const crm = this.field(list, 'crm');
-            if (crm) filter[this.filterKey(crm)] = query.crmRefs;
+            if (crm) filter[this.exactKey(crm)] = query.crmRefs;
         }
 
         if (query.eventTypeCodes?.length) {
             const eventType = this.field(list, 'event_type');
             const ids = this.itemIdsByCodes(eventType, query.eventTypeCodes);
             if (eventType && ids.length) {
-                filter[this.filterKey(eventType)] = ids;
+                filter[this.exactKey(eventType)] = ids;
             } else {
                 // Поле/элементы не резолвятся — фильтр добьёт пост-фильтр
                 // по резолвленному коду (см. applyEventTypePostFilter).
@@ -113,7 +115,7 @@ export class SalesListReaderService {
                 query.eventActionCodes,
             );
             if (eventAction && ids.length) {
-                filter[this.filterKey(eventAction)] = ids;
+                filter[this.exactKey(eventAction)] = ids;
             } else {
                 this.logger.warn(
                     `Действие события не резолвится в списке ${list.group}_${list.type} — серверный фильтр пропущен`,
@@ -144,7 +146,7 @@ export class SalesListReaderService {
         if (query.responsibleId != null) {
             const responsible = this.field(list, 'responsible');
             if (responsible) {
-                filter[this.filterKey(responsible)] = String(
+                filter[this.exactKey(responsible)] = String(
                     query.responsibleId,
                 );
             } else {
@@ -296,6 +298,19 @@ export class SalesListReaderService {
     /** Ключ фильтра свойства — bitrixCamelId (канон kpi-report). */
     private filterKey(field: IField): string {
         return field.bitrixCamelId || field.bitrixId;
+    }
+
+    /**
+     * Ключ ТОЧНОГО совпадения по свойству: `=PROPERTY_N`.
+     *
+     * Без «=» Битрикс ищет значение перебором всего списка, с «=» — по
+     * индексу; ответ один и тот же. На gsr («ОП История», 330 тыс. строк)
+     * это 9,4 с против 0,8 с на запрос. 25.11.2026 такие чтения исчерпали
+     * лимит времени метода (480 с за 10 минут), и Битрикс заблокировал
+     * `lists.element.get` для всех — включая отчёты менеджеров.
+     */
+    private exactKey(field: IField): string {
+        return `=${this.filterKey(field)}`;
     }
 
     /** bitrixId элементов выпадающего списка по кодам (терпим к префиксам). */
