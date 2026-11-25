@@ -191,4 +191,44 @@ describe('CallsListUseCase: бейджи и пункты методики', () =
             result.facets.badges.find(facet => facet.id === 'step_missing'),
         ).toMatchObject({ count: 2 });
     });
+
+    it('основные бейджи — из настроек отчёта портала: они заменяют набор по умолчанию и в фасетах, и в строке', async () => {
+        const { useCase, portalView } = harness(undefined, () =>
+            Promise.resolve(new Set(['signal', 'm:pres.b'])),
+        );
+
+        const result = await useCase.execute(dtoOf(), LEADER);
+
+        expect(portalView.badgesMain).toHaveBeenCalledWith(DOMAIN);
+        const mainBadges = result.facets.badges
+            .filter(facet => facet.main)
+            .map(facet => facet.id);
+        expect(mainBadges).toEqual(['signal']);
+        expect(
+            result.facets.points.map(facet => [facet.code, facet.main]),
+        ).toEqual([
+            ['pres.a', false],
+            ['pres.b', true],
+        ]);
+        // pres.a больше не основной — в строку звонка 4 не попадает.
+        expect(
+            result.items.find(item => item.transcriptionId === '4')?.badges,
+        ).toEqual([]);
+    });
+
+    it('настройки портала не прочитались — набор по умолчанию, список отвечает', async () => {
+        const { useCase } = harness(undefined, () =>
+            Promise.reject(new Error('настройки недоступны')),
+        );
+
+        const result = await useCase.execute(dtoOf(), LEADER);
+
+        expect(result.total).toBe(3);
+        expect(
+            result.facets.badges.find(facet => facet.id === 'step_missing'),
+        ).toMatchObject({ main: true });
+        expect(
+            result.facets.points.find(facet => facet.code === 'pres.a'),
+        ).toMatchObject({ main: true });
+    });
 });

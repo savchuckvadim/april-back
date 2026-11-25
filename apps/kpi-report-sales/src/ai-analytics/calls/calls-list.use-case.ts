@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { CallPageLeadService, CallPageLinkService } from '@lib/call-lib';
+import { PortalViewReader } from '../../portal-view/portal-view.reader';
 import {
     normalizeUserId,
     type RequesterAccess,
@@ -28,13 +29,6 @@ import type { CallListBadgeContext } from './calls-list.types';
 import type { CallsListRequestDto } from './dto/calls-list-request.dto';
 import type { CallsListResponseDto } from './dto/calls-list.dto';
 
-/**
- * Набор «основных» бейджей портала (id общего бейджа или «m:» и код пункта).
- * Пока настроек портала нет — null: основные по справочнику бейджей и по
- * методике; позже набор придёт из настроек.
- */
-const MAIN_BADGES_OVERRIDE: CallListMainOverride = null;
-
 /** Раздел открыт руководителям по структуре и суперпользователю; иначе 403. */
 export function assertCallsListAccess(access: RequesterAccess): void {
     const leader = (CALLS_LIST_ROLES as readonly string[]).includes(
@@ -57,16 +51,21 @@ export function assertCallsListAccess(access: RequesterAccess): void {
  * Бейджи звонков и пункты методики портала — фильтры поверх прочих: сначала
  * менеджеры, типы, оценка и отзывы (`base`), затем выбранные бейджи. Счётчики
  * бейджей и пунктов считаются по `base`: сколько звонков останется, если
- * добавить бейдж к выбранным.
+ * добавить бейдж к выбранным. Какие бейджи видны в строке фильтров сразу —
+ * из настроек отчёта портала («Вид отчёта», `PortalViewReader`); портал не
+ * выбирал — основные по справочнику бейджей и по отметкам методики.
  */
 @Injectable()
 export class CallsListUseCase {
+    private readonly logger = new Logger(CallsListUseCase.name);
+
     constructor(
         private readonly index: CallListIndexLoader,
         private readonly clients: CallClientTitlesService,
         private readonly links: CallPageLinkService,
         private readonly leads: CallPageLeadService,
         private readonly points: CallListPointsProvider,
+        private readonly portalView: PortalViewReader,
     ) {}
 
     async execute(
@@ -75,9 +74,10 @@ export class CallsListUseCase {
         now: Date = new Date(),
     ): Promise<CallsListResponseDto> {
         assertCallsListAccess(access);
-        const [index, portalPoints] = await Promise.all([
+        const [index, portalPoints, mainOverride] = await Promise.all([
             this.index.load(dto.domain, dto.from, dto.to, now),
             this.points.forDomain(dto.domain),
+            this.mainBadges(dto.domain),
         ]);
         const query = callListQueryOf(dto);
         const visible = visibleCallRows(index, access);
@@ -105,7 +105,7 @@ export class CallsListUseCase {
                     clients,
                     urls,
                     points: badgeContext,
-                    mainOverride: MAIN_BADGES_OVERRIDE,
+                    mainOverride,
                 }),
             ),
             total: matched.length,
@@ -113,22 +113,28 @@ export class CallsListUseCase {
             pageSize: query.pageSize,
             facets: {
                 ...callListFacets(visible, index.managerNames),
-                badges: badgeFacets(
-                    base,
-                    query,
-                    badgeContext,
-                    MAIN_BADGES_OVERRIDE,
-                ),
-                points: pointFacets(
-                    base,
-                    query,
-                    badgeContext,
-                    MAIN_BADGES_OVERRIDE,
-                ),
+                badges: badgeFacets(base, query, badgeContext, mainOverride),
+                points: pointFacets(base, query, badgeContext, mainOverride),
                 methodology: portalPoints.methodology,
             },
             callTypesLock: callTypesLockOf(query.points, portalPoints.defs),
         };
+    }
+
+    /**
+     * Набор «основных» бейджей портала (id общего бейджа или «m:» и код
+     * пункта); null — портал не выбирал. Настройки не прочитались — тоже
+     * null: список работает с набором по умолчанию, это не ошибка запроса.
+     */
+    private async mainBadges(domain: string): Promise<CallListMainOverride> {
+        try {
+            return await this.portalView.badgesMain(domain);
+        } catch (error) {
+            this.logger.warn(
+                `Основные бейджи портала ${domain} не прочитаны, берём набор по умолчанию: ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 
     /**

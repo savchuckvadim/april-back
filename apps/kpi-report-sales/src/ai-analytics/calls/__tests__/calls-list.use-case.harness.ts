@@ -1,4 +1,5 @@
 import type { CallPageLeadService, CallPageLinkService } from '@lib/call-lib';
+import type { PortalViewReader } from '../../../portal-view/portal-view.reader';
 import type { RequesterAccess } from '../../domain/access/perimeter.util';
 import type { CallClientTitlesService } from '../call-client-titles.service';
 import type { CallListIndexLoader } from '../calls-list-index.loader';
@@ -55,7 +56,14 @@ export const dtoOf = (
         ...fields,
     }) as CallsListRequestDto;
 
-export function harness(portalPoints: CallListPointsView = PORTAL_POINTS) {
+/** Читатель «Вида отчёта» портала в объёме, нужном списку. */
+type BadgesMainReader = Pick<PortalViewReader, 'badgesMain'>;
+
+export function harness(
+    portalPoints: CallListPointsView = PORTAL_POINTS,
+    /** Основные бейджи из настроек портала; null — портал не выбирал. */
+    badgesMain: BadgesMainReader['badgesMain'] = () => Promise.resolve(null),
+) {
     const index = indexOf(
         [
             rowOf('1', {
@@ -117,12 +125,16 @@ export function harness(portalPoints: CallListPointsView = PORTAL_POINTS) {
     const points = {
         forDomain: jest.fn(() => Promise.resolve(portalPoints)),
     };
+    const portalView: jest.Mocked<BadgesMainReader> = {
+        badgesMain: jest.fn(badgesMain),
+    };
     const useCase = new CallsListUseCase(
         loader as unknown as CallListIndexLoader,
         clients as unknown as CallClientTitlesService,
         links as unknown as CallPageLinkService,
         leads as unknown as CallPageLeadService,
         points as unknown as CallListPointsProvider,
+        portalView as unknown as PortalViewReader,
     );
-    return { useCase, loader, clients, links, leads, points };
+    return { useCase, loader, clients, links, leads, points, portalView };
 }
