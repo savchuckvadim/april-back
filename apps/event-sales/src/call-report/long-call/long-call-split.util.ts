@@ -61,7 +61,7 @@ function sliceByChars(text: string, partChars: number): string[] {
  * Строка длиннее части — на предложения (слишком длинное предложение — по
  * знакам). Метка времени остаётся у первого куска, у остальных её нет.
  */
-function splitLongLine(
+export function splitLongLine(
     line: TranscriptLine,
     partChars: number,
 ): TranscriptLine[] {

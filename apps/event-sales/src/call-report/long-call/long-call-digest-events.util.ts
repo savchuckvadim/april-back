@@ -12,7 +12,7 @@ import type {
  * более ранней.
  */
 
-const normalizeQuote = (quote: string): string =>
+export const normalizeQuote = (quote: string): string =>
     quote.toLowerCase().replace(/\s+/g, ' ').trim();
 
 /**
