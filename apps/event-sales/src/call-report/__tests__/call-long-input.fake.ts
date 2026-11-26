@@ -79,6 +79,7 @@ export const longCallInput = (
                 ]),
             ) as LongCallInput['report']['consumers'],
         },
+        sourceChars: 140_200,
         transcriptChars: 58_400,
         partChars: 9_000,
         completions: [prepareCompletion(), prepareCompletion()],

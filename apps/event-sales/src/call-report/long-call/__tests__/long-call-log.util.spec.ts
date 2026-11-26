@@ -23,6 +23,7 @@ const report = (
 describe('formatLongCallLog', () => {
     const line = formatLongCallLog({
         domain: 'test.bitrix24.ru',
+        sourceChars: 148_900,
         transcriptChars: 61_234,
         report: report(),
         requests: 9,
@@ -37,6 +38,7 @@ describe('formatLongCallLog', () => {
     it('домен, знаки расшифровки, части, события, линии, сводка', () => {
         expect(line).toContain('test.bitrix24.ru');
         expect(line).toContain('расшифровка 61234 зн.');
+        expect(line).toContain('знаков: 148900 → 61234');
         expect(line).toContain('частей 7');
         expect(line).toContain('без конспекта 1');
         expect(line).toContain('событий 24');
@@ -60,6 +62,7 @@ describe('formatLongCallLog', () => {
     it('сводки нет — так и написано', () => {
         const without = formatLongCallLog({
             domain: 'd',
+            sourceChars: 1,
             transcriptChars: 1,
             report: report({ hasSummary: false }),
             requests: 0,

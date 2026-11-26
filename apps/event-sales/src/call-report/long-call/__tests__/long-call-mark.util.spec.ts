@@ -11,6 +11,15 @@ const MARK = {
     partsWithoutDigest: 1,
     hasSummary: true,
     transcriptChars: 58_400,
+    sourceChars: 140_200,
+};
+
+/** Метка разбора, сделанного до уплотнения: поля sourceChars нет. */
+const OLD_MARK = {
+    parts: 7,
+    partsWithoutDigest: 1,
+    hasSummary: true,
+    transcriptChars: 58_400,
 };
 
 describe('метка «разбор шёл по частям»', () => {
@@ -19,6 +28,7 @@ describe('метка «разбор шёл по частям»', () => {
         expect(
             buildLongCallMark(
                 longCallInput({
+                    sourceChars: 75_000,
                     transcriptChars: 30_000,
                     report: {
                         ...longCallInput().report,
@@ -33,7 +43,17 @@ describe('метка «разбор шёл по частям»', () => {
             partsWithoutDigest: 0,
             hasSummary: false,
             transcriptChars: 30_000,
+            sourceChars: 75_000,
         });
+    });
+
+    it('до уплотнения и после: обе длины в метке', () => {
+        const mark = buildLongCallMark(
+            longCallInput({ sourceChars: 198_146, transcriptChars: 91_000 }),
+        );
+
+        expect(mark.sourceChars).toBe(198_146);
+        expect(mark.transcriptChars).toBe(91_000);
     });
 
     it('кладётся в extra под ключом longCall, соседние ключи не затираются', () => {
@@ -64,6 +84,9 @@ describe('метка «разбор шёл по частям»', () => {
         expect(readLongCallMark({ longCall: { ...MARK, extra: 1 } })).toEqual(
             MARK,
         );
+        expect(readLongCallMark(withLongCallMark({}, longCallInput()))).toEqual(
+            MARK,
+        );
         expect(readLongCallMark(undefined)).toBeNull();
         expect(readLongCallMark(null)).toBeNull();
         expect(readLongCallMark([])).toBeNull();
@@ -81,5 +104,20 @@ describe('метка «разбор шёл по частям»', () => {
         expect(
             readLongCallMark({ longCall: { parts: 3, hasSummary: true } }),
         ).toBeNull();
+    });
+
+    it('старая метка без sourceChars читается и остаётся годной', () => {
+        const mark = readLongCallMark({ longCall: OLD_MARK });
+
+        expect(mark).toEqual(OLD_MARK);
+        expect(mark).not.toHaveProperty('sourceChars');
+    });
+
+    it('sourceChars не число (или не целое, или отрицательное) — поле пропускается, метка остаётся годной', () => {
+        for (const sourceChars of ['много', -5, 2.5, null, {}]) {
+            expect(
+                readLongCallMark({ longCall: { ...OLD_MARK, sourceChars } }),
+            ).toEqual(OLD_MARK);
+        }
     });
 });

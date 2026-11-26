@@ -20,7 +20,12 @@ export interface LongCallPrepareOptions {
 
 /** Готовый вход проходов длинного разговора. */
 export interface LongCallInput extends LongCallInputs {
-    /** Знаков в расшифровке (без крайних пробелов). */
+    /** Знаков в исходной расшифровке до уплотнения (без крайних пробелов). */
+    sourceChars: number;
+    /**
+     * Знаков в уплотнённой расшифровке (без крайних пробелов): по ней идут
+     * порог, резка и сборка текстов.
+     */
     transcriptChars: number;
     /** Размер части, которым резали, знаков. */
     partChars: number;

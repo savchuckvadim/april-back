@@ -8,7 +8,9 @@ import type { LongCallInputReport } from './long-call-input.types';
 
 export interface LongCallLogFacts {
     domain: string;
-    /** Знаков в расшифровке. */
+    /** Знаков в исходной расшифровке до уплотнения. */
+    sourceChars: number;
+    /** Знаков в уплотнённой расшифровке. */
     transcriptChars: number;
     report: LongCallInputReport;
     /** Запросов к модели ушло (с повторами и сорвавшимися). */
@@ -31,7 +33,7 @@ export function formatLongCallLog(facts: LongCallLogFacts): string {
     const { report } = facts;
 
     return (
-        `Длинный разговор (${facts.domain}): расшифровка ${facts.transcriptChars} зн., ` +
+        `Длинный разговор (${facts.domain}): расшифровка ${facts.transcriptChars} зн. (знаков: ${facts.sourceChars} → ${facts.transcriptChars}), ` +
         `частей ${report.partsCount}, без конспекта ${report.partsWithoutDigest}, ` +
         `событий ${report.eventsCount}, линий ${report.threadsCount}, ` +
         `сводка ${report.hasSummary ? 'есть' : 'нет'}; ` +

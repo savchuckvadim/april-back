@@ -8,6 +8,7 @@ import {
     envOnlyReader,
     type VendorSettingsReader,
 } from '@lib/vendor-settings';
+import { compactTranscript } from './long-call-compact.util';
 import { LongCallDigestCache } from './long-call-digest.cache';
 import { formatLongCallLog } from './long-call-log.util';
 import { buildLongCallInputs } from './long-call-input.util';
@@ -31,9 +32,10 @@ import { isLongTranscript, splitTranscript } from './long-call-split.util';
 import type { DigestedPart } from './long-call.types';
 
 /**
- * Подготовка длинного разговора к разбору (этап 4в): расшифровку режет на
- * части, по каждой просит у модели конспект, затем сводку разговора и
- * собирает проходам их тексты вместо полной расшифровки (сборка — 4б).
+ * Подготовка длинного разговора к разбору (этап 4в): расшифровку уплотняет
+ * (короткие строки одного говорящего склеиваются в фразы), режет на части,
+ * по каждой просит у модели конспект, затем сводку разговора и собирает
+ * проходам их тексты вместо полной расшифровки (сборка — 4б).
  *
  * Один метод — prepare. `null` значит «длинный путь не применяется»:
  * вызывающий работает как раньше, с полной расшифровкой.
@@ -72,7 +74,8 @@ export class LongCallInputService {
      * Длинная расшифровка → тексты для проходов; `null` — путь не применяется:
      * режим выключен (и нет `force`), расшифровка короче порога или уложилась
      * в одну часть, либо длинный путь не удался (без конспекта больше
-     * половины частей, любой сбой).
+     * половины частей, любой сбой). Порог, резка и сборка идут по уплотнённой
+     * расшифровке; вызывающий при `null` работает с исходной.
      */
     async prepare(
         domain: string,
@@ -81,11 +84,15 @@ export class LongCallInputService {
     ): Promise<LongCallInput | null> {
         const settings = await this.readSettings();
         if (settings.mode === 'off' && !options.force) return null;
-        if (!isLongTranscript(transcript, settings.thresholdChars)) return null;
         try {
+            const compact = compactTranscript(transcript);
+            if (!isLongTranscript(compact, settings.thresholdChars)) {
+                return null;
+            }
+
             return await this.prepareLong(
                 domain,
-                transcript,
+                { source: transcript, compact },
                 settings,
                 options,
             );
@@ -115,13 +122,14 @@ export class LongCallInputService {
 
     private async prepareLong(
         domain: string,
-        transcript: string,
+        transcripts: { source: string; compact: string },
         settings: LongCallSettings,
         options: LongCallPrepareOptions,
     ): Promise<LongCallInput | null> {
         const startedAt = Date.now();
         const { partChars } = settings;
-        const parts = splitTranscript(transcript, {
+        const { source, compact } = transcripts;
+        const parts = splitTranscript(compact, {
             partChars,
             overlapChars: overlapCharsFor(partChars),
         });
@@ -155,15 +163,17 @@ export class LongCallInputService {
         }
         const summary = await run.summarize(digested);
         const inputs = buildLongCallInputs(
-            transcript,
+            compact,
             digested,
             summary,
             partChars,
         );
-        const transcriptChars = transcript.trim().length;
+        const sourceChars = source.trim().length;
+        const transcriptChars = compact.trim().length;
         this.logger.log(
             formatLongCallLog({
                 domain,
+                sourceChars,
                 transcriptChars,
                 report: inputs.report,
                 requests: run.requestsSent,
@@ -176,6 +186,7 @@ export class LongCallInputService {
 
         return {
             ...inputs,
+            sourceChars,
             transcriptChars,
             partChars,
             completions: run.completions,

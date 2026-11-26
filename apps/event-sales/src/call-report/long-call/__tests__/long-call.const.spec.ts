@@ -3,6 +3,7 @@ import {
     CONVERSATION_SUMMARY_LIMITS,
     EVENT_WINDOW_RADIUS_CHARS_STEPS,
     EVENT_WINDOW_RADIUS_SEC_STEPS,
+    LONG_CALL_COMPACT_LIMITS,
     LONG_CALL_DIRECTIONS,
     LONG_CALL_EVENT_KIND_LABELS,
     LONG_CALL_EVENT_KINDS,
@@ -42,6 +43,13 @@ describe('константы длинного разговора', () => {
         });
         expect([...EVENT_WINDOW_RADIUS_SEC_STEPS]).toEqual([45, 30, 15]);
         expect([...EVENT_WINDOW_RADIUS_CHARS_STEPS]).toEqual([600, 400, 200]);
+    });
+
+    it('уплотнение расшифровки: 10 секунд от первой строки и 240 знаков текста', () => {
+        expect(LONG_CALL_COMPACT_LIMITS).toEqual({
+            maxSpanSec: 10,
+            maxTextChars: 240,
+        });
     });
 
     it('девять видов событий, у каждого русская подпись', () => {

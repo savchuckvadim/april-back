@@ -71,8 +71,8 @@ export function formatTimecode(sec: number): string {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-/** Подпись говорящего в расшифровке для модели. */
-const SPEAKER_LABELS: Record<TranscriptSpeaker, string> = {
+/** Подпись говорящего в расшифровке для модели (у unknown подписи нет). */
+export const TRANSCRIPT_SPEAKER_LABELS: Record<TranscriptSpeaker, string> = {
     manager: 'Менеджер',
     client: 'Клиент',
     unknown: '',
@@ -89,7 +89,7 @@ export function renderTranscriptWithTimecodes(
 ): string {
     return segments
         .map(segment => {
-            const label = SPEAKER_LABELS[segment.speaker];
+            const label = TRANSCRIPT_SPEAKER_LABELS[segment.speaker];
             const prefix = label ? `${label}: ` : '';
 
             return `[${formatTimecode(segment.startSec)}] ${prefix}${segment.text.trim()}`;

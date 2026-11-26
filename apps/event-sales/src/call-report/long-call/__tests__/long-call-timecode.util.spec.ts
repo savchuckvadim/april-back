@@ -1,4 +1,8 @@
-import { parseTimecodeSec, transcriptLines } from '../long-call-timecode.util';
+import {
+    parseTimecodeSec,
+    splitTimecode,
+    transcriptLines,
+} from '../long-call-timecode.util';
 
 describe('parseTimecodeSec — метка [мм:сс] в начале строки', () => {
     it.each([
@@ -22,6 +26,32 @@ describe('parseTimecodeSec — метка [мм:сс] в начале строк
         [''],
     ])('«%s» → null', line => {
         expect(parseTimecodeSec(line)).toBeNull();
+    });
+});
+
+describe('splitTimecode — метка и остаток строки', () => {
+    it('метка как написана, секунды и остаток после неё', () => {
+        expect(splitTimecode('[12:05] Клиент: Да')).toEqual({
+            label: '[12:05]',
+            sec: 725,
+            rest: ' Клиент: Да',
+        });
+        expect(splitTimecode('  [125:03] три часа')).toEqual({
+            label: '[125:03]',
+            sec: 7503,
+            rest: ' три часа',
+        });
+        expect(splitTimecode('[00:05]')).toEqual({
+            label: '[00:05]',
+            sec: 5,
+            rest: '',
+        });
+    });
+
+    it('метки нет или секунды не меньше 60 — null', () => {
+        expect(splitTimecode('Менеджер: без метки')).toBeNull();
+        expect(splitTimecode('[00:75] Менеджер: да')).toBeNull();
+        expect(splitTimecode('')).toBeNull();
     });
 });
 
