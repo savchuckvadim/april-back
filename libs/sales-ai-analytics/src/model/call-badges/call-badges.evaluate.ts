@@ -147,6 +147,7 @@ const BADGE_RULES: Record<CallBadgeId, BadgeRule> = {
     outcome_postponed: outcomeRule('outcome_postponed'),
     outcome_refused: outcomeRule('outcome_refused'),
     outcome_no_contact: outcomeRule('outcome_no_contact'),
+    outcome_connection_lost: outcomeRule('outcome_connection_lost'),
     progress_low: progressLow,
     capped,
     price_named: priceNamed,

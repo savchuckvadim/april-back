@@ -64,7 +64,7 @@ describe('итог проверки разбора на звонке', () => {
         before: ACTIVE,
         callType: 'presentation',
         durationSec: 1260,
-        promptVersion: 'focus-v3.4-2026-11-18',
+        promptVersion: 'focus-v3.6-2026-11-26',
     });
 
     it('места: разделы с актуальностью, потребности, раскрытые пункты «хвоста» и 5К', () => {
@@ -118,7 +118,7 @@ describe('итог проверки разбора на звонке', () => {
             },
         ]);
         expect(result.tokens).toBe(61250);
-        expect(result.promptVersion).toBe('focus-v3.4-2026-11-18');
+        expect(result.promptVersion).toBe('focus-v3.6-2026-11-26');
     });
 });
 
@@ -208,7 +208,7 @@ describe('AnalysisPreviewUseCase', () => {
             quoteEvidence: true,
         });
         expect(writes.map(item => item.status)).toEqual(['running', 'done']);
-        expect(state.result?.promptVersion).toBe('focus-v3.4-2026-11-18');
+        expect(state.result?.promptVersion).toBe('focus-v3.6-2026-11-26');
         expect(state.result?.callType).toBe('presentation');
         expect(state.result?.durationSec).toBe(1260);
     });

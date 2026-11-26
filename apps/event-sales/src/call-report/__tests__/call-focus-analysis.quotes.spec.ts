@@ -243,7 +243,7 @@ describe('CallFocusAnalysisService — задание с цитатами', () =
         expect(legacy?.taskCallType).toBeUndefined();
     });
 
-    it('неполный разбор с цитатами сохраняет проходы с версией 3.4 — догон прежней версии их не возьмёт', async () => {
+    it('неполный разбор с цитатами сохраняет проходы с версией 3.6 — догон прежней версии их не возьмёт', async () => {
         const { service } = makeDeps({
             responses: { call_focus_closing: new Error('negodny JSON') },
         });
@@ -255,6 +255,6 @@ describe('CallFocusAnalysisService — задание с цитатами', () =
             { quoteEvidence: true },
         );
         const stored = dto?.extra?.focusPasses as { promptVersion: string };
-        expect(stored.promptVersion).toBe('focus-v3.4-2026-11-18');
+        expect(stored.promptVersion).toBe('focus-v3.6-2026-11-26');
     });
 });

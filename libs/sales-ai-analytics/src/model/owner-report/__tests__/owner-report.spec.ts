@@ -57,6 +57,7 @@ describe('отчёт собственнику: нормализация звон
             postponed: 0,
             refused: 0,
             no_contact: 0,
+            connection_lost: 0,
         });
         expect(facts.outcomes.unmarked).toBe(2);
         expect(facts.outcomes.advancedOfContacted.n).toBe(0);
@@ -174,6 +175,7 @@ describe('отчёт собственнику: разделы', () => {
             postponed: 2,
             refused: 0,
             no_contact: 1,
+            connection_lost: 0,
         });
         expect(facts.outcomes.contacted).toBe(7);
         expect(facts.outcomes.postponedWithDate).toEqual({

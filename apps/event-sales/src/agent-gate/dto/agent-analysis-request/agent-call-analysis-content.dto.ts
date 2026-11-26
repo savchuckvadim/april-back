@@ -251,7 +251,8 @@ export class AgentCallAnalysisContentDto extends AgentCallAnalysisClassification
         description:
             'Исход разговора (focus-v3.1): продвинут (показ, доступ, КП, ' +
             'счёт), перезвон с датой, отложено без даты, отказ, без ' +
-            'содержательного контакта; null — нерелевантный звонок.',
+            'содержательного контакта, связь прервалась (с focus-v3.5); ' +
+            'null — нерелевантный звонок.',
         enum: CALL_REPORT_OUTCOME_CODES,
         nullable: true,
         example: 'postponed',

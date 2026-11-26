@@ -3,7 +3,7 @@ import {
     CALL_REPORT_REFUSAL_CODES,
 } from '@lib/call-lib';
 import {
-    DEEP_ANALYSIS_CORE_RULES,
+    DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST,
     FIVE_K_CHECKLIST_SPEC,
     FIVE_K_ITEMS_SCHEMA,
     HVOST_CHECKLIST_SPEC,
@@ -93,7 +93,7 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
     additionalProperties: false,
 };
 
-export const FOCUS_MOVEMENT_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
+export const FOCUS_MOVEMENT_PROMPT = `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО ВОЗРАЖЕНИЯ И ЦЕНА: сопротивление клиента и
 разговор о цене. Не оценивай приветствие, презентацию, закрытие разговора и
@@ -213,7 +213,7 @@ ${FIVE_K_CHECKLIST_SPEC}`;
  */
 export const focusClosingPrompt = (
     withChecklists: boolean,
-): string => `${DEEP_ANALYSIS_CORE_RULES}
+): string => `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО ЗАКРЫТИЕ РАЗГОВОРА И СЛЕДУЮЩИЙ ШАГ: чем
 закончился разговор, отказ и его причина, договорённость о следующем контакте,

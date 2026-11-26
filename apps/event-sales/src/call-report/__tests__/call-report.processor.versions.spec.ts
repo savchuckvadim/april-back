@@ -267,8 +267,10 @@ describe('версии промпта и классификатора 21.10.2026
         // минорная, в общей серии.
         // v3.3 (17.11.2026): проход «движение сделки» разделён на два вызова
         // — минорная, в общей серии.
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.3-2026-11-17');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-17');
+        // v3.5 (26.11.2026): обрыв связи — не вина менеджера (общее правило,
+        // исход и сбой «связь прервалась») — минорная, в общей серии.
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.5-2026-11-26');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-26');
         expect(PROMPT_SERIES_START['focus-v3.2-2026-11-16']).toBe(
             SERIES_BOUNDARY,
         );

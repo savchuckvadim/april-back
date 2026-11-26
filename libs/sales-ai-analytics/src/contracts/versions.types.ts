@@ -84,6 +84,12 @@ export const PROMPT_SERIES_START = {
     // разговоре; «хвост» и 5К — только у презентации. Рубрика и оценки
     // разделов не менялись.
     'focus-v3.4-2026-11-18': AI_ANALYSIS_SERIES_START,
+    // v3.5 (26.11.2026): обрыв связи — не поступок менеджера: общее правило
+    // во всех заданиях, исход и сбой «связь прервалась» (connection_lost);
+    // рубрика и шкала оценок не менялись.
+    'focus-v3.5-2026-11-26': AI_ANALYSIS_SERIES_START,
+    // v3.6 (26.11.2026): то же для задания с цитатами (v3.4 + правка v3.5).
+    'focus-v3.6-2026-11-26': AI_ANALYSIS_SERIES_START,
 } as const satisfies Readonly<Record<string, string>>;
 
 /**

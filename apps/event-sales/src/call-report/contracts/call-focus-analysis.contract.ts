@@ -6,7 +6,7 @@ import {
     CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
 import {
-    DEEP_ANALYSIS_CORE_RULES,
+    DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST,
     SECTION_FIELDS_SPEC,
 } from './call-deep-analysis.contract';
 import {
@@ -92,7 +92,7 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
     additionalProperties: false,
 };
 
-export const FOCUS_FORM_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
+export const FOCUS_FORM_PROMPT = `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО ФОРМА РАЗГОВОРА. Не оценивай содержание
 продажи (потребности, презентацию, возражения, цену) — этим занимаются другие
@@ -155,7 +155,7 @@ export const CONTENT_NEEDS_SPEC =
  */
 export const focusContentPrompt = (
     needsSpec: string,
-): string => `${DEEP_ANALYSIS_CORE_RULES}
+): string => `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ТОЛЬКО СОДЕРЖАНИЕ ПРОДАЖИ. Не оценивай приветствие,
 тон и работу с ценой — этим занимаются другие проходы разбора. Твоя зона:
@@ -220,7 +220,7 @@ export const FOCUS_SYNTHESIS_SCHEMA: Record<string, unknown> = {
     additionalProperties: false,
 };
 
-export const FOCUS_SYNTHESIS_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
+export const FOCUS_SYNTHESIS_PROMPT = `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЯ ЗАДАЧА — ИТОГОВАЯ КАРТИНА ЗВОНКА. Четыре специализированных разбора уже
 выполнены (форма разговора, содержание продажи, возражения и цена, закрытие и

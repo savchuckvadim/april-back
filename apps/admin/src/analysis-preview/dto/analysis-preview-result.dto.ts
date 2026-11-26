@@ -113,7 +113,7 @@ export class AnalysisPreviewSectionScoreDto
 export class AnalysisPreviewResultDto implements AnalysisPreviewResult {
     @ApiProperty({
         description: 'Версия задания, с которым шёл проверочный разбор.',
-        example: 'focus-v3.4-2026-11-18',
+        example: 'focus-v3.6-2026-11-26',
         type: String,
     })
     promptVersion: string;
