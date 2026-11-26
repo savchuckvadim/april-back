@@ -145,9 +145,11 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         bucket: 'closing',
         column: true,
     },
-    // Документные события (ev_offer*, ev_invoice*) в items `event_type`
-    // sales_kpi не заведены — до их установки факт решения считается по
-    // звонкам по решению.
+    // Документные события (ev_offer*, ev_invoice*, ev_contract, ev_supply)
+    // заведены в items `event_type` sales_kpi 24.11.2026, но к типу «В
+    // решении» не привязаны: факт решения по-прежнему считается по звонкам
+    // по решению. Привязка — отдельным решением; пока они в списке «вне
+    // карты» ниже.
     decision: {
         title: 'В решении',
         kpiEventTypeCodes: ['call_in_progress'],
@@ -222,4 +224,12 @@ export const AI_ANALYTICS_UNMAPPED_KPI_EVENT_TYPES = {
     info: 'информационное событие — не звонок этапа',
     ev_fail: 'исход «Отказ» — сверка сделок, не звонок',
     refine: 'свой item только в истории; в сводке доработка пишется как call',
+    ev_offer: 'документ «КП» — не звонок; привязка к «В решении» не решена',
+    ev_offer_pres:
+        'документ «КП после презентации» — не звонок; привязка не решена',
+    ev_invoice: 'документ «Счёт» — не звонок; привязка к «В решении» не решена',
+    ev_invoice_pres:
+        'документ «Счёт после презентации» — не звонок; привязка не решена',
+    ev_contract: 'документ «Договор» — не звонок; привязка не решена',
+    ev_supply: 'документ «Поставка» — не звонок; привязка не решена',
 } as const satisfies Partial<Record<AiAnalyticsKpiEventTypeCode, string>>;
