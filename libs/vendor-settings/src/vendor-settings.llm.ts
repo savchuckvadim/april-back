@@ -10,7 +10,7 @@ import {
  * Настройки шлюза модели разборов звонков в админке (11.11.2026, решение
  * владельца — «не в env, а в админке»):
  * - группа «llm-gateway» — сколько ждать ответ VibeCode, сколько запросов
- *   разом, предохранитель поставщиков;
+ *   разом, предохранитель поставщиков, разбор длинных разговоров по частям;
  * - в группу «ai-keys», к ключам Groq и Cloud.ru, — свой запасной поставщик
  *   (любой OpenAI-совместимый).
  *
@@ -41,6 +41,16 @@ export const LLM_INTEGER_SETTING_RULES = {
         max: 300_000,
         defaultValue: 180_000,
     },
+    // Длинный разговор по частям: порог — знаков расшифровки (получасовой
+    // разговор — около 25 тысяч), часть — знаков в одном запросе конспекта.
+    // Константы приложения event-sales (LONG_CALL_THRESHOLD_CHARS,
+    // LONG_CALL_PART_CHARS) берут умолчание отсюда — одно место правды.
+    CALL_LONG_THRESHOLD_CHARS: {
+        min: 10_000,
+        max: 200_000,
+        defaultValue: 25_000,
+    },
+    CALL_LONG_PART_CHARS: { min: 3_000, max: 20_000, defaultValue: 9_000 },
 } as const satisfies Record<string, IntegerSettingRule>;
 export type LlmIntegerSettingKey = keyof typeof LLM_INTEGER_SETTING_RULES;
 
@@ -54,6 +64,22 @@ export type LlmFallbackJsonMode = (typeof LLM_FALLBACK_JSON_MODES)[number];
 export const LLM_FALLBACK_JSON_MODE_DEFAULT: LlmFallbackJsonMode =
     'json_schema';
 
+/**
+ * Разбор длинного разговора по частям: выключатель. `off` — разговор уходит
+ * в модель целиком, как раньше; `on` — режется на части (конспект каждой +
+ * сводка разговора).
+ */
+export const CALL_LONG_PARTS_MODES = ['off', 'on'] as const;
+export type CallLongPartsMode = (typeof CALL_LONG_PARTS_MODES)[number];
+export const CALL_LONG_PARTS_MODE_DEFAULT: CallLongPartsMode = 'off';
+
+/** Настройки разбора длинных разговоров по частям — их читает сервис event-sales. */
+export const CALL_LONG_SETTING_KEYS = [
+    'CALL_LONG_PARTS_MODE',
+    'CALL_LONG_THRESHOLD_CHARS',
+    'CALL_LONG_PART_CHARS',
+] as const;
+
 /** Группа «Разборы звонков: очередь к модели, ожидание и предохранитель». */
 export const LLM_GATEWAY_SETTING_KEYS = [
     'VIBECODE_ANALYSIS_TIMEOUT_MS',
@@ -62,6 +88,7 @@ export const LLM_GATEWAY_SETTING_KEYS = [
     'LLM_CIRCUIT_FAILURES',
     'LLM_CIRCUIT_WINDOW_SEC',
     'LLM_CIRCUIT_COOLDOWN_SEC',
+    ...CALL_LONG_SETTING_KEYS,
 ] as const;
 
 /** Свой запасной поставщик разборов — в группе ключей AI-сервисов. */
@@ -133,6 +160,30 @@ export const LLM_GATEWAY_SETTINGS: readonly VendorSettingDefinition[] = [
         description:
             'Сколько поставщик стоит на паузе. Пока она идёт, к нему уходит только один пробный запрос за раз, и то лишь когда запасной не ответил. Удачный ответ снимает паузу сразу. По умолчанию 300 (5 минут).',
         howTo: 'Новое значение действует со следующей паузы, текущая доживает свой срок. Перезапуск не нужен.',
+    }),
+    {
+        key: 'CALL_LONG_PARTS_MODE',
+        group: 'llm-gateway',
+        label: 'Длинные разговоры: разбор по частям',
+        description:
+            'Длинный разговор режется на части; по каждой части модель пишет конспект, затем сводит их, и разбор идёт по сводке и дословным отрывкам. Выключено — разговор уходит в модель целиком, как раньше. По умолчанию выключено.',
+        howTo: `Впишите on, чтобы включить, или off, чтобы выключить. Сначала проверьте на нескольких длинных звонках, что разбор получился не хуже прежнего. ${LIVE}`,
+        secret: false,
+        example: CALL_LONG_PARTS_MODE_DEFAULT,
+        defaultValue: CALL_LONG_PARTS_MODE_DEFAULT,
+        validate: oneOf(CALL_LONG_PARTS_MODES),
+    },
+    integerSetting('CALL_LONG_THRESHOLD_CHARS', 'llm-gateway', {
+        label: 'Длинные разговоры: с какой длины расшифровки считать разговор длинным, знаков',
+        description:
+            'Расшифровка длиннее этого числа знаков разбирается по частям. Получасовой разговор — примерно 25 тысяч знаков. Короче — разбирается целиком, как раньше. Работает, когда включён разбор по частям. По умолчанию 25 000.',
+        howTo: `Меньше — по частям разбирается больше звонков: запросов к модели больше, но каждый короче. Больше — по частям идут только самые длинные. ${LIVE}`,
+    }),
+    integerSetting('CALL_LONG_PART_CHARS', 'llm-gateway', {
+        label: 'Длинные разговоры: размер одной части, знаков',
+        description:
+            'Сколько знаков в одной части. Меньше — больше запросов к модели, но каждый короче. Соседние части перекрываются примерно на десятую долю размера, чтобы не потерять фразу на стыке. По умолчанию 9 000.',
+        howTo: `Держите размер части заметно меньше порога длинного разговора: иначе разговор у порога не разрежется на части. ${LIVE}`,
     }),
 ];
 

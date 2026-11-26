@@ -38,6 +38,7 @@ import { CallClassifyStepService } from './services/call-classify-step.service';
 import { CallContextBuilderService } from './services/call-context-builder.service';
 import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from './services/call-focus-analysis.service';
+import { LongCallInputService } from './long-call/long-call-input.service';
 import { MethodologyModule } from '@lib/call-lib/call-report/methodology';
 import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallRevisionService } from './services/call-revision.service';
@@ -134,6 +135,10 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallContextBuilderService,
         CallDeepAnalysisService,
         CallFocusAnalysisService,
+        // Длинный разговор по частям: конспекты частей + сводка вместо полной
+        // расшифровки. Подключение к разбору — следующий этап, режим в
+        // настройках вендора (CALL_LONG_PARTS_MODE) выключен по умолчанию.
+        LongCallInputService,
         CallReportSettingsService,
         CallRevisionService,
         // Проверка по документам компании (Фаза 3 rag-driven-analysis-plan)

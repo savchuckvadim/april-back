@@ -8,14 +8,30 @@
  * Чистые константы: без DI, Bitrix и Prisma.
  */
 
+import { LLM_INTEGER_SETTING_RULES } from '@lib/vendor-settings';
+
+/**
+ * Порог длинного разговора и размер части — по умолчанию из настроек
+ * вендора (CALL_LONG_THRESHOLD_CHARS, CALL_LONG_PART_CHARS): одно место
+ * правды, константы приложения только повторяют умолчание. Действующие
+ * значения читает LongCallInputService.
+ */
+
 /** Порог длинного разговора: расшифровка от стольких знаков идёт по частям. */
-export const LONG_CALL_THRESHOLD_CHARS = 25_000;
+export const LONG_CALL_THRESHOLD_CHARS =
+    LLM_INTEGER_SETTING_RULES.CALL_LONG_THRESHOLD_CHARS.defaultValue;
 
 /** Размер одной части, знаков. */
-export const LONG_CALL_PART_CHARS = 9_000;
+export const LONG_CALL_PART_CHARS =
+    LLM_INTEGER_SETTING_RULES.CALL_LONG_PART_CHARS.defaultValue;
 
-/** Перекрытие соседних частей, знаков (около минуты разговора). */
-export const LONG_CALL_OVERLAP_CHARS = 900;
+/** Перекрытие соседних частей — десятая часть размера части. */
+export const LONG_CALL_OVERLAP_DIVISOR = 10;
+
+/** Перекрытие при размере части по умолчанию, знаков (около минуты разговора). */
+export const LONG_CALL_OVERLAP_CHARS = Math.round(
+    LONG_CALL_PART_CHARS / LONG_CALL_OVERLAP_DIVISOR,
+);
 
 /** Хвост короче этой доли размера части приклеивается к предыдущей части. */
 export const LONG_CALL_TAIL_SHARE = 1 / 3;

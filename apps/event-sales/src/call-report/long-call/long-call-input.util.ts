@@ -1,3 +1,4 @@
+import { LONG_CALL_PART_CHARS } from './long-call.const';
 import {
     LONG_CALL_CONSUMERS,
     type LongCallConsumer,
@@ -56,17 +57,20 @@ interface ConsumerBuild {
  * Тексты проходов длинного разговора и сводка для журнала.
  *
  * @param transcript исходная расшифровка целиком (строки «[мм:сс] текст»)
- * @param parts части этой расшифровки (резка с размером LONG_CALL_PART_CHARS)
- *   вместе с конспектами; у части конспекта может не быть (null)
+ * @param parts части этой расшифровки вместе с конспектами; у части
+ *   конспекта может не быть (null)
  * @param summary сводка разговора; null — запрос не удался, блока сводки
  *   в текстах не будет
+ * @param partChars размер части, которым резали расшифровку (по умолчанию
+ *   LONG_CALL_PART_CHARS; при размере из настройки — он)
  */
 export function buildLongCallInputs(
     transcript: string,
     parts: readonly DigestedPart[],
     summary: ConversationSummary | null,
+    partChars: number = LONG_CALL_PART_CHARS,
 ): LongCallInputs {
-    const prepared = prepareTranscript(transcript);
+    const prepared = prepareTranscript(transcript, partChars);
     const events = collectDigestEvents(parts);
     const partRanges = locatePartRanges(prepared, parts);
     const partCandidates = partsWithoutDigest(parts, partRanges);

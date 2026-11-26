@@ -13,10 +13,17 @@ import { transcriptLines } from './long-call-timecode.util';
  * Чистые функции: без DI, Bitrix и Prisma.
  */
 
-/** Строки исходной расшифровки с секундами звучания каждой. */
-export function prepareTranscript(text: string): PreparedTranscript {
+/**
+ * Строки исходной расшифровки с секундами звучания каждой. partChars — тот
+ * размер части, которым резали расшифровку: по нему длинные строки делятся на
+ * предложения так же, как у частей (иначе часть в строках не найти).
+ */
+export function prepareTranscript(
+    text: string,
+    partChars: number = LONG_CALL_PART_CHARS,
+): PreparedTranscript {
     const lines = transcriptLines(text).flatMap(line =>
-        splitLongLine(line, LONG_CALL_PART_CHARS),
+        splitLongLine(line, partChars),
     );
     let current: number | null = null;
     const secs = lines.map(line => {
