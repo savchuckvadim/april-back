@@ -62,10 +62,8 @@ export class OfferWordMultiGenerateUseCase {
         prepared: OfferWordMultiGenerateDto,
     ): SalesDocumentSource[] {
         try {
-            return planOfferRenders(
-                prepared,
-                resolveDocumentVariants(prepared),
-            ).requests;
+            return planOfferRenders(prepared, resolveDocumentVariants(prepared))
+                .requests;
         } catch (error) {
             this.logger.warn(
                 `${prepared.domain}: состав КП для потока продаж не разобран: ${error instanceof Error ? error.message : String(error)}`,
