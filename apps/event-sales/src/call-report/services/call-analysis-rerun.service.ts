@@ -42,6 +42,12 @@ export interface CallAnalysisRerunInput {
      * его явно; не задано — по выключателю.
      */
     quoteEvidence?: boolean;
+    /**
+     * Резать длинный разговор по частям, даже если режим в настройках
+     * выключен (проверка из админки). Остальные вызывающие поле не задают —
+     * у них решает настройка.
+     */
+    longParts?: boolean;
 }
 
 export interface CallAnalysisRerunOutcome {
@@ -94,7 +100,8 @@ export class CallAnalysisRerunService {
         const hasOptions =
             input.model !== null ||
             input.stored !== undefined ||
-            input.quoteEvidence !== undefined;
+            input.quoteEvidence !== undefined ||
+            input.longParts === true;
         const dto = await this.focusAnalysis.run(
             domain,
             transcript,
@@ -107,6 +114,9 @@ export class CallAnalysisRerunService {
                       ...(input.quoteEvidence === undefined
                           ? {}
                           : { quoteEvidence: input.quoteEvidence }),
+                      ...(input.longParts
+                          ? { longParts: 'force' as const }
+                          : {}),
                   }
                 : undefined,
         );

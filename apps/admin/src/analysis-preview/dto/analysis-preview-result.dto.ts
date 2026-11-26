@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
     ANALYSIS_PREVIEW_POINT_KINDS,
     type AnalysisPreviewCoverage,
+    type AnalysisPreviewLongCall,
     type AnalysisPreviewPoint,
     type AnalysisPreviewPointKind,
     type AnalysisPreviewResult,
@@ -109,6 +110,41 @@ export class AnalysisPreviewSectionScoreDto
     after: number | null;
 }
 
+/** Как шёл разбор длинного разговора по частям. */
+export class AnalysisPreviewLongCallDto implements AnalysisPreviewLongCall {
+    @ApiProperty({
+        description: 'На сколько частей разрезали расшифровку.',
+        example: 7,
+        type: Number,
+    })
+    parts: number;
+
+    @ApiProperty({
+        description:
+            'Сколько частей остались без конспекта: модель не ответила, ' +
+            'такие части вошли в разбор дословным текстом.',
+        example: 0,
+        type: Number,
+    })
+    partsWithoutDigest: number;
+
+    @ApiProperty({
+        description:
+            'Удалось ли свести конспекты в сводку всего разговора; false — ' +
+            'разбор шёл без сводки.',
+        example: true,
+        type: Boolean,
+    })
+    hasSummary: boolean;
+
+    @ApiProperty({
+        description: 'Знаков в расшифровке звонка.',
+        example: 58400,
+        type: Number,
+    })
+    transcriptChars: number;
+}
+
 /** Итог проверки разбора на звонке. */
 export class AnalysisPreviewResultDto implements AnalysisPreviewResult {
     @ApiProperty({
@@ -185,4 +221,15 @@ export class AnalysisPreviewResultDto implements AnalysisPreviewResult {
         nullable: true,
     })
     tokens: number | null;
+
+    @ApiProperty({
+        description:
+            'Разбор по частям: сведения о резке длинного разговора; null — ' +
+            'разбор шёл по полной расшифровке (разговор короче порога, ' +
+            'режим выключен или подготовка не удалась).',
+        type: AnalysisPreviewLongCallDto,
+        nullable: true,
+        required: false,
+    })
+    longCall?: AnalysisPreviewLongCallDto | null;
 }

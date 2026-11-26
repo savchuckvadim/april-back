@@ -103,6 +103,8 @@ export class AnalysisPreviewUseCase {
             source: active.user_result,
             model: settings.deepAnalysisModel ?? null,
             quoteEvidence: true,
+            // «Разобрать по частям» из админки; без флага — решает настройка.
+            ...(data.longParts ? { longParts: true } : {}),
         });
         if (outcome === null) {
             throw new AnalysisPreviewError(

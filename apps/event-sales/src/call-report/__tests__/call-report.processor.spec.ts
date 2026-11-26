@@ -3,6 +3,7 @@ import { YandexCallBusyError, YandexSubmitLimitError } from '@lib/call-lib';
 import { LlmUnavailableError } from '@lib/llm-gateway';
 import { CallReportProcessor } from '../queue/call-report.processor';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 
 const PAYLOAD = {
     domain: 'test.bitrix24.ru',
@@ -51,6 +52,7 @@ const focusFailingWith = (error: Error): CallFocusAnalysisService =>
                 .mockResolvedValue({ presentationStrictness: 'strict' }),
         } as never,
         { resolve: jest.fn().mockResolvedValue(null) } as never,
+        noLongCall() as never,
     );
 
 /** Фокус-разбор подменяется настоящим (focusFailingWith); иначе — мок. */

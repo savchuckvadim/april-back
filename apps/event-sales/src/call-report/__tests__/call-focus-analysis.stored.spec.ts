@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { POLYANSKY_METHODOLOGY, type ResolvedMethodology } from '@lib/call-lib';
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 import {
     usableStoredFocusPasses,
     type StoredFocusPasses,
@@ -74,6 +75,7 @@ function makeService(options?: {
         {
             resolve: jest.fn().mockResolvedValue(options?.methodology ?? null),
         } as never,
+        noLongCall() as never,
     );
     /** Имена схем вызовов модели по порядку. */
     const schemas = (): unknown[] =>

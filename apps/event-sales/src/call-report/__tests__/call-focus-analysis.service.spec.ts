@@ -13,6 +13,7 @@ import {
     FOCUS_SECTION_CODES,
 } from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 
 const focusResult = (overrides?: Record<string, unknown>) => ({
     sections: [],
@@ -121,6 +122,7 @@ const makeDeps = (options?: {
         appSettings as never,
         reportSettings as never,
         methodologyRegistry as never,
+        noLongCall() as never,
     );
     return {
         service,

@@ -19,6 +19,8 @@ const PREVIEW_JOB_OPTIONS = {
 export interface AnalysisPreviewStartInput {
     domain: string;
     transcriptionId: string;
+    /** Разобрать по частям, даже если режим в настройках выключен. */
+    longParts?: boolean;
     requestedBy?: string;
 }
 
@@ -41,6 +43,7 @@ export class AnalysisPreviewService {
             previewId: randomUUID(),
             domain: input.domain,
             transcriptionId: input.transcriptionId,
+            ...(input.longParts ? { longParts: true } : {}),
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
         };
         // Состояние пишется до постановки: опрос сразу видит «в очереди».

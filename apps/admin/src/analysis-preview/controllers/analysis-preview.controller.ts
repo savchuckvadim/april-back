@@ -50,8 +50,10 @@ export class AnalysisPreviewController {
             'переразбора. Итог — места разбора в разговоре (сколько нашлось ' +
             'в записи) и оценки «сейчас → по проверке». Ничего не ' +
             'сохраняет: разбор звонка и карточка в Битрикс24 не меняются; ' +
-            'расход модели — как у одного разбора. Отвечает сразу ' +
-            'состоянием «в очереди»; итог читается опросом.',
+            'расход модели — как у одного разбора. Флаг longParts — ' +
+            'разобрать длинный разговор по частям, даже если режим ' +
+            'выключен в настройках; в итоге тогда есть блок longCall. ' +
+            'Отвечает сразу состоянием «в очереди»; итог читается опросом.',
     })
     @ApiOkResponse({
         description: 'Проверка поставлена в очередь.',
@@ -64,6 +66,7 @@ export class AnalysisPreviewController {
         return this.service.start({
             domain: dto.domain.trim(),
             transcriptionId: dto.transcriptionId,
+            longParts: dto.longParts,
             requestedBy: user?.login ?? undefined,
         });
     }

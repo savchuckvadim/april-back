@@ -18,6 +18,7 @@ import {
     parseFactsCatchupResult,
     type FactsCatchupResult,
 } from '../contracts/call-report-facts-catchup.contract';
+import { LongCallInputService } from '../long-call/long-call-input.service';
 import { callTypeOfAnalysis } from './call-analysis-rerun.service';
 import { sumCompletionUsage } from './call-analysis-usage.util';
 import { CallContextBuilderService } from './call-context-builder.service';
@@ -53,6 +54,7 @@ export class CallFactsCatchupService {
         private readonly llm: StructuredLlmGateway,
         private readonly contextBuilder: CallContextBuilderService,
         private readonly llmPrice: LlmPriceResolverService,
+        private readonly longCall: LongCallInputService,
     ) {}
 
     /**
@@ -70,10 +72,15 @@ export class CallFactsCatchupService {
             (row.text ?? '');
         if (!transcript.trim()) return null;
         const domain = row.domain as string;
+        // Длинный разговор — текст «целиком» вместо расшифровки; null —
+        // как раньше.
+        const longInput = await this.longCall.prepare(domain, transcript, {
+            model: input.model ?? undefined,
+        });
         const response = await this.llm.structuredCompletionWithUsage(
             FACTS_CATCHUP_PROMPT,
             buildFactsCatchupUserContent(
-                transcript,
+                longInput?.texts.whole ?? transcript,
                 callTypeOfAnalysis(input.source),
                 input.source,
                 await this.passportBlock(row),
@@ -86,7 +93,7 @@ export class CallFactsCatchupService {
         const facts = parseFactsCatchupResult(response.result);
         if (facts === null) return null;
         const usage = analysisUsageColumns(
-            sumCompletionUsage([response]),
+            sumCompletionUsage([response, ...(longInput?.completions ?? [])]),
             await this.llmPrice.resolvePricing(domain),
         );
         return {

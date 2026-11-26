@@ -1,4 +1,5 @@
 import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 
 /** Профиль типа из реестра — калибровка разбора под этап продаж. */
 const coldProfile = {
@@ -83,6 +84,7 @@ const makeDeps = (options?: {
         callTypeRegistry as never,
         appSettings as never,
         reportSettings as never,
+        noLongCall() as never,
     );
     return {
         service,

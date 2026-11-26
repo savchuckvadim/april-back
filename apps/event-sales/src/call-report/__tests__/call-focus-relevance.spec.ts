@@ -1,5 +1,6 @@
 import { POLYANSKY_METHODOLOGY, type ResolvedMethodology } from '@lib/call-lib';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 import { methodologyRelevanceFor } from '../services/call-focus-anchors.util';
 
 const DOMAIN = 'gsr.bitrix24.ru';
@@ -51,6 +52,7 @@ const makeService = (methodology: ResolvedMethodology | null) => {
                 .mockResolvedValue({ presentationStrictness: 'strict' }),
         } as never,
         { resolve: jest.fn().mockResolvedValue(methodology) } as never,
+        noLongCall() as never,
     );
     const promptOf = (schemaName: string): string =>
         String(
