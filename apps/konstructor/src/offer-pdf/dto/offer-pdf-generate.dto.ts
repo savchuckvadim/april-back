@@ -12,6 +12,11 @@ import {
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
 import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
 import {
+    SalesDocumentPresentationDto,
+    SalesFlowProperty,
+    SalesPresentationProperty,
+} from '@app/konstructor/modules/sales-document-flow/dto/sales-flow-fields';
+import {
     InvoiceDataDto,
     OfferWordByTemplateGenerateDto,
 } from '../../offer-word/dto/offer-word-generate-request.dto';
@@ -252,4 +257,10 @@ export class OfferPdfGenerateDto extends OmitType(
     @ValidateNested()
     @Type(() => ComplectCompositionDto)
     composition?: ComplectCompositionDto;
+
+    @SalesFlowProperty()
+    salesFlow?: boolean;
+
+    @SalesPresentationProperty()
+    presentation?: SalesDocumentPresentationDto;
 }

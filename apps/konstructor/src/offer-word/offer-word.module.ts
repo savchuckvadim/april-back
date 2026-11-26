@@ -44,6 +44,7 @@ import { OfferWordMultiBuildService } from './multi/services/offer-word-multi-bu
 import { OfferWordMultiSupplyEnrichService } from './multi/services/offer-word-multi-supply-enrich.service';
 import { OfferWordMultiGenerateUseCase } from './multi/use-cases/offer-word-multi-generate.use-case';
 import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-generate-multi-queue.service';
+import { SalesDocumentFlowModule } from '../modules/sales-document-flow/sales-document-flow.module';
 
 /**
  * Генерация КП: ручки, сервисы и постановка заданий в очередь.
@@ -71,6 +72,8 @@ import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-gen
         // подбор шаблона счёта по порталу, поставщику, клиенту и поставке
         DocumentTemplateModule,
         PBXModule,
+        // событие «документ сформирован» в поток продаж event-sales (КП v2)
+        SalesDocumentFlowModule,
     ],
     controllers: [
         OfferWordGenerateController,

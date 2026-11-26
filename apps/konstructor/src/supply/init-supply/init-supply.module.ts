@@ -28,6 +28,7 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 import { OfferWordModule } from '../../offer-word/offer-word.module';
 import { InitSupplyDiskService } from './services/disk/init-supply-disk.service';
 import { InnerDealModule } from '../../modules/inner-deal/inner-deal.module';
+import { SalesDocumentFlowModule } from '../../modules/sales-document-flow/sales-document-flow.module';
 
 /**
  * Диск Битрикса берётся у OfferWordModule: он уже экспортирует
@@ -36,6 +37,8 @@ import { InnerDealModule } from '../../modules/inner-deal/inner-deal.module';
  *
  * Варианты сделки (слепки с элементами смарта) читает InnerDealService из
  * InnerDealModule: по ним заявка закрывает варианты, не вошедшие в поставку.
+ *
+ * SalesDocumentFlowModule ставит событие «поставка» в поток продаж event-sales.
  */
 @Module({
     imports: [
@@ -44,6 +47,7 @@ import { InnerDealModule } from '../../modules/inner-deal/inner-deal.module';
         TelegramModule,
         OfferWordModule,
         InnerDealModule,
+        SalesDocumentFlowModule,
     ],
     controllers: [InitSupplyController],
     providers: [

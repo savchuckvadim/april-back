@@ -10,6 +10,11 @@ import {
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
 import { ComplectCompositionDto } from '@app/konstructor/modules/inner-deal/dto/complect-composition.dto';
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
+import {
+    SalesDocumentPresentationDto,
+    SalesFlowProperty,
+    SalesPresentationProperty,
+} from '@app/konstructor/modules/sales-document-flow/dto/sales-flow-fields';
 import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { IResultDocumentLink } from '../../interface/document.interface';
 
@@ -42,6 +47,12 @@ export class OfferWordMultiGenerateDto extends OfferWordByTemplateGenerateDto {
     @ValidateNested({ each: true })
     @Type(() => DocumentVariantDto)
     variants: DocumentVariantDto[];
+
+    @SalesFlowProperty()
+    salesFlow?: boolean;
+
+    @SalesPresentationProperty()
+    presentation?: SalesDocumentPresentationDto;
 }
 
 /** Ссылка на готовый документ в ответе. */

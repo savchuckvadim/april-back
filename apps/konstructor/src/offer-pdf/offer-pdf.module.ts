@@ -9,6 +9,7 @@ import {
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { ComplectVariantOfferStageService } from '../modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
+import { SalesDocumentFlowModule } from '../modules/sales-document-flow/sales-document-flow.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferPdfController } from './controllers/offer-pdf.controller';
 import { OfferPdfAssetStore } from './lib/offer-pdf-asset-store';
@@ -35,6 +36,8 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         FileLinkModule,
         // стадия «КП» вариантам комплекта после генерации
         PBXModule,
+        // событие «КП сформировано» в поток продаж event-sales
+        SalesDocumentFlowModule,
     ],
     controllers: [OfferPdfController],
     providers: [
