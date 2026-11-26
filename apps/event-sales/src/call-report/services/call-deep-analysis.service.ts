@@ -16,6 +16,8 @@ import {
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
+import { LongCallInputService } from '../long-call/long-call-input.service';
+import { withLongCallMark } from '../long-call/long-call-mark.util';
 import { sumCompletionUsage } from './call-analysis-usage.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 
@@ -55,6 +57,7 @@ export class CallDeepAnalysisService {
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
         private readonly reportSettings: CallReportSettingsService,
+        private readonly longCall: LongCallInputService,
     ) {}
 
     /** Поправка строгости презентации (настройка портала) — fail-open. */
@@ -114,6 +117,12 @@ export class CallDeepAnalysisService {
         }
 
         try {
+            // Длинный разговор идёт текстом «целиком» (сводка, конспект,
+            // отрывки); null — полная расшифровка, как раньше. Конспекты
+            // после неудачного фокус-разбора берутся из кэша.
+            const longInput = await this.longCall.prepare(domain, transcript, {
+                model: options?.model,
+            });
             const systemPrompt =
                 (await this.buildSystemPrompt(domain, callType)) +
                 (await this.buildAfterPresentationBlock(domain, callType)) +
@@ -121,7 +130,7 @@ export class CallDeepAnalysisService {
             const response = await this.llm.structuredCompletionWithUsage(
                 systemPrompt,
                 buildDeepAnalysisUserContent(
-                    transcript,
+                    longInput?.texts.whole ?? transcript,
                     callType,
                     passportBlock,
                 ),
@@ -136,13 +145,18 @@ export class CallDeepAnalysisService {
                 // callType не спрашиваем у модели повторно: он уже определён
                 // дешёвым классификатором на предыдущем шаге конвейера.
                 callType: callType ?? FALLBACK_CALL_TYPE,
-                // Расход единственного вызова — в колонки ais при приёме.
-                usage: sumCompletionUsage([response]),
+                // Расход вызова и подготовки длинного разговора — в колонки
+                // ais при приёме.
+                usage: sumCompletionUsage([
+                    response,
+                    ...(longInput?.completions ?? []),
+                ]),
                 // Цельный разбор читает только методички типа звонка, вид
                 // «Скрипт разговора» в него не идёт — процент соответствия
                 // скрипту приём обнулит (решение владельца 18.11.2026).
                 scriptIncluded: false,
             });
+            if (longInput) dto.extra = withLongCallMark(dto.extra, longInput);
             this.logger.log(
                 `Глубокий разбор (${domain}): оценка ${dto.score ?? '—'}, ` +
                     `разделов ${dto.sections?.length ?? 0}, тип ${dto.callType}`,

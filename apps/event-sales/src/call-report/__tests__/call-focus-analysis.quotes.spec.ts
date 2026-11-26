@@ -8,6 +8,7 @@ import {
     FOCUS_CONTENT_SCHEMA,
 } from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 
 /**
  * Фокус-разбор с цитатами (focus-v3.4): включается опцией запуска (проверка
@@ -65,6 +66,7 @@ const makeDeps = (options?: {
                 .mockResolvedValue({ presentationStrictness: 'strict' }),
         } as never,
         { resolve: jest.fn().mockResolvedValue(null) } as never,
+        noLongCall() as never,
     );
     return { service, llm };
 };

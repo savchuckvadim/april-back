@@ -4,6 +4,7 @@ import {
     CALL_REPORT_OUTCOME_CONNECTION_LOST,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 
 /**
  * Обрыв связи в фокус-разборе (26.11.2026): закрытие и отказ, до которых
@@ -69,6 +70,7 @@ const makeService = (closing: Record<string, unknown>) => {
                 .mockResolvedValue({ presentationStrictness: 'strict' }),
         } as never,
         { resolve: jest.fn().mockResolvedValue(null) } as never,
+        noLongCall() as never,
     );
 };
 

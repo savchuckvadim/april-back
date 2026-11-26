@@ -87,6 +87,9 @@ import {
     buildMethodologyPass,
     type MethodologyPassSpec,
 } from './call-focus-methodology.util';
+import { longTokens, longUserContent } from '../long-call/long-call-focus.util';
+import { LongCallInputService } from '../long-call/long-call-input.service';
+import { withLongCallMark } from '../long-call/long-call-mark.util';
 
 const FALLBACK_CALL_TYPE = 'other';
 
@@ -113,6 +116,8 @@ export interface CallFocusRunOptions {
      * админки включает его явно.
      */
     quoteEvidence?: boolean;
+    /** Резать длинный разговор по частям, даже если режим выключен. */
+    longParts?: 'force';
 }
 
 /** Ответ одного вызова модели с расходом токенов. */
@@ -165,6 +170,7 @@ export class CallFocusAnalysisService {
         private readonly appSettings: PortalAppSettingsService,
         private readonly reportSettings: CallReportSettingsService,
         private readonly methodologyRegistry: MethodologyRegistryService,
+        private readonly longCall: LongCallInputService,
     ) {}
 
     /** Методика портала; реестр недоступен — разбор без методики (fail-open). */
@@ -259,10 +265,15 @@ export class CallFocusAnalysisService {
         callType: string | null,
         resolved: ResolvedMethodology,
         passportBlock?: string,
-        options?: Pick<CallFocusRunOptions, 'model'>,
+        options?: Pick<CallFocusRunOptions, 'model' | 'longParts'>,
     ): Promise<CallMethodologyPassOutcome | null> {
         const pass = buildMethodologyPass(resolved, callType);
         if (pass === null) return null;
+        const long = await this.longCall.prepare(domain, transcript, {
+            model: options?.model,
+            force: options?.longParts === 'force',
+        });
+        const text = long?.texts.methodology ?? transcript;
         const materials = await this.buildMaterials(domain, callType, {
             knowledge: resolved.methodology.knowledge,
             relevance: methodologyRelevanceFor(resolved, callType),
@@ -271,7 +282,7 @@ export class CallFocusAnalysisService {
             pass,
             methodologyContextOf(materials) +
                 (await this.commonTailOf(domain, callType)),
-            this.buildUserContent(transcript, callType, passportBlock),
+            this.buildUserContent(text, callType, passportBlock),
             domain,
             // Повтора у разовой проверки нет — тревогу не откладываем.
             2,
@@ -280,7 +291,7 @@ export class CallFocusAnalysisService {
         return {
             result: response.result,
             model: response.model,
-            tokens: response.usage?.totalTokens ?? null,
+            tokens: longTokens(response.usage?.totalTokens ?? null, long),
             talkRatioMax: materials.talkRatioMax,
         };
     }
@@ -323,6 +334,11 @@ export class CallFocusAnalysisService {
             return { analysis: null, providerFailure: false };
         }
         try {
+            // Длинный разговор — проходам тексты по частям; null — как раньше.
+            const longInput = await this.longCall.prepare(domain, transcript, {
+                model: options?.model,
+                force: options?.longParts === 'force',
+            });
             // Методика портала (конфиг чек-пунктов): четвёртый проход идёт
             // только на порталах с выбранной методикой и для её типов.
             const resolved = await this.resolveMethodology(domain);
@@ -360,10 +376,8 @@ export class CallFocusAnalysisService {
                 (methodologyPass
                     ? renderMethodologyAnchorsBlock(resolved)
                     : '');
-            const userContent = this.buildUserContent(
-                transcript,
-                callType,
-                passportBlock,
+            const userContentOf = longUserContent(longInput, transcript, text =>
+                this.buildUserContent(text, callType, passportBlock),
             );
 
             // Ошибки сорвавшихся фокус-проходов — по ним причина провала.
@@ -371,7 +385,9 @@ export class CallFocusAnalysisService {
             const passErrors: unknown[] = [];
             // Догон неполного разбора приносит сохранённые ответы проходов:
             // такие проходы заново не вызываются (call-focus-stored.util.ts).
-            const stored = options?.stored;
+            // При длинном пути проходы идут заново: ответы по полному тексту
+            // и по частям не смешиваем.
+            const stored = longInput ? undefined : options?.stored;
             // Ответ прохода методики годится, пока у портала та же методика
             // той же версии.
             const keptMethodology = stored?.methodology;
@@ -391,7 +407,7 @@ export class CallFocusAnalysisService {
                         this.callFocus(
                             pass,
                             focusContextFor(materials, pass.key) + scoringTail,
-                            userContent,
+                            userContentOf(pass.key),
                             domain,
                             attempt,
                             options?.model,
@@ -406,7 +422,7 @@ export class CallFocusAnalysisService {
                                       methodologyPass,
                                       methodologyContextOf(materials) +
                                           commonTail,
-                                      userContent,
+                                      userContentOf(methodologyPass.key),
                                       domain,
                                       attempt,
                                       options?.model,
@@ -471,7 +487,7 @@ export class CallFocusAnalysisService {
                             this.callSynthesis(
                                 byKey,
                                 synthesisContext,
-                                userContent,
+                                userContentOf('synthesis'),
                                 domain,
                                 attempt,
                                 options?.model,
@@ -508,13 +524,15 @@ export class CallFocusAnalysisService {
                 ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 incompleteParts,
-                // Расход вызовов ЭТОГО запуска (фокусы, методика, синтез):
-                // сохранённые проходы оплачены раньше и второй раз не идут.
+                // Расход вызовов ЭТОГО запуска (фокусы, методика, синтез и
+                // подготовка длинного разговора): сохранённые проходы
+                // оплачены раньше и второй раз не идут.
                 usage: sumCompletionUsage(
                     [
                         ...responses,
                         synthesisResponse,
                         methodologyResponse,
+                        ...(longInput?.completions ?? []),
                     ].filter(
                         (response): response is FocusCompletion =>
                             response !== null,
@@ -529,8 +547,9 @@ export class CallFocusAnalysisService {
             // нём только у презентации (журнал приёма сверяет с итоговым).
             if (quoteEvidence) dto.taskCallType = callType;
             // Неполный разбор уносит ответы выживших проходов — догону
-            // останется позвать только недостающее. Полный их не несёт.
-            if (incompleteParts.length > 0) {
+            // останется позвать только недостающее. Полный их не несёт; при
+            // длинном пути не несёт и неполный (ответы по частям — не те).
+            if (incompleteParts.length > 0 && !longInput) {
                 dto.extra = {
                     ...(dto.extra ?? {}),
                     [STORED_FOCUS_PASSES_KEY]: buildStoredFocusPasses(
@@ -545,6 +564,7 @@ export class CallFocusAnalysisService {
                     ),
                 };
             }
+            if (longInput) dto.extra = withLongCallMark(dto.extra, longInput);
             // Один раздел — одна запись: проход с единственным разрешённым
             // кодом присылал «моменты» приветствия отдельными записями, и в
             // ленту сделки уходили три «Приветствия» (29.10.2026).

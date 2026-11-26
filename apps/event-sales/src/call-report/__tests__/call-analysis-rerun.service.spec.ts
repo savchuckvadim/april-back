@@ -129,6 +129,57 @@ describe('CallAnalysisRerunService', () => {
         );
     });
 
+    it('«разобрать по частям» (longParts) уходит в опции фокус-разбора как longParts: force', async () => {
+        const { service, focusAnalysis } = makeService();
+        await service.rerun({
+            transcriptionId: 't-1',
+            source: { callType: 'presentation' },
+            model: null,
+            quoteEvidence: true,
+            longParts: true,
+        });
+
+        expect(focusAnalysis.run).toHaveBeenCalledWith(
+            'gsr.bitrix24.ru',
+            '[00:00] Алло',
+            'presentation',
+            'ПАСПОРТ',
+            { quoteEvidence: true, longParts: 'force' },
+        );
+    });
+
+    it('longParts один (без модели и цитат) тоже даёт опции; false — опций нет', async () => {
+        const forced = makeService();
+        await forced.service.rerun({
+            transcriptionId: 't-1',
+            source: {},
+            model: null,
+            longParts: true,
+        });
+        expect(forced.focusAnalysis.run).toHaveBeenCalledWith(
+            'gsr.bitrix24.ru',
+            '[00:00] Алло',
+            null,
+            'ПАСПОРТ',
+            { longParts: 'force' },
+        );
+
+        const off = makeService();
+        await off.service.rerun({
+            transcriptionId: 't-1',
+            source: {},
+            model: null,
+            longParts: false,
+        });
+        expect(off.focusAnalysis.run).toHaveBeenCalledWith(
+            'gsr.bitrix24.ru',
+            '[00:00] Алло',
+            null,
+            'ПАСПОРТ',
+            undefined,
+        );
+    });
+
     it('пустая расшифровка — null без вызова модели; модель не ответила — null', async () => {
         const empty = makeService({ row: { ...ROW, text: '', segments: [] } });
         await expect(

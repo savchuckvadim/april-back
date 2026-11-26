@@ -213,6 +213,61 @@ describe('AnalysisPreviewUseCase', () => {
         expect(state.result?.durationSec).toBe(1260);
     });
 
+    it('«разобрать по частям»: флаг задания доходит до переразбора', async () => {
+        const { useCase, rerun } = makeDeps();
+
+        await useCase.execute({ ...JOB, longParts: true });
+
+        expect(rerun.rerun).toHaveBeenCalledWith({
+            transcriptionId: '184523',
+            source: ACTIVE,
+            model: 'bitrixgpt-5.5',
+            quoteEvidence: true,
+            longParts: true,
+        });
+    });
+
+    it('флаг выключен или не задан — переразбору флаг не передаётся', async () => {
+        const { useCase, rerun } = makeDeps();
+
+        await useCase.execute({ ...JOB, longParts: false });
+
+        const [input] = rerun.rerun.mock.calls[0] as [Record<string, unknown>];
+        expect(input).not.toHaveProperty('longParts');
+    });
+
+    it('разбор шёл по частям — в итоге блок «разбор по частям» из метки разбора', async () => {
+        const dto = previewDto();
+        dto.extra = {
+            focusPasses: 'не для итога',
+            longCall: {
+                parts: 7,
+                partsWithoutDigest: 1,
+                hasSummary: true,
+                transcriptChars: 58_400,
+            },
+        };
+        const { useCase } = makeDeps({ dto });
+
+        const state = await useCase.execute({ ...JOB, longParts: true });
+
+        expect(state.status).toBe('done');
+        expect(state.result?.longCall).toEqual({
+            parts: 7,
+            partsWithoutDigest: 1,
+            hasSummary: true,
+            transcriptChars: 58_400,
+        });
+    });
+
+    it('разбор по полной расшифровке — блок «разбор по частям» пуст (null)', async () => {
+        const { useCase } = makeDeps();
+
+        const state = await useCase.execute(JOB);
+
+        expect(state.result?.longCall).toBeNull();
+    });
+
     it('звонок другого портала — отказ словами, модель не зовётся', async () => {
         const { useCase, rerun } = makeDeps({ domain: 'garant.bitrix24.ru' });
 

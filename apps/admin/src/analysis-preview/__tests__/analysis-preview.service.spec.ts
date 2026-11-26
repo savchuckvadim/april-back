@@ -57,6 +57,38 @@ describe('AnalysisPreviewService', () => {
         );
     });
 
+    it('«разобрать по частям»: флаг уходит воркеру в задании; без флага ключа в задании нет', async () => {
+        const forced = makeDeps();
+        const state = await forced.service.start({
+            domain: DOMAIN,
+            transcriptionId: '184523',
+            longParts: true,
+        });
+        expect(forced.queueDispatcher.dispatch).toHaveBeenCalledWith(
+            QueueNames.CALL_REPORT,
+            JobNames.CALL_REPORT_ANALYSIS_PREVIEW,
+            {
+                previewId: state.previewId,
+                domain: DOMAIN,
+                transcriptionId: '184523',
+                longParts: true,
+            },
+            state.previewId,
+            expect.anything(),
+        );
+
+        const plain = makeDeps();
+        await plain.service.start({
+            domain: DOMAIN,
+            transcriptionId: '184523',
+            longParts: false,
+        });
+        const [, , data] = (
+            plain.queueDispatcher.dispatch.mock.calls as unknown[][]
+        )[0];
+        expect(data).not.toHaveProperty('longParts');
+    });
+
     it('опрос: состояние из Redis; нет — 404 со словами «запустите заново»', async () => {
         const stored: AnalysisPreviewState = {
             previewId: '0b9f1c9e-6f0e-4a59-9f2b-0f7a8c1d2e3f',

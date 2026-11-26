@@ -1,5 +1,6 @@
 import { POLYANSKY_METHODOLOGY, type ResolvedMethodology } from '@lib/call-lib';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { noLongCall } from './call-long-input.fake';
 import { buildMethodologyPass } from '../services/call-focus-methodology.util';
 
 const DOMAIN = 'gsr.bitrix24.ru';
@@ -74,6 +75,7 @@ const makeDeps = (answer: PassAnswer = { checkpoints: [], spirals: null }) => {
         appSettings as never,
         reportSettings as never,
         methodologyRegistry as never,
+        noLongCall() as never,
     );
     return { service, llm, materials, methodologyRegistry };
 };

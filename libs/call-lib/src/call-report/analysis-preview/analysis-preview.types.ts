@@ -32,6 +32,11 @@ export interface AnalysisPreviewJobData {
     domain: string;
     transcriptionId: string;
     requestedBy?: string;
+    /**
+     * Разобрать по частям, даже если разбор длинных разговоров по частям
+     * выключен в настройках; не задано — решает настройка.
+     */
+    longParts?: boolean;
 }
 
 /** Виды мест разбора: раздел, потребность, пункт «хвоста», блок 5К. */
@@ -70,6 +75,18 @@ export interface AnalysisPreviewSectionScore {
     after: number | null;
 }
 
+/** Как шёл разбор длинного разговора по частям. */
+export interface AnalysisPreviewLongCall {
+    /** На сколько частей разрезали расшифровку. */
+    parts: number;
+    /** Сколько частей остались без конспекта. */
+    partsWithoutDigest: number;
+    /** Удалось ли свести разговор в одну сводку. */
+    hasSummary: boolean;
+    /** Знаков в расшифровке. */
+    transcriptChars: number;
+}
+
 /** Итог проверки разбора на звонке. */
 export interface AnalysisPreviewResult {
     /** Версия задания, с которым шёл проверочный разбор. */
@@ -88,6 +105,11 @@ export interface AnalysisPreviewResult {
     incompleteParts: string[];
     /** Токены всех вызовов проверки; null — поставщик не сообщил. */
     tokens: number | null;
+    /**
+     * Разбор по частям: сведения о резке; null — разбор шёл по полной
+     * расшифровке. Нет поля — состояние записано до появления блока.
+     */
+    longCall?: AnalysisPreviewLongCall | null;
 }
 
 /** Состояние проверки в Redis — ответ админки на опрос. */

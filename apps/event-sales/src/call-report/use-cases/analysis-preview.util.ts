@@ -15,6 +15,7 @@ import type {
     AgentCallAnalysisDto,
     AgentChecklistEvidenceDto,
 } from '../../agent-gate/dto/agent-analysis-request.dto';
+import { readLongCallMark } from '../long-call/long-call-mark.util';
 
 /**
  * Итог проверки разбора на звонке (задание focus-v3.4): места разбора в
@@ -173,5 +174,6 @@ export function buildAnalysisPreviewResult(input: {
         coverage: coverageOf(points),
         incompleteParts: [...(dto.incompleteParts ?? [])],
         tokens: dto.usage?.tokens ?? null,
+        longCall: readLongCallMark(dto.extra),
     };
 }

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+import {
+    IsBoolean,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Matches,
+    MaxLength,
+} from 'class-validator';
 import {
     ANALYSIS_PREVIEW_ID_PATTERN,
     ANALYSIS_PREVIEW_STATUSES,
@@ -37,6 +44,20 @@ export class AnalysisPreviewStartDto {
         message: 'Номер расшифровки — целое число.',
     })
     transcriptionId: string;
+
+    @ApiProperty({
+        description:
+            'Разобрать по частям, даже если разбор длинных разговоров по ' +
+            'частям выключен в настройках. Для расшифровок короче порога ' +
+            'ничего не меняет.',
+        example: true,
+        type: Boolean,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    longParts?: boolean;
 }
 
 /** Опрос состояния проверки. */
