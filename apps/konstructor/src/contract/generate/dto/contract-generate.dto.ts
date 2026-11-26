@@ -25,6 +25,7 @@ import { ContractSpecificationDto } from '../../../document-generate/dto/specifi
 import { CONTRACT_LTYPE } from '../../../document-generate/type/contract.type';
 import { ApiProperty } from '@nestjs/swagger';
 import { ContractDto } from '../../../dto/contract.dto';
+import { SalesFlowProperty } from '../../../modules/sales-document-flow/dto/sales-flow-fields';
 
 class PlacementDto {
     @ApiProperty({ description: 'Placement of the contract' })
@@ -233,4 +234,7 @@ export class ContractGenerateDto {
     @ValidateNested()
     @Type(() => ContractSpecificationDto)
     contractSpecificationState: ContractSpecificationDto;
+
+    @SalesFlowProperty()
+    salesFlow?: boolean;
 }

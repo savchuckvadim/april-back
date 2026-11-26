@@ -12,6 +12,7 @@ import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { StorageService } from '@lib/core/storage/storage.service';
 import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 import { ComplectVariantOfferStageService } from '@app/konstructor/modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
+import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
 import {
     ComplectModeEnum,
     ComplectOfferInfoblocksEnum,
@@ -181,6 +182,11 @@ const setup = async ({
             {
                 provide: InvoiceDocumentsBuildService,
                 useValue: { build: jest.fn() },
+            },
+            // поток продаж: запросы без salesFlow, событие не ставится
+            {
+                provide: SalesDocumentFlowService,
+                useValue: { publish: jest.fn(() => Promise.resolve(false)) },
             },
         ],
     }).compile();

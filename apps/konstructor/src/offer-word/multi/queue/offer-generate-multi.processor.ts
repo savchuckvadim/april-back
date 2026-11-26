@@ -29,14 +29,16 @@ export class OfferGenerateMultiProcessor {
         concurrency: OFFER_GENERATE_MULTI_CONCURRENCY,
     })
     async handle(job: Job<OfferGenerateMultiJobPayload>): Promise<void> {
-        const { dto } = job.data;
+        const { dto, operationId } = job.data;
         const startedAt = Date.now();
         // operationId = job.id: по нему джоба ищется в очереди и в логах
         const context = `operationId=${String(job.id)} domain=${dto.domain} dealId=${dto.dealId} templateId=${dto.templateId} variants=${dto.variants?.length ?? 0}`;
         this.logger.log(`Генерация КП v2: старт ${context}`);
 
         try {
-            await this.useCase.execute(dto);
+            // номер операции — он же номер события в потоке продаж: повтор
+            // задания не запишет документ дважды
+            await this.useCase.execute(dto, { operationId });
             this.logger.log(
                 `Генерация КП v2: успех ${context} durationMs=${Date.now() - startedAt}`,
             );

@@ -3,6 +3,7 @@ import { PBXService } from '@lib/pbx';
 import { InnerDealService } from '@app/konstructor/modules/inner-deal/services/inner-deal.service';
 import { OfferTemplateService } from '@app/konstructor/modules/offer-template/offer-template';
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
+import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
 import {
     captionRow,
     supplyDto,
@@ -116,6 +117,10 @@ const setup = async () => {
                 useValue: {
                     incrementTemplateCounter: jest.fn(() => Promise.resolve()),
                 },
+            },
+            {
+                provide: SalesDocumentFlowService,
+                useValue: { publish: jest.fn(() => Promise.resolve(false)) },
             },
         ],
     }).compile();

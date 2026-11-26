@@ -17,6 +17,8 @@ import { addRpaComment } from './services/rpa-timeline-comment/lib/rpa-comment.w
 import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
 import { InnerDealService } from '../../modules/inner-deal/services/inner-deal.service';
+import { SalesDocumentFlowService } from '../../modules/sales-document-flow/services/sales-document-flow.service';
+import { SALES_DOCUMENT_KIND } from '@lib/queue/constants/sales-document-event-job';
 import {
     participantVariantIds,
     selectLeftoutVariantIds,
@@ -33,6 +35,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyDealFileFieldsService: InitSupplyDealFileFieldsService,
         private readonly initSupplyDiskService: InitSupplyDiskService,
         private readonly innerDealService: InnerDealService,
+        private readonly salesDocumentFlow: SalesDocumentFlowService,
     ) {}
 
     async initSupply(dto: InitSupplyDto): Promise<InitSupplyResponseDto> {
@@ -190,6 +193,12 @@ export class InitSupplyUseCase {
                 });
             }
         }
+
+        // заявка записана: сообщаем о поставке потоку продаж один раз на запуск
+        if (rpaId) {
+            await this.publishSalesFlow(dto);
+        }
+
         return {
             // id_rpa — контракт легаси-ручки /rpa/init_supply, фронт читает его
             id_rpa: rpaId ?? null,
@@ -204,6 +213,33 @@ export class InitSupplyUseCase {
                 : {}),
             ...(closedVariantIds.length > 0 ? { closedVariantIds } : {}),
         };
+    }
+
+    /**
+     * Поставка в поток продаж: одно событие на запуск, сколько бы участников
+     * ни было в заявке. Только по `salesFlow` из запроса; сбой постановки
+     * заявку не отменяет.
+     */
+    private async publishSalesFlow(dto: InitSupplyDto): Promise<void> {
+        if (dto.salesFlow !== true) return;
+        const variants = dto.variants ?? [];
+        await this.salesDocumentFlow.publish({
+            salesFlow: dto.salesFlow,
+            domain: dto.domain,
+            userId: dto.userId,
+            companyId: dto.companyId,
+            dealId: dto.dealId,
+            kinds: [SALES_DOCUMENT_KIND.supply],
+            sources: variants.length
+                ? variants.map(variant => ({
+                      title: variant.title,
+                      supply: variant.supply,
+                      total: variant.total,
+                      rows: variant.rows,
+                      sets: variant.sets,
+                  }))
+                : [{ supply: dto.supply, total: dto.total?.[0] }],
+        });
     }
 
     /**
