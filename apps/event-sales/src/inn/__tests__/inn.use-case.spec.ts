@@ -3,14 +3,24 @@ import {
     ConflictException,
     NotFoundException,
 } from '@nestjs/common';
+import { InnLegacyFields } from '@lib/portal-lib/pbx-inn';
 import { InnUseCase } from '../use-cases/inn.use-case';
 import { OpenCardOnceGuard } from '../../shared/open-card-once';
+import { InnLegacyFieldsResolver } from '../services/inn-legacy-fields.resolver';
 
 /** Страж «недавно делали» — всегда пропускает: его правила проверены отдельно. */
 const ONCE = {
     isRecent: () => Promise.resolve(false),
     remember: () => Promise.resolve(),
 } as unknown as OpenCardOnceGuard;
+
+/** Настройка старых полей ИНН портала — заглушка сервиса настроек. */
+const legacyOf = (fields: InnLegacyFields = {}): InnLegacyFieldsResolver =>
+    ({
+        resolve: () => Promise.resolve(fields),
+    }) as unknown as InnLegacyFieldsResolver;
+
+const NO_LEGACY = legacyOf();
 
 const INN = '7707083893';
 
@@ -33,7 +43,10 @@ interface ICall {
 }
 
 /** PBXService-заглушка: отдаёт инстанс Битрикса по домену, как на бою. */
-function makePbx(deal: Row | null): {
+function makePbx(
+    deal: Row | null,
+    company: Row = { ID: '55', TITLE: 'ООО «Ромашка»' },
+): {
     pbx: never;
     calls: ICall[];
     domains: string[];
@@ -42,7 +55,7 @@ function makePbx(deal: Row | null): {
     const domains: string[] = [];
     const rows: Record<string, unknown> = {
         'crm.deal.get': deal,
-        'crm.company.get': { ID: '55', TITLE: 'ООО «Ромашка»' },
+        'crm.company.get': company,
         'crm.deal.contact.items.get': [],
         'crm.timeline.comment.list': [],
         'user.get': [{ ID: '12', NAME: 'Иван', LAST_NAME: 'Иванов' }],
@@ -82,7 +95,7 @@ describe('InnUseCase', () => {
 
     it('снимок берёт инстанс Битрикса по домену запроса', async () => {
         const { pbx, domains } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
 
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
@@ -92,7 +105,7 @@ describe('InnUseCase', () => {
 
     it('сделки нет — 404 вместо пустого ответа', async () => {
         const { pbx } = makePbx(null);
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
 
         await expect(useCase.snapshot(100, DOMAIN)).rejects.toBeInstanceOf(
             NotFoundException,
@@ -101,7 +114,7 @@ describe('InnUseCase', () => {
 
     it('устаревшая версия снимка — 409', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
 
         await expect(
             useCase.choose(100, {
@@ -115,7 +128,7 @@ describe('InnUseCase', () => {
 
     it('закрытая сделка — 409 на попытку выбрать', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55', CLOSED: 'Y' });
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
         await expect(
@@ -130,7 +143,7 @@ describe('InnUseCase', () => {
 
     it('невалидный ИНН — 400', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
 
         await expect(
             useCase.choose(100, {
@@ -148,7 +161,7 @@ describe('InnUseCase', () => {
      */
     it('имя автора подставляется из портала', async () => {
         const { pbx, calls } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx, ONCE);
+        const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
         const after = await useCase.choose(100, {
@@ -165,5 +178,75 @@ describe('InnUseCase', () => {
         expect(String((comment?.params.fields as Row).COMMENT)).toContain(
             'Иванов Иван (#12)',
         );
+    });
+
+    /*
+     * gsirk 26.11.2026, сделка 281275: ИНН есть только в своём поле портала
+     * «ИНН (new)». Поле выбрано в настройке — вкладка видит его на лету.
+     */
+    describe('старые поля портала (настройка inn_legacy_fields_*)', () => {
+        const LEGACY_DEAL_FIELD = 'UF_CRM_1695372881';
+        const LEGACY_COMPANY_FIELD = 'UF_CRM_1400482437';
+        const GSIRK_INN = '4205220212';
+        const SECOND_INN = '420536405891';
+
+        it('ИНН из старого поля сделки — вариант «из карточки сделки» и текущий', async () => {
+            const { pbx } = makePbx({
+                ID: '100',
+                COMPANY_ID: '55',
+                [LEGACY_DEAL_FIELD]: GSIRK_INN,
+            });
+            const useCase = new InnUseCase(
+                pbx,
+                ONCE,
+                legacyOf({ deal: [LEGACY_DEAL_FIELD] }),
+            );
+
+            const snapshot = await useCase.snapshot(100, DOMAIN);
+
+            const candidate = snapshot.candidates.find(
+                item => item.inn === GSIRK_INN,
+            );
+            expect(candidate?.label).toBe('из карточки сделки');
+            // текущий пуст в сделке и компании, ИНН в старых полях один
+            expect(snapshot.current?.inn).toBe(GSIRK_INN);
+        });
+
+        it('без настройки старое поле не читается', async () => {
+            const { pbx } = makePbx({
+                ID: '100',
+                COMPANY_ID: '55',
+                [LEGACY_DEAL_FIELD]: GSIRK_INN,
+            });
+            const useCase = new InnUseCase(pbx, ONCE, NO_LEGACY);
+
+            const snapshot = await useCase.snapshot(100, DOMAIN);
+
+            expect(snapshot.candidates).toEqual([]);
+            expect(snapshot.current).toBeNull();
+        });
+
+        it('два ИНН в старом поле компании — два варианта, текущий не ставится', async () => {
+            const { pbx } = makePbx(
+                { ID: '100', COMPANY_ID: '55' },
+                {
+                    ID: '55',
+                    TITLE: 'ООО «Ромашка»',
+                    [LEGACY_COMPANY_FIELD]: `${GSIRK_INN}, ${SECOND_INN}`,
+                },
+            );
+            const useCase = new InnUseCase(
+                pbx,
+                ONCE,
+                legacyOf({ company: [LEGACY_COMPANY_FIELD] }),
+            );
+
+            const snapshot = await useCase.snapshot(100, DOMAIN);
+
+            expect(snapshot.candidates.map(item => item.inn).sort()).toEqual(
+                [GSIRK_INN, SECOND_INN].sort(),
+            );
+            expect(snapshot.current).toBeNull();
+        });
     });
 });

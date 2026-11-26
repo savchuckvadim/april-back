@@ -23,6 +23,7 @@ const SOURCE_LABEL: Record<InnSyncSource, string> = {
     [INN_SYNC_SOURCES.company]: 'ИНН компании',
     [INN_SYNC_SOURCES.requisite]: 'ИНН из реквизитов компании',
     [INN_SYNC_SOURCES.lead]: 'ИНН заявки',
+    [INN_SYNC_SOURCES.legacy]: 'ИНН из старых полей портала',
 };
 
 /**

@@ -25,8 +25,11 @@ import { innId, innList, InnRow, innText } from './inn-row.util';
  * суммы в проекте быть не должно.
  */
 
-/** Значения полей строки, прошедшие контрольную сумму. */
-function fieldInns(row: InnRow, fields: readonly string[]): string[] {
+/**
+ * ИНН из полей строки. В одном поле их может быть несколько («4205220212,
+ * 420536405891» — компания gsirk), каждый — отдельно.
+ */
+export function fieldInns(row: InnRow, fields: readonly string[]): string[] {
     const found: string[] = [];
     for (const field of fields) {
         for (const value of innList(row[field])) {
@@ -93,6 +96,15 @@ export function observeInnGraph(
             ),
         );
     }
+    // Старые поля портала (настройка inn_legacy_fields_deal) — свой вид:
+    // это не наш текущий ИНН и не пул, а то, что портал вёл до нас.
+    found.push(
+        ...observations(
+            fieldInns(rows.deal, fields.legacy('deal')),
+            INN_SOURCE_KINDS.deal_card,
+            rows.dealId,
+        ),
+    );
     found.push(
         ...observations(
             extractInnFromTitle(innText(rows.deal.TITLE)),
@@ -106,7 +118,10 @@ export function observeInnGraph(
         const leadId = innId(lead.ID);
         found.push(
             ...observations(
-                fieldInns(lead, fields.both('lead')),
+                fieldInns(lead, [
+                    ...fields.both('lead'),
+                    ...fields.legacy('lead'),
+                ]),
                 INN_SOURCE_KINDS.lead_field,
                 leadId,
             ),
@@ -140,7 +155,10 @@ export function observeInnGraph(
         const title = innText(company.TITLE);
         found.push(
             ...observations(
-                fieldInns(company, fields.both('company')),
+                fieldInns(company, [
+                    ...fields.both('company'),
+                    ...fields.legacy('company'),
+                ]),
                 INN_SOURCE_KINDS.company_field,
                 companyId,
                 title,
