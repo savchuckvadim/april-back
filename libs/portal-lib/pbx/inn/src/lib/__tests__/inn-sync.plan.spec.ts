@@ -15,6 +15,8 @@ const plan = (over: {
     dealPool?: string[];
     linkedInn?: string;
     companyInns?: string[];
+    legacyDeal?: string[];
+    legacyCompany?: string[];
 }) =>
     planInnSync({
         dealInn: over.dealInn ?? '',
@@ -26,7 +28,74 @@ const plan = (over: {
             linkedInn: over.linkedInn ?? '',
             companyInns: over.companyInns ?? [],
         },
+        legacy: {
+            deal: over.legacyDeal ?? [],
+            company: over.legacyCompany ?? [],
+        },
     });
+
+describe('planInnSync: старые поля портала (владелец 26.11.2026)', () => {
+    const fromLegacy = (inn: string) => ({
+        kind: INN_SYNC_KINDS.toDeal,
+        inn,
+        from: INN_SYNC_SOURCES.legacy,
+    });
+
+    it('один ИНН в старых полях сделки — ставим его', () => {
+        expect(plan({ legacyDeal: [INN, INN] })).toEqual(fromLegacy(INN));
+    });
+
+    it('поля сделки пусты — один ИНН в полях компании', () => {
+        expect(plan({ legacyCompany: [OTHER] })).toEqual(fromLegacy(OTHER));
+    });
+
+    it('поля сделки важнее полей компании с другим ИНН', () => {
+        expect(plan({ legacyDeal: [INN], legacyCompany: [OTHER] })).toEqual(
+            fromLegacy(INN),
+        );
+    });
+
+    it('разные ИНН в старых полях сделки — выбирает человек', () => {
+        expect(plan({ legacyDeal: [INN, OTHER] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('два ИНН в полях компании (gsirk «4205220212, 420536405891») — не решаем', () => {
+        expect(plan({ legacyCompany: [INN, OTHER] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('пул сделки уже с другим ИНН — не решаем за человека', () => {
+        expect(plan({ legacyDeal: [INN], dealPool: [OTHER] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('реквизит и заявка важнее старых полей', () => {
+        expect(plan({ companyInns: [OTHER], legacyDeal: [INN] })).toMatchObject(
+            { inn: OTHER, from: INN_SYNC_SOURCES.requisite },
+        );
+        expect(plan({ leadInns: [OTHER], legacyDeal: [INN] })).toMatchObject({
+            inn: OTHER,
+            from: INN_SYNC_SOURCES.lead,
+        });
+    });
+
+    it('разные ИНН в заявках — старые поля выбор не решают', () => {
+        expect(plan({ leadInns: [INN, OTHER], legacyDeal: [INN] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('текущий ИНН уже есть — старые поля его не трогают', () => {
+        expect(plan({ dealInn: INN, legacyDeal: [OTHER] })).toEqual({
+            kind: INN_SYNC_KINDS.toCompany,
+            inn: INN,
+        });
+    });
+});
 
 describe('planInnSync: реквизит компании (владелец 25.10.2026)', () => {
     const fromRequisite = {

@@ -20,6 +20,7 @@ const STRENGTH_BY_KIND: Record<InnSourceKind, InnStrength> = {
     [INN_SOURCE_KINDS.contact_requisite]: INN_STRENGTHS.strong,
     [INN_SOURCE_KINDS.manual]: INN_STRENGTHS.strong,
     [INN_SOURCE_KINDS.deal_field]: INN_STRENGTHS.normal,
+    [INN_SOURCE_KINDS.deal_card]: INN_STRENGTHS.normal,
     [INN_SOURCE_KINDS.deal_pool]: INN_STRENGTHS.normal,
     [INN_SOURCE_KINDS.company_field]: INN_STRENGTHS.normal,
     [INN_SOURCE_KINDS.lead_field]: INN_STRENGTHS.normal,
@@ -32,6 +33,7 @@ const KIND_ORDER: readonly InnSourceKind[] = [
     INN_SOURCE_KINDS.contact_requisite,
     INN_SOURCE_KINDS.manual,
     INN_SOURCE_KINDS.deal_field,
+    INN_SOURCE_KINDS.deal_card,
     INN_SOURCE_KINDS.company_field,
     INN_SOURCE_KINDS.lead_field,
     INN_SOURCE_KINDS.deal_pool,
@@ -67,6 +69,8 @@ export function describeInnSource(observation: IInnObservation): string {
                 .join(' ');
         case INN_SOURCE_KINDS.deal_field:
             return 'текущий ИНН договора';
+        case INN_SOURCE_KINDS.deal_card:
+            return 'из карточки сделки';
         case INN_SOURCE_KINDS.company_field:
             return title
                 ? `из карточки компании «${title}»`

@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@lib/pbx';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { OpenCardOnceModule } from '../shared/open-card-once';
 import { InnController } from './controllers/inn.controller';
+import { InnLegacyFieldsResolver } from './services/inn-legacy-fields.resolver';
 import { InnUseCase } from './use-cases/inn.use-case';
 
 /**
@@ -12,10 +14,12 @@ import { InnUseCase } from './use-cases/inn.use-case';
  * (ai/rules/app-api-surface.md). Доменная логика и единственный писатель
  * `op_inn` / `op_inn_pool` живут в `@lib/portal-lib/pbx-inn` — админка
  * сможет выставить те же сервисы своими эндпоинтами, не копируя код.
+ *
+ * Настройки портала — ради старых полей ИНН (`inn_legacy_fields_*`).
  */
 @Module({
-    imports: [PBXModule, OpenCardOnceModule],
+    imports: [PBXModule, OpenCardOnceModule, PortalAppSettingsModule],
     controllers: [InnController],
-    providers: [InnUseCase],
+    providers: [InnUseCase, InnLegacyFieldsResolver],
 })
 export class InnModule {}

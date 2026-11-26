@@ -2,7 +2,11 @@ import { Logger } from '@nestjs/common';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { uniq } from '@lib/portal-lib/pbx-duplicate';
-import { InnFieldMap } from '../lib/inn-fields';
+import {
+    InnFieldMap,
+    InnLegacyFields,
+    NO_INN_LEGACY_FIELDS,
+} from '../lib/inn-fields';
 import { innRefIds, observeInnGraph } from '../lib/inn-observe.util';
 import { innId, innRow, innRows, InnRow, innText } from '../lib/inn-row.util';
 import {
@@ -59,12 +63,17 @@ export class InnDealStateReader {
     private readonly requisites: InnRequisiteReader;
     private readonly audit: InnAuditReader;
 
+    /**
+     * @param legacy старые поля портала с ИНН (настройка
+     *   `inn_legacy_fields_*`) — читаются как источник вариантов.
+     */
     constructor(
         private readonly bitrix: IInnRequisiteBitrix,
         private readonly portal: PortalModel,
         domain: string,
+        legacy: InnLegacyFields = NO_INN_LEGACY_FIELDS,
     ) {
-        this.fields = InnFieldMap.from(portal);
+        this.fields = InnFieldMap.from(portal, legacy);
         this.requisites = new InnRequisiteReader(bitrix, domain);
         this.audit = new InnAuditReader(bitrix);
     }

@@ -113,11 +113,17 @@ export const XO_START_BASE_DEAL_TITLE_MODE = {
 /**
  * Чем заполняется значение в админке вместо свободного ввода:
  * `bitrix-users` — Bitrix-id сотрудников портала через запятую (тип string),
- * `bitrix-user` — один Bitrix-id (тип number, 0 — никто).
+ * `bitrix-user` — один Bitrix-id (тип number, 0 — никто),
+ * `bitrix-deal-fields` / `bitrix-company-fields` / `bitrix-lead-fields` —
+ * имена пользовательских полей сущности портала (`UF_CRM_…`) через запятую
+ * (тип string): админка рисует выбор из живых полей портала.
  */
 export const PORTAL_APP_SETTING_PICKS = [
     'bitrix-users',
     'bitrix-user',
+    'bitrix-deal-fields',
+    'bitrix-company-fields',
+    'bitrix-lead-fields',
 ] as const;
 export type PortalAppSettingPick = (typeof PORTAL_APP_SETTING_PICKS)[number];
 
@@ -2633,6 +2639,48 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'запасному. От 1 до 6, по умолчанию 3.',
             type: 'number',
             default: TRANSCRIPTION_CHUNKING_DEFAULTS.parallel,
+        }),
+        // --- ИНН: старые поля портала (владелец 26.11.2026, gsirk: ИНН
+        // лежит в своих полях «ИНН (new)», «ИНН организации»). Читает
+        // вкладка «ИНН» (@lib/portal-lib/pbx-inn) при каждом открытии.
+        innLegacyFieldsDeal: setting({
+            code: 'inn_legacy_fields_deal',
+            name: 'ИНН: старые поля сделки',
+            description:
+                'Свои поля портала в сделке, где уже записан ИНН (например, ' +
+                '«ИНН (new)», «ИНН организации»). ИНН из них показывается ' +
+                'вариантом «из карточки сделки» в выборе ИНН договора. Если ' +
+                'в сделке и компании текущий ИНН пуст, а в этих полях ' +
+                'ровно один ИНН — он становится текущим сам. Поля только ' +
+                'читаются, ничего в них не пишется. Пусто — не читаются.',
+            type: 'string',
+            default: '',
+            pick: 'bitrix-deal-fields',
+        }),
+        innLegacyFieldsCompany: setting({
+            code: 'inn_legacy_fields_company',
+            name: 'ИНН: старые поля компании',
+            description:
+                'Свои поля портала в компании, где уже записан ИНН. ИНН из ' +
+                'них показывается вариантом «из карточки компании»; в одном ' +
+                'поле может быть несколько ИНН через запятую — каждый станет ' +
+                'вариантом. Текущим сам становится, только если в старых ' +
+                'полях сделки пусто, а здесь ровно один ИНН. Поля только ' +
+                'читаются. Пусто — не читаются.',
+            type: 'string',
+            default: '',
+            pick: 'bitrix-company-fields',
+        }),
+        innLegacyFieldsLead: setting({
+            code: 'inn_legacy_fields_lead',
+            name: 'ИНН: старые поля заявки (лида)',
+            description:
+                'Свои поля портала в лиде, где уже записан ИНН. ИНН из них ' +
+                'показывается вариантом «из заявки». Поля только читаются. ' +
+                'Пусто — не читаются.',
+            type: 'string',
+            default: '',
+            pick: 'bitrix-lead-fields',
         }),
     },
     [EnumPortalAppCode.konstructor]: {

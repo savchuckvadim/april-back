@@ -257,6 +257,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'Что переносится из заявки в сделку: дела, комментарий, клиент.',
         links: [LINK.dealFields, LINK.leadFields],
     },
+    inn_legacy_fields: {
+        title: 'ИНН: старые поля портала',
+        description:
+            'Свои поля портала, где ИНН записан до нашего «ИНН»: выбор ИНН ' +
+            'договора показывает их значения вариантами и при одном ИНН ' +
+            'подставляет его сам.',
+        links: [LINK.dealFields, LINK.companyFields, LINK.leadFields],
+    },
     calls_features: {
         title: 'Экран «Звонки»: возможности',
         description:
@@ -466,6 +474,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             ],
         },
         { group: 'lead_to_deal', prefixes: ['lead_work_'] },
+        { group: 'inn_legacy_fields', prefixes: ['inn_legacy_fields_'] },
         {
             group: 'calls_checklists',
             codes: ['task_checklist_enabled', 'refine_stage_on_plan_enabled'],

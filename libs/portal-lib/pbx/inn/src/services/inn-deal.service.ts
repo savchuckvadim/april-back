@@ -2,7 +2,12 @@ import { isValidInn, normalizeInn } from '@lib/portal-lib/pbx-duplicate';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { innText } from '../lib/inn-row.util';
 import { composeInnSnapshot } from '../lib/inn-snapshot.composer';
-import { innCompanyRequisites, innDealPool } from '../lib/inn-sync.input';
+import { InnLegacyFields, NO_INN_LEGACY_FIELDS } from '../lib/inn-fields';
+import {
+    innCompanyRequisites,
+    innDealPool,
+    innLegacyValues,
+} from '../lib/inn-sync.input';
 import {
     INN_SYNC_KINDS,
     INN_SYNC_SOURCES,
@@ -38,12 +43,18 @@ export class InnDealService {
     private readonly reader: InnDealStateReader;
     private readonly pool: InnPoolService;
 
+    /**
+     * @param legacy старые поля портала с ИНН (настройка
+     *   `inn_legacy_fields_*`): варианты во вкладке и последний источник
+     *   выравнивания текущего ИНН.
+     */
     constructor(
         bitrix: IInnRequisiteBitrix,
         portal: PortalModel,
         private readonly domain: string,
+        legacy: InnLegacyFields = NO_INN_LEGACY_FIELDS,
     ) {
-        this.reader = new InnDealStateReader(bitrix, portal, domain);
+        this.reader = new InnDealStateReader(bitrix, portal, domain, legacy);
         this.pool = new InnPoolService(bitrix, portal, domain);
     }
 
@@ -162,6 +173,7 @@ export class InnDealService {
             leadInns: this.leadInns(state),
             dealPool: innDealPool(state),
             requisites: innCompanyRequisites(state),
+            legacy: innLegacyValues(state),
         });
         if (
             plan.kind !== INN_SYNC_KINDS.toCompany &&
