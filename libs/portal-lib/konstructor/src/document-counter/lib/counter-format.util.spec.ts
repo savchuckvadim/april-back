@@ -1,6 +1,7 @@
 import {
     fallbackDocumentNumber,
     formatDocumentNumber,
+    nextCounterValue,
 } from './counter-format.util';
 
 interface FormatPivot {
@@ -20,6 +21,18 @@ const basePivot: FormatPivot = {
 };
 
 describe('counter-format.util', () => {
+    describe('nextCounterValue', () => {
+        it('прибавляет шаг к текущему значению', () => {
+            expect(nextCounterValue(5, 1)).toBe(6);
+            expect(nextCounterValue(10, 5)).toBe(15);
+        });
+
+        it('с нуля первый номер равен шагу', () => {
+            expect(nextCounterValue(0, 1)).toBe(1);
+            expect(nextCounterValue(0, 10)).toBe(10);
+        });
+    });
+
     describe('formatDocumentNumber', () => {
         beforeAll(() => {
             jest.useFakeTimers();
