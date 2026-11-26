@@ -40,6 +40,19 @@ export interface QuestionnaireLiveFields {
     error?: string;
 }
 
+/** Как читать поля носителя. */
+export interface QuestionnaireReadOptions {
+    /**
+     * Дотягивать элементы списков. Это отдельный `userfieldconfig.get` на
+     * КАЖДОЕ поле-список: у старого портала их сотни, и чтение растягивается
+     * на минуты, занимая общий лимит запросов к порталу. `false` — только
+     * страницы `userfieldconfig.list`: имя, тип и подпись без элементов,
+     * этого хватает выбору поля в настройке. По умолчанию `true` — анкете
+     * элементы нужны.
+     */
+    withItems?: boolean;
+}
+
 /** Пользовательские поля CRM всегда с этим префиксом. */
 const CRM_FIELD_PREFIX = 'UF_CRM_';
 
@@ -79,6 +92,7 @@ export class QuestionnaireBitrixFieldsReader {
     async readFields(
         bitrix: QuestionnaireBitrix,
         source: QuestionnaireFieldSource,
+        options: QuestionnaireReadOptions = {},
     ): Promise<QuestionnaireLiveFields> {
         try {
             if (!source.ufEntityId) {
@@ -87,12 +101,16 @@ export class QuestionnaireBitrixFieldsReader {
                         'Для носителя не известен идентификатор типа CRM',
                 );
             }
-            const fields = await bitrix.userFieldConfig.getAllWithItems(
-                'crm',
-                // entityId = CRM_COMPANY… или CRM_{id из crm.type.list}.
-                // entityTypeId сюда подставлять нельзя — см. jsdoc класса.
-                { entityId: source.ufEntityId },
-            );
+            // entityId = CRM_COMPANY… или CRM_{id из crm.type.list}.
+            // entityTypeId сюда подставлять нельзя — см. jsdoc класса.
+            const filter = { entityId: source.ufEntityId };
+            const fields =
+                options.withItems === false
+                    ? await bitrix.userFieldConfig.getAll('crm', filter)
+                    : await bitrix.userFieldConfig.getAllWithItems(
+                          'crm',
+                          filter,
+                      );
             return {
                 fields: fields
                     .map(field => this.toLiveField(field))

@@ -115,12 +115,24 @@ export class QuestionnaireFieldsController {
         type: Boolean,
         example: true,
     })
+    @ApiQuery({
+        name: 'withItems',
+        required: false,
+        description:
+            'Читать элементы полей-списков (по умолчанию да). `false` — ' +
+            'только имена, типы и подписи: на портале с сотнями ' +
+            'полей-списков это секунды вместо минут. Для выбора поля в ' +
+            'настройке элементы не нужны.',
+        type: Boolean,
+        example: false,
+    })
     @ApiOkResponse({ type: QuestionnaireFieldsResponseDto })
     async listFields(
         @Param('portalId', ParseIntPipe) portalId: number,
         @Query('entity') entity: EnumQuestionnaireFieldSource,
         @Query('smartId') smartId?: string,
         @Query('onlyManual') onlyManual?: string,
+        @Query('withItems') withItems?: string,
     ): Promise<QuestionnaireFieldsResponseDto> {
         if (!QUESTIONNAIRE_FIELD_SOURCES.includes(entity)) {
             throw new BadRequestException(
@@ -133,6 +145,7 @@ export class QuestionnaireFieldsController {
             entity,
             this.toNumber(smartId),
             this.toBoolean(onlyManual),
+            !this.isFalse(withItems),
         );
     }
 
@@ -188,5 +201,10 @@ export class QuestionnaireFieldsController {
 
     private toBoolean(value?: string): boolean {
         return value === 'true' || value === '1';
+    }
+
+    /** Явное «нет»: флаги с умолчанием «да» снимаются только так. */
+    private isFalse(value?: string): boolean {
+        return value === 'false' || value === '0';
     }
 }
