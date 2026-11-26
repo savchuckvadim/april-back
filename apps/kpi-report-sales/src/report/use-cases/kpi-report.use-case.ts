@@ -4,14 +4,17 @@ import {
     IField,
     IPBXList,
     IPortal,
-    IFieldItem,
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../../shared/dto/kpi.dto';
-import { ActionService } from '../services/action.service';
+import {
+    buildReportActions,
+    findKpiListReportFields,
+    REPORT_RESULT_COMMUNICATION_COLUMNS,
+} from '../lib/report-actions.util';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi } from '@/modules/bitrix';
 import {
@@ -95,7 +98,7 @@ export class ReportKpiUseCase {
             dateFieldForHookTo,
         } = this.getPbxFiledsData().fields;
 
-        const currentActionsData = this.getActionsData(
+        const currentActionsData = buildReportActions(
             eventAction.items,
             eventActionType.items,
         );
@@ -153,6 +156,11 @@ export class ReportKpiUseCase {
         );
     }
 
+    /**
+     * Поля отчёта в списке KPI (`findKpiListReportFields`). Отсутствующее
+     * поле приходит пустым, как и раньше: на портале без полей действия и
+     * типа отчёт падает при сборке действий.
+     */
     private getPbxFiledsData = (): {
         fields: {
             eventAction: IField;
@@ -160,85 +168,22 @@ export class ReportKpiUseCase {
             actionId: string;
             actionTypeId: string;
             eventResponsibleId: string;
-            // eventDateId: string
             dateFieldForHookFrom: string;
             dateFieldForHookTo: string;
         };
     } => {
-        const listFields = this.portalKPIList?.bitrixfields;
-
-        let eventActionField = null as IField | null;
-        let eventActionTypeField = null as IField | null;
-
-        let actionFieldId: string | undefined;
-        let actionTypeFieldId: string | undefined;
-        let eventResponsibleFieldId: string | undefined;
-        let eventDateFieldId: string | undefined;
-
-        let dateFieldForHookFrom: string | undefined;
-        let dateFieldForHookTo: string | undefined;
-
-        if (listFields && listFields.length) {
-            for (const plField of listFields) {
-                switch (plField.code) {
-                    case 'sales_kpi_event_action':
-                        eventActionField = plField;
-                        actionFieldId = plField.bitrixCamelId;
-                        break;
-
-                    case 'sales_kpi_event_type':
-                        eventActionTypeField = plField;
-                        actionTypeFieldId = plField.bitrixCamelId;
-                        break;
-
-                    case 'sales_kpi_responsible':
-                        // eventResponsibleField = plField;
-                        eventResponsibleFieldId = plField.bitrixCamelId;
-                        break;
-
-                    case 'sales_kpi_event_date':
-                        // eventDateField = plField;
-                        eventDateFieldId = plField.bitrixCamelId;
-                        dateFieldForHookFrom = '>' + eventDateFieldId;
-                        dateFieldForHookTo = '<' + eventDateFieldId;
-                        break;
-                }
-            }
-        }
+        const found = findKpiListReportFields(this.portalKPIList?.bitrixfields);
         return {
             fields: {
-                eventAction: eventActionField as IField,
-                eventActionType: eventActionTypeField as IField,
-                actionId: actionFieldId as string,
-                actionTypeId: actionTypeFieldId as string,
-                eventResponsibleId: eventResponsibleFieldId as string,
-                // eventDateId: eventDateFieldId as string,
-                dateFieldForHookFrom: dateFieldForHookFrom as string,
-                dateFieldForHookTo: dateFieldForHookTo as string,
+                eventAction: found.eventAction as IField,
+                eventActionType: found.eventActionType as IField,
+                actionId: found.actionId as string,
+                actionTypeId: found.actionTypeId as string,
+                eventResponsibleId: found.eventResponsibleId as string,
+                dateFieldForHookFrom: found.dateFieldForHookFrom as string,
+                dateFieldForHookTo: found.dateFieldForHookTo as string,
             },
         };
-    };
-    private getActionsData = (
-        actionItems: IFieldItem[],
-        actionTypeItems: IFieldItem[],
-    ): Filter[] => {
-        const currentActionsData = [] as Filter[];
-        const actionService = new ActionService();
-        if (actionTypeItems.length && actionItems.length) {
-            for (const actionType of actionTypeItems) {
-                for (const action of actionItems) {
-                    const actionData = actionService.getActionWithTypeData(
-                        actionType,
-                        action,
-                    );
-                    if (actionData?.actionTypeItem && actionData?.actionItem) {
-                        currentActionsData.push(actionData);
-                    }
-                }
-            }
-        }
-
-        return currentActionsData.sort((a, b) => a.order - b.order);
     };
 
     /**
@@ -401,12 +346,14 @@ export class ReportKpiUseCase {
     private proccesResultCommunications = (
         reportData: ReportData,
     ): ReportData => {
+        const resultPlan = REPORT_RESULT_COMMUNICATION_COLUMNS.plan;
+        const resultDone = REPORT_RESULT_COMMUNICATION_COLUMNS.done;
         const targetKpiItemResultPlan = {
-            id: 'result_communication_plan' as string,
+            id: resultPlan.innerCode as string,
             count: 0,
         } as KPI;
         const targetKpiItemResultDone = {
-            id: 'result_communication_done' as string,
+            id: resultDone.innerCode as string,
             count: 0,
         } as KPI;
         // const resultKpiPlan = {
@@ -444,18 +391,16 @@ export class ReportKpiUseCase {
             if (isOriginalDone) {
                 targetKpiItemResultDone.count += kpi.count;
             }
-            if (kpi.action.innerCode === 'call_plan') {
+            if (kpi.action.innerCode === resultPlan.sourceInnerCode) {
                 targetKpiItemResultPlan.action = { ...kpi.action };
-                targetKpiItemResultPlan.action.name = 'План';
+                targetKpiItemResultPlan.action.name = resultPlan.name;
 
-                targetKpiItemResultPlan.action.innerCode =
-                    'result_communication_plan';
+                targetKpiItemResultPlan.action.innerCode = resultPlan.innerCode;
             }
-            if (kpi.action.innerCode === 'call_done') {
+            if (kpi.action.innerCode === resultDone.sourceInnerCode) {
                 targetKpiItemResultDone.action = { ...kpi.action };
-                targetKpiItemResultDone.action.name = 'Результативные';
-                targetKpiItemResultDone.action.innerCode =
-                    'result_communication_done';
+                targetKpiItemResultDone.action.name = resultDone.name;
+                targetKpiItemResultDone.action.innerCode = resultDone.innerCode;
             }
         });
         reportData.kpi.unshift(

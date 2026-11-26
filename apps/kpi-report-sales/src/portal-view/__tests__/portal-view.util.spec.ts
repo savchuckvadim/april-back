@@ -138,6 +138,7 @@ describe('portal-view.util: вид отчёта из сохранённых кл
             }),
         );
         expect(view).toEqual({
+            ...DEFAULT_VIEW,
             tabsHidden: ['merged', 'finance'],
             chartsEnabled: false,
             badgesMain: ['signal', 'm:pres.dialogue'],

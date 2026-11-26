@@ -7,6 +7,7 @@ import { CallListPointsProvider } from '../ai-analytics/calls/calls-list-points.
 import { AiAnalyticsCoreModule } from '../ai-analytics/core/ai-analytics-core.module';
 import { PortalViewAuthorReader } from './portal-view.author.reader';
 import { PortalViewController } from './portal-view.controller';
+import { PortalViewIndicatorsService } from './portal-view-indicators.service';
 import { PortalViewReader } from './portal-view.reader';
 import { PortalViewSupportUrlReader } from './portal-view.support-url.reader';
 import { PortalViewUseCase } from './portal-view.use-case';
@@ -26,8 +27,9 @@ import { PortalViewWriter } from './portal-view.writer';
  * списка разборов; объявлен и здесь, чтобы не править модуль среза).
  *
  * `PortalViewReader` экспортируется: список разборов читает из него
- * основные бейджи. Инстанс Битрикса нигде не хранится — имя сотрудника
- * читается на вызов (`PBXService.init`).
+ * основные бейджи, публичная ссылка — свои названия показателей. Инстанс
+ * Битрикса нигде не хранится — имя сотрудника и каталог показателей
+ * читаются на вызов (`PBXService.init`).
  */
 @Module({
     imports: [
@@ -43,6 +45,7 @@ import { PortalViewWriter } from './portal-view.writer';
         PortalViewWriter,
         PortalViewAuthorReader,
         PortalViewSupportUrlReader,
+        PortalViewIndicatorsService,
         CallListPointsProvider,
         PortalViewUseCase,
     ],

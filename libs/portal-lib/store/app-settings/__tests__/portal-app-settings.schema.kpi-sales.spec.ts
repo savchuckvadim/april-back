@@ -48,6 +48,32 @@ const CONTRACT: Record<
         type: 'string',
         default: '',
     },
+    // Свои названия и колонки планов (26.11.2026): по умолчанию выключено.
+    reportViewLabels: {
+        code: 'report_view_labels',
+        type: 'string',
+        default: '',
+    },
+    reportViewPlansEvents: {
+        code: 'report_view_plans_events',
+        type: 'boolean',
+        default: false,
+    },
+    reportViewPlansMerged: {
+        code: 'report_view_plans_merged',
+        type: 'boolean',
+        default: false,
+    },
+    reportViewPlansCallings: {
+        code: 'report_view_plans_callings',
+        type: 'boolean',
+        default: false,
+    },
+    reportViewPlanColumnsHidden: {
+        code: 'report_view_plan_columns_hidden',
+        type: 'string',
+        default: '',
+    },
     reportViewUpdatedBy: {
         code: 'report_view_updated_by',
         type: 'string',

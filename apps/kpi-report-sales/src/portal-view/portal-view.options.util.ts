@@ -2,6 +2,7 @@ import { REPORT_VIEW_TABS } from '@lib/portal-lib/store/app-settings';
 import { CALL_BADGES } from '@lib/sales-ai-analytics';
 import type {
     PortalViewBadgeOption,
+    PortalViewIndicator,
     PortalViewOptions,
     PortalViewPointDef,
     PortalViewPointsSnapshot,
@@ -46,9 +47,13 @@ function pointBadgeOption(point: PortalViewPointDef): PortalViewBadgeOption {
     };
 }
 
-/** Варианты страницы настроек: вкладки, общие бейджи, затем пункты методики портала. */
+/**
+ * Варианты страницы настроек: вкладки, общие бейджи, затем пункты методики
+ * портала; каталог показателей портала для своих названий и колонок планов.
+ */
 export function buildViewOptions(
     points: PortalViewPointsSnapshot,
+    indicators: readonly PortalViewIndicator[],
 ): PortalViewOptions {
     return {
         tabs: buildTabOptions(),
@@ -57,5 +62,6 @@ export function buildViewOptions(
             ...points.defs.map(pointBadgeOption),
         ],
         methodology: points.methodology,
+        indicators: [...indicators],
     };
 }

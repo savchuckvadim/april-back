@@ -3,6 +3,7 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { RedisModule } from '@/core/redis/redis.module';
 import { DownloadModule } from '../download';
+import { PortalViewModule } from '../portal-view';
 import { ShareLinkController } from './controllers/share-link.controller';
 import { ShareLinkPublicController } from './controllers/share-link-public.controller';
 import { ShareLinkService } from './services/share-link.service';
@@ -10,6 +11,7 @@ import { ShareLinkSnapshotService } from './services/share-link-snapshot.service
 import { SharePresenceService } from './services/share-presence.service';
 import { ShareLinkRefreshCron } from './services/share-link-refresh.cron';
 import { ShareLinkRefreshProcessor } from './queue/share-link.processor';
+import { ShareLinkViewReader } from './services/share-link-view.reader';
 
 /**
  * Публичные ссылки на KPI-отчёт (тег Swagger «Share Link» / «Share Link Public»).
@@ -23,14 +25,25 @@ import { ShareLinkRefreshProcessor } from './queue/share-link.processor';
  * ExcelReportService — из DownloadModule (он уже смонтирован в приложение,
  * повторный импорт контроллеры не дублирует). Use-case'ы отчёта создаются
  * per-вызов через `new` — см. CLAUDE.md про race condition c this.bitrix.
+ *
+ * PortalViewModule — ради `PortalViewReader`: публичная страница получает
+ * свои названия показателей портала (модуль тоже уже смонтирован в
+ * приложение, его ручки не дублируются).
  */
 @Module({
-    imports: [PBXModule, QueueModule, RedisModule, DownloadModule],
+    imports: [
+        PBXModule,
+        QueueModule,
+        RedisModule,
+        DownloadModule,
+        PortalViewModule,
+    ],
     controllers: [ShareLinkController, ShareLinkPublicController],
     providers: [
         ShareLinkService,
         ShareLinkSnapshotService,
         SharePresenceService,
+        ShareLinkViewReader,
         ShareLinkRefreshCron,
         ShareLinkRefreshProcessor,
     ],

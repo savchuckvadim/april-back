@@ -67,4 +67,38 @@ describe('PortalViewReader', () => {
         );
         expect(await reader.badgesMain(DOMAIN)).toBeNull();
     });
+
+    it('read: свои названия, флаги и скрытые плановые колонки разбираются', async () => {
+        const { reader, appSettings } = build();
+        appSettings.resolve.mockResolvedValue(
+            settingValues({
+                reportViewLabels: '{"ev:call_plan":" План звонков "}',
+                reportViewPlansMerged: true,
+                reportViewPlanColumnsHidden: 'calls_done,ghost',
+            }),
+        );
+
+        const view = await reader.read(DOMAIN);
+
+        expect(view).toEqual({
+            ...DEFAULT_VIEW,
+            labels: { 'ev:call_plan': 'План звонков' },
+            plansMerged: true,
+            planColumnsHidden: ['calls_done'],
+        });
+    });
+
+    it('labels: свои названия портала; битый JSON — пустой объект', async () => {
+        const { reader, appSettings } = build();
+
+        appSettings.resolve.mockResolvedValue(
+            settingValues({ reportViewLabels: '{"call:30":"От 30 с"}' }),
+        );
+        expect(await reader.labels(DOMAIN)).toEqual({ 'call:30': 'От 30 с' });
+
+        appSettings.resolve.mockResolvedValue(
+            settingValues({ reportViewLabels: '{"call:30":' }),
+        );
+        expect(await reader.labels(DOMAIN)).toEqual({});
+    });
 });

@@ -5,7 +5,7 @@ import {
     type PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import { PortalViewWriter } from '../portal-view.writer';
-import { DOMAIN, settingValues } from './portal-view.fixtures';
+import { DEFAULT_VIEW, DOMAIN, settingValues } from './portal-view.fixtures';
 
 function build() {
     const appSettings = { save: jest.fn() };
@@ -44,9 +44,8 @@ describe('PortalViewWriter', () => {
             patch,
         );
         expect(view).toEqual({
-            tabsHidden: [],
+            ...DEFAULT_VIEW,
             chartsEnabled: false,
-            badgesMain: [],
             updatedBy: 'Иванов Пётр',
             updatedAt: '2026-11-25T09:30:00.000Z',
         });

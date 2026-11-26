@@ -1,4 +1,7 @@
-import { REPORT_VIEW_COMMON_TAB_NAMES } from '@lib/portal-lib/store/app-settings';
+import {
+    REPORT_VIEW_COMMON_TAB_NAMES,
+    REPORT_VIEW_LABEL_LIMITS,
+} from '@lib/portal-lib/store/app-settings';
 import type { VendorSettingKey } from '@lib/vendor-settings';
 
 /** Тег Swagger: страница «Настройки отчёта» — часть отчёта KPI. */
@@ -20,14 +23,33 @@ export const PORTAL_VIEW_SUPPORT_URL_SETTING: VendorSettingKey =
 export const PORTAL_VIEW_BADGE_GROUPS = ['general', 'methodology'] as const;
 export type PortalViewBadgeGroup = (typeof PORTAL_VIEW_BADGE_GROUPS)[number];
 
+/**
+ * Группы каталога показателей (свои названия): колонки событий, бакеты
+ * звонков, колонки планов.
+ */
+export const PORTAL_VIEW_INDICATOR_GROUPS = [
+    'events',
+    'callings',
+    'plans',
+] as const;
+export type PortalViewIndicatorGroup =
+    (typeof PORTAL_VIEW_INDICATOR_GROUPS)[number];
+
 /** Приставка идентификатора бейджа пункта методики: `m:<код пункта>`. */
 export const PORTAL_VIEW_METHODOLOGY_PREFIX = 'm:' as const;
 
-/** Пределы запроса сохранения: список вкладок, список бейджей, длина id бейджа. */
+/**
+ * Пределы запроса сохранения: список вкладок, список бейджей, длина id
+ * бейджа, список скрытых плановых колонок; свои названия — длина и число
+ * записей (общие с настройкой портала).
+ */
 export const PORTAL_VIEW_LIMITS = {
     tabs: 20,
     badges: 60,
     badgeIdLength: 80,
+    planColumns: 20,
+    labelLength: REPORT_VIEW_LABEL_LIMITS.nameLength,
+    labels: REPORT_VIEW_LABEL_LIMITS.entries,
 } as const;
 
 /**
@@ -45,11 +67,27 @@ export const PORTAL_VIEW_MESSAGES = {
         'Бейдж — строчная латиница, цифры и знаки «.», «_», «-»; пункт методики — с приставкой «m:»',
     unknownTab: 'Неизвестная вкладка отчёта в списке скрытых',
     noCommonTab: `Нельзя скрыть сразу все вкладки, которые видят все сотрудники (${REPORT_VIEW_COMMON_TAB_NAMES}): оставьте хотя бы одну из этих вкладок`,
+    unknownLabel: 'Неизвестный показатель в своих названиях',
+    labelsShape:
+        'Свои названия — объект «ключ показателя → название» без вложенных значений',
+    labelKey:
+        'Ключ своего названия — «ev:», «call:» или «plan:» и код показателя: строчная латиница, цифры и «_»',
+    labelTooLong: `Своё название — не длиннее ${REPORT_VIEW_LABEL_LIMITS.nameLength} знаков`,
+    tooManyLabels: `Своих названий — не больше ${REPORT_VIEW_LABEL_LIMITS.entries}`,
+    unknownPlanColumn:
+        'Неизвестный плановый показатель в списке скрытых колонок планов',
 } as const;
+
+export type PortalViewMessageCode = keyof typeof PORTAL_VIEW_MESSAGES;
 
 /** Подписи сохраняемых полей — для строки журнала «кто что менял». */
 export const PORTAL_VIEW_FIELD_LABELS = {
     tabsHidden: 'скрытые вкладки',
     chartsEnabled: 'графики',
     badgesMain: 'основные бейджи',
+    labels: 'названия показателей',
+    plansEvents: 'колонки планов в событиях',
+    plansMerged: 'колонки планов в объединённом отчёте',
+    plansCallings: 'колонки планов в звонках',
+    planColumnsHidden: 'какие планы колонками',
 } as const;

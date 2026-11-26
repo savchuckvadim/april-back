@@ -378,6 +378,25 @@ export class ShareLinkPublicMetaDto {
 }
 
 /**
+ * Вид отчёта портала ссылки для публичной страницы: только свои названия
+ * показателей (колонок планов на публичной странице нет).
+ */
+export class ShareLinkPublicViewDto {
+    @ApiProperty({
+        description:
+            'Свои названия показателей портала ссылки, прочитанные в момент ' +
+            'открытия: ключ — «ev:» и код события, «call:» и бакет звонков, ' +
+            '«plan:» и код планового показателя; значение — название для ' +
+            'показа. Пустой объект — свои названия не заданы или не ' +
+            'прочитались (ссылка из-за этого не ломается).',
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        example: { 'ev:presentation_plan': 'Назначенная презентация' },
+    })
+    labels: Record<string, string>;
+}
+
+/**
  * Ответ публичной ручки: метаданные + данные снимка. Фронт сидит этим
  * свои Redux-слайсы и рендерит обычные виджеты отчёта в read-only.
  */
@@ -424,4 +443,12 @@ export class ShareLinkPublicResponseDto {
         additionalProperties: true,
     })
     ui: Record<string, unknown>;
+
+    @ApiProperty({
+        description:
+            'Вид отчёта портала ссылки на момент открытия (не из снимка): ' +
+            'свои названия показателей, подставляются при показе.',
+        type: ShareLinkPublicViewDto,
+    })
+    view: ShareLinkPublicViewDto;
 }

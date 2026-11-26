@@ -1,15 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
     REPORT_VIEW_COMMON_TAB_NAMES,
+    REPORT_VIEW_LABEL_LIMITS,
+    REPORT_VIEW_PLAN_COLUMN_CODES,
     REPORT_VIEW_TAB_CODES,
+    type ReportViewPlanColumnCode,
     type ReportViewTabCode,
 } from '@lib/portal-lib/store/app-settings';
 import {
     PORTAL_VIEW_BADGE_GROUPS,
+    PORTAL_VIEW_INDICATOR_GROUPS,
     type PortalViewBadgeGroup,
+    type PortalViewIndicatorGroup,
 } from '../portal-view.const';
 import type {
     PortalViewBadgeOption,
+    PortalViewIndicator,
     PortalViewMethodologyInfo,
     PortalViewOptions,
     PortalViewState,
@@ -50,6 +56,68 @@ export class PortalViewStateDto implements PortalViewState {
         example: ['step_missing', 'signal', 'm:cold.utp_unique'],
     })
     badgesMain: string[];
+
+    @ApiProperty({
+        description:
+            'Свои названия показателей портала: ключ — «ev:» и код события ' +
+            'отчёта, «call:» и бакет звонков, «plan:» и код планового ' +
+            'показателя; значение — название для показа (до ' +
+            `${REPORT_VIEW_LABEL_LIMITS.nameLength} знаков). Данные отчёта ` +
+            'не меняются: название подставляется при показе. Пустой объект ' +
+            '— свои названия не заданы.',
+        type: 'object',
+        additionalProperties: {
+            type: 'string',
+            maxLength: REPORT_VIEW_LABEL_LIMITS.nameLength,
+        },
+        example: {
+            'ev:presentation_plan': 'Назначенная презентация',
+            'plan:calls_done': 'План',
+        },
+    })
+    labels: Record<string, string>;
+
+    @ApiProperty({
+        description:
+            'Колонки планов на вкладках «Все» и «События»: включено — ' +
+            'вплотную перед показателем с настроенным планом стоит колонка ' +
+            'плана сотрудника на выбранный период, в таблице и в Excel ' +
+            '(основные листы).',
+        type: Boolean,
+        example: false,
+    })
+    plansEvents: boolean;
+
+    @ApiProperty({
+        description:
+            'Колонки планов в «Объединённом отчёте»: включено — колонка ' +
+            'плана перед своим показателем, в таблице и в Excel.',
+        type: Boolean,
+        example: false,
+    })
+    plansMerged: boolean;
+
+    @ApiProperty({
+        description:
+            'Колонки планов на вкладке «Звонки»: включено — колонка плана ' +
+            'перед своим бакетом звонков. Только в интерфейсе: Excel ' +
+            'вкладки «Звонки» выгружает таблицу событий.',
+        type: Boolean,
+        example: false,
+    })
+    plansCallings: boolean;
+
+    @ApiProperty({
+        description:
+            'Коды плановых показателей, чью колонку плана не выводить, даже ' +
+            'если колонки планов включены. Без дублей и неизвестных кодов; ' +
+            'пусто — выводятся все включённые в настройках планов.',
+        type: String,
+        isArray: true,
+        enum: [...REPORT_VIEW_PLAN_COLUMN_CODES],
+        example: ['sales_count'],
+    })
+    planColumnsHidden: ReportViewPlanColumnCode[];
 
     @ApiProperty({
         description:
@@ -174,6 +242,50 @@ export class PortalViewMethodologyDto implements PortalViewMethodologyInfo {
     title: string;
 }
 
+/** Показатель отчёта, которому можно задать своё название. */
+export class PortalViewIndicatorDto implements PortalViewIndicator {
+    @ApiProperty({
+        description:
+            'Ключ своего названия показателя: «ev:» и код события отчёта, ' +
+            '«call:» и бакет звонков, «plan:» и код планового показателя. ' +
+            'Его же присылают в своих названиях при сохранении.',
+        type: String,
+        example: 'ev:presentation_plan',
+    })
+    key: string;
+
+    @ApiProperty({
+        description:
+            'Группа на странице настроек: events — колонки таблицы событий, ' +
+            'callings — бакеты звонков, plans — колонки планов.',
+        type: String,
+        enum: [...PORTAL_VIEW_INDICATOR_GROUPS],
+        example: 'events',
+    })
+    group: PortalViewIndicatorGroup;
+
+    @ApiProperty({
+        description:
+            'Исходное название показателя, как в отчёте (лишние пробелы ' +
+            'убраны): его показывают рядом с полем своего названия. У ' +
+            'колонки плана — название планового показателя по умолчанию.',
+        type: String,
+        example: 'План Презентация',
+    })
+    name: string;
+
+    @ApiProperty({
+        description:
+            'У колонки плана — ключ показателя-факта, перед которым она ' +
+            'стоит («ev:presentation_done», «call:30»); у событий и звонков ' +
+            '— null.',
+        type: String,
+        nullable: true,
+        example: 'ev:presentation_done',
+    })
+    factKey: string | null;
+}
+
 /** Что можно выбрать на странице «Настройки отчёта». */
 export class PortalViewOptionsDto implements PortalViewOptions {
     @ApiProperty({
@@ -198,6 +310,17 @@ export class PortalViewOptionsDto implements PortalViewOptions {
         nullable: true,
     })
     methodology: PortalViewMethodologyDto | null;
+
+    @ApiProperty({
+        description:
+            'Каталог показателей портала: колонки событий в порядке отчёта ' +
+            '(сначала «План» и «Результативные»), бакеты звонков, затем ' +
+            'плановые показатели, чей факт есть среди событий и звонков ' +
+            'портала. Ключи своих названий принимаются только из этого ' +
+            'списка.',
+        type: [PortalViewIndicatorDto],
+    })
+    indicators: PortalViewIndicatorDto[];
 }
 
 /** Ответ ручек «Настройки отчёта»: состояние, права, ссылка поддержки и варианты. */
@@ -229,7 +352,9 @@ export class PortalViewResponseDto {
     supportUrl: string | null;
 
     @ApiProperty({
-        description: 'Варианты для страницы настроек: вкладки и бейджи.',
+        description:
+            'Варианты для страницы настроек: вкладки, бейджи и показатели ' +
+            'отчёта для своих названий и колонок планов.',
         type: PortalViewOptionsDto,
     })
     options: PortalViewOptionsDto;

@@ -12,10 +12,21 @@ import type { PortalViewSaveRequestDto } from './dto/portal-view-request.dto';
 import type { PortalViewResponseDto } from './dto/portal-view.dto';
 import { PORTAL_VIEW_MESSAGES } from './portal-view.const';
 import { PortalViewAuthorReader } from './portal-view.author.reader';
+import { PortalViewIndicatorsService } from './portal-view-indicators.service';
+import {
+    isGiven,
+    labelsChangeProblem,
+    normalizeLabelsChange,
+    planColumnsChanges,
+} from './portal-view-labels.util';
 import { buildViewOptions } from './portal-view.options.util';
 import { PortalViewReader } from './portal-view.reader';
 import { PortalViewSupportUrlReader } from './portal-view.support-url.reader';
-import type { PortalViewChanges, PortalViewState } from './portal-view.types';
+import type {
+    PortalViewChanges,
+    PortalViewIndicator,
+    PortalViewState,
+} from './portal-view.types';
 import {
     changeFields,
     hasChanges,
@@ -33,8 +44,13 @@ import { PortalViewWriter } from './portal-view.writer';
  * («m:…») остаются как есть — методика портала может смениться. Скрыть
  * сразу все вкладки, которые видят все сотрудники, нельзя — тоже 400: у
  * сотрудника без прав на остальные вкладки не осталось бы ни одной.
+ * Свои названия заменяют набор целиком: пустое значение убирает ключ,
+ * ключ не из каталога показателей портала — 400; null — «не менять».
  */
-function toChanges(request: PortalViewSaveRequestDto): PortalViewChanges {
+function toChanges(
+    request: PortalViewSaveRequestDto,
+    indicators: readonly PortalViewIndicator[],
+): PortalViewChanges {
     const badgesMain =
         request.badgesMain === undefined
             ? undefined
@@ -49,12 +65,21 @@ function toChanges(request: PortalViewSaveRequestDto): PortalViewChanges {
     if (tabsHidden && hidesEveryCommonReportTab(tabsHidden)) {
         throw new BadRequestException(PORTAL_VIEW_MESSAGES.noCommonTab);
     }
+    const labels = isGiven(request.labels)
+        ? normalizeLabelsChange(request.labels)
+        : undefined;
+    const labelsProblem = labels && labelsChangeProblem(labels, indicators);
+    if (labelsProblem) {
+        throw new BadRequestException(PORTAL_VIEW_MESSAGES[labelsProblem]);
+    }
     return {
         ...(tabsHidden === undefined ? {} : { tabsHidden }),
         ...(request.chartsEnabled === undefined
             ? {}
             : { chartsEnabled: request.chartsEnabled }),
         ...(badgesMain === undefined ? {} : { badgesMain }),
+        ...(labels === undefined ? {} : { labels }),
+        ...planColumnsChanges(request),
     };
 }
 
@@ -75,6 +100,7 @@ export class PortalViewUseCase {
         private readonly author: PortalViewAuthorReader,
         private readonly supportUrl: PortalViewSupportUrlReader,
         private readonly points: CallListPointsProvider,
+        private readonly indicators: PortalViewIndicatorsService,
     ) {}
 
     async get(request: AiRequestBaseDto): Promise<PortalViewResponseDto> {
@@ -93,10 +119,17 @@ export class PortalViewUseCase {
         if (!mayEditView(access)) {
             throw new ForbiddenException(PORTAL_VIEW_MESSAGES.forbidden);
         }
-        const changes = toChanges(request);
+        // Каталог нужен для проверки своих названий и для ответа — читается
+        // один раз на запрос. Без своих названий в запросе проверять нечего:
+        // сбой чтения портала не мешает сохранить остальное.
+        const indicators = isGiven(request.labels)
+            ? await this.indicators.forDomain(domain)
+            : await this.indicatorsOrEmpty(domain);
+        const changes = toChanges(request, indicators);
         // Пустой запрос ничего не меняет и не должен ставить подпись «менял».
         if (!hasChanges(changes)) {
-            return this.present(domain, await this.reader.read(domain), true);
+            const view = await this.reader.read(domain);
+            return this.present(domain, view, true, indicators);
         }
 
         const updatedBy = await this.author.nameOf(domain, requesterUserId);
@@ -111,23 +144,44 @@ export class PortalViewUseCase {
             `Вид отчёта портала ${domain} изменён: ${updatedBy} (id ${requesterUserId}), ` +
                 `поля: ${changeFields(changes).join(', ')}`,
         );
-        return this.present(domain, view, true);
+        return this.present(domain, view, true, indicators);
     }
 
     private async present(
         domain: string,
         view: PortalViewState,
         canEdit: boolean,
+        knownIndicators?: readonly PortalViewIndicator[],
     ): Promise<PortalViewResponseDto> {
-        const [supportUrl, points] = await Promise.all([
+        const [supportUrl, points, indicators] = await Promise.all([
             this.supportUrl.read(),
             this.points.forDomain(domain),
+            knownIndicators ?? this.indicatorsOrEmpty(domain),
         ]);
         return {
             view,
             canEdit,
             supportUrl,
-            options: buildViewOptions(points),
+            options: buildViewOptions(points, indicators),
         };
+    }
+
+    /**
+     * Каталог для ответа. Чтение настроек идёт при каждом открытии отчёта:
+     * сбой чтения портала не должен его ронять — без каталога страница
+     * настроек покажет пустой список названий, а вкладки, графики и бейджи
+     * продолжат работать.
+     */
+    private async indicatorsOrEmpty(
+        domain: string,
+    ): Promise<PortalViewIndicator[]> {
+        try {
+            return await this.indicators.forDomain(domain);
+        } catch (error) {
+            this.logger.warn(
+                `Каталог показателей портала ${domain} не прочитан: ${(error as Error).message}`,
+            );
+            return [];
+        }
     }
 }

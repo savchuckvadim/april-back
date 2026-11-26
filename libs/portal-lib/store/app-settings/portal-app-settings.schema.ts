@@ -28,6 +28,10 @@ import {
     REPORT_VIEW_COMMON_TAB_NAMES,
     REPORT_VIEW_TABS,
 } from './lib/report-view.const';
+import {
+    REPORT_VIEW_LABEL_LIMITS,
+    REPORT_VIEW_PLAN_COLUMN_OPTIONS,
+} from './lib/report-view-labels.const';
 import { TRANSCRIPTION_CHUNKING_DEFAULTS } from './lib/transcription-chunking.const';
 
 /** Статусы движения сделок словами — для описаний настроек. */
@@ -863,6 +867,68 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'Задаётся на странице «Настройки отчёта».',
             type: 'string',
             default: '',
+        }),
+        // Свои названия показателей и колонки планов в таблицах отчёта
+        // (решение владельца 26.11.2026): данные отчёта не меняются,
+        // названия подставляются при показе, связи — только по кодам.
+        reportViewLabels: setting({
+            code: 'report_view_labels',
+            name: 'Вид отчёта: свои названия показателей',
+            description:
+                'JSON-объект «ключ показателя → своё название», например ' +
+                '{"ev:presentation_plan":"Назначенная презентация",' +
+                '"plan:calls_done":"План"}. Ключ: «ev:» и код события, ' +
+                '«call:» и бакет звонков (all, 30, 60, 180, 300, 600), ' +
+                '«plan:» и код планового показателя. Название — до ' +
+                `${REPORT_VIEW_LABEL_LIMITS.nameLength} знаков, записей — до ` +
+                `${REPORT_VIEW_LABEL_LIMITS.entries}. Пусто или битый JSON — ` +
+                'свои названия не заданы. Задаётся на странице «Настройки ' +
+                'отчёта».',
+            type: 'string',
+            default: '',
+        }),
+        reportViewPlansEvents: setting({
+            code: 'report_view_plans_events',
+            name: 'Вид отчёта: колонки планов на «Все» и «События»',
+            description:
+                'Включено — перед показателем с настроенным планом встаёт ' +
+                'колонка плана сотрудника на выбранный период, и в таблице, ' +
+                'и в Excel (основные листы). Строки «— план» под ' +
+                'сотрудниками в Excel тогда не выводятся.',
+            type: 'boolean',
+            default: false,
+        }),
+        reportViewPlansMerged: setting({
+            code: 'report_view_plans_merged',
+            name: 'Вид отчёта: колонки планов в «Объединённом отчёте»',
+            description:
+                'Включено — колонки планов перед показателями в таблице ' +
+                'объединённого отчёта и в его Excel.',
+            type: 'boolean',
+            default: false,
+        }),
+        reportViewPlansCallings: setting({
+            code: 'report_view_plans_callings',
+            name: 'Вид отчёта: колонки планов на «Звонках»',
+            description:
+                'Включено — колонки планов перед бакетами звонков в таблице ' +
+                'вкладки «Звонки». Только в интерфейсе: Excel вкладки ' +
+                '«Звонки» выгружает таблицу событий.',
+            type: 'boolean',
+            default: false,
+        }),
+        reportViewPlanColumnsHidden: setting({
+            code: 'report_view_plan_columns_hidden',
+            name: 'Вид отчёта: планы, которые не выводить колонкой',
+            description:
+                'Плановые показатели, чью колонку плана не показывать в ' +
+                'таблицах отчёта, даже если колонки планов включены. Пусто — ' +
+                'выводятся все включённые в настройках планов. Финансов и ' +
+                'эфирного времени здесь нет: их факта в таблицах нет.',
+            type: 'string',
+            default: '',
+            isList: true,
+            options: REPORT_VIEW_PLAN_COLUMN_OPTIONS,
         }),
         reportViewUpdatedBy: setting({
             code: 'report_view_updated_by',
