@@ -16,6 +16,7 @@ import {
 import { ReportGetFiltersDto } from '../../report/dto/kpi-report-request.dto';
 import { GetCallingStatisticFiltersDto } from '../../report/dto/calling-statistic.dto';
 import { ReportData } from '../../shared/dto/kpi.dto';
+import { REPORT_VIEW_LABEL_LIMITS } from '@lib/portal-lib/store/app-settings';
 
 /** Максимальный срок жизни любой ссылки, дней. */
 export const SHARE_LINK_MAX_LIFETIME_DAYS = 14;
@@ -390,7 +391,10 @@ export class ShareLinkPublicViewDto {
             'показа. Пустой объект — свои названия не заданы или не ' +
             'прочитались (ссылка из-за этого не ломается).',
         type: 'object',
-        additionalProperties: { type: 'string' },
+        additionalProperties: {
+            type: 'string',
+            maxLength: REPORT_VIEW_LABEL_LIMITS.nameLength,
+        },
         example: { 'ev:presentation_plan': 'Назначенная презентация' },
     })
     labels: Record<string, string>;

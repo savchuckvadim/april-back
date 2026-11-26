@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -24,12 +24,26 @@ export enum EDownloadType {
     PDF = 'pdf',
 }
 export class DownloadReportKpiItemDto {
-    @ApiProperty({ description: 'KPI ID' })
+    @ApiProperty({
+        description:
+            'Код колонки: innerCode события, id бакета звонков или ' +
+            '«plan:<код плана>» у плановой колонки. По нему подставляются ' +
+            'строки «— план».',
+        type: String,
+        required: false,
+        example: 'presentation_done',
+    })
     @IsOptional()
     @IsString()
     id?: string;
 
-    @ApiProperty({ description: 'KPI action' })
+    @ApiProperty({
+        description:
+            'Название колонки в шапке листа (уже со своим названием ' +
+            'портала, если оно задано).',
+        type: String,
+        example: 'Назначенная презентация',
+    })
     @IsString()
     action: string;
 
@@ -45,9 +59,9 @@ export class DownloadReportKpiItemDto {
     })
     @IsOptional()
     @IsNumber()
-    count: number | null;
+    count?: number | null;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
         description:
             'Вид колонки: plan — колонка плана, стоит вплотную перед своим ' +
             'показателем; в Excel у неё плановая заливка и заметка в шапке, ' +
@@ -55,6 +69,7 @@ export class DownloadReportKpiItemDto {
             'тогда не выводятся. Не передан — обычный показатель.',
         type: String,
         enum: [...DOWNLOAD_KPI_ITEM_KINDS],
+        required: false,
         example: 'plan',
     })
     @IsOptional()
@@ -62,13 +77,14 @@ export class DownloadReportKpiItemDto {
     @IsIn(DOWNLOAD_KPI_ITEM_KINDS)
     kind?: DownloadKpiItemKind;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
         description:
             'Текст заметки Excel к шапке плановой колонки (как подсказка в ' +
             `таблице), до ${DOWNLOAD_KPI_NOTE_MAX_LENGTH} знаков. У обычных ` +
             'колонок не используется.',
         type: String,
         maxLength: DOWNLOAD_KPI_NOTE_MAX_LENGTH,
+        required: false,
         example:
             'План по показателю «Презентация» (на месяц), пересчитан на ' +
             'выбранный период',

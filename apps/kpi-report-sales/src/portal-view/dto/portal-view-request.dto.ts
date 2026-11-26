@@ -4,7 +4,6 @@ import {
     IsArray,
     IsBoolean,
     IsIn,
-    IsObject,
     IsOptional,
     IsString,
     Matches,
@@ -116,7 +115,6 @@ export class PortalViewSaveRequestDto
         },
     })
     @IsOptional()
-    @IsObject()
     @IsReportViewLabels()
     labels?: Record<string, string>;
 

@@ -8,6 +8,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { PortalSessionProtected } from '@lib/auth';
+import { REPORT_VIEW_LABEL_LIMITS } from '@lib/portal-lib/store/app-settings';
 import {
     PortalViewGetRequestDto,
     PortalViewSaveRequestDto,
@@ -89,9 +90,11 @@ export class PortalViewController {
             'Неизвестный общий бейдж в списке основных, попытка скрыть ' +
             'сразу все вкладки, которые видят все сотрудники, свои ' +
             'названия с ключом не из каталога показателей портала ' +
-            '(«Неизвестный показатель в своих названиях»), длиннее 60 ' +
-            'знаков или больше 100 записей, неизвестный код в списке ' +
-            'скрытых колонок планов.',
+            '(«Неизвестный показатель в своих названиях»), ключ не по ' +
+            'формату «ev:|call:|plan:<код>», название не строкой, длиннее ' +
+            `${REPORT_VIEW_LABEL_LIMITS.nameLength} знаков или больше ` +
+            `${REPORT_VIEW_LABEL_LIMITS.entries} записей, неизвестный код ` +
+            'или слишком длинный список скрытых колонок планов.',
     })
     async saveView(
         @Body() dto: PortalViewSaveRequestDto,
