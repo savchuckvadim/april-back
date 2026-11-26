@@ -208,6 +208,35 @@ describe('QuestionnaireFieldsService', () => {
             expect(result.fields[0].fieldName).toBe('UF_CRM_1712345678');
         });
 
+        it('элементы списков читаются по умолчанию и снимаются флагом', async () => {
+            const { service, reader } = makeDeps({
+                fields: [makeField({ fieldName: 'UF_CRM_1712345678' })],
+                snapshot: [],
+            });
+
+            await service.listFields(7, EnumQuestionnaireFieldSource.company);
+            await service.listFields(
+                7,
+                EnumQuestionnaireFieldSource.company,
+                undefined,
+                false,
+                false,
+            );
+
+            expect(reader.readFields).toHaveBeenNthCalledWith(
+                1,
+                expect.anything(),
+                COMPANY_SOURCE,
+                { withItems: true },
+            );
+            expect(reader.readFields).toHaveBeenNthCalledWith(
+                2,
+                expect.anything(),
+                COMPANY_SOURCE,
+                { withItems: false },
+            );
+        });
+
         it('сущность не установлена на портале — слепок не читается', async () => {
             const { service, prisma } = makeDeps({
                 source: { ...COMPANY_SOURCE, snapshotEntityId: null },

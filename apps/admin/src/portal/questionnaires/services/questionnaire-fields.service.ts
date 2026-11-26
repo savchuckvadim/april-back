@@ -75,6 +75,7 @@ export class QuestionnaireFieldsService {
         entity: EnumQuestionnaireFieldSource,
         smartId?: number,
         onlyManual = false,
+        withItems = true,
     ): Promise<QuestionnaireFieldsResponseDto> {
         const domain = await this.sourceService.requireDomain(portalId);
         const source = await this.sourceService.resolveSource(
@@ -84,7 +85,9 @@ export class QuestionnaireFieldsService {
         );
 
         const bitrix = await this.reader.connect(domain);
-        const live = await this.reader.readFields(bitrix, source);
+        const live = await this.reader.readFields(bitrix, source, {
+            withItems,
+        });
         const snapshot = await this.loadSnapshot(source);
         const usage = await this.loadUsage(portalId);
 

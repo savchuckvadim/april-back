@@ -262,4 +262,78 @@ describe('QuestionnaireBitrixFieldsReader', () => {
             ]);
         });
     });
+
+    describe('без элементов списков', () => {
+        /** Поле-список без элементов: полный способ дотянул бы их `get`. */
+        const enumPage = {
+            result: {
+                fields: [
+                    {
+                        id: 909,
+                        entityId: 'CRM_COMPANY',
+                        fieldName: 'UF_CRM_CLIENT_TYPE',
+                        userTypeId: 'enumeration',
+                        xmlId: 'CLIENT_TYPE',
+                        multiple: 'N',
+                        mandatory: 'N',
+                        editFormLabel: { ru: 'Тип клиента' },
+                    },
+                ],
+            },
+        };
+
+        it('читает только страницы списка — без get на каждое поле-список', async () => {
+            // На gsirk сотни полей-списков: get на каждое занимал лимит
+            // запросов портала на минуты.
+            const { service, callType } = makeUserFieldConfig([
+                enumPage,
+                { result: { fields: [] } },
+            ]);
+            const bitrix = {
+                userFieldConfig: service,
+            } as unknown as QuestionnaireBitrix;
+
+            const result = await makeReader().readFields(
+                bitrix,
+                COMPANY_SOURCE,
+                { withItems: false },
+            );
+
+            expect(callType).toHaveBeenCalledTimes(2);
+            expect(result.fields).toHaveLength(1);
+            expect(result.fields[0].fieldName).toBe('UF_CRM_CLIENT_TYPE');
+            expect(result.fields[0].title).toBe('Тип клиента');
+            expect(result.fields[0].items).toEqual([]);
+            expect(result.degraded).toBe(false);
+        });
+
+        it('по умолчанию элементы дотягиваются, как нужно анкете', async () => {
+            const { service, callType } = makeUserFieldConfig([
+                enumPage,
+                { result: { fields: [] } },
+                {
+                    result: {
+                        field: {
+                            enum: [
+                                { id: 1247, value: 'Тендер', xmlId: 'TENDER' },
+                            ],
+                        },
+                    },
+                },
+            ]);
+            const bitrix = {
+                userFieldConfig: service,
+            } as unknown as QuestionnaireBitrix;
+
+            const result = await makeReader().readFields(
+                bitrix,
+                COMPANY_SOURCE,
+            );
+
+            expect(callType).toHaveBeenCalledTimes(3);
+            expect(result.fields[0].items).toEqual([
+                { id: 1247, value: 'Тендер', xmlId: 'TENDER' },
+            ]);
+        });
+    });
 });
