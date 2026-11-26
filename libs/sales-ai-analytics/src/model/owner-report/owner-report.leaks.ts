@@ -1,4 +1,4 @@
-import { firstIds, shareOf } from './owner-report.share';
+import { firstIds, isConnectionLostCall, shareOf } from './owner-report.share';
 import type {
     OwnerReportCall,
     OwnerReportLeak,
@@ -48,7 +48,10 @@ const LEAK_RULES: readonly LeakRule[] = [
         nature: 'process',
         base: calls =>
             calls.filter(
-                call => call.outcome !== null && call.contactReached === true,
+                call =>
+                    call.outcome !== null &&
+                    !isConnectionLostCall(call) &&
+                    call.contactReached === true,
             ),
         affected: base => base.filter(call => call.outcome === 'postponed'),
         money: true,
@@ -59,7 +62,9 @@ const LEAK_RULES: readonly LeakRule[] = [
         base: calls =>
             calls.filter(
                 call =>
-                    call.typeGroup === 'cold' && call.contactReached !== null,
+                    call.typeGroup === 'cold' &&
+                    call.contactReached !== null &&
+                    !isConnectionLostCall(call),
             ),
         affected: base => base.filter(call => call.contactReached === false),
         money: false,

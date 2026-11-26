@@ -15,14 +15,17 @@
  *     полного витка спирали; без методики — раздел «Презентация под
  *     потребности» на PRESENTATION_NO_SSV_MAX_SCORE из 10 и ниже.
  * Срочный приоритет коучинга сам по себе сигналом больше не является.
+ * Обрыв связи — не вина менеджера (26.11.2026): при обрыве «дверь закрыта»
+ * сигналом не бывает, а «клиент после этого ушёл из разговора» не причина.
  *
  * Чистые функции над минимальной проекцией разбора: её собирают и DTO
  * разбора (event-sales), и lite-строка витрины (kpi-report-sales).
  */
-import type {
-    CallReportActiveRiskFlagCode,
-    CallReportObjectionReaction,
-    CallReportSectionCode,
+import {
+    CALL_REPORT_RISK_FLAG_DOOR_CLOSED,
+    type CallReportActiveRiskFlagCode,
+    type CallReportObjectionReaction,
+    type CallReportSectionCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import type { ObjectionOutcome } from './objections';
 import { provenRiskFlags, type RiskEvidenceLike } from './risk-flags.util';
@@ -91,6 +94,8 @@ export interface ManagerSignalCallView {
     needsFound: boolean | null;
     /** Полных витков спирали по методике; null — методика их не считала. */
     spiralsFull: number | null;
+    /** В разборе отмечен обрыв связи (исход или сбой); нет поля — не отмечен. */
+    connectionLost?: boolean;
 }
 
 /** Чья цитата: доказательство флага, слова клиента или «как было» менеджера. */
@@ -112,7 +117,7 @@ export function resolveManagerSignal(
 ): ManagerSignal | null {
     return (
         flagSignal(view, flags) ??
-        objectionSignal(view.objections) ??
+        objectionSignal(view.objections, view.connectionLost === true) ??
         presentationSignal(view)
     );
 }
@@ -121,8 +126,15 @@ function flagSignal(
     view: ManagerSignalCallView,
     flags: readonly CallReportActiveRiskFlagCode[],
 ): ManagerSignal | null {
+    // При обрыве связи «дверь закрыта» не сигнал: оставить её открытой было
+    // нельзя (страховка для уже записанных разборов).
     const proven = provenRiskFlags(view.riskFlags, view.riskEvidence).find(
-        item => flags.includes(item.flag),
+        item =>
+            flags.includes(item.flag) &&
+            !(
+                view.connectionLost === true &&
+                item.flag === CALL_REPORT_RISK_FLAG_DOOR_CLOSED
+            ),
     );
     return proven
         ? {
@@ -134,33 +146,42 @@ function flagSignal(
         : null;
 }
 
+/**
+ * Причины, по которым возражение не отработано: не ответил по существу;
+ * клиент ушёл из разговора — при обрыве связи не причина (он не ушёл, а
+ * связь прервалась). Возражение без причин сигнала не даёт.
+ */
+function objectionReasons(
+    objection: ManagerSignalObjection,
+    connectionLost: boolean,
+): string[] {
+    if (objection.handled !== false) return [];
+    return [
+        objection.reaction === REACTION_OFF_POINT
+            ? 'менеджер не ответил по существу'
+            : null,
+        objection.outcome === OUTCOME_CLIENT_LEFT && !connectionLost
+            ? 'клиент после этого ушёл из разговора'
+            : null,
+    ].filter((reason): reason is string => reason !== null);
+}
+
 /** Первое возражение, где менеджер не ответил по существу или клиент ушёл. */
 function objectionSignal(
     objections: readonly ManagerSignalObjection[],
+    connectionLost: boolean,
 ): ManagerSignal | null {
-    const missed = objections.find(
-        objection =>
-            objection.handled === false &&
-            (objection.reaction === REACTION_OFF_POINT ||
-                objection.outcome === OUTCOME_CLIENT_LEFT),
-    );
-    if (!missed) return null;
-    const detail = [
-        missed.reaction === REACTION_OFF_POINT
-            ? 'менеджер не ответил по существу'
-            : null,
-        missed.outcome === OUTCOME_CLIENT_LEFT
-            ? 'клиент после этого ушёл из разговора'
-            : null,
-    ]
-        .filter((part): part is string => part !== null)
-        .join(', ');
-    return {
-        kind: 'objection_mishandled',
-        quote: nonEmptyText(missed.quote),
-        quoteSource: 'client',
-        detail,
-    };
+    for (const missed of objections) {
+        const reasons = objectionReasons(missed, connectionLost);
+        if (reasons.length === 0) continue;
+        return {
+            kind: 'objection_mishandled',
+            quote: nonEmptyText(missed.quote),
+            quoteSource: 'client',
+            detail: reasons.join(', '),
+        };
+    }
+    return null;
 }
 
 function presentationSignal(view: ManagerSignalCallView): ManagerSignal | null {

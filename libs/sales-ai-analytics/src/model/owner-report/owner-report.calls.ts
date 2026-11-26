@@ -1,5 +1,6 @@
 import { CALL_REPORT_OUTCOME_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import { isBelowMinDuration, minDurationMapOf } from '../manager-type-matrix';
+import { isConnectionLostCall } from './owner-report.share';
 import type { MinDurationSecByType } from '../pulse-duration';
 import { isoWeekday, shiftDate, toPortalDate } from '../workdays.util';
 import type {
@@ -134,7 +135,12 @@ function toOwnerReportCall(
         marked,
         outcome,
         contactReached: contactOf(row, outcome),
-        advanced: outcome === null ? null : outcome === 'advanced',
+        // Шаг вперёд — только у разговора с итогом: оборванный связью «не
+        // продвинут» не значит, а в знаменатель долей не входит.
+        advanced:
+            outcome === null || isConnectionLostCall({ outcome })
+                ? null
+                : outcome === 'advanced',
         nextStepSet,
         nextStepDated: nextStepSet && typeof row.nextStep?.date === 'string',
         nextStepKind,
@@ -195,8 +201,10 @@ export function outcomeOf(
 }
 
 /**
- * Состоялся ли разговор с ЛПР: по исходу; без исхода — по собеседнику
- * старого разбора (ЛПР или пользователь — да, секретарь — нет); иначе null.
+ * Состоялся ли разговор с ЛПР: по исходу — «без контакта» (no_contact) нет,
+ * любой другой исход, в том числе «связь прервалась», — да (разговор по
+ * существу шёл); без исхода — по собеседнику старого разбора (ЛПР или
+ * пользователь — да, секретарь — нет); иначе null.
  */
 function contactOf(
     row: OwnerReportCallInput,

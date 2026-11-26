@@ -121,6 +121,8 @@ export interface MethodologyAnalysisView {
     specialist?: string | null;
     hvostSteps?: MethodologyHvostView | null;
     dealProgress?: DealProgressResult | null;
+    /** В разборе отмечен обрыв связи (исход или сбой); нет — признак не передан. */
+    connectionLost?: boolean;
 }
 
 /** Сырой ответ прохода «методика» после разбора JSON модели. */

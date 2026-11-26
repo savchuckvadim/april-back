@@ -19,8 +19,14 @@ export const CALL_REPORT_OUTCOME_CODES = [
     'postponed',
     'refused',
     'no_contact',
+    // Разговор по существу шёл и оборвался связью: не вина менеджера, но и
+    // не «без контакта» — контакт был.
+    'connection_lost',
 ] as const;
 export type CallReportOutcomeCode = (typeof CALL_REPORT_OUTCOME_CODES)[number];
+/** Исход «связь прервалась» — единственное место, где записан код. */
+export const CALL_REPORT_OUTCOME_CONNECTION_LOST =
+    'connection_lost' satisfies CallReportOutcomeCode;
 export const CALL_REPORT_OUTCOME_ITEMS = [
     {
         CODE: 'advanced',
@@ -31,6 +37,7 @@ export const CALL_REPORT_OUTCOME_ITEMS = [
     { CODE: 'postponed', VALUE: 'Отложено без даты', SORT: 300 },
     { CODE: 'refused', VALUE: 'Отказ', SORT: 400 },
     { CODE: 'no_contact', VALUE: 'Без содержательного контакта', SORT: 500 },
+    { CODE: 'connection_lost', VALUE: 'Связь прервалась', SORT: 600 },
 ] as const satisfies readonly (CallReportSmartEnumItem & {
     CODE: CallReportOutcomeCode;
 })[];
@@ -105,11 +112,16 @@ export const CALL_REPORT_ISSUE_CODES = [
     'crm_existing_client',
     'wrong_contact',
     'telephony',
+    // Связь оборвалась посреди разговора (запись кончается на полуслове).
+    'connection_lost',
     'demo_access',
     'promise_broken',
     'brand_competition',
 ] as const;
 export type CallReportIssueCode = (typeof CALL_REPORT_ISSUE_CODES)[number];
+/** Сбой «связь прервалась» — единственное место, где записан код. */
+export const CALL_REPORT_ISSUE_CONNECTION_LOST =
+    'connection_lost' satisfies CallReportIssueCode;
 export const CALL_REPORT_ISSUE_ITEMS = [
     {
         CODE: 'crm_duplicate',
@@ -128,6 +140,11 @@ export const CALL_REPORT_ISSUE_ITEMS = [
     },
     { CODE: 'wrong_contact', VALUE: 'Неверный контакт', SORT: 200 },
     { CODE: 'telephony', VALUE: 'Телефония и связь', SORT: 300 },
+    {
+        CODE: 'connection_lost',
+        VALUE: 'Связь прервалась посреди разговора',
+        SORT: 350,
+    },
     { CODE: 'demo_access', VALUE: 'Демо-доступ не работает', SORT: 400 },
     { CODE: 'promise_broken', VALUE: 'Обещанное не сделано', SORT: 500 },
     {

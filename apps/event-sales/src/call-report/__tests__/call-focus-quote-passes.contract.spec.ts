@@ -39,24 +39,27 @@ import {
 
 /**
  * Задание с цитатами (focus-v3.4) и выключатель: пока он выключен, задание
- * модели прежнее байт в байт — хэши ниже сняты с кода до правки (a818f857,
- * focus-v3.3); с цитатами — строгие схемы с новыми полями.
+ * модели прежнее — без блока цитат; с цитатами — строгие схемы с новыми
+ * полями. Хэши ниже — снимок базового задания: сняты с кода до цитат
+ * (a818f857, focus-v3.3) и пересняты 26.11.2026 после правки «обрыв связи»
+ * (focus-v3.5); блок отчётности после презентации не менялся — его хэш
+ * прежний.
  */
 
 const hash = (value: unknown): string =>
     createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-/** Хэши {prompt, schema} проходов и цельного разбора на a818f857. */
+/** Хэши {prompt, schema} проходов и цельного разбора: снимок focus-v3.5 (26.11.2026). */
 const ORIGINAL_HASHES: Record<string, string> = {
-    form: 'a2e027460922b2a9782ea6c046f236f3285bef831041cb7667d3b0c9841230a7',
-    content: '577eb8eebf6755174eba6c07ab04e99bcfc75d3ca0c5d377450bba1c55afc364',
+    form: '52dfff88cd679e75ba4911310947e3a9ba5037e83417ccb776a4dcbe642ffa19',
+    content: '8770ebbbf34685ace0def4663afc1623b313072b7e9b9ab4f631b968a5225d0e',
     movement:
-        'c7c37cde1d36173b1c91b1b53ca48f189553a20790cebf5052084756e348f95f',
-    closing: '8f32208834f59cb50ef7a9f091b83306181daf970ac96cb4404a3d8e5e02fef1',
+        'd4d79b168ee111b6061a7ede19d289f08de1cff5926629e866fa106197442fea',
+    closing: '81cfe9443983028d692d3971862981ced98feb17d8f78b6c225b0eb8945f8930',
     // Блок обязательной отчётности после презентации (withCheckPresentation).
     afterPresentation:
         '327ec4f9e9e222165ef5a6ca36231049ba2d48fd9f9700b15ad4c3dd5a331251',
-    deep: 'f87c1d18bea87cbfcb45e75ee06c1b246dba3a8ea627d7a1cae2833c66cca559',
+    deep: '3815c5f8d7784b58b568308cedd8341a15fd508a03147a612890389fa3cd5cd8',
 };
 
 type Schema = Record<string, unknown>;
@@ -85,9 +88,9 @@ const sectionItemOf = (pass: FocusPass): Schema =>
     (propertiesOf(pass.schema).sections as Schema).items as Schema;
 
 describe('задание фокус-проходов: выключатель цитат', () => {
-    it('выключатель по умолчанию выключен, версия — прежняя 3.3', () => {
+    it('выключатель по умолчанию выключен, версия — базовая 3.5', () => {
         expect(QUOTE_EVIDENCE_ENABLED).toBe(false);
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.3-2026-11-17');
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.5-2026-11-26');
         expect(promptVersionFor(false)).toBe(CALL_REPORT_PROMPT_VERSION_BASE);
     });
 
@@ -99,7 +102,7 @@ describe('задание фокус-проходов: выключатель ц�
         }
     });
 
-    it('без цитат задание байт в байт прежнее (хэши с a818f857), цельный разбор не тронут', () => {
+    it('без цитат задание — снимок focus-v3.5 (хэши), цельный разбор не тронут', () => {
         for (const pass of FOCUS_PASSES) {
             expect([
                 pass.key,
@@ -130,9 +133,9 @@ describe('задание фокус-проходов: выключатель ц�
         }
     });
 
-    it('версия с цитатами 3.4 — в общей серии оценок', () => {
+    it('версия с цитатами 3.6 — в общей серии оценок', () => {
         const quotes = promptVersionFor(true);
-        expect(quotes).toBe('focus-v3.4-2026-11-18');
+        expect(quotes).toBe('focus-v3.6-2026-11-26');
         expect(Object.keys(PROMPT_SERIES_START)).toContain(quotes);
         expect(versionSeriesDate(quotes)).toBe(AI_ANALYSIS_SERIES_START);
     });

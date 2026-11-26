@@ -2,6 +2,7 @@ import {
     FACTS_CATCHUP_PROMPT_VERSION,
     type FactsCatchupGroup,
 } from '@lib/sales-ai-analytics';
+import { CALL_CONNECTION_LOST_RULE } from './call-connection-lost.contract';
 import { buildDeepAnalysisUserContent } from './call-deep-analysis.contract';
 import {
     FORM_FACTS_PROPERTIES,
@@ -54,6 +55,9 @@ export const FACTS_CATCHUP_PROMPT = `Ты — опытный руководит�
 и рекомендаций: разбор этого звонка уже есть, в нём не хватает фактов.
 Опирайся строго на то, что прозвучало; цитаты — дословно из расшифровки,
 по-русски. Коды — только в полях, где их требует схема.
+
+${CALL_CONNECTION_LOST_RULE}
+
 ${MOVEMENT_FACTS_SPEC}
 ${FORM_FACTS_SPEC}
 - nextStepKind — вид следующего шага из имеющегося разбора (он приведён во

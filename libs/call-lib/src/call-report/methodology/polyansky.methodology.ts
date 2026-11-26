@@ -10,6 +10,8 @@ import type { Methodology, MethodologyCheckpoint } from './methodology.types';
  * порталов, «люди» и «справочник» в разбор не входят.
  *
  * Формулировки пунктов менеджер увидит дословно — без кодов и жаргона.
+ * Пункты о завершении разговора помечены `ending`: при обрыве связи их
+ * пропуск не засчитывается (26.11.2026).
  * Строка таблицы `ai_methodologies` с тем же кодом в общем слое
  * перекрывает этот конфиг.
  */
@@ -33,6 +35,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
         ],
         evidence: 'quote',
         mandatory: true,
+        ending: true,
     },
     // --- Холодный звонок: УТП из трёх частей, без цены ---
     {
@@ -229,6 +232,8 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
         types: ['presentation'],
         evidence: 'quote',
         mandatory: true,
+        // Фиксация следующего шага показа: до неё оборванный разговор не дошёл.
+        ending: true,
     },
     {
         code: 'pres.lpr_help',
@@ -296,6 +301,9 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
         types: [...REPEAT],
         evidence: 'quote',
         mandatory: true,
+        // Закрытие — в конце разговора: при обрыве связи его пропуск не
+        // включает потолки итога rep.formal_only и rep.no_close_attempt.
+        ending: true,
     },
     {
         code: 'rep.price_after_value',
@@ -321,6 +329,7 @@ const CHECKPOINTS: MethodologyCheckpoint[] = [
         types: ['decision', 'payment'],
         evidence: 'quote',
         mandatory: true,
+        ending: true,
     },
     {
         code: 'rep.user_self_interest',

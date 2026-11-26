@@ -7,7 +7,7 @@ import {
     type MethodologyPassRaw,
     type SpiralResult,
 } from '@lib/call-lib';
-import { DEEP_ANALYSIS_CORE_RULES } from './call-deep-analysis.contract';
+import { DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST } from './call-deep-analysis.contract';
 
 /**
  * Контракт прохода «МЕТОДИКА» (этап 1 плана методики Полянского): отдельный
@@ -149,12 +149,14 @@ ${lines}
   Цитата по возможности: что прозвучало вместо этого.
 - not_applicable — выполнить пункт было невозможно: разговор до него не дошёл
   (недозвон, секретарь, автоответчик) или тема по ситуации не нужна. Не прячь
-  пропуски за «неприменимо»: дошёл до этапа и пропустил шаг — это missed.`
+  пропуски за «неприменимо»: дошёл до этапа и пропустил шаг — это missed.
+  Пункты, до которых разговор не дошёл из-за обрыва связи (резюме
+  договорённостей, следующий шаг, прощание), — not_applicable, а не missed.`
         : '\n\nПунктов для проверки у этого типа звонка нет — верни checkpoints: [].';
     const spiralsBlock = spiralsEnabledFor(methodology, callType)
         ? `\n\n${SPIRALS_SPEC}`
         : '\n\nspirals — верни null: для этого типа звонка спирали не считаются.';
-    return `${DEEP_ANALYSIS_CORE_RULES}
+    return `${DEEP_ANALYSIS_RULES_WITH_CONNECTION_LOST}
 
 ТВОЙ ФОКУС В ЭТОМ ЗАПРОСЕ — ПРОВЕРКА ПО МЕТОДИКЕ «${methodology.title}». Не
 оценивай разделы и не ставь оценок: этим занимаются другие проходы разбора.

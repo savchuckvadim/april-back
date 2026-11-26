@@ -7,10 +7,11 @@
  * Тексты — для людей, без внутренних кодов: подпись до 28 знаков (плашка в
  * строке звонка), подсказка — одно предложение о том, что бейдж значит.
  */
-import type {
-    CallReportOutcomeCode,
-    CallReportSectionCode,
-} from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import type { CallReportSectionCode } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    CALL_REPORT_OUTCOME_CONNECTION_LOST,
+    type CallReportOutcomeCode,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import type { CallBadgeDef } from './call-badges.types';
 
 export * from './call-badges.types';
@@ -115,6 +116,16 @@ export const CALL_BADGES = [
         main: false,
         problem: false,
         since: '2026-11-06',
+    },
+    {
+        id: 'outcome_connection_lost',
+        title: 'Связь прервалась',
+        hint: 'Разговор оборвался из-за связи: вины менеджера в этом нет.',
+        tone: 'neutral',
+        family: 'outcome',
+        main: false,
+        problem: false,
+        since: '2026-11-26',
     },
     {
         id: 'progress_low',
@@ -256,4 +267,5 @@ export const CALL_BADGE_OUTCOMES: Readonly<
     outcome_postponed: 'postponed',
     outcome_refused: 'refused',
     outcome_no_contact: 'no_contact',
+    outcome_connection_lost: CALL_REPORT_OUTCOME_CONNECTION_LOST,
 };

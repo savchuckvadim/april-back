@@ -137,7 +137,7 @@ export interface OwnerReportCall {
      * собеседнику (ЛПР или пользователь — да, секретарь — нет); null — неизвестно.
      */
     contactReached: boolean | null;
-    /** Шаг вперёд (исход advanced); null — исход не размечен. */
+    /** Шаг вперёд (исход advanced); null — исход не размечен или «связь прервалась» (итога нет). */
     advanced: boolean | null;
     nextStepSet: boolean;
     nextStepDated: boolean;

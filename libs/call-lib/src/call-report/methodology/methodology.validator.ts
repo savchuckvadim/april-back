@@ -90,15 +90,16 @@ function parseBadge(
     return badge;
 }
 
-/** Признак «бейдж в строке фильтров сразу»: только true или false. */
-function parseBadgeMain(
+/** Необязательный признак пункта (badgeMain, ending): только true или false. */
+function parseFlag(
     input: unknown,
     path: string,
+    field: 'badgeMain' | 'ending',
     errors: string[],
 ): boolean {
     if (input === undefined) return false;
     if (typeof input !== 'boolean') {
-        errors.push(`${path}.badgeMain: укажите true или false`);
+        errors.push(`${path}.${field}: укажите true или false`);
         return false;
     }
     return input;
@@ -173,8 +174,11 @@ function parseCheckpoints(
         if (product !== null) checkpoint.product = product;
         const badge = parseBadge(item.badge, path, errors);
         if (badge !== undefined) checkpoint.badge = badge;
-        if (parseBadgeMain(item.badgeMain, path, errors))
+        if (parseFlag(item.badgeMain, path, 'badgeMain', errors))
             checkpoint.badgeMain = true;
+        if (parseFlag(item.ending, path, 'ending', errors)) {
+            checkpoint.ending = true;
+        }
         if (rule !== undefined) checkpoint.rule = rule;
         result.push(checkpoint);
     });

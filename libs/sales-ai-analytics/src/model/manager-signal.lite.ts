@@ -5,6 +5,7 @@
  * бейджи списка разборов.
  */
 import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
+import { isConnectionLostReported } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/call-report-connection-lost.util';
 import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import {
     ManagerSignal,
@@ -17,9 +18,12 @@ export type SignalSourceRow = Pick<
     AnalyticsCallLiteRow,
     'riskFlags' | 'riskEvidence' | 'objections' | 'sections'
 > &
-    Partial<Pick<AnalyticsCallLiteRow, 'style' | 'methodology'>>;
+    Partial<Pick<AnalyticsCallLiteRow, 'style' | 'methodology' | 'report'>>;
 
-/** Проекция lite-строки для правила сигнала; старые строки без style/methodology — null. */
+/**
+ * Проекция lite-строки для правила сигнала; старые строки без
+ * style/methodology — null, без report — обрыв связи не отмечен.
+ */
 export function toSignalView(row: SignalSourceRow): ManagerSignalCallView {
     return {
         riskFlags: row.riskFlags,
@@ -29,6 +33,9 @@ export function toSignalView(row: SignalSourceRow): ManagerSignalCallView {
         presentationDone: row.style?.presentationDone ?? null,
         needsFound: row.style?.needsFound ?? null,
         spiralsFull: row.methodology?.spiralsFull ?? null,
+        ...(isConnectionLostReported(row.report)
+            ? { connectionLost: true }
+            : {}),
     };
 }
 

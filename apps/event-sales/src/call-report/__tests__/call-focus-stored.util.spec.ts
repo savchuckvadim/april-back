@@ -12,7 +12,7 @@ import {
     withoutFocusPasses,
 } from '../services/call-focus-stored.util';
 
-const PROMPT = 'focus-v3.3-2026-11-17';
+const PROMPT = 'focus-v3.5-2026-11-26';
 const FORM = {
     sections: [{ section: 'GREETING', score: 7 }],
     sentiment: 'neutral',

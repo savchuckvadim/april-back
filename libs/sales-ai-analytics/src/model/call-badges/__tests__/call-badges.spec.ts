@@ -1,4 +1,7 @@
-import { CALL_REPORT_SECTION_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    CALL_REPORT_OUTCOME_CONNECTION_LOST,
+    CALL_REPORT_SECTION_CODES,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     CALL_BADGE_FAMILIES,
     CALL_BADGE_IDS,
@@ -28,6 +31,7 @@ const EXPECTED_IDS = [
     'outcome_postponed',
     'outcome_refused',
     'outcome_no_contact',
+    'outcome_connection_lost',
     'progress_low',
     'capped',
     'price_named',
@@ -73,11 +77,11 @@ describe('справочник бейджей звонков', () => {
         }
     });
 
-    it('существует одно семейство — итог разговора, в нём пять бейджей', () => {
+    it('существует одно семейство — итог разговора, в нём шесть бейджей', () => {
         expect(CALL_BADGE_FAMILIES).toEqual(['outcome']);
         const members = CALL_BADGES.filter(badge => badge.family !== null);
         expect(members.map(badge => badge.family)).toEqual(
-            Array<string>(5).fill('outcome'),
+            Array<string>(6).fill('outcome'),
         );
         expect(members.map(badge => badge.id)).toEqual([
             'outcome_advanced',
@@ -85,6 +89,7 @@ describe('справочник бейджей звонков', () => {
             'outcome_postponed',
             'outcome_refused',
             'outcome_no_contact',
+            'outcome_connection_lost',
         ]);
     });
 
@@ -106,14 +111,32 @@ describe('справочник бейджей звонков', () => {
         );
     });
 
-    it('бейджи итога покрывают все пять кодов итога разговора', () => {
+    it('бейджи итога покрывают все шесть кодов итога разговора', () => {
         expect(Object.values(CALL_BADGE_OUTCOMES).sort()).toEqual([
             'advanced',
             'callback_dated',
+            'connection_lost',
             'no_contact',
             'postponed',
             'refused',
         ]);
+    });
+
+    it('бейдж «Связь прервалась» — итог разговора сразу после «нет контакта», зеркально ему', () => {
+        const lost = callBadgeDef('outcome_connection_lost');
+        const noContact = callBadgeDef('outcome_no_contact');
+        expect(lost.title).toBe('Связь прервалась');
+        expect(lost.family).toBe(noContact.family);
+        expect(lost.tone).toBe(noContact.tone);
+        expect(lost.main).toBe(noContact.main);
+        expect(lost.problem).toBe(noContact.problem);
+        expect(CALL_BADGE_OUTCOMES.outcome_connection_lost).toBe(
+            CALL_REPORT_OUTCOME_CONNECTION_LOST,
+        );
+        expect(
+            CALL_BADGE_IDS.indexOf('outcome_connection_lost') -
+                CALL_BADGE_IDS.indexOf('outcome_no_contact'),
+        ).toBe(1);
     });
 
     it('isCallBadgeId и callBadgeDef работают по справочнику', () => {

@@ -7,7 +7,10 @@
  * Строка шины разбирается осторожно: чужая или неполная форма даёт пустые
  * значения, а не падение панели (как в остальном sanity.facts).
  */
-import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    CALL_REPORT_ACTIVE_RISK_FLAG_CODES,
+    isConnectionLostReported,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     resolveManagerSignal,
     type ManagerSignalCallView,
@@ -74,6 +77,18 @@ const sectionsOf = (value: unknown): ManagerSignalSection[] =>
             : [],
     );
 
+/** Обрыв связи в разборе строки шины: исход или сбой «связь прервалась». */
+const connectionLostOf = (value: unknown): boolean => {
+    const report = asRecord(value);
+    if (!report) return false;
+    return isConnectionLostReported({
+        outcome: textOrNull(report.outcome),
+        issues: recordsOf(report.issues).flatMap(issue =>
+            typeof issue.code === 'string' ? [{ code: issue.code }] : [],
+        ),
+    });
+};
+
 /** Проекция строки шины для правила сигнала. */
 export function signalViewOf(
     row: Record<string, unknown>,
@@ -88,6 +103,7 @@ export function signalViewOf(
         presentationDone: boolOrNull(style?.presentationDone),
         needsFound: boolOrNull(style?.needsFound),
         spiralsFull: numOrNull(methodology?.spiralsFull),
+        ...(connectionLostOf(row.report) ? { connectionLost: true } : {}),
     };
 }
 

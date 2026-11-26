@@ -1,3 +1,4 @@
+import { CALL_REPORT_OUTCOME_CONNECTION_LOST } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import { formatRuDayMonth } from '../../iso-week.util';
 import type { OwnerReportFacts } from '../owner-report.types';
 import {
@@ -39,6 +40,16 @@ export const hasEnoughColdCalls = (cold: number): boolean =>
  * owner-report.text.ts по лимиту файла.
  */
 
+/**
+ * База долей исходов: размеченные разговоры без «связь прервалась» — итога
+ * у оборванного разговора нет, в доли он не входит (число его остаётся в
+ * счётчике исходов).
+ */
+const shareBaseOf = (
+    marked: number,
+    byOutcome: Readonly<Record<string, number>>,
+): number => marked - (byOutcome[CALL_REPORT_OUTCOME_CONNECTION_LOST] ?? 0);
+
 /** Пять плиток шапки; сравнение — разница долей в пунктах к прошлому периоду. */
 export function buildTiles(
     facts: OwnerReportFacts,
@@ -48,7 +59,10 @@ export function buildTiles(
         source.byTypeGroup.find(row => row.group === code);
     // Доли исходов — только по размеченным разговорам; без них — прочерк.
     const noContact = (source: OwnerReportFacts) => {
-        const marked = source.coverage.analyzed - source.outcomes.unmarked;
+        const marked = shareBaseOf(
+            source.coverage.analyzed - source.outcomes.unmarked,
+            source.outcomes.byOutcome,
+        );
         if (marked === 0) return { pct: null };
         const n = marked + source.coverage.short;
         const successes =
@@ -58,7 +72,10 @@ export function buildTiles(
     const followupNoDecision = (source: OwnerReportFacts) => {
         const followup = group('followup', source);
         if (!followup) return null;
-        const marked = followup.calls - followup.unmarked;
+        const marked = shareBaseOf(
+            followup.calls - followup.unmarked,
+            followup.byOutcome,
+        );
         const successes = marked - followup.byOutcome.advanced;
         return { pct: marked > 0 ? (successes / marked) * 100 : null };
     };
@@ -135,7 +152,11 @@ export function buildOverview(
     facts: OwnerReportFacts,
 ): OwnerReportOverviewText {
     const unmarked = facts.outcomes.unmarked;
-    const marked = facts.coverage.analyzed - unmarked;
+    const lost = facts.outcomes.byOutcome[CALL_REPORT_OUTCOME_CONNECTION_LOST];
+    const marked = shareBaseOf(
+        facts.coverage.analyzed - unmarked,
+        facts.outcomes.byOutcome,
+    );
     const notes: string[] = [];
     if (facts.coverage.silentWorkdays.length > 0) {
         notes.push(
@@ -144,14 +165,25 @@ export function buildOverview(
     }
     const unmarkedLine = unmarkedNoteOf(facts);
     if (unmarkedLine) notes.push(unmarkedLine);
+    if (lost > 0) {
+        notes.push(
+            `Связь оборвалась в ${countText(lost, REPORT_FORMS.callsPrepositional)} — итога у них нет, в доли исходов они не входят.`,
+        );
+    }
+    // У строки «связь прервалась» доли нет: она не входит в базу долей.
     const outcomeRows = (
         Object.keys(OUTCOME_LABELS) as (keyof typeof OUTCOME_LABELS)[]
     ).map(code => ({
         label: OUTCOME_LABELS[code],
         calls: facts.outcomes.byOutcome[code],
-        pct: pctText(
-            marked > 0 ? (facts.outcomes.byOutcome[code] / marked) * 100 : null,
-        ),
+        pct:
+            code === CALL_REPORT_OUTCOME_CONNECTION_LOST
+                ? ''
+                : pctText(
+                      marked > 0
+                          ? (facts.outcomes.byOutcome[code] / marked) * 100
+                          : null,
+                  ),
     }));
     return {
         outcomes:

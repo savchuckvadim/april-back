@@ -140,7 +140,7 @@ export interface AnalyticsLiteSelfIntro {
  * полей — null и пустые списки; отчёт показывает «признак считается с даты X».
  */
 export interface AnalyticsLiteReportFacts {
-    /** advanced / callback_dated / postponed / refused / no_contact; null — нет. */
+    /** advanced / callback_dated / postponed / refused / no_contact / connection_lost; null — нет. */
     outcome: string | null;
     issues: AnalyticsLiteIssue[];
     prices: AnalyticsLitePrice[];

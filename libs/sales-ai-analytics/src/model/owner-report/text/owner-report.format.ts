@@ -20,6 +20,12 @@ const MILLION = 1_000_000;
 export const REPORT_FORMS = {
     calls: ['разговор', 'разговора', 'разговоров'] as RuPluralForms,
     callsGenitive: ['разговора', 'разговоров', 'разговоров'] as RuPluralForms,
+    /** «в 5 разговорах» — предложный падеж. */
+    callsPrepositional: [
+        'разговоре',
+        'разговорах',
+        'разговорах',
+    ] as RuPluralForms,
     deals: ['сделка', 'сделки', 'сделок'] as RuPluralForms,
     /** «вернуть 1 сделку» — винительный падеж. */
     dealsAccusative: ['сделку', 'сделки', 'сделок'] as RuPluralForms,

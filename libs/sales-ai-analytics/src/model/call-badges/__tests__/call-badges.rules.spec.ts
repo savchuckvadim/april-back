@@ -109,6 +109,7 @@ describe('callBadgeState — итог разговора', () => {
         ['outcome_postponed', 'postponed'],
         ['outcome_refused', 'refused'],
         ['outcome_no_contact', 'no_contact'],
+        ['outcome_connection_lost', 'connection_lost'],
     ];
 
     it.each(CASES)('%s: свой итог — да, чужой — нет', (badge, outcome) => {

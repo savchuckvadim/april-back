@@ -6,6 +6,7 @@ import {
     hvostChecklistLines,
     tidyChecklistTexts,
 } from './agent-analysis-checklist.util';
+import { applyConnectionLostRules } from './agent-analysis-connection-lost.util';
 import { applyAnalysisDisplayRules } from './agent-analysis-display-rules.util';
 import {
     isTimecodeRangeValid,
@@ -39,7 +40,14 @@ export function normalizeAgentAnalysis(
     const proven = reconcileRiskFlags(transcriptionId, shown, logger);
     const withMetrics = applySpeechMetrics(transcriptionId, proven, logger);
     const consistent = enforceConsistency(transcriptionId, withMetrics, logger);
-    return fillMethodologyAnalysis(consistent, logger);
+    // Обрыв связи — не вина менеджера (26.11.2026): недостижимые разделы и
+    // флаг «дверь» страхуются кодом, если модель не послушалась задания.
+    const reached = applyConnectionLostRules(
+        `transcription ${transcriptionId}`,
+        consistent,
+        logger,
+    );
+    return fillMethodologyAnalysis(reached, logger);
 }
 
 /**

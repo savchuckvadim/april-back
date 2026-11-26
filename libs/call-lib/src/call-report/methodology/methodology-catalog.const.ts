@@ -67,6 +67,7 @@ export const METHODOLOGY_FACT_TITLES: Readonly<
     spiralsWithoutNeed: 'Витков без связи с потребностью',
     spiralsWithoutQuestion: 'Витков без вопроса клиенту',
     dealProgressScore: 'Продвижение сделки по звонку (1–5)',
+    connectionLost: 'Связь прервалась',
 };
 
 /** Операции условий — подписи. */

@@ -21,7 +21,8 @@ export class AiOwnerReportOutcomeRowDto {
     calls: number;
 
     @ApiProperty({
-        description: 'Доля от разобранных.',
+        description:
+            'Доля от разобранных с итогом; у строк «Связь прервалась» и «Исход не размечен» пусто — в базу долей они не входят.',
         type: String,
         example: '38 %',
     })

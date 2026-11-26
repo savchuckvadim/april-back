@@ -14,6 +14,7 @@ import type {
     CallReportInterlocutorCode,
     CallReportSectionCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { isConnectionLostReported } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/call-report-connection-lost.util';
 import {
     CALL_BADGE_IDS,
     CALL_BADGE_OUTCOMES,
@@ -90,11 +91,17 @@ const weakRule =
         return yesNo(section.score <= CALL_BADGE_WEAK_SECTION_MAX_SCORE);
     };
 
+/**
+ * Обрыв связи — не вина менеджера: до следующего шага разговор мог не
+ * дойти, судить о нём не по чему — «неизвестно», а не «шаг не назначен».
+ */
 const stepMissing: BadgeRule = row =>
-    row.nextStep === null ? 'unknown' : yesNo(!row.nextStep.set);
+    row.nextStep === null || isConnectionLostReported(row.report)
+        ? 'unknown'
+        : yesNo(!row.nextStep.set);
 
 const stepNoDate: BadgeRule = row =>
-    row.nextStep === null
+    row.nextStep === null || isConnectionLostReported(row.report)
         ? 'unknown'
         : yesNo(row.nextStep.set && !row.nextStep.date);
 
@@ -123,9 +130,13 @@ const notLpr: BadgeRule = row => {
     return role === null ? 'unknown' : yesNo(role !== LPR_ROLE);
 };
 
+/** Сбой не по вине разговора: список сбоев или обрыв связи (исход без сбоя в списке). */
 const issue: BadgeRule = row =>
     hasReportFacts(row.report)
-        ? yesNo((row.report?.issues.length ?? 0) > 0)
+        ? yesNo(
+              (row.report?.issues.length ?? 0) > 0 ||
+                  isConnectionLostReported(row.report),
+          )
         : 'unknown';
 
 const needsMissing: BadgeRule = row => {
@@ -147,6 +158,7 @@ const BADGE_RULES: Record<CallBadgeId, BadgeRule> = {
     outcome_postponed: outcomeRule('outcome_postponed'),
     outcome_refused: outcomeRule('outcome_refused'),
     outcome_no_contact: outcomeRule('outcome_no_contact'),
+    outcome_connection_lost: outcomeRule('outcome_connection_lost'),
     progress_low: progressLow,
     capped,
     price_named: priceNamed,
