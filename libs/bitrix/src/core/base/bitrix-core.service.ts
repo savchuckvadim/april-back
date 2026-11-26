@@ -28,7 +28,13 @@ import {
     SLOW_BITRIX_REQUEST_MS,
     backgroundCooldownMs,
 } from './bitrix-request-profile';
-import { isBitrixTimeout, readBitrixTime } from './bitrix-response.util';
+import { noteBitrixCallMethod } from './bitrix-error-method.util';
+import { redactBitrixPayload } from './bitrix-log-redact.util';
+import {
+    BITRIX_DISK_SAVE_FAILED,
+    isBitrixTimeout,
+    readBitrixTime,
+} from './bitrix-response.util';
 import {
     attemptAlertNote,
     BITRIX_RETRY_KIND,
@@ -205,7 +211,12 @@ export class BitrixCore {
                 retryInMs: pauseMs,
                 retryable: bitrixRetryKind(failure) !== null,
             });
-            if (pauseMs === null) throw failure;
+            if (pauseMs === null) {
+                // код выше узнаёт по метке, что ошибка из вызова Битрикса и
+                // какого именно метода (сам axios метод в ошибке не хранит)
+                noteBitrixCallMethod(failure, method);
+                throw failure;
+            }
 
             retriesLeft -= 1;
             await delay(pauseMs);
@@ -252,6 +263,12 @@ export class BitrixCore {
                         `on ${method}, retrying in ${profile.busyPauseMs / 1000}s...`,
                 );
                 return profile.busyPauseMs;
+            case BITRIX_RETRY_KIND.diskSave:
+                this.logger.warn(
+                    `Bitrix Disk could not save a file (${BITRIX_DISK_SAVE_FAILED}) ` +
+                        `on ${method}, retrying in ${profile.busyPauseMs / 1000}s...`,
+                );
+                return profile.busyPauseMs;
             default:
                 return null;
         }
@@ -286,9 +303,11 @@ export class BitrixCore {
             e?.response?.data ?? e?.toString?.() ?? String(error);
 
         const status = (error as AxiosError).response?.status;
+        // Содержимое файлов (disk.folder.uploadfile и т. п.) в лог не идёт:
+        // вместо base64 остаются имя файла и «<N байт>».
         const payload = this.isErrorPayloadLogEnabled()
             ? ` | response: ${this.stringifyResponse(responseText)}` +
-              ` | request: ${this.stringifyResponse(data)}`
+              ` | request: ${this.stringifyResponse(redactBitrixPayload(data))}`
             : '';
         // Ожидаемые «ошибки», которые вызывающий код обрабатывает сам —
         // телеграм-алерт не шлём (логи остаются). Правило и его

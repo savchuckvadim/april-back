@@ -49,6 +49,39 @@ describe('BitrixCore — повтор запроса', () => {
         expect(pause(http(500), 0)).toBeNull();
     });
 
+    // gsirk 26.11.2026: Диск отказал в сохранении файла, повтор прошёл.
+    it('400 с кодом DISK_FOLDER_22002 — временный отказ Диска, повтор с паузой «портал занят»', () => {
+        const diskBusy = {
+            message: 'Request failed with status code 400',
+            response: {
+                status: 400,
+                data: {
+                    error: 'DISK_FOLDER_22002',
+                    error_description: 'Не удалось сохранить файл.',
+                },
+            },
+        };
+
+        expect(pause(diskBusy)).toBe(profile.busyPauseMs);
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(pause(diskBusy, 0)).toBeNull();
+    });
+
+    it('другие 400 с телом ошибки Битрикса — не повторяем', () => {
+        for (const error of [
+            'ERROR_CORE',
+            'DISK_FOLDER_22003',
+            'BAD_REQUEST',
+        ]) {
+            expect(
+                pause({
+                    message: 'x',
+                    response: { status: 400, data: { error } },
+                }),
+            ).toBeNull();
+        }
+    });
+
     // gsr 02.11.2026: сброшенный keep-alive сокет ронял пачку целиком.
     it('обрыв соединения («socket hang up», ECONNRESET) — короткая пауза и повтор', () => {
         expect(pause(new Error('socket hang up'))).toBe(
