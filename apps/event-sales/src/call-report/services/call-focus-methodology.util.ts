@@ -7,6 +7,7 @@ import {
     type MethodologyOutcome,
     type ResolvedMethodology,
 } from '@lib/call-lib/call-report/methodology';
+import { isConnectionLostReported } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/call-report-connection-lost.util';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildMethodologyPassPrompt,
@@ -89,6 +90,9 @@ export function toMethodologyView(
         specialist: dto.specialist,
         hvostSteps: dto.hvostSteps,
         dealProgress: dto.dealProgress,
+        // Обрыв связи — не вина менеджера: ограничители и пункты о конце
+        // разговора при нём не срабатывают (methodology-connection-lost).
+        connectionLost: isConnectionLostReported(dto),
     };
 }
 

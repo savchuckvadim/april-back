@@ -77,6 +77,8 @@ export const METHODOLOGY_FACT_FIELDS = [
     'spiralsWithoutNeed',
     'spiralsWithoutQuestion',
     'dealProgressScore',
+    /** В разборе отмечен обрыв связи: исход или сбой «связь прервалась». */
+    'connectionLost',
 ] as const;
 export type MethodologyFactField = (typeof METHODOLOGY_FACT_FIELDS)[number];
 
@@ -142,6 +144,12 @@ export interface MethodologyCheckpoint {
     badgeMain?: boolean;
     /** Правило кода (все условия — И): пункт считается по фактам, у модели не спрашивается. */
     rule?: MethodologyCondition[];
+    /**
+     * Пункт о завершении разговора (резюме договорённостей, следующий шаг,
+     * прощание): при обрыве связи пропуск не засчитывается — статус
+     * «пропущен» становится «не применимо».
+     */
+    ending?: boolean;
 }
 
 /** Цель ограничителя: раздел или итоговая оценка. */

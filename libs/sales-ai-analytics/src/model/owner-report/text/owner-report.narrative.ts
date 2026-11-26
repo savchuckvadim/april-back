@@ -104,7 +104,10 @@ export function buildNarrativeUserContent(text: OwnerReportText): string {
         'ЧЕРНОВИК РЕЗЮМЕ:\n' + text.summary.map(p => `- ${p}`).join('\n'),
         'ИСХОДЫ РАЗГОВОРОВ:\n' +
             text.overview.outcomes
-                .map(row => `- ${row.label}: ${row.calls} (${row.pct})`)
+                .map(
+                    row =>
+                        `- ${row.label}: ${row.calls}${row.pct ? ` (${row.pct})` : ''}`,
+                )
                 .join('\n'),
         'ПО ТИПАМ РАЗГОВОРОВ:\n' +
             text.overview.typeGroups

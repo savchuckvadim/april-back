@@ -1,9 +1,13 @@
+import { cleanText, evaluateCheckpoints } from './methodology-checkpoints';
 import {
     evaluateAll,
     type MethodologyConditionContext,
     type MethodologyFacts,
-    type MethodologyNorms,
 } from './methodology-condition';
+import {
+    isCallEndCap,
+    isConnectionLostFacts,
+} from './methodology-connection-lost';
 import type {
     CapTriggered,
     CheckpointResult,
@@ -11,28 +15,24 @@ import type {
     MethodologyEvaluation,
     MethodologyEvaluationInput,
     MethodologyOutcome,
-    MethodologyPassRaw,
     MethodologySectionView,
     SpiralResult,
 } from './methodology-result.types';
 import {
     capsForType,
-    checkpointsForType,
     type CheckpointStatus,
     type Methodology,
     type MethodologyCap,
-    type MethodologyCheckpoint,
-    type MethodologyCondition,
 } from './methodology.types';
+
+// Пункты методики считает methodology-checkpoints; имя осталось здесь.
+export { evaluateCheckpoints };
 
 /**
  * Вычисление методики по разбору КОДОМ: факты из разбора, пункты с
  * правилом, ограничители ядра и методики (срезают оценку раздела или итог
  * до потолка). Чистые функции; исходный срез не мутируется.
  */
-
-const text = (value: string | null | undefined): string | null =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null;
 
 /** Факты разбора для условий: неизвестное не кладём, пустое — null. */
 export function buildMethodologyFacts(
@@ -54,18 +54,19 @@ export function buildMethodologyFacts(
         facts.questionsCount = view.questionsCount;
     }
     if (view.interlocutorRole !== undefined) {
-        facts.interlocutorRole = text(view.interlocutorRole);
+        facts.interlocutorRole = cleanText(view.interlocutorRole);
     }
-    if (view.specialist !== undefined) facts.specialist = text(view.specialist);
+    if (view.specialist !== undefined)
+        facts.specialist = cleanText(view.specialist);
 
     const step = view.nextStep;
     if (step !== undefined) {
         facts.nextStepSet = step?.set ?? false;
-        facts.nextStepDate = text(step?.date);
-        facts.nextStepTime = text(step?.time);
-        facts.nextStepGoal = text(step?.goal);
-        facts.nextStepClientAction = text(step?.clientAction);
-        facts.nextStepManagerAction = text(step?.managerAction);
+        facts.nextStepDate = cleanText(step?.date);
+        facts.nextStepTime = cleanText(step?.time);
+        facts.nextStepGoal = cleanText(step?.goal);
+        facts.nextStepClientAction = cleanText(step?.clientAction);
+        facts.nextStepManagerAction = cleanText(step?.managerAction);
         facts.nextStepComplete =
             facts.nextStepDate !== null &&
             facts.nextStepTime !== null &&
@@ -93,97 +94,10 @@ export function buildMethodologyFacts(
     if (view.dealProgress !== undefined) {
         facts.dealProgressScore = view.dealProgress?.score ?? null;
     }
-    return facts;
-}
-
-/** Правило применимо, когда все его факты, нормы и пункты известны. */
-function ruleApplicable(
-    rule: readonly MethodologyCondition[],
-    context: MethodologyConditionContext,
-): boolean {
-    return rule.every(condition => {
-        if (condition.checkpoint !== undefined) {
-            return context.checkpoints?.[condition.checkpoint] !== undefined;
-        }
-        if (condition.field === undefined) return false;
-        if (context.facts[condition.field] === undefined) return false;
-        if (condition.op === 'above_norm' || condition.op === 'within_norm') {
-            return typeof context.norms?.[condition.field] === 'number';
-        }
-        return true;
-    });
-}
-
-function fromModel(
-    checkpoint: MethodologyCheckpoint,
-    pass: MethodologyPassRaw | null,
-): CheckpointResult {
-    const raw = pass?.checkpoints.find(item => item.code === checkpoint.code);
-    return {
-        code: checkpoint.code,
-        title: checkpoint.title,
-        // Пункт, который модель не вернула, не считаем ни выполненным, ни
-        // пропущенным — менеджера нельзя штрафовать за сбой модели.
-        status: raw?.status ?? 'not_applicable',
-        mandatory: checkpoint.mandatory,
-        source: 'model',
-        quote: text(raw?.quote),
-        startSec: raw?.startSec ?? null,
-        endSec: raw?.endSec ?? null,
-    };
-}
-
-function fromRule(
-    checkpoint: MethodologyCheckpoint,
-    rule: readonly MethodologyCondition[],
-    context: MethodologyConditionContext,
-): CheckpointResult {
-    const status: CheckpointStatus = ruleApplicable(rule, context)
-        ? evaluateAll(rule, context)
-            ? 'done'
-            : 'missed'
-        : 'not_applicable';
-    return {
-        code: checkpoint.code,
-        title: checkpoint.title,
-        status,
-        mandatory: checkpoint.mandatory,
-        source: 'rule',
-        quote: null,
-        startSec: null,
-        endSec: null,
-    };
-}
-
-/**
- * Пункты методики для типа звонка: сначала ответы модели, затем правила
- * кода (они могут ссылаться на статусы модельных пунктов).
- */
-export function evaluateCheckpoints(
-    methodology: Methodology,
-    callType: string | null,
-    pass: MethodologyPassRaw | null,
-    facts: MethodologyFacts,
-    norms: MethodologyNorms,
-): CheckpointResult[] {
-    const applicable = checkpointsForType(methodology, callType);
-    const results = applicable
-        .filter(checkpoint => checkpoint.rule === undefined)
-        .map(checkpoint => fromModel(checkpoint, pass));
-    const statuses: Record<string, CheckpointStatus> = Object.fromEntries(
-        results.map(result => [result.code, result.status]),
-    );
-    for (const checkpoint of applicable) {
-        if (checkpoint.rule === undefined) continue;
-        const result = fromRule(checkpoint, checkpoint.rule, {
-            facts,
-            norms,
-            checkpoints: statuses,
-        });
-        statuses[result.code] = result.status;
-        results.push(result);
+    if (view.connectionLost !== undefined) {
+        facts.connectionLost = view.connectionLost;
     }
-    return results;
+    return facts;
 }
 
 /**
@@ -202,7 +116,11 @@ export function applyCaps(
     const sections = view.sections.map(section => ({ ...section }));
     let score = view.score;
     const triggered: CapTriggered[] = [];
+    const connectionLost = isConnectionLostFacts(context.facts);
     for (const cap of capsForType(caps, view.callType)) {
+        // Обрыв связи: ограничитель про конец разговора судил бы о том, до
+        // чего разговор не дошёл, — он не срабатывает и в список не попадает.
+        if (connectionLost && isCallEndCap(cap)) continue;
         if (!evaluateAll(cap.when, context)) continue;
         if (cap.target === 'total') {
             const before = score ?? null;

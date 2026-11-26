@@ -2,6 +2,7 @@ import {
     CALL_REPORT_CALL_TYPE_ITEMS,
     CALL_REPORT_RISK_FLAG_ITEMS,
 } from '@lib/call-lib';
+import { isConnectionLostReported } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/call-report-connection-lost.util';
 import type { CallReportActiveRiskFlagCode } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import {
     CALL_MISTAKE_SIGNAL_TITLES,
@@ -88,6 +89,7 @@ export function toSignalView(
         presentationDone: analysis.presentationDone ?? null,
         needsFound: analysis.needsFound ?? null,
         spiralsFull: analysis.methodology?.spiralsFull ?? null,
+        ...(isConnectionLostReported(analysis) ? { connectionLost: true } : {}),
     };
 }
 

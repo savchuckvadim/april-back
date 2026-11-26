@@ -61,7 +61,9 @@ function volumeParagraph(facts: OwnerReportFacts): string {
 function followupParagraph(facts: OwnerReportFacts): string | null {
     const followup = facts.byTypeGroup.find(row => row.group === 'followup');
     if (!followup) return null;
-    const marked = followup.calls - followup.unmarked;
+    // Оборванные связью разговоры итога не имеют — «без решения» они не остались.
+    const marked =
+        followup.calls - followup.unmarked - followup.byOutcome.connection_lost;
     if (marked === 0) return null;
     const noDecision = marked - followup.byOutcome.advanced;
     const invoice =
@@ -84,7 +86,7 @@ function postponedParagraph(facts: OwnerReportFacts): string | null {
 function coldParagraph(facts: OwnerReportFacts): string | null {
     const cold = facts.byTypeGroup.find(row => row.group === 'cold');
     if (!cold) return null;
-    const marked = cold.calls - cold.unmarked;
+    const marked = cold.calls - cold.unmarked - cold.byOutcome.connection_lost;
     if (marked === 0) return null;
     const contacted = marked - cold.byOutcome.no_contact;
     return `Холодный вход: из ${countText(marked, REPORT_FORMS.callsGenitive)} до ЛПР дошли ${contacted}, до показа, доступа или предложения — ${cold.byOutcome.advanced} (${pctText(cold.advancedOfAll.pct)}).`;

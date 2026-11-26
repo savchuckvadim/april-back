@@ -1,3 +1,4 @@
+import { CALL_REPORT_OUTCOME_CONNECTION_LOST } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import type { OwnerReportCall, OwnerShare } from './owner-report.types';
 
 /**
@@ -54,6 +55,20 @@ export function countBy<T, K extends string>(
 export function advancedShare(calls: readonly OwnerReportCall[]): OwnerShare {
     return shareWhere(calls, call => call.advanced);
 }
+
+/**
+ * Исход «связь прервалась»: разговор по существу шёл, но итога у него нет —
+ * в базу долей исходов он не входит (иначе сумма долей не даёт 100 %, а
+ * оборванный разговор читается как «без решения»).
+ */
+export const isConnectionLostCall = (
+    call: Pick<OwnerReportCall, 'outcome'>,
+): boolean => call.outcome === CALL_REPORT_OUTCOME_CONNECTION_LOST;
+
+/** Разговоры с размеченным исходом, включая «связь прервалась». */
+export const withOutcomeOf = (
+    calls: readonly OwnerReportCall[],
+): OwnerReportCall[] => calls.filter(call => call.outcome !== null);
 
 /** Разговоры, где ЛПР точно или возможно был на линии (не секретарь). */
 export function talkedOf(calls: readonly OwnerReportCall[]): OwnerReportCall[] {

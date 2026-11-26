@@ -16,6 +16,7 @@ import {
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
 import { StructuredLlmGateway, isRetryableLlmError } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
+import { applyConnectionLostRules } from '../../agent-gate/services/agent-analysis-connection-lost.util';
 import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
     DECISION_CALL_BLOCK,
@@ -551,6 +552,17 @@ export class CallFocusAnalysisService {
                 dto.sections,
                 `Фокус-разбор (${domain})`,
                 this.logger,
+            );
+            // Обрыв связи — не вина менеджера (26.11.2026): закрытие и отказ,
+            // до которых разговор не дошёл, становятся неактуальными ДО
+            // ограничителей — иначе ограничитель успел бы срезать их оценку.
+            Object.assign(
+                dto,
+                applyConnectionLostRules(
+                    `Фокус-разбор (${domain})`,
+                    dto,
+                    this.logger,
+                ),
             );
             // Ограничители ядра (все порталы) и методика портала: факты из
             // разбора, пункты модели и правил, срез оценок до потолков.

@@ -133,6 +133,14 @@ export class MethodologyCheckpointDto implements MethodologyCheckpoint {
 
     @ApiPropertyOptional({
         description:
+            'Пункт о завершении разговора (резюме договорённостей, следующий шаг, прощание): при обрыве связи пропуск не засчитывается — «пропущен» становится «не применимо».',
+        example: true,
+        type: Boolean,
+    })
+    ending?: boolean;
+
+    @ApiPropertyOptional({
+        description:
             'Правило кода (все условия — И): пункт считается по фактам, у модели не спрашивается.',
         type: [MethodologyConditionDto],
     })

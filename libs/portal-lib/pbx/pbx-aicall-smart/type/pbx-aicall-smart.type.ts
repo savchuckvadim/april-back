@@ -559,6 +559,9 @@ export const CALL_REPORT_RISK_FLAG_CODES = [
 ] as const;
 export type CallReportRiskFlagCode =
     (typeof CALL_REPORT_RISK_FLAG_CODES)[number];
+/** Флаг «не оставил дверь открытой» — единственное место, где записан код. */
+export const CALL_REPORT_RISK_FLAG_DOOR_CLOSED =
+    'door_closed' satisfies CallReportRiskFlagCode;
 
 /**
  * ДЕЙСТВУЮЩИЕ флаги (решение владельца 19–20.10.2026, этап 2 плана

@@ -1,7 +1,13 @@
 import { CALL_REPORT_OUTCOME_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import { isWorkday, shiftDate } from '../workdays.util';
 import { mondayOf, type NormalizeResult } from './owner-report.calls';
-import { advancedShare, countBy, shareOf } from './owner-report.share';
+import {
+    advancedShare,
+    countBy,
+    isConnectionLostCall,
+    shareOf,
+    withOutcomeOf,
+} from './owner-report.share';
 import {
     OWNER_REPORT_TYPE_GROUPS,
     type OwnerReportCall,
@@ -27,9 +33,13 @@ export function countOutcomes(
     return countBy(calls, CALL_REPORT_OUTCOME_CODES, call => call.outcome);
 }
 
-/** Разговоры с размеченным исходом — единственная база долей исходов. */
+/**
+ * База долей исходов: разговоры с размеченным исходом, кроме «связь
+ * прервалась» — итога у оборванного разговора нет, ни в числитель, ни в
+ * знаменатель долей он не входит. В счётчике исходов он остаётся.
+ */
 export function markedOf(calls: readonly OwnerReportCall[]): OwnerReportCall[] {
-    return calls.filter(call => call.outcome !== null);
+    return withOutcomeOf(calls).filter(call => !isConnectionLostCall(call));
 }
 
 export function buildOutcomes(
@@ -40,7 +50,7 @@ export function buildOutcomes(
     const contacted = marked.filter(call => call.contactReached).length;
     return {
         byOutcome,
-        unmarked: calls.length - marked.length,
+        unmarked: calls.length - withOutcomeOf(calls).length,
         contacted,
         advancedOfContacted: shareOf(byOutcome.advanced, contacted),
         postponedWithDate: postponedWithDate(calls),
@@ -71,7 +81,7 @@ export function buildTypeGroups(
                 group,
                 calls: rows.length,
                 byOutcome,
-                unmarked: rows.length - marked.length,
+                unmarked: rows.length - withOutcomeOf(rows).length,
                 advancedOfAll: shareOf(byOutcome.advanced, marked.length),
                 advancedOfContacted: shareOf(byOutcome.advanced, contacted),
             },
@@ -135,7 +145,8 @@ export function buildCoverage(
     telephony: OwnerReportTelephonyFacts | null,
 ): OwnerReportCoverage {
     const calls = normalized.calls;
-    const fromAnalysis = markedOf(calls);
+    // «Исход размечен» — у любого разбора с исходом, в том числе «связь прервалась».
+    const fromAnalysis = withOutcomeOf(calls);
     const factsSince = fromAnalysis.reduce<string | null>(
         (earliest, call) =>
             earliest === null || call.date < earliest ? call.date : earliest,
