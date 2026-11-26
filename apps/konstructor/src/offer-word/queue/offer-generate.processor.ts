@@ -5,6 +5,7 @@ import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { resolveQueueConcurrency } from '@lib/queue/concurrency/resolve-queue-concurrency';
 import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
+import { describeOfferFailure } from '../lib/offer-generation-failure.util';
 import { OfferWordByTemplateGenerateUseCase } from '../use-cases/offer-word-by-template-generate.use-case';
 
 export type OfferGenerateJobPayload = {
@@ -45,8 +46,11 @@ export class OfferGenerateProcessor {
                 `Генерация КП: успех ${context} durationMs=${Date.now() - startedAt}`,
             );
         } catch (error) {
+            // шаг, метод и ответ Битрикса, размер файла — раньше было одно
+            // «Request failed with status code 400»
+            const { logFields } = describeOfferFailure(error);
             this.logger.error(
-                `Генерация КП: провал ${context} durationMs=${Date.now() - startedAt} error=${(error as Error)?.message}`,
+                `Генерация КП: провал ${context} durationMs=${Date.now() - startedAt}${logFields ? ` ${logFields}` : ''} error=${(error as Error)?.message}`,
             );
             throw error;
         }

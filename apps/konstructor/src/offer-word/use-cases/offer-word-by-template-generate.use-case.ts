@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WordTemplate } from '@app/konstructor/modules/offer-template/word';
 import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
 import { InnerDealService } from '@app/konstructor/modules/inner-deal/services/inner-deal.service';
@@ -10,9 +10,18 @@ import { DocumentBuildService } from '../services/document-build.service';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
 import { OfferTemplateService } from '@app/konstructor/modules/offer-template/offer-template';
 import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
+import {
+    describeOfferFailure,
+    inOfferStep,
+    OFFER_GENERATION_STEP,
+} from '../lib/offer-generation-failure.util';
 
 @Injectable()
 export class OfferWordByTemplateGenerateUseCase {
+    private readonly logger = new Logger(
+        OfferWordByTemplateGenerateUseCase.name,
+    );
+
     constructor(
         private readonly documentBuildService: DocumentBuildService,
         private readonly innerDealService: InnerDealService,
@@ -30,75 +39,106 @@ export class OfferWordByTemplateGenerateUseCase {
         invoiceLinks: IResultDocumentLink[];
         portalFolderId: number;
     }> {
-        // Подписи поставок для КП и счёта (supply, rows, total, sets) — с бэка
-        // по code (легаси-тексты сильнее).
-        const dto: OfferWordByTemplateGenerateDto =
-            await this.supplyEnricher.enrichPayload(input);
-        const dealId = Number(dto.dealId);
-        const domain = dto.domain;
-        const onlyBitrixSave = Boolean(dto.onlyBitrixSave) || true;
+        const dealId = Number(input.dealId);
+        const domain = input.domain;
+        const onlyBitrixSave = Boolean(input.onlyBitrixSave) || true;
 
         try {
-            const buildResult = await this.documentBuildService.build(dto);
+            // Подписи поставок для КП и счёта (supply, rows, total, sets) — с бэка
+            // по code (легаси-тексты сильнее).
+            const dto: OfferWordByTemplateGenerateDto = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.supplyEnricher.enrichPayload(input),
+            );
+            const buildResult = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.documentBuildService.build(dto),
+            );
             const allDocuments = [buildResult.offer, ...buildResult.invoices];
 
             await this.saveTemplateInDeal(domain, dealId, dto.templateId);
 
-            const saveResult =
-                await this.bxDocumentSaveFlowService.saveDocuments({
+            const saveResult = await inOfferStep(
+                OFFER_GENERATION_STEP.upload,
+                () =>
+                    this.bxDocumentSaveFlowService.saveDocuments({
+                        domain,
+                        companyId: dto.companyId,
+                        userId: dto.userId,
+                        dealId: dealId.toString(),
+                        documents: allDocuments,
+                        onlyBitrixSave,
+                    }),
+            );
+
+            await inOfferStep(OFFER_GENERATION_STEP.timeline, () =>
+                this.timelineService.sendDocumentToBitrix({
                     domain,
                     companyId: dto.companyId,
                     userId: dto.userId,
+                    documents: saveResult.documents,
                     dealId: dealId.toString(),
-                    documents: allDocuments,
-                    onlyBitrixSave,
-                });
+                    // files: onlyBitrixSave ? saveResult.files : undefined,
+                }),
+            );
 
-            await this.timelineService.sendDocumentToBitrix({
-                domain,
-                companyId: dto.companyId,
-                userId: dto.userId,
-                documents: saveResult.documents,
-                dealId: dealId.toString(),
-                // files: onlyBitrixSave ? saveResult.files : undefined,
-            });
+            // документы уже в сделке: дальше сбой не отменяет генерацию
+            return await inOfferStep(OFFER_GENERATION_STEP.finish, async () => {
+                if (onlyBitrixSave) {
+                    await this.cleanupLocalFiles(
+                        allDocuments.map(d => d.absolutePath),
+                    );
+                }
 
-            if (onlyBitrixSave) {
-                await this.cleanupLocalFiles(
-                    allDocuments.map(d => d.absolutePath),
+                const finalOffer =
+                    saveResult.documents.find(d => d.type === 'offer') ||
+                    buildResult.offer;
+                const finalInvoices = saveResult.documents.filter(
+                    d => d.type === 'invoice',
                 );
-            }
 
-            const finalOffer =
-                saveResult.documents.find(d => d.type === 'offer') ||
-                buildResult.offer;
-            const finalInvoices = saveResult.documents.filter(
-                d => d.type === 'invoice',
-            );
+                await this.offerTemplateService.incrementTemplateCounter(
+                    BigInt(dto.templateId),
+                );
 
-            await this.offerTemplateService.incrementTemplateCounter(
-                BigInt(dto.templateId),
-            );
-
-            return {
-                template: buildResult.template,
-                link: finalOffer,
-                renderData: buildResult.renderData,
-                invoiceLinks: finalInvoices,
-                portalFolderId: saveResult.portalFolderId || 0,
-            };
-        } catch (error) {
-            await this.timelineService.sendErrorToBitrix({
-                domain,
-                companyId: dto.companyId,
-                userId: dto.userId,
-                documents: [],
-                dealId: dealId.toString(),
-                // files: onlyBitrixSave ? saveResult.files : undefined,
+                return {
+                    template: buildResult.template,
+                    link: finalOffer,
+                    renderData: buildResult.renderData,
+                    invoiceLinks: finalInvoices,
+                    portalFolderId: saveResult.portalFolderId || 0,
+                };
             });
+        } catch (error) {
+            await this.reportFailure(error, input, dealId);
             throw error;
         }
     }
+
+    /**
+     * Причина сбоя — комментарием в сделку. Сбой самого комментария
+     * исходную ошибку не подменяет: наверх уходит то, что случилось с КП.
+     */
+    private async reportFailure(
+        error: unknown,
+        input: OfferWordByTemplateGenerateDto,
+        dealId: number,
+    ): Promise<void> {
+        try {
+            await this.timelineService.sendErrorToBitrix({
+                domain: input.domain,
+                companyId: input.companyId,
+                userId: input.userId,
+                dealId: dealId.toString(),
+                reason: describeOfferFailure(error).comment,
+            });
+        } catch (sendError) {
+            this.logger.warn(
+                `${input.domain}: комментарий о сбое КП не записан в сделку ${dealId}: ${sendError instanceof Error ? sendError.message : String(sendError)}`,
+            );
+        }
+    }
+
     private async saveTemplateInDeal(
         domain: string,
         dealId: number,
