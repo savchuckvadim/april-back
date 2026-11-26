@@ -138,11 +138,23 @@ export class AnalysisPreviewLongCallDto implements AnalysisPreviewLongCall {
     hasSummary: boolean;
 
     @ApiProperty({
-        description: 'Знаков в расшифровке звонка.',
+        description:
+            'Знаков в расшифровке после уплотнения коротких строк: по ней ' +
+            'шли порог длинного разговора и резка на части.',
         example: 58400,
         type: Number,
     })
     transcriptChars: number;
+
+    @ApiProperty({
+        description:
+            'Знаков в расшифровке до уплотнения коротких строк; нет — ' +
+            'разбор сделан до этой доработки.',
+        example: 140200,
+        type: Number,
+        required: false,
+    })
+    sourceChars?: number;
 }
 
 /** Итог проверки разбора на звонке. */

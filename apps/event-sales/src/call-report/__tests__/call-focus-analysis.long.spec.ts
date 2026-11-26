@@ -108,6 +108,7 @@ describe('CallFocusAnalysisService: длинный разговор по час�
                 partsWithoutDigest: 1,
                 hasSummary: true,
                 transcriptChars: 58_400,
+                sourceChars: 140_200,
             },
         });
     });

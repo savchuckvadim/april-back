@@ -260,6 +260,30 @@ describe('AnalysisPreviewUseCase', () => {
         });
     });
 
+    it('метка с длиной до уплотнения — в блоке «разбор по частям» есть sourceChars', async () => {
+        const dto = previewDto();
+        dto.extra = {
+            longCall: {
+                parts: 8,
+                partsWithoutDigest: 0,
+                hasSummary: true,
+                transcriptChars: 91_000,
+                sourceChars: 198_146,
+            },
+        };
+        const { useCase } = makeDeps({ dto });
+
+        const state = await useCase.execute({ ...JOB, longParts: true });
+
+        expect(state.result?.longCall).toEqual({
+            parts: 8,
+            partsWithoutDigest: 0,
+            hasSummary: true,
+            transcriptChars: 91_000,
+            sourceChars: 198_146,
+        });
+    });
+
     it('разбор по полной расшифровке — блок «разбор по частям» пуст (null)', async () => {
         const { useCase } = makeDeps();
 

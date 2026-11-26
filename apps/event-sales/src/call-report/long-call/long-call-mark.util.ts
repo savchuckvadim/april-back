@@ -18,13 +18,18 @@ export interface LongCallMark {
     partsWithoutDigest: number;
     /** Удалось ли свести разговор в одну сводку. */
     hasSummary: boolean;
-    /** Знаков в расшифровке (без крайних пробелов). */
+    /** Знаков в расшифровке после уплотнения коротких строк (без крайних пробелов). */
     transcriptChars: number;
+    /**
+     * Знаков в расшифровке до уплотнения. Нет поля — разбор сделан до этой
+     * доработки.
+     */
+    sourceChars?: number;
 }
 
 /** Метка по результату подготовки длинного разговора. */
 export function buildLongCallMark(
-    input: Pick<LongCallInput, 'report' | 'transcriptChars'>,
+    input: Pick<LongCallInput, 'report' | 'sourceChars' | 'transcriptChars'>,
 ): LongCallMark {
     const { report } = input;
 
@@ -33,6 +38,7 @@ export function buildLongCallMark(
         partsWithoutDigest: report.partsWithoutDigest,
         hasSummary: report.hasSummary,
         transcriptChars: input.transcriptChars,
+        sourceChars: input.sourceChars,
     };
 }
 
@@ -67,10 +73,13 @@ export function readLongCallMark(extra: unknown): LongCallMark | null {
         return null;
     }
 
-    return {
+    const mark: LongCallMark = {
         parts: raw.parts,
         partsWithoutDigest: raw.partsWithoutDigest,
         hasSummary: raw.hasSummary,
         transcriptChars: raw.transcriptChars,
     };
+    if (isCount(raw.sourceChars)) mark.sourceChars = raw.sourceChars;
+
+    return mark;
 }

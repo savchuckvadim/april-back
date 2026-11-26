@@ -8,20 +8,42 @@ import type { TranscriptLine } from './long-call.types';
 
 const SECONDS_IN_MINUTE = 60;
 const LINE_BREAK = /\r?\n/;
-/** Метка `[мм:сс]` в начале строки (пробелы перед ней допустимы). */
-const TIMECODE_AT_START = /^\s*\[(\d+):(\d{2})\]/;
+/** Метка `[мм:сс]` в начале строки (пробелы перед ней допустимы) и остаток строки. */
+const TIMECODE_AT_START = /^\s*(\[(\d+):(\d{2})\])([\s\S]*)$/;
+
+/** Строка с меткой времени, разобранная на метку и остаток. */
+export interface TimecodedLine {
+    /** Метка как она написана в строке: `[12:05]`. */
+    label: string;
+    /** Секунды метки. */
+    sec: number;
+    /** Всё после метки как есть (обычно с пробелом в начале). */
+    rest: string;
+}
+
+/**
+ * Строка, разобранная на метку `[мм:сс]` и остаток; метки нет или секунды не
+ * меньше 60 — null.
+ */
+export function splitTimecode(line: string): TimecodedLine | null {
+    const match = TIMECODE_AT_START.exec(line);
+    if (!match) return null;
+    const seconds = Number(match[3]);
+    if (seconds >= SECONDS_IN_MINUTE) return null;
+
+    return {
+        label: match[1],
+        sec: Number(match[2]) * SECONDS_IN_MINUTE + seconds,
+        rest: match[4],
+    };
+}
 
 /**
  * Секунды метки `[мм:сс]` в начале строки; метки нет или секунды не меньше
  * 60 — null.
  */
 export function parseTimecodeSec(line: string): number | null {
-    const match = TIMECODE_AT_START.exec(line);
-    if (!match) return null;
-    const seconds = Number(match[2]);
-    if (seconds >= SECONDS_IN_MINUTE) return null;
-
-    return Number(match[1]) * SECONDS_IN_MINUTE + seconds;
+    return splitTimecode(line)?.sec ?? null;
 }
 
 /**

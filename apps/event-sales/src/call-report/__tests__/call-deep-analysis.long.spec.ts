@@ -81,6 +81,7 @@ describe('CallDeepAnalysisService: длинный разговор', () => {
                 partsWithoutDigest: 1,
                 hasSummary: true,
                 transcriptChars: 58_400,
+                sourceChars: 140_200,
             },
         });
     });

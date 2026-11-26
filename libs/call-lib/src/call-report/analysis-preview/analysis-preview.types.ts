@@ -83,8 +83,13 @@ export interface AnalysisPreviewLongCall {
     partsWithoutDigest: number;
     /** Удалось ли свести разговор в одну сводку. */
     hasSummary: boolean;
-    /** Знаков в расшифровке. */
+    /** Знаков в расшифровке после уплотнения коротких строк. */
     transcriptChars: number;
+    /**
+     * Знаков в расшифровке до уплотнения. Нет поля — разбор сделан до этой
+     * доработки.
+     */
+    sourceChars?: number;
 }
 
 /** Итог проверки разбора на звонке. */
