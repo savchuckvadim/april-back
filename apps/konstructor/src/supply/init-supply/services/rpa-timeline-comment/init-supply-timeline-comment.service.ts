@@ -9,6 +9,7 @@ import { InfoblockConsaltingService } from './infoblock/infoblock-consalting.ser
 import { InfoblocksCommentService } from './infoblocks-comment.service';
 import { ContractCommentService } from './contract-comment.service';
 import { TotalSumCommentService } from './total-comment.service';
+import { RpaCommentHelper } from './lib/rpa-comment-helper.service';
 
 @Injectable()
 export class InitSupplyTimelineCommentService {
@@ -87,7 +88,7 @@ export class InitSupplyTimelineCommentService {
             timelineComment += totalSumComment;
         }
 
-        return timelineComment;
+        return RpaCommentHelper.toTimelineText(timelineComment);
     }
 
     /**

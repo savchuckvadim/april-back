@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@lib/pbx';
 import type { IBXTaskCreateFields } from '@lib/bitrix/domain/tasks/task';
 import { InitTaskAccountantDto } from './dto/init-task-accountant.dto';
+import { RpaCommentHelper } from '../init-supply/services/rpa-timeline-comment/lib/rpa-comment-helper.service';
+import { addRpaComment } from '../init-supply/services/rpa-timeline-comment/lib/rpa-comment.writer';
 
 /** Коды полей RPA «Поставка», из которых собирается задача бухгалтеру. */
 const RPA_FIELD = {
@@ -81,18 +83,15 @@ export class InitTaskAccountantUseCase {
             return null;
         }
 
-        await bitrix.api.call('rpa.timeline.add', {
+        await addRpaComment(bitrix, {
             typeId,
             itemId,
-            userId: String(fields.RESPONSIBLE_ID),
-            fields: {
-                title: 'Задача для бухгалтера',
-                description: this.buildTaskLink(
-                    domain,
-                    fields.RESPONSIBLE_ID,
-                    taskId,
-                ),
-            },
+            title: 'Задача для бухгалтера',
+            description: this.buildTaskLink(
+                domain,
+                fields.RESPONSIBLE_ID,
+                taskId,
+            ),
         });
 
         return taskId;
@@ -157,7 +156,8 @@ export class InitTaskAccountantUseCase {
         taskId: number,
     ): string {
         const link = `https://${domain}/company/personal/user/${responsibleId}/tasks/task/view/${taskId}/`;
-        return `<a href="${link}">Задача для бухгалтера</a>`;
+        // запись таймлайна RPA — BB-код (HTML там больше не показывается)
+        return RpaCommentHelper.getLink(link, 'Задача для бухгалтера');
     }
 
     /**

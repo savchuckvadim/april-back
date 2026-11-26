@@ -20,11 +20,12 @@ export class ComplectCommentService {
         let complectNameValue = complectName?.value as string;
 
         if (complectNameValue) {
+            // оба уже жирные: вторая обёртка дала бы [b][b]…[/b][/b]
             if (supplyName) {
-                complectNameValue = `${complectNameValue},  ${RpaCommentHelper.getBoldString(supplyName)}`;
+                complectNameValue = `${complectNameValue}, ${supplyName}`;
             }
             if (contractTypeName) {
-                complectNameValue = `${complectNameValue},  ${RpaCommentHelper.getBoldString(contractTypeName)}`;
+                complectNameValue = `${complectNameValue}, ${contractTypeName}`;
             }
             const list = [complectNameValue];
             return `
@@ -35,8 +36,8 @@ export class ComplectCommentService {
         return '';
     }
     getSupplyNameComment(dto: InitSupplyDto): string {
-        const supplyName = dto.supply.name;
-        return RpaCommentHelper.getBoldString(supplyName);
+        const supplyName = dto.supply?.name;
+        return supplyName ? RpaCommentHelper.getBoldString(supplyName) : '';
     }
     getContractTypeNameComment(dto: InitSupplyDto): string {
         const contractTypeName = ContractTypeService.getContractTypeName(dto);

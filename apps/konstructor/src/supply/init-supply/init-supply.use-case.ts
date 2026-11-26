@@ -13,6 +13,7 @@ import {
 } from './lib/init-supply-disk';
 import { toTimelineCommentDirect } from '@lib/bitrix/consts/timeline.consts';
 import { InitSupplyResponseDto } from './dto/init-supply-response.dto';
+import { addRpaComment } from './services/rpa-timeline-comment/lib/rpa-comment.writer';
 import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
 import { InnerDealService } from '../../modules/inner-deal/services/inner-deal.service';
@@ -135,14 +136,11 @@ export class InitSupplyUseCase {
             );
         if (rpaId && dto.userId) {
             for (const entry of timelineEntries) {
-                await bitrix.api.call('rpa.timeline.add', {
+                await addRpaComment(bitrix, {
                     typeId: rpaTypeId,
-                    itemId: rpaResponse?.id,
-                    userId: dto.userId.toString(),
-                    fields: {
-                        title: entry.title,
-                        description: entry.description,
-                    },
+                    itemId: rpaId,
+                    title: entry.title,
+                    description: entry.description,
                 });
             }
 
@@ -155,14 +153,11 @@ export class InitSupplyUseCase {
                     disk.fileNames,
                 );
                 try {
-                    await bitrix.api.call('rpa.timeline.add', {
+                    await addRpaComment(bitrix, {
                         typeId: rpaTypeId,
                         itemId: rpaId,
-                        userId: dto.userId.toString(),
-                        fields: {
-                            title: diskEntry.title,
-                            description: diskEntry.description,
-                        },
+                        title: diskEntry.title,
+                        description: diskEntry.description,
                     });
                 } catch (error) {
                     const reason =

@@ -1,6 +1,10 @@
-import { timelineLink, timelineText } from '@lib/bitrix/consts/timeline.consts';
+import { timelineLink } from '@lib/bitrix/consts/timeline.consts';
 import { InitSupplyFlow } from '../dto/init-supply.dto';
-import { RpaCommentHelper } from '../services/rpa-timeline-comment/lib/rpa-comment-helper.service';
+import {
+    RpaCommentHelper,
+    toBbText,
+    toSafeHref,
+} from '../services/rpa-timeline-comment/lib/rpa-comment-helper.service';
 
 /**
  * Документы заявки на Диске Битрикса: имена папки и страницы таймлайна,
@@ -27,24 +31,26 @@ export const buildDiskTimelineTitle = (
 ): string =>
     isSupplyFlow(flow) ? 'Документы поставки' : 'Документы перезаключения';
 
-/** Страница таймлайна RPA: ссылка «Папка на Диске» и список имён файлов. */
+/** Страница таймлайна RPA (BB-код): ссылка «Папка на Диске» и список имён файлов. */
 export const buildDiskTimelineEntry = (
     flow: InitSupplyFlow | undefined,
     folderUrl: string,
     fileNames: readonly string[],
 ): { title: string; description: string } => {
     const link = RpaCommentHelper.getBoldString(
-        timelineLink(folderUrl, DISK_FOLDER_LINK_LABEL),
+        RpaCommentHelper.getLink(folderUrl, DISK_FOLDER_LINK_LABEL),
     );
-    const list = fileNames.length
-        ? RpaCommentHelper.getList(fileNames.map(timelineText), true)
-        : '';
+    const list = RpaCommentHelper.getList(fileNames.map(toBbText));
     return {
         title: buildDiskTimelineTitle(flow),
-        description: `${link}${list}`,
+        description: RpaCommentHelper.toTimelineText(`${link}\n${list}`),
     };
 };
 
-/** Строка комментария таймлайна сделки со ссылкой на папку. */
+/**
+ * Строка комментария таймлайна сделки со ссылкой на папку. Адрес кодируется
+ * заранее: `timelineLink` вырезает из адреса пробелы, и «Перезаключение 2071»
+ * превращалось в несуществующую папку «Перезаключение2071».
+ */
 export const buildDiskCommentLine = (folderUrl: string): string =>
-    `📁 ${timelineLink(folderUrl, DISK_FOLDER_LINK_LABEL)}`;
+    `📁 ${timelineLink(toSafeHref(folderUrl), DISK_FOLDER_LINK_LABEL)}`;

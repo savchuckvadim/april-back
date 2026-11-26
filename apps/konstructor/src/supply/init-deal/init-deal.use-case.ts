@@ -19,6 +19,8 @@ import {
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
+import { RpaCommentHelper } from '../init-supply/services/rpa-timeline-comment/lib/rpa-comment-helper.service';
+import { addRpaComment } from '../init-supply/services/rpa-timeline-comment/lib/rpa-comment.writer';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
 import { CopyComplectVariantsService } from './services/copy-complect-variants.service';
@@ -214,17 +216,14 @@ export class InitDealUseCase {
                 entityTypeId,
                 itemId,
             );
-            await bitrix.api.call('rpa.timeline.add', {
+            await addRpaComment(bitrix, {
                 typeId: entityTypeId,
-                itemId: itemId,
-                userId: '1',
-                fields: {
-                    title:
-                        flow === 'renewal'
-                            ? 'Перезаключение: Новая Сделка'
-                            : 'Поставка: Новая Сделка',
-                    description: rpaComment,
-                },
+                itemId,
+                title:
+                    flow === 'renewal'
+                        ? 'Перезаключение: Новая Сделка'
+                        : 'Поставка: Новая Сделка',
+                description: rpaComment,
             });
             await bitrix.timeline.addTimelineComment({
                 ENTITY_ID: Number(newDealId),
@@ -355,10 +354,10 @@ export class InitDealUseCase {
         }
     }
 
+    /** Запись таймлайна RPA — BB-код (HTML там больше не показывается). */
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`;
-        const message = `<a href="${link}" target="_blank">Сделка создана</a>`;
-        return message;
+        return RpaCommentHelper.getLink(link, 'Сделка создана');
     }
     private getCommentEntityMessage(
         domain: string,

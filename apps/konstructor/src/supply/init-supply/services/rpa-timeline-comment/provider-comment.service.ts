@@ -5,7 +5,6 @@ import {
     RpaIconEnum,
 } from './lib/rpa-comment-helper.service';
 import { Injectable } from '@nestjs/common';
-import { IconHelper } from './lib/icon-helper.service';
 
 @Injectable()
 export class ProviderCommentService {

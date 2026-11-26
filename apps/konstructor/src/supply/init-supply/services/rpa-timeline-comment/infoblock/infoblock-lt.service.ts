@@ -28,22 +28,24 @@ export class InfoblockLtService {
         const packet = items.find(
             item => item.code === ContractSpecificationCodeEnum.LT_FREE,
         );
-        const name = typeof packet?.value === 'string' ? packet.value.trim() : '';
+        const name =
+            typeof packet?.value === 'string' ? packet.value.trim() : '';
         if (!name) return '';
         const services = servicesOf(
             items.find(
                 item =>
-                    item.code === ContractSpecificationCodeEnum.LT_FREE_SERVICES,
+                    item.code ===
+                    ContractSpecificationCodeEnum.LT_FREE_SERVICES,
             )?.value,
         );
         const header = RpaCommentHelper.getHeaderWithIcon(
             RpaIconEnum.INFOBLOCK,
             'Бесплатный LegalTech: ',
         );
-        const list = RpaCommentHelper.getListWithBold([
-            { head: name, value: RpaCommentHelper.getList(services) },
+        const list = RpaCommentHelper.getGroupedList([
+            { head: name, items: services },
         ]);
-        return `${header} ${list}`;
+        return `${header}${list}\n`;
     }
 
     private getPaidLt(dto: InitSupplyDto): string {
@@ -53,12 +55,12 @@ export class InfoblockLtService {
             RpaIconEnum.INFOBLOCK,
             'Платный LegalTech: ',
         );
-        const list = RpaCommentHelper.getListWithBold(
+        const list = RpaCommentHelper.getGroupedList(
             packets.map(packet => ({
                 head: packet.name,
-                value: RpaCommentHelper.getList(packet.services),
+                items: packet.services,
             })),
         );
-        return `${header} ${list}`;
+        return `${header}${list}\n`;
     }
 }

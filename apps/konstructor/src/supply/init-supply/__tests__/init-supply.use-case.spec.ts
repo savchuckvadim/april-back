@@ -13,12 +13,15 @@ import { InitSupplyTimelineCommentService } from '../services/rpa-timeline-comme
 import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
 
+/** Комментарий RPA: заголовок записи — первой жирной строкой описания. */
 interface RpaTimelineRequest {
     typeId: number;
     itemId: number;
-    userId: string;
-    fields: { title: string; description: string };
+    fields: { description: string };
 }
+
+const titleOf = (page: RpaTimelineRequest): string =>
+    page.fields.description.split('\n')[0];
 
 interface DealCommentRequest {
     ENTITY_ID: number;
@@ -80,7 +83,7 @@ const setup = async (
         .mockResolvedValue({ result: { item: { id: 55 } } });
     const apiCall = jest.fn<Promise<void>, [string, RpaTimelineRequest]>(
         (_method, request) =>
-            failDiskPage && request.fields.title.startsWith('Документы')
+            failDiskPage && titleOf(request).startsWith('[b]Документы')
                 ? Promise.reject(new Error('RPA отказала'))
                 : Promise.resolve(),
     );
@@ -93,16 +96,15 @@ const setup = async (
         [InitSupplyDiskParams]
     >(() => Promise.resolve(disk));
 
-    const itemGet = jest.fn<Promise<unknown>, [string, string, string[]]>(
-        id =>
-            Promise.resolve({
-                result: {
-                    item: {
-                        id: Number(id),
-                        stageId: stageById[Number(id)] ?? DRAFT_STAGE,
-                    },
+    const itemGet = jest.fn<Promise<unknown>, [string, string, string[]]>(id =>
+        Promise.resolve({
+            result: {
+                item: {
+                    id: Number(id),
+                    stageId: stageById[Number(id)] ?? DRAFT_STAGE,
                 },
-            }),
+            },
+        }),
     );
     const itemUpdate = jest.fn<
         Promise<unknown>,
@@ -154,7 +156,7 @@ const setup = async (
                     getTimelineEntries: jest
                         .fn()
                         .mockResolvedValue([
-                            { title: 'Поставка', description: '<b>Набор</b>' },
+                            { title: 'Поставка', description: '[b]Набор[/b]' },
                         ]),
                 },
             },
@@ -204,14 +206,16 @@ describe('InitSupplyUseCase: документы заявки на Диске', (
         );
         expect(apiCall).toHaveBeenCalledTimes(2);
         const [method, page] = apiCall.mock.calls[1];
-        expect(method).toBe('rpa.timeline.add');
-        expect(page).toMatchObject({ typeId: 9, itemId: 77, userId: '12' });
-        expect(page.fields.title).toBe('Документы поставки');
+        // запись таймлайна RPA больше не показывает разметку — только комментарий
+        expect(method).toBe('rpa.comment.add');
+        expect(page).toMatchObject({ typeId: 9, itemId: 77 });
+        expect(titleOf(page)).toBe('[b]Документы поставки[/b]');
         expect(page.fields.description).toContain(
-            `<a href="${FOLDER_URL}" target="_blank">Папка на Диске</a>`,
+            `[url=${FOLDER_URL}]Папка на Диске[/url]`,
         );
+        expect(page.fields.description).not.toMatch(/<[a-z]/);
         for (const name of DISK_OK.fileNames) {
-            expect(page.fields.description).toContain(`<li>${name}</li>`);
+            expect(page.fields.description).toContain(`• ${name}`);
         }
         expect(result.diskFolderUrl).toBe(FOLDER_URL);
         expect(result.diskWarning).toBeUndefined();
@@ -222,8 +226,30 @@ describe('InitSupplyUseCase: документы заявки на Диске', (
 
         await useCase.initSupply(dtoOf());
 
-        const titles = apiCall.mock.calls.map(([, page]) => page.fields.title);
-        expect(titles).toEqual(['Поставка', 'Документы поставки']);
+        const titles = apiCall.mock.calls.map(([, page]) => titleOf(page));
+        expect(titles).toEqual([
+            '[b]Поставка[/b]',
+            '[b]Документы поставки[/b]',
+        ]);
+    });
+
+    // gsr 25.11: Битрикс отдаёт DETAIL_URL с пробелом, пробел вырезался —
+    // «…/Перезаключение2071» вёл на страницу групп
+    it('папка с пробелом в имени: адрес закодирован, а не обрезан', async () => {
+        const folderUrl =
+            'https://gsr.bitrix24.ru/workgroups/group/41/disk/path/182917/Перезаключение 2071';
+        const encoded =
+            'https://gsr.bitrix24.ru/workgroups/group/41/disk/path/182917/%D0%9F%D0%B5%D1%80%D0%B5%D0%B7%D0%B0%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D0%B5%202071';
+        const { useCase, apiCall, addTimelineComment } = await setup({
+            disk: { ...DISK_OK, folderUrl },
+        });
+
+        await useCase.initSupply(dtoOf({ flow: InitSupplyFlow.RENEWAL }));
+
+        const [comment] = addTimelineComment.mock.calls[0];
+        expect(comment.COMMENT).toContain(`<a href="${encoded}"`);
+        const [, page] = apiCall.mock.calls[1];
+        expect(page.fields.description).toContain(`[url=${encoded}]`);
     });
 
     it('комментарий сделки: ссылка на заявку и ссылка на папку Диска', async () => {
@@ -253,7 +279,7 @@ describe('InitSupplyUseCase: документы заявки на Диске', (
 
         expect(saveToDisk).toHaveBeenCalledWith({ dto, rpaId: 77 });
         const [, page] = apiCall.mock.calls[1];
-        expect(page.fields.title).toBe('Документы перезаключения');
+        expect(titleOf(page)).toBe('[b]Документы перезаключения[/b]');
         const [comment] = addTimelineComment.mock.calls[0];
         expect(comment.COMMENT).toContain('>Перезаключение</a>');
         expect(comment.COMMENT).toContain('Папка на Диске');
@@ -517,7 +543,11 @@ describe('InitSupplyUseCase: варианты сделки при поставк
 
     it('Битрикс отказал на одном варианте — заявка цела, остальные закрываются', async () => {
         const { useCase, itemUpdate, addTimelineComment } = await setup({
-            dealVariants: [{ smartId: 5001 }, { smartId: 5002 }, { smartId: 5003 }],
+            dealVariants: [
+                { smartId: 5001 },
+                { smartId: 5002 },
+                { smartId: 5003 },
+            ],
             failItemUpdateFor: 5002,
         });
 

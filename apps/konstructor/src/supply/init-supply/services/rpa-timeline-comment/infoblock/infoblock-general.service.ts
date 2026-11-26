@@ -7,7 +7,6 @@ import {
     RpaCommentHelper,
     RpaIconEnum,
 } from '../lib/rpa-comment-helper.service';
-import { IconHelper } from '../lib/icon-helper.service';
 @Injectable()
 export class InfoblockGeneralService {
     getInfoblockGeneralComment(
@@ -43,7 +42,8 @@ export class InfoblockGeneralService {
         }
         const packets = this.getErPacketsComment(contractSpecification);
         if (packets) {
-            comment += packets;
+            // пакеты — пунктами того же раздела, со своей строки
+            comment += `\n${packets}\n`;
         }
         const freeBlocksComment = this.getFreeBlocksComment(
             contractSpecification,
@@ -94,12 +94,12 @@ export class InfoblockGeneralService {
 
         let packets = '' as string;
         if (packetErsDataList && ersInPacketList) {
-            packets = RpaCommentHelper.getListWithBold([
+            packets = RpaCommentHelper.getGroupedList([
                 {
                     head: packetErsDataList
                         .join(', Пакет ')
                         .replace(/^,\s*/, ''),
-                    value: RpaCommentHelper.getList(ersInPacketList),
+                    items: ersInPacketList,
                 },
             ]);
         }

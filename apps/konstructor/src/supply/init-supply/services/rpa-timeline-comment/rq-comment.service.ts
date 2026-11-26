@@ -5,7 +5,6 @@ import {
     RpaIconEnum,
 } from './lib/rpa-comment-helper.service';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-import { IconHelper } from './lib/icon-helper.service';
 
 @Injectable()
 export class RqCommentService {
