@@ -10,6 +10,11 @@ import { OfferWordCoreGenerateService } from '../../services/offer-word-core/off
 import { OfferWordMultiBuildService } from '../services/offer-word-multi-build.service';
 import { OfferWordMultiSupplyEnrichService } from '../services/offer-word-multi-supply-enrich.service';
 import {
+    describeOfferFailure,
+    inOfferStep,
+    OFFER_GENERATION_STEP,
+} from '../../lib/offer-generation-failure.util';
+import {
     OfferWordMultiGenerateDto,
     OfferWordMultiGenerateResultDto,
 } from '../dto/offer-word-multi-generate.dto';
@@ -76,8 +81,14 @@ export class OfferWordMultiGenerateUseCase {
 
         try {
             // Подписи поставок для КП и счёта: верх запроса и каждый вариант
-            const prepared = await this.supplyEnrich.enrich(dto);
-            const buildResult = await this.buildService.build(prepared);
+            const prepared = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.supplyEnrich.enrich(dto),
+            );
+            const buildResult = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.buildService.build(prepared),
+            );
             // КП может быть несколько (по участнику) — в Битрикс уходят все
             const allDocuments = [
                 ...buildResult.offers,
@@ -88,62 +99,88 @@ export class OfferWordMultiGenerateUseCase {
             // участники получают стадию «КП» (только вперёд: договор обратно в КП не уходит)
             await this.markVariantsOffer(domain, dto);
 
-            const saveResult =
-                await this.bxDocumentSaveFlowService.saveDocuments({
+            const saveResult = await inOfferStep(
+                OFFER_GENERATION_STEP.upload,
+                () =>
+                    this.bxDocumentSaveFlowService.saveDocuments({
+                        domain,
+                        companyId: dto.companyId,
+                        userId: dto.userId,
+                        dealId: dealId.toString(),
+                        documents: allDocuments,
+                        onlyBitrixSave,
+                    }),
+            );
+
+            await inOfferStep(OFFER_GENERATION_STEP.timeline, () =>
+                this.timelineService.sendDocumentToBitrix({
                     domain,
                     companyId: dto.companyId,
                     userId: dto.userId,
+                    documents: saveResult.documents,
                     dealId: dealId.toString(),
-                    documents: allDocuments,
-                    onlyBitrixSave,
-                });
+                }),
+            );
 
-            await this.timelineService.sendDocumentToBitrix({
-                domain,
-                companyId: dto.companyId,
-                userId: dto.userId,
-                documents: saveResult.documents,
-                dealId: dealId.toString(),
-            });
+            // документы уже в сделке: дальше сбой не отменяет генерацию
+            return await inOfferStep(OFFER_GENERATION_STEP.finish, async () => {
+                if (onlyBitrixSave) {
+                    await this.cleanupLocalFiles(
+                        allDocuments.map(document => document.absolutePath),
+                    );
+                }
 
-            if (onlyBitrixSave) {
-                await this.cleanupLocalFiles(
-                    allDocuments.map(document => document.absolutePath),
+                const savedOffers = saveResult.documents.filter(
+                    document => document.type === 'offer',
                 );
-            }
+                const finalOffers = savedOffers.length
+                    ? savedOffers
+                    : buildResult.offers;
+                const finalInvoices = saveResult.documents.filter(
+                    document => document.type === 'invoice',
+                );
 
-            const savedOffers = saveResult.documents.filter(
-                document => document.type === 'offer',
-            );
-            const finalOffers = savedOffers.length
-                ? savedOffers
-                : buildResult.offers;
-            const finalInvoices = saveResult.documents.filter(
-                document => document.type === 'invoice',
-            );
+                await this.offerTemplateService.incrementTemplateCounter(
+                    BigInt(dto.templateId),
+                );
 
-            await this.offerTemplateService.incrementTemplateCounter(
-                BigInt(dto.templateId),
-            );
-
-            return {
-                template: buildResult.template,
-                link: finalOffers[0],
-                links: finalOffers,
-                renderData: buildResult.renderData,
-                invoiceLinks: finalInvoices,
-                portalFolderId: saveResult.portalFolderId || 0,
-                warnings: buildResult.warnings,
-            };
+                return {
+                    template: buildResult.template,
+                    link: finalOffers[0],
+                    links: finalOffers,
+                    renderData: buildResult.renderData,
+                    invoiceLinks: finalInvoices,
+                    portalFolderId: saveResult.portalFolderId || 0,
+                    warnings: buildResult.warnings,
+                };
+            });
         } catch (error) {
+            await this.reportFailure(error, dto, dealId);
+            throw error;
+        }
+    }
+
+    /**
+     * Причина сбоя — комментарием в сделку. Сбой самого комментария
+     * исходную ошибку не подменяет: наверх уходит то, что случилось с КП.
+     */
+    private async reportFailure(
+        error: unknown,
+        dto: OfferWordMultiGenerateDto,
+        dealId: number,
+    ): Promise<void> {
+        try {
             await this.timelineService.sendErrorToBitrix({
-                domain,
+                domain: dto.domain,
                 companyId: dto.companyId,
                 userId: dto.userId,
-                documents: [],
                 dealId: dealId.toString(),
+                reason: describeOfferFailure(error).comment,
             });
-            throw error;
+        } catch (sendError) {
+            this.logger.warn(
+                `${dto.domain}: комментарий о сбое КП не записан в сделку ${dealId}: ${sendError instanceof Error ? sendError.message : String(sendError)}`,
+            );
         }
     }
 
