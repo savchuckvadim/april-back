@@ -193,9 +193,8 @@ describe('PortalViewUseCase.save', () => {
     it('руководитель группы: пишутся ровно переданные поля плюс «кто» и «когда», в ответе — состояние после записи', async () => {
         const { useCase, writer, author } = buildUseCase(GROUP_ACCESS);
         const saved: PortalViewState = {
+            ...DEFAULT_VIEW,
             tabsHidden: ['merged', 'finance'],
-            chartsEnabled: true,
-            badgesMain: [],
             updatedBy: 'Иванов Пётр',
             updatedAt: '2026-11-25T09:30:00.000Z',
         };

@@ -15,6 +15,7 @@ import { WsService } from '@/core/ws';
 import { ShareLinkService } from '../services/share-link.service';
 import { ShareLinkSnapshotService } from '../services/share-link-snapshot.service';
 import { SharePresenceService } from '../services/share-presence.service';
+import { ShareLinkViewReader } from '../services/share-link-view.reader';
 import {
     SHARE_PRESENCE_EVENT,
     sharePresenceRoom,
@@ -46,6 +47,7 @@ export class ShareLinkPublicController {
         private readonly presence: SharePresenceService,
         private readonly ws: WsService,
         private readonly excel: ExcelReportService,
+        private readonly view: ShareLinkViewReader,
     ) {}
 
     /** До протухания ссылки, секунд (TTL presence-ключей). */
@@ -68,8 +70,9 @@ export class ShareLinkPublicController {
     @ApiOperation({
         summary: 'Снимок отчёта по токену',
         description:
-            'Метаданные + данные для read-only страницы. Инкрементирует ' +
-            'счётчик просмотров. 410 — ссылка недействительна.',
+            'Метаданные + данные для read-only страницы и свои названия ' +
+            'показателей портала (view.labels, на момент открытия). ' +
+            'Инкрементирует счётчик просмотров. 410 — ссылка недействительна.',
     })
     @ApiOkResponse({ type: ShareLinkPublicResponseDto })
     @Get(':token')
@@ -99,10 +102,16 @@ export class ShareLinkPublicController {
             expiresAt: link.expiresAt.toISOString(),
         };
 
+        // Свои названия портала — на момент открытия, не из снимка; сбой
+        // чтения даёт пустой набор и ссылку не ломает.
+        const view = await this.view.read(link.domain);
+
         // Снимок ещё готовится (создание async) — отдаём generating без
         // данных; страница показывает «отчёт готовится» и подтягивает.
         let data = await this.snapshots.load(link);
-        if (!data && link.status === EShareLinkStatus.PENDING) {
+        // status в Prisma — строка: сравнение со значением перечисления.
+        const pending = EShareLinkStatus.PENDING as string;
+        if (!data && link.status === pending) {
             return {
                 meta: { ...meta, status: 'generating', generatedAt: '' },
                 report: [],
@@ -110,6 +119,7 @@ export class ShareLinkPublicController {
                 finance: null,
                 airtime: null,
                 ui: snapshot.ui ?? {},
+                view,
             };
         }
 
@@ -138,6 +148,7 @@ export class ShareLinkPublicController {
             finance: (data.finance ?? null) as Record<string, unknown> | null,
             airtime: (data.airtime ?? null) as Record<string, unknown> | null,
             ui: snapshot.ui ?? {},
+            view,
         };
     }
 

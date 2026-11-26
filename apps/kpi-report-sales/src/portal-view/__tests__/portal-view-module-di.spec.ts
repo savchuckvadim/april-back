@@ -13,6 +13,7 @@ import {
     type Ctor,
 } from '../../ai-analytics/__tests__/fixtures/module-di.util';
 import { PortalViewController } from '../portal-view.controller';
+import { PortalViewIndicatorsService } from '../portal-view-indicators.service';
 import { PortalViewModule } from '../portal-view.module';
 import { PortalViewReader } from '../portal-view.reader';
 import { PortalViewUseCase } from '../portal-view.use-case';
@@ -63,6 +64,7 @@ describe('DI-граф PortalViewModule', () => {
         const providers = metadataList(PortalViewModule, 'providers');
         expect(providers).toContain(CallListPointsProvider);
         expect(providers).toContain(PortalViewUseCase);
+        expect(providers).toContain(PortalViewIndicatorsService);
     });
 
     it('ни один импорт (включая транзитивные) не несёт лишних контроллеров', () => {

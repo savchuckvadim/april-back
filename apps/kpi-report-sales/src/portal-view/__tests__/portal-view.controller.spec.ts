@@ -17,7 +17,7 @@ const response: PortalViewResponseDto = {
     view: DEFAULT_VIEW,
     canEdit: true,
     supportUrl: null,
-    options: { tabs: [], badges: [], methodology: null },
+    options: { tabs: [], badges: [], methodology: null, indicators: [] },
 };
 
 function build() {

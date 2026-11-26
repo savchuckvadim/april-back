@@ -3,33 +3,96 @@ import { Type } from 'class-transformer';
 import {
     IsArray,
     IsEnum,
+    IsIn,
     IsString,
     ValidateNested,
     IsNumber,
     IsOptional,
     IsNotEmpty,
+    MaxLength,
 } from 'class-validator';
 import { IExcelReport } from '../types/excel-report.type';
 import { DateRangeDto } from '../../shared/dto/kpi.dto';
+import {
+    DOWNLOAD_KPI_ITEM_KINDS,
+    DOWNLOAD_KPI_NOTE_MAX_LENGTH,
+    type DownloadKpiItemKind,
+} from '../lib/excel-plan-columns.util';
 
 export enum EDownloadType {
     EXCEL = 'excel',
     PDF = 'pdf',
 }
 export class DownloadReportKpiItemDto {
-    @ApiProperty({ description: 'KPI ID' })
+    @ApiProperty({
+        description:
+            'Код колонки: innerCode события, id бакета звонков или ' +
+            '«plan:<код плана>» у плановой колонки. По нему подставляются ' +
+            'строки «— план».',
+        type: String,
+        required: false,
+        example: 'presentation_done',
+    })
     @IsOptional()
     @IsString()
     id?: string;
 
-    @ApiProperty({ description: 'KPI action' })
+    @ApiProperty({
+        description:
+            'Название колонки в шапке листа (уже со своим названием ' +
+            'портала, если оно задано).',
+        type: String,
+        example: 'Назначенная презентация',
+    })
     @IsString()
     action: string;
 
-    @ApiProperty({ description: 'KPI count' })
-    @IsNumber()
+    @ApiProperty({
+        description:
+            'Значение показателя. У плановой колонки (kind = plan) — план ' +
+            'сотрудника на выбранный период; null — плана нет, в ячейке «—», ' +
+            'в итоге считается нулём.',
+        type: Number,
+        nullable: true,
+        required: false,
+        example: 12,
+    })
     @IsOptional()
-    count: number;
+    @IsNumber()
+    count?: number | null;
+
+    @ApiProperty({
+        description:
+            'Вид колонки: plan — колонка плана, стоит вплотную перед своим ' +
+            'показателем; в Excel у неё плановая заливка и заметка в шапке, ' +
+            'на листах рейтингов её нет, строки «— план» под сотрудниками ' +
+            'тогда не выводятся. Не передан — обычный показатель.',
+        type: String,
+        enum: [...DOWNLOAD_KPI_ITEM_KINDS],
+        required: false,
+        example: 'plan',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(DOWNLOAD_KPI_ITEM_KINDS)
+    kind?: DownloadKpiItemKind;
+
+    @ApiProperty({
+        description:
+            'Текст заметки Excel к шапке плановой колонки (как подсказка в ' +
+            `таблице), до ${DOWNLOAD_KPI_NOTE_MAX_LENGTH} знаков. У обычных ` +
+            'колонок не используется.',
+        type: String,
+        maxLength: DOWNLOAD_KPI_NOTE_MAX_LENGTH,
+        required: false,
+        example:
+            'План по показателю «Презентация» (на месяц), пересчитан на ' +
+            'выбранный период',
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(DOWNLOAD_KPI_NOTE_MAX_LENGTH)
+    note?: string;
 }
 
 export class DownloadKpiReportItemDto implements IExcelReport {

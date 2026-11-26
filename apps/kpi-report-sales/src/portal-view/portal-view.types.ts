@@ -2,9 +2,14 @@ import type {
     EnumPortalAppCode,
     PortalAppSettingsPatch,
     PortalAppSettingsValues,
+    ReportViewLabels,
+    ReportViewPlanColumnCode,
     ReportViewTabCode,
 } from '@lib/portal-lib/store/app-settings';
-import type { PortalViewBadgeGroup } from './portal-view.const';
+import type {
+    PortalViewBadgeGroup,
+    PortalViewIndicatorGroup,
+} from './portal-view.const';
 
 type KpiSalesSettings = PortalAppSettingsValues<
     typeof EnumPortalAppCode.kpiSales
@@ -15,6 +20,11 @@ export const PORTAL_VIEW_SETTING_KEYS = [
     'reportViewTabsHidden',
     'reportViewChartsEnabled',
     'reportViewBadgesMain',
+    'reportViewLabels',
+    'reportViewPlansEvents',
+    'reportViewPlansMerged',
+    'reportViewPlansCallings',
+    'reportViewPlanColumnsHidden',
     'reportViewUpdatedBy',
     'reportViewUpdatedAt',
 ] as const;
@@ -31,8 +41,28 @@ export type PortalViewSettingsPatch = Pick<
     (typeof PORTAL_VIEW_SETTING_KEYS)[number]
 >;
 
-/** Вид отчёта портала: что скрыто, графики и основные бейджи списка разборов. */
-export interface PortalViewState {
+/**
+ * Свои названия показателей и колонки планов в таблицах отчёта — часть
+ * вида отчёта, которую разбирает и собирает portal-view-labels.util.
+ */
+export interface PortalViewLabelsState {
+    /** Свои названия: ключ показателя (`ev:`/`call:`/`plan:` и код) → название. */
+    labels: ReportViewLabels;
+    /** Колонки планов на вкладках «Все» и «События». */
+    plansEvents: boolean;
+    /** Колонки планов в «Объединённом отчёте». */
+    plansMerged: boolean;
+    /** Колонки планов на вкладке «Звонки». */
+    plansCallings: boolean;
+    /** Плановые показатели, чью колонку не выводить: известные коды, без дублей. */
+    planColumnsHidden: ReportViewPlanColumnCode[];
+}
+
+/**
+ * Вид отчёта портала: что скрыто, графики, основные бейджи списка
+ * разборов, свои названия показателей и колонки планов.
+ */
+export interface PortalViewState extends PortalViewLabelsState {
     /** Скрытые вкладки: только известные коды, без дублей. */
     tabsHidden: ReportViewTabCode[];
     chartsEnabled: boolean;
@@ -45,7 +75,7 @@ export interface PortalViewState {
 }
 
 /** Какие поля вида отчёта меняет запрос сохранения (отсутствует — не трогать). */
-export interface PortalViewChanges {
+export interface PortalViewChanges extends Partial<PortalViewLabelsState> {
     tabsHidden?: ReportViewTabCode[];
     chartsEnabled?: boolean;
     badgesMain?: string[];
@@ -78,10 +108,26 @@ export interface PortalViewMethodologyInfo {
     title: string;
 }
 
+/**
+ * Показатель отчёта, которому можно задать своё название: колонка событий,
+ * бакет звонков или колонка плана.
+ */
+export interface PortalViewIndicator {
+    /** Ключ своего названия: `ev:<innerCode>`, `call:<id>`, `plan:<код>`. */
+    key: string;
+    group: PortalViewIndicatorGroup;
+    /** Исходное название, как в отчёте (лишние пробелы убраны). */
+    name: string;
+    /** У колонки плана — ключ показателя-факта; у остальных — null. */
+    factKey: string | null;
+}
+
 export interface PortalViewOptions {
     tabs: PortalViewTabOption[];
     badges: PortalViewBadgeOption[];
     methodology: PortalViewMethodologyInfo | null;
+    /** Каталог показателей портала для своих названий и колонок планов. */
+    indicators: PortalViewIndicator[];
 }
 
 /** Пункт методики, как его отдаёт источник пунктов списка разборов. */

@@ -16,6 +16,7 @@ import {
 import { ReportGetFiltersDto } from '../../report/dto/kpi-report-request.dto';
 import { GetCallingStatisticFiltersDto } from '../../report/dto/calling-statistic.dto';
 import { ReportData } from '../../shared/dto/kpi.dto';
+import { REPORT_VIEW_LABEL_LIMITS } from '@lib/portal-lib/store/app-settings';
 
 /** Максимальный срок жизни любой ссылки, дней. */
 export const SHARE_LINK_MAX_LIFETIME_DAYS = 14;
@@ -378,6 +379,28 @@ export class ShareLinkPublicMetaDto {
 }
 
 /**
+ * Вид отчёта портала ссылки для публичной страницы: только свои названия
+ * показателей (колонок планов на публичной странице нет).
+ */
+export class ShareLinkPublicViewDto {
+    @ApiProperty({
+        description:
+            'Свои названия показателей портала ссылки, прочитанные в момент ' +
+            'открытия: ключ — «ev:» и код события, «call:» и бакет звонков, ' +
+            '«plan:» и код планового показателя; значение — название для ' +
+            'показа. Пустой объект — свои названия не заданы или не ' +
+            'прочитались (ссылка из-за этого не ломается).',
+        type: 'object',
+        additionalProperties: {
+            type: 'string',
+            maxLength: REPORT_VIEW_LABEL_LIMITS.nameLength,
+        },
+        example: { 'ev:presentation_plan': 'Назначенная презентация' },
+    })
+    labels: Record<string, string>;
+}
+
+/**
  * Ответ публичной ручки: метаданные + данные снимка. Фронт сидит этим
  * свои Redux-слайсы и рендерит обычные виджеты отчёта в read-only.
  */
@@ -424,4 +447,12 @@ export class ShareLinkPublicResponseDto {
         additionalProperties: true,
     })
     ui: Record<string, unknown>;
+
+    @ApiProperty({
+        description:
+            'Вид отчёта портала ссылки на момент открытия (не из снимка): ' +
+            'свои названия показателей, подставляются при показе.',
+        type: ShareLinkPublicViewDto,
+    })
+    view: ShareLinkPublicViewDto;
 }

@@ -14,3 +14,12 @@ export {
     buildReportRequestKey,
 } from './cache/report-cache-key.util';
 export type { ReportGetFiltersDto } from './dto/kpi-report-request.dto';
+// Колонки таблицы событий в порядке отчёта и бакеты звонков — для
+// каталога показателей страницы «Настройки отчёта» (тот же расчёт, что у
+// отчёта).
+export {
+    reportEventColumns,
+    reportEventColumnsOfList,
+} from './lib/report-actions.util';
+export type { ReportEventColumn } from './lib/report-actions.util';
+export { CALLING_TYPES } from './types/calling-statistic.type';

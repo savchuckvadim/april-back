@@ -18,9 +18,14 @@ import {
 import { Buffer } from 'buffer';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-
-/** Мягкая заливка плановых строк/колонок (голубая, читаема при печати). */
-const PLAN_FILL_ARGB = 'FFDCE9F7';
+import {
+    applyPlanHeadNotes,
+    fillPlanCells,
+    kpiCellValue,
+    PLAN_FILL_ARGB,
+    planSubRowsOf,
+    ratingColumns,
+} from '../lib/excel-plan-columns.util';
 /** numFmt достижения плана (доля 0.84 → 84,0%). */
 const PLAN_PERCENT_FORMAT = '0.0%';
 /** numFmt денежных показателей листа «Планы». */
@@ -31,6 +36,7 @@ const PLAN_MONEY_FORMAT = '#,##0';
  * Без structure — прежний одиночный лист (обратная совместимость).
  * С structure: лист «Сводный»; мульти — дополнительно лист на каждый ОП
  * с секциями групп и итогами; моно с группами — лист «По группам».
+ * Плановые колонки (kind = plan) оформляет excel-plan-columns.util.
  */
 @Injectable()
 export class ExcelReportService {
@@ -53,7 +59,7 @@ export class ExcelReportService {
                     dto.report,
                     null,
                     'Итого',
-                    dto.plans?.mainRows,
+                    planSubRowsOf(dto.report, dto.plans?.mainRows),
                 );
                 this.setColumnWidths(summary, dto.report);
 
@@ -132,7 +138,7 @@ export class ExcelReportService {
         department: ReportStructureDepartmentDto,
     ): void {
         const departmentRows: DownloadKpiReportItemDto[] = [];
-        const planRows = dto.plans?.mainRows;
+        const planRows = planSubRowsOf(dto.report, dto.plans?.mainRows);
 
         for (const group of department.groups) {
             const rows = this.rowsByIds(dto.report, group.userIds);
@@ -169,7 +175,10 @@ export class ExcelReportService {
         }
     }
 
-    /** Блок: [заголовок секции] + шапка + строки (+ подстроки «— план») + итог. */
+    /**
+     * Блок: [заголовок секции] + шапка + строки (+ подстроки «— план») +
+     * итог. Плановые колонки: заметка в шапке, заливка ячеек, «—» без плана.
+     */
     private renderReportBlock(
         sheet: Worksheet,
         rows: DownloadKpiReportItemDto[],
@@ -192,12 +201,14 @@ export class ExcelReportService {
         const heads = rows[0].kpi.map(kpi => kpi.action);
         const headRow = sheet.addRow(['ФИО', ...heads]);
         this.styleHeadRow(headRow);
+        applyPlanHeadNotes(headRow, rows[0].kpi);
 
         for (const item of rows) {
             const row = sheet.addRow([
                 item.userName,
-                ...item.kpi.map(kpi => kpi.count),
+                ...item.kpi.map(kpiCellValue),
             ]);
+            fillPlanCells(row, item.kpi);
             const nameCell = row.getCell(1);
             nameCell.font = { bold: true, size: 10 };
             nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
@@ -271,6 +282,7 @@ export class ExcelReportService {
                 fgColor: { argb: 'FFEEEEEE' },
             };
         });
+        fillPlanCells(row, rows[0]?.kpi ?? []);
     }
 
     private renderDateHeader(dto: KpiReportDto, sheet: Worksheet): void {
@@ -323,16 +335,17 @@ export class ExcelReportService {
      * Листы рейтингов-победителей по каждому показателю отчёта (в отчёт
      * попадают только действия из фильтра пользователя): «Рейтинг —
      * Сотрудники» всегда; «— Группы» / «— Отделы» — при наличии структуры.
+     * Плановые колонки в рейтингах не участвуют.
      */
     private renderRatingSheets(workbook: Workbook, dto: KpiReportDto): void {
         if (!dto.report.length) return;
-        const actions = dto.report[0].kpi.map(kpi => kpi.action);
+        const columns = ratingColumns(dto.report[0].kpi);
 
         this.renderRatingSheet(
             workbook,
             dto,
             'Рейтинг — Сотрудники',
-            actions.map((action, index) => ({
+            columns.map(({ action, index }) => ({
                 action,
                 rows: dto.report
                     .map(item => ({
@@ -346,7 +359,7 @@ export class ExcelReportService {
         const structure = dto.structure;
         if (!structure?.departments?.length) return;
 
-        const groupRatings = actions.map((action, index) => ({
+        const groupRatings = columns.map(({ action, index }) => ({
             action,
             rows: structure.departments
                 .flatMap(dep =>
@@ -373,7 +386,7 @@ export class ExcelReportService {
         }
 
         if (structure.departments.length > 1) {
-            const departmentRatings = actions.map((action, index) => ({
+            const departmentRatings = columns.map(({ action, index }) => ({
                 action,
                 rows: structure.departments
                     .map(dep => ({

@@ -19,31 +19,15 @@ import type {
     PortalViewStamp,
     PortalViewState,
 } from './portal-view.types';
+import { joinCsvList, parseCsvList, uniqueList } from './portal-view-csv.util';
+import {
+    labelsSettingsPatch,
+    labelsViewFromSettings,
+} from './portal-view-labels.util';
 
-/** Список без повторов, порядок первого появления сохраняется. */
-export function uniqueList<T>(items: readonly T[]): T[] {
-    return [...new Set(items)];
-}
-
-/**
- * Список из строки через запятую: пробелы по краям и пустые элементы
- * отбрасываются, повторы схлопываются. Не строка (чужой тип в настройке) —
- * пустой список.
- */
-export function parseCsvList(raw: unknown): string[] {
-    if (typeof raw !== 'string') return [];
-    return uniqueList(
-        raw
-            .split(',')
-            .map(item => item.trim())
-            .filter(item => item !== ''),
-    );
-}
-
-/** Список → строка через запятую (как хранится в настройке). */
-export function joinCsvList(items: readonly string[]): string {
-    return items.join(',');
-}
+// Списки через запятую живут в portal-view-csv.util; отсюда — прежний
+// публичный путь для соседей и тестов.
+export { joinCsvList, parseCsvList, uniqueList };
 
 /** Приставка «m:» — бейдж пункта методики, а не общий. */
 export function isMethodologyBadgeId(id: string): boolean {
@@ -119,6 +103,7 @@ export function viewFromSettings(
                 ? values.reportViewChartsEnabled
                 : true,
         badgesMain: parseBadgesMain(values.reportViewBadgesMain),
+        ...labelsViewFromSettings(values),
         updatedBy: textOrNull(values.reportViewUpdatedBy),
         updatedAt: isoOrNull(values.reportViewUpdatedAt),
     };
@@ -157,6 +142,7 @@ export function toSettingsPatch(
         ...(changes.badgesMain !== undefined
             ? { reportViewBadgesMain: joinCsvList(changes.badgesMain) }
             : {}),
+        ...labelsSettingsPatch(changes),
         reportViewUpdatedBy: stamp.updatedBy,
         reportViewUpdatedAt: stamp.updatedAt,
     };

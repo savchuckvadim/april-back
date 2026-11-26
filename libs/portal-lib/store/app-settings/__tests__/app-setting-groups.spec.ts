@@ -189,6 +189,11 @@ describe('категории настроек приложений', () => {
             'report_view_tabs_hidden',
             'report_view_charts_enabled',
             'report_view_badges_main',
+            'report_view_labels',
+            'report_view_plans_events',
+            'report_view_plans_merged',
+            'report_view_plans_callings',
+            'report_view_plan_columns_hidden',
             'report_view_updated_by',
             'report_view_updated_at',
         ]) {
