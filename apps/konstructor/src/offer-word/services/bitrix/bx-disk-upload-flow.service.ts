@@ -4,7 +4,9 @@ import {
     IBXDiskFolderItem,
     IBXDiskStorageChildItem,
 } from '@lib/bitrix/domain/disk';
+import { base64ByteSize } from '@lib/bitrix/core/base/bitrix-log-redact.util';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { noteOfferFailureFile } from '../../lib/offer-generation-failure.util';
 
 /** Куда и как класть файлы внутри папки сделки. */
 export interface BxDiskUploadOptions {
@@ -77,15 +79,29 @@ export class BxDiskUploadFlowService {
     ): Promise<IBXDiskFolderItem> {
         const base64 =
             typeof content === 'string' ? content : content.toString('base64');
-        const response = await this.bitrix.disk.folder.uploadfile({
-            id: folderId,
-            data: {
-                NAME: name,
-            },
-            fileContent: [name, base64],
-            ...(this.options.uniqueNames ? { generateUniqueName: true } : {}),
-        });
-        return response.result;
+        try {
+            const response = await this.bitrix.disk.folder.uploadfile({
+                id: folderId,
+                data: {
+                    NAME: name,
+                },
+                fileContent: [name, base64],
+                ...(this.options.uniqueNames
+                    ? { generateUniqueName: true }
+                    : {}),
+            });
+            return response.result;
+        } catch (error) {
+            // имя и размер (без содержимого) пойдут в журнал сбоя генерации
+            noteOfferFailureFile(error, {
+                name,
+                sizeBytes:
+                    typeof content === 'string'
+                        ? base64ByteSize(content)
+                        : content.length,
+            });
+            throw error;
+        }
     }
 
     /** Подпапка в папке сделки: найти по имени или создать. */

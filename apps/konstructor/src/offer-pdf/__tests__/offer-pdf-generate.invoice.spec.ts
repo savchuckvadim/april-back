@@ -16,6 +16,7 @@ import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.t
 import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 import { InvoiceTemplateService } from '@app/konstructor/modules/invoice-template';
 import { ComplectVariantOfferStageService } from '@app/konstructor/modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
+import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
 import { ComplectModeEnum } from '@app/konstructor/modules/inner-deal/type/complect-composition.type';
 import { InvoiceDataDto } from '@app/konstructor/offer-word/dto/offer-word-generate-request.dto';
 import {
@@ -249,6 +250,11 @@ const setup = async ({
             {
                 provide: OfferWordPdfExportService,
                 useValue: { buildPublicPdfLink },
+            },
+            // поток продаж: запросы без salesFlow, событие не ставится
+            {
+                provide: SalesDocumentFlowService,
+                useValue: { publish: jest.fn(() => Promise.resolve(false)) },
             },
         ],
     }).compile();

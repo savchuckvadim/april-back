@@ -24,6 +24,7 @@ import {
 } from '../dto/inn.dto';
 import { InnSetResponseDto, SetInnRequestDto } from '../dto/inn-set.dto';
 import { OpenCardOnceGuard } from '../../shared/open-card-once';
+import { InnLegacyFieldsResolver } from '../services/inn-legacy-fields.resolver';
 
 /** Инстанс Битрикса ровно в том виде, в каком его отдаёт `PBXService`. */
 type PbxBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
@@ -43,6 +44,7 @@ export class InnUseCase {
     constructor(
         private readonly pbx: PBXService,
         private readonly once: OpenCardOnceGuard,
+        private readonly legacyFields: InnLegacyFieldsResolver,
     ) {}
 
     /**
@@ -138,14 +140,19 @@ export class InnUseCase {
     /**
      * Инстанс Битрикса и доменный сервис на один запрос. `init` зовём ОДИН
      * раз: он тянет слепок портала, и второй вызов был бы лишней работой.
+     * Старые поля портала с ИНН (настройка) — сразу в сервис: вкладка и
+     * выравнивание видят их значения на лету.
      */
     private async context(
         domain: string,
     ): Promise<{ bitrix: PbxBitrix; service: InnDealService }> {
-        const { bitrix, PortalModel } = await this.pbx.init(domain);
+        const [{ bitrix, PortalModel }, legacy] = await Promise.all([
+            this.pbx.init(domain),
+            this.legacyFields.resolve(domain),
+        ]);
         return {
             bitrix,
-            service: new InnDealService(bitrix, PortalModel, domain),
+            service: new InnDealService(bitrix, PortalModel, domain, legacy),
         };
     }
 

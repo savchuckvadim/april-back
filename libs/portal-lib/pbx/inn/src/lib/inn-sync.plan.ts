@@ -16,6 +16,10 @@ import { isValidInn, normalizeInn, uniq } from '@lib/portal-lib/pbx-duplicate';
  *    выбирает человек;
  *  - пусто в обеих, а в заявках ровно один ИНН — ставим его в сделку и
  *    компанию (ИНН мог прийти только с заявкой);
+ *  - пусто в обеих, в заявках ИНН нет, а в старых полях портала (настройка
+ *    `inn_legacy_fields_*`, владелец 26.11.2026) ровно один ИНН — ставим
+ *    его. Сначала поля сделки; они пусты — поля компании. Пул сделки с
+ *    другими ИНН — не решаем за человека, как с реквизитом;
  *  - в обеих есть, но разные — сами не решаем: какой текущий, выбирает
  *    человек (конфликт во вкладке, выбор пишет в обе).
  */
@@ -32,6 +36,8 @@ export const INN_SYNC_SOURCES = {
     /** Реквизит компании (RQ_INN): привязанный к сделке или единственный. */
     requisite: 'requisite',
     lead: 'lead',
+    /** Старые поля портала (настройка `inn_legacy_fields_*`). */
+    legacy: 'legacy',
 } as const;
 
 export type InnSyncSource =
@@ -64,20 +70,45 @@ export interface InnSyncRequisites {
 
 const NO_REQUISITES: InnSyncRequisites = { linkedInn: '', companyInns: [] };
 
-/**
- * ИНН из реквизитов компании: привязанный к сделке, иначе единственный.
- * Пул сделки уже с другими ИНН — не решаем за человека.
- */
+/** ИНН из старых полей портала: сделки и компании (уже разобранные). */
+export interface InnSyncLegacy {
+    deal: readonly string[];
+    company: readonly string[];
+}
+
+const NO_LEGACY: InnSyncLegacy = { deal: [], company: [] };
+
+const distinctValid = (inns: readonly string[]): string[] =>
+    uniq(inns.map(valid).filter(Boolean));
+
+/** Пул сделки уже с другими ИНН — не решаем за человека. */
+const agreesWithPool = (inn: string, dealPool: readonly string[]): boolean =>
+    distinctValid(dealPool).every(item => item === inn);
+
+/** ИНН из реквизитов компании: привязанный к сделке, иначе единственный. */
 const requisiteInn = (
     requisites: InnSyncRequisites,
     dealPool: readonly string[],
 ): string => {
     const linked = valid(requisites.linkedInn);
-    const distinct = uniq(requisites.companyInns.map(valid).filter(Boolean));
+    const distinct = distinctValid(requisites.companyInns);
     const inn = linked || (distinct.length === 1 ? distinct[0] : '');
-    if (!inn) return '';
-    const pool = uniq(dealPool.map(valid).filter(Boolean));
-    return pool.every(item => item === inn) ? inn : '';
+    return inn && agreesWithPool(inn, dealPool) ? inn : '';
+};
+
+/**
+ * ИНН из старых полей портала: единственный в полях сделки; поля сделки
+ * пусты — единственный в полях компании. Несколько разных — выбор человека.
+ */
+const legacyInn = (
+    legacy: InnSyncLegacy,
+    dealPool: readonly string[],
+): string => {
+    const deal = distinctValid(legacy.deal);
+    const company = distinctValid(legacy.company);
+    const own = deal.length ? deal : company;
+    const inn = own.length === 1 ? own[0] : '';
+    return inn && agreesWithPool(inn, dealPool) ? inn : '';
 };
 
 export const planInnSync = (input: {
@@ -93,6 +124,8 @@ export const planInnSync = (input: {
     dealPool?: readonly string[];
     /** Реквизиты компании; не прочитаны — пусто. */
     requisites?: InnSyncRequisites;
+    /** ИНН из старых полей портала; настройки нет — пусто. */
+    legacy?: InnSyncLegacy;
 }): InnSyncPlan => {
     const dealInn = valid(input.dealInn);
     const companyInn = input.hasCompany ? valid(input.companyInn) : '';
@@ -124,12 +157,25 @@ export const planInnSync = (input: {
             from: INN_SYNC_SOURCES.requisite,
         };
     }
-    const leadInns = uniq(input.leadInns.map(valid).filter(Boolean));
-    return leadInns.length === 1
+    const leadInns = distinctValid(input.leadInns);
+    if (leadInns.length === 1) {
+        return {
+            kind: INN_SYNC_KINDS.toDeal,
+            inn: leadInns[0],
+            from: INN_SYNC_SOURCES.lead,
+        };
+    }
+    // Разные ИНН в заявках — уже выбор человека, старые поля его не решают.
+    if (leadInns.length > 1) return NONE;
+    const fromLegacy = legacyInn(
+        input.legacy ?? NO_LEGACY,
+        input.dealPool ?? [],
+    );
+    return fromLegacy
         ? {
               kind: INN_SYNC_KINDS.toDeal,
-              inn: leadInns[0],
-              from: INN_SYNC_SOURCES.lead,
+              inn: fromLegacy,
+              from: INN_SYNC_SOURCES.legacy,
           }
         : NONE;
 };

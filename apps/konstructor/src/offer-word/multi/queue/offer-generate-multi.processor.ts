@@ -4,6 +4,7 @@ import { Job } from 'bull';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { resolveQueueConcurrency } from '@lib/queue/concurrency/resolve-queue-concurrency';
+import { describeOfferFailure } from '../../lib/offer-generation-failure.util';
 import { OfferWordMultiGenerateDto } from '../dto/offer-word-multi-generate.dto';
 import { OfferWordMultiGenerateUseCase } from '../use-cases/offer-word-multi-generate.use-case';
 
@@ -29,20 +30,25 @@ export class OfferGenerateMultiProcessor {
         concurrency: OFFER_GENERATE_MULTI_CONCURRENCY,
     })
     async handle(job: Job<OfferGenerateMultiJobPayload>): Promise<void> {
-        const { dto } = job.data;
+        const { dto, operationId } = job.data;
         const startedAt = Date.now();
         // operationId = job.id: по нему джоба ищется в очереди и в логах
         const context = `operationId=${String(job.id)} domain=${dto.domain} dealId=${dto.dealId} templateId=${dto.templateId} variants=${dto.variants?.length ?? 0}`;
         this.logger.log(`Генерация КП v2: старт ${context}`);
 
         try {
-            await this.useCase.execute(dto);
+            // номер операции — он же номер события в потоке продаж: повтор
+            // задания не запишет документ дважды
+            await this.useCase.execute(dto, { operationId });
             this.logger.log(
                 `Генерация КП v2: успех ${context} durationMs=${Date.now() - startedAt}`,
             );
         } catch (error) {
+            // шаг, метод и ответ Битрикса, размер файла — раньше было одно
+            // «Request failed with status code 400»
+            const { logFields } = describeOfferFailure(error);
             this.logger.error(
-                `Генерация КП v2: провал ${context} durationMs=${Date.now() - startedAt} error=${(error as Error)?.message}`,
+                `Генерация КП v2: провал ${context} durationMs=${Date.now() - startedAt}${logFields ? ` ${logFields}` : ''} error=${(error as Error)?.message}`,
             );
             throw error;
         }

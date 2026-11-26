@@ -24,6 +24,11 @@ export const INN_SOURCE_KINDS = {
     manual: 'manual',
     /** `op_inn` сделки — текущее решение. */
     deal_field: 'deal_field',
+    /**
+     * Свои (старые) поля ИНН сделки — список из настройки портала
+     * `inn_legacy_fields_deal` (gsirk: «ИНН (new)», «ИНН организации»).
+     */
+    deal_card: 'deal_card',
     /** `op_inn_pool` сделки — накопленные ранее варианты. */
     deal_pool: 'deal_pool',
     /** Поля ИНН карточки компании. */

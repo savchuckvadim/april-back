@@ -25,6 +25,7 @@ import {
     LibraryKind,
 } from '../lib/library-visibility.util';
 import { legacyText } from '../lib/legacy-text.util';
+import { librarySummaryOf } from '../lib/library-summary.util';
 
 /**
  * Библиотека заготовок (избранное + акции). Роль пользователя — из структуры
@@ -206,6 +207,8 @@ export class InnerDealLibraryService {
             dealName: legacyText(row.dealName),
             authorId: authorOf(row),
             departmentId: row.department ?? null,
+            // слепок лежит в колонке rows; JSON разбирается один раз на строку, без запросов
+            summary: librarySummaryOf(row.rows),
             canEdit: canEdit(row, actor),
             isArchived: row.isArchived,
             createdAt: row.created_at?.toISOString() ?? null,

@@ -12,6 +12,14 @@ import { InitSupplyRpaFieldsService } from '../services/rpa-fields/init-supply-r
 import { InitSupplyTimelineCommentService } from '../services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
 import { DocumentVariantDto } from '@app/konstructor/document-generate/dto/document-variant/document-variant.dto';
+import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
+import { SalesDocumentFlowService } from '../../../modules/sales-document-flow/services/sales-document-flow.service';
+import {
+    DispatchMock,
+    eventOfCall,
+    failingDispatch,
+    okDispatch,
+} from '../../../modules/sales-document-flow/__tests__/sales-document.fixtures';
 
 /** Комментарий RPA: заголовок записи — первой жирной строкой описания. */
 interface RpaTimelineRequest {
@@ -63,6 +71,7 @@ const setup = async (
         stageById?: Record<number, string>;
         listVariantsError?: Error;
         failItemUpdateFor?: number;
+        dispatch?: DispatchMock;
     } = {},
 ) => {
     const {
@@ -73,6 +82,7 @@ const setup = async (
         stageById = {},
         listVariantsError,
         failItemUpdateFor,
+        dispatch = okDispatch(),
     } = options;
 
     const rpaAdd = jest
@@ -166,6 +176,9 @@ const setup = async (
             },
             { provide: InitSupplyDiskService, useValue: { save: saveToDisk } },
             { provide: InnerDealService, useValue: { listVariants } },
+            // поток продаж: настоящий сервис постановки, очередь подменена
+            SalesDocumentFlowService,
+            { provide: QueueDispatcherService, useValue: { dispatch } },
         ],
     }).compile();
 
@@ -179,6 +192,7 @@ const setup = async (
         saveToDisk,
         itemUpdate,
         listVariants,
+        dispatch,
     };
 };
 
@@ -560,5 +574,116 @@ describe('InitSupplyUseCase: варианты сделки при поставк
         // 5002 не закрылся, 5003 закрылся
         expect(result.closedVariantIds).toEqual([5003]);
         expect(addTimelineComment).toHaveBeenCalledTimes(1);
+    });
+});
+
+/**
+ * Событие «поставка» в поток продаж event-sales: одно на запуск поставки,
+ * только по `salesFlow` из запроса.
+ */
+describe('InitSupplyUseCase: событие в поток продаж', () => {
+    const totalRowOf = (sum: number) =>
+        ({
+            name: 'Итого',
+            price: { sum, current: sum / 12, quantity: 12 },
+        }) as unknown as InitSupplyDto['total'][number];
+
+    const supplyOf = (name: string) =>
+        ({ name }) as unknown as InitSupplyDto['supply'];
+
+    const salesDto = (over: Partial<InitSupplyDto> = {}): InitSupplyDto =>
+        dtoOf({
+            salesFlow: true,
+            total: [totalRowOf(36000)],
+            supply: supplyOf('Интернет 5 ОД'),
+            ...over,
+        });
+
+    it('salesFlow: true — одно событие supply после создания заявки', async () => {
+        const { useCase, dispatch, rpaAdd } = await setup();
+
+        await useCase.initSupply(salesDto());
+
+        expect(dispatch).toHaveBeenCalledTimes(1);
+        expect(dispatch.mock.calls[0][0]).toBe('event-sales-document-flow');
+        expect(dispatch.mock.calls[0][1]).toBe('event-sales-document-flow');
+        expect(rpaAdd.mock.invocationCallOrder[0]).toBeLessThan(
+            dispatch.mock.invocationCallOrder[0],
+        );
+        const event = eventOfCall(dispatch);
+        expect(event).toMatchObject({
+            domain: 'gsr.bitrix24.ru',
+            userId: 12,
+            companyId: 32442,
+            dealId: 35018,
+            kinds: ['supply'],
+            sum: 36000,
+            summary: 'Поставка: Итого, Интернет 5 ОД, 36 000 ₽',
+        });
+        expect(dispatch.mock.calls[0][3]).toBe(
+            `sales-document:${event.eventId}`,
+        );
+    });
+
+    it('без salesFlow событие не ставится', async () => {
+        const { useCase, dispatch } = await setup();
+
+        await useCase.initSupply(dtoOf());
+        await useCase.initSupply(dtoOf({ salesFlow: false }));
+
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('несколько участников: событие одно, сумма по всем', async () => {
+        const { useCase, dispatch } = await setup();
+        const variant = (title: string, sum: number): DocumentVariantDto =>
+            Object.assign(new DocumentVariantDto(), {
+                variantSmartId: null,
+                title,
+                supply: supplyOf('Интернет 3 ОД'),
+                total: totalRowOf(sum),
+                rows: [],
+                sets: { general: [], alternative: [] },
+            });
+
+        await useCase.initSupply(
+            salesDto({
+                variants: [variant('Юрист', 12000), variant('Бухгалтер', 6000)],
+            }),
+        );
+
+        expect(dispatch).toHaveBeenCalledTimes(1);
+        expect(eventOfCall(dispatch).sum).toBe(18000);
+        expect(eventOfCall(dispatch).summary).toBe(
+            'Поставка: Юрист, Интернет 3 ОД; Бухгалтер, Интернет 3 ОД, 18 000 ₽',
+        );
+    });
+
+    it('обновление заявки (rpa_id задан): событие тоже одно', async () => {
+        const { useCase, dispatch } = await setup();
+
+        await useCase.initSupply(salesDto({ rpa_id: 55 }));
+
+        expect(dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('сделки нет: события нет, заявка создаётся', async () => {
+        const { useCase, dispatch, rpaAdd } = await setup();
+
+        const result = await useCase.initSupply(salesDto({ dealId: null }));
+
+        expect(rpaAdd).toHaveBeenCalledTimes(1);
+        expect(result.id_rpa).toBe(77);
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('сбой постановки заявку не роняет', async () => {
+        const { useCase } = await setup({
+            dispatch: failingDispatch('Redis недоступен'),
+        });
+
+        const result = await useCase.initSupply(salesDto());
+
+        expect(result.id_rpa).toBe(77);
     });
 });

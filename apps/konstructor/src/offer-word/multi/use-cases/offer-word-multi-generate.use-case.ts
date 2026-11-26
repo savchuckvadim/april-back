@@ -4,15 +4,32 @@ import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant
 import { ComplectVariantLifecycleService } from '@app/konstructor/modules/complect-variant-lifecycle';
 import { InnerDealService } from '@app/konstructor/modules/inner-deal/services/inner-deal.service';
 import { OfferTemplateService } from '@app/konstructor/modules/offer-template/offer-template';
+import { SALES_DOCUMENT_KIND } from '@lib/queue/constants/sales-document-event-job';
+import type { SalesDocumentKind } from '@lib/queue/constants/sales-document-event-job';
+import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
+import type { SalesDocumentSource } from '@app/konstructor/modules/sales-document-flow/lib/sales-document-source';
+import { planOfferRenders } from '../lib/variants/plan-offer-renders';
+import { resolveDocumentVariants } from '../lib/variants/resolve-document-variants';
 import { OfferBxTimelineService } from '../../services/bitrix/offer-bx-timeline.service';
 import { BitrixDocumentSaveFlowService } from '../../services/bitrix/bitrix-document-save-flow.service';
 import { OfferWordCoreGenerateService } from '../../services/offer-word-core/offer-word-core-generate.service';
 import { OfferWordMultiBuildService } from '../services/offer-word-multi-build.service';
 import { OfferWordMultiSupplyEnrichService } from '../services/offer-word-multi-supply-enrich.service';
 import {
+    describeOfferFailure,
+    inOfferStep,
+    OFFER_GENERATION_STEP,
+} from '../../lib/offer-generation-failure.util';
+import {
     OfferWordMultiGenerateDto,
     OfferWordMultiGenerateResultDto,
 } from '../dto/offer-word-multi-generate.dto';
+
+/** Параметры одного прогона генерации, которых нет в запросе. */
+export interface OfferWordMultiGenerateOptions {
+    /** Номер операции очереди; не задан у синхронного пути (withoutQueue). */
+    readonly operationId?: string;
+}
 
 /**
  * Генерация КП v2: собрать документы участников, сохранить в Битрикс,
@@ -33,7 +50,53 @@ export class OfferWordMultiGenerateUseCase {
         private readonly bxDocumentSaveFlowService: BitrixDocumentSaveFlowService,
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
         private readonly offerTemplateService: OfferTemplateService,
+        private readonly salesDocumentFlow: SalesDocumentFlowService,
     ) {}
+
+    /**
+     * Печатаемые документы запроса для потока продаж: те же запросы на рендер,
+     * по которым собрано КП. Сбой разбора состава событие не отменяет: оно
+     * уйдёт без суммы и текста.
+     */
+    private salesSourcesOf(
+        prepared: OfferWordMultiGenerateDto,
+    ): SalesDocumentSource[] {
+        try {
+            return planOfferRenders(prepared, resolveDocumentVariants(prepared))
+                .requests;
+        } catch (error) {
+            this.logger.warn(
+                `${prepared.domain}: состав КП для потока продаж не разобран: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return [];
+        }
+    }
+
+    /**
+     * КП и счёт — в поток продаж (только по `salesFlow` из запроса). Вид
+     * «счёт» добавляется, когда счета реально собраны и сохранены.
+     */
+    private async publishSalesFlow(
+        dto: OfferWordMultiGenerateDto,
+        prepared: OfferWordMultiGenerateDto,
+        options: OfferWordMultiGenerateOptions,
+        withInvoice: boolean,
+    ): Promise<void> {
+        if (dto.salesFlow !== true) return;
+        const kinds: SalesDocumentKind[] = [SALES_DOCUMENT_KIND.offer];
+        if (withInvoice) kinds.push(SALES_DOCUMENT_KIND.invoice);
+        await this.salesDocumentFlow.publish({
+            salesFlow: dto.salesFlow,
+            eventId: options.operationId,
+            domain: dto.domain,
+            userId: dto.userId,
+            companyId: dto.companyId,
+            dealId: dto.dealId,
+            kinds,
+            presentation: dto.presentation,
+            sources: this.salesSourcesOf(prepared),
+        });
+    }
 
     /**
      * Стадия `cvar_offer` участникам КП (README lifecycle, п.1): точка одна —
@@ -66,8 +129,15 @@ export class OfferWordMultiGenerateUseCase {
         }
     }
 
+    /**
+     * `options.operationId` — номер операции очереди: он же номер события в
+     * потоке продаж, поэтому повторный прогон того же задания не запишет
+     * документ дважды. Синхронный путь (withoutQueue) номера не имеет, событие
+     * получает новый UUID.
+     */
     async execute(
         dto: OfferWordMultiGenerateDto,
+        options: OfferWordMultiGenerateOptions = {},
     ): Promise<OfferWordMultiGenerateResultDto> {
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
@@ -76,8 +146,14 @@ export class OfferWordMultiGenerateUseCase {
 
         try {
             // Подписи поставок для КП и счёта: верх запроса и каждый вариант
-            const prepared = await this.supplyEnrich.enrich(dto);
-            const buildResult = await this.buildService.build(prepared);
+            const prepared = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.supplyEnrich.enrich(dto),
+            );
+            const buildResult = await inOfferStep(
+                OFFER_GENERATION_STEP.build,
+                () => this.buildService.build(prepared),
+            );
             // КП может быть несколько (по участнику) — в Битрикс уходят все
             const allDocuments = [
                 ...buildResult.offers,
@@ -88,62 +164,96 @@ export class OfferWordMultiGenerateUseCase {
             // участники получают стадию «КП» (только вперёд: договор обратно в КП не уходит)
             await this.markVariantsOffer(domain, dto);
 
-            const saveResult =
-                await this.bxDocumentSaveFlowService.saveDocuments({
+            const saveResult = await inOfferStep(
+                OFFER_GENERATION_STEP.upload,
+                () =>
+                    this.bxDocumentSaveFlowService.saveDocuments({
+                        domain,
+                        companyId: dto.companyId,
+                        userId: dto.userId,
+                        dealId: dealId.toString(),
+                        documents: allDocuments,
+                        onlyBitrixSave,
+                    }),
+            );
+
+            await inOfferStep(OFFER_GENERATION_STEP.timeline, () =>
+                this.timelineService.sendDocumentToBitrix({
                     domain,
                     companyId: dto.companyId,
                     userId: dto.userId,
+                    documents: saveResult.documents,
                     dealId: dealId.toString(),
-                    documents: allDocuments,
-                    onlyBitrixSave,
-                });
+                }),
+            );
 
-            await this.timelineService.sendDocumentToBitrix({
-                domain,
-                companyId: dto.companyId,
-                userId: dto.userId,
-                documents: saveResult.documents,
-                dealId: dealId.toString(),
-            });
-
-            if (onlyBitrixSave) {
-                await this.cleanupLocalFiles(
-                    allDocuments.map(document => document.absolutePath),
+            // документы уже в сделке: дальше сбой не отменяет генерацию
+            return await inOfferStep(OFFER_GENERATION_STEP.finish, async () => {
+                const savedOffers = saveResult.documents.filter(
+                    document => document.type === 'offer',
                 );
-            }
+                const finalOffers = savedOffers.length
+                    ? savedOffers
+                    : buildResult.offers;
+                const finalInvoices = saveResult.documents.filter(
+                    document => document.type === 'invoice',
+                );
 
-            const savedOffers = saveResult.documents.filter(
-                document => document.type === 'offer',
-            );
-            const finalOffers = savedOffers.length
-                ? savedOffers
-                : buildResult.offers;
-            const finalInvoices = saveResult.documents.filter(
-                document => document.type === 'invoice',
-            );
+                // документы в сделке и в таймлайне: сообщаем о них потоку продаж
+                await this.publishSalesFlow(
+                    dto,
+                    prepared,
+                    options,
+                    finalInvoices.length > 0,
+                );
 
-            await this.offerTemplateService.incrementTemplateCounter(
-                BigInt(dto.templateId),
-            );
+                if (onlyBitrixSave) {
+                    await this.cleanupLocalFiles(
+                        allDocuments.map(document => document.absolutePath),
+                    );
+                }
 
-            return {
-                template: buildResult.template,
-                link: finalOffers[0],
-                links: finalOffers,
-                renderData: buildResult.renderData,
-                invoiceLinks: finalInvoices,
-                portalFolderId: saveResult.portalFolderId || 0,
-                warnings: buildResult.warnings,
-            };
+                await this.offerTemplateService.incrementTemplateCounter(
+                    BigInt(dto.templateId),
+                );
+
+                return {
+                    template: buildResult.template,
+                    link: finalOffers[0],
+                    links: finalOffers,
+                    renderData: buildResult.renderData,
+                    invoiceLinks: finalInvoices,
+                    portalFolderId: saveResult.portalFolderId || 0,
+                    warnings: buildResult.warnings,
+                };
+            });
         } catch (error) {
+            await this.reportFailure(error, dto, dealId);
+            throw error;
+        }
+    }
+
+    /**
+     * Причина сбоя — комментарием в сделку. Сбой самого комментария
+     * исходную ошибку не подменяет: наверх уходит то, что случилось с КП.
+     */
+    private async reportFailure(
+        error: unknown,
+        dto: OfferWordMultiGenerateDto,
+        dealId: number,
+    ): Promise<void> {
+        try {
             await this.timelineService.sendErrorToBitrix({
-                domain,
+                domain: dto.domain,
                 companyId: dto.companyId,
                 userId: dto.userId,
-                documents: [],
                 dealId: dealId.toString(),
+                reason: describeOfferFailure(error).comment,
             });
-            throw error;
+        } catch (sendError) {
+            this.logger.warn(
+                `${dto.domain}: комментарий о сбое КП не записан в сделку ${dealId}: ${sendError instanceof Error ? sendError.message : String(sendError)}`,
+            );
         }
     }
 

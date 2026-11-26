@@ -4,6 +4,8 @@ import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { ContractBitrixPushService } from '../services/contract-bitrix-push.service';
 import { ContractGenerateResult } from '../type/contract-generate.type';
 import { BitrixDocumentSaveFlowService } from '../../../offer-word/services/bitrix/bitrix-document-save-flow.service';
+import { SALES_DOCUMENT_KIND } from '@lib/queue/constants/sales-document-event-job';
+import { SalesDocumentFlowService } from '../../../modules/sales-document-flow/services/sales-document-flow.service';
 
 /** Подпапка договоров в папке сделки на Диске (рядом с КП, отдельно от них). */
 export const CONTRACT_DISK_FOLDER = 'Договоры';
@@ -16,6 +18,7 @@ export class ContractGenerateUseCase {
         private readonly contractGenerateService: ContractGenerateService,
         private readonly contractBitrixPushService: ContractBitrixPushService,
         private readonly saveFlow: BitrixDocumentSaveFlowService,
+        private readonly salesDocumentFlow: SalesDocumentFlowService,
     ) {}
 
     /**
@@ -39,6 +42,24 @@ export class ContractGenerateUseCase {
             link,
             result.documentName,
         );
+        // договор в таймлайне сделки: сообщаем о нём потоку продаж (только по
+        // `salesFlow` из запроса, сбой постановки договор не отменяет)
+        await this.salesDocumentFlow.publish({
+            salesFlow: dto.salesFlow,
+            domain: dto.domain,
+            userId: dto.userId,
+            companyId: dto.companyId,
+            dealId: dto.dealId,
+            kinds: [SALES_DOCUMENT_KIND.contract],
+            sources: [
+                {
+                    supply: dto.supply,
+                    total: dto.total,
+                    rows: dto.rows,
+                    sets: dto.productSet ? { general: [dto.productSet] } : null,
+                },
+            ],
+        });
         return {
             ...result,
             link,

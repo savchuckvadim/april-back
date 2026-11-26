@@ -9,6 +9,7 @@ import {
 } from '../../rate-limit/bitrix-rate-limiter.service';
 import type { BitrixRateLimitOverrides } from '../../rate-limit/bitrix-rate-limiter.config';
 import { BitrixCore } from '../bitrix-core.service';
+import { bitrixCallMethodOf } from '../bitrix-error-method.util';
 import { BITRIX_REQUEST_PROFILES } from '../bitrix-request-profile';
 import { BxAuthType } from '../bx-auth-type.enum';
 
@@ -208,6 +209,126 @@ describe('BitrixCore.request', () => {
             runAsInteractive('route', () => core.request('crm.deal.get', {})),
         ).rejects.toMatchObject({ response: { status: 400 } });
         expect(calls).toHaveLength(1);
+    });
+
+    /*
+     * gsirk 26.11.2026, сделка 281275: disk.folder.uploadfile → HTTP 400
+     * DISK_FOLDER_22002 («Не удалось сохранить файл»). Без повтора падала
+     * вся генерация КП; через 8 минут тот же запрос проходил.
+     */
+    describe('отказ Диска DISK_FOLDER_22002', () => {
+        const diskBusy = () =>
+            httpError(400, {
+                error: 'DISK_FOLDER_22002',
+                error_description:
+                    'Не удалось сохранить файл. (DISK_FOLDER_22002).',
+            });
+        const upload = (core: BitrixCore) =>
+            core.request('disk.folder.uploadfile', {
+                id: 12,
+                fileContent: ['КП.docx', 'YWJj'],
+            });
+
+        it('фон: первая загрузка отказана, повтор проходит', async () => {
+            const { core, calls, alert } = makeCore([
+                diskBusy(),
+                { result: { ID: 77 } },
+            ]);
+
+            const pending = runAsBackground('queue', () => upload(core));
+            await jest.advanceTimersByTimeAsync(
+                BITRIX_REQUEST_PROFILES.background.busyPauseMs,
+            );
+
+            await expect(pending).resolves.toMatchObject({
+                data: { result: { ID: 77 } },
+            });
+            expect(calls).toHaveLength(2);
+            expect(alert).toHaveBeenNthCalledWith(
+                1,
+                expect.stringMatching(/^Попытка 1 из 3, повтор через 10 с\. /),
+            );
+        });
+
+        it('менеджер: один повтор, и ошибка наверх с кодом Диска', async () => {
+            const { core, calls } = makeCore([diskBusy(), diskBusy()]);
+
+            const pending = runAsInteractive('route', () => upload(core));
+            const assertion = expect(pending).rejects.toMatchObject({
+                response: { status: 400 },
+            });
+            await jest.advanceTimersByTimeAsync(
+                BITRIX_REQUEST_PROFILES.interactive.busyPauseMs,
+            );
+            await assertion;
+
+            expect(calls).toHaveLength(2);
+        });
+
+        it('остальной 400 Диска не повторяется: одна попытка', async () => {
+            const { core, calls } = makeCore([
+                httpError(400, {
+                    error: 'DISK_FOLDER_22003',
+                    error_description: 'Папка не найдена',
+                }),
+            ]);
+
+            await expect(
+                runAsBackground('queue', () => upload(core)),
+            ).rejects.toMatchObject({ response: { status: 400 } });
+            expect(calls).toHaveLength(1);
+        });
+    });
+
+    describe('ошибка вызова несёт метод Битрикса', () => {
+        it('брошенная наверх ошибка помечена методом вызова', async () => {
+            const { core } = makeCore([
+                httpError(403, { error: 'ACCESS_DENIED' }),
+            ]);
+
+            const failure = await runAsInteractive('route', () =>
+                core.request('crm.deal.get', { id: 1 }),
+            ).catch((error: unknown) => error);
+
+            expect(bitrixCallMethodOf(failure)).toBe('crm.deal.get');
+        });
+    });
+
+    /*
+     * В строке «Error calling Bitrix» запрос раньше печатался первой тысячей
+     * символов: при загрузке на Диск там оказывалось начало base64 документа.
+     */
+    describe('лог ошибки без содержимого файла', () => {
+        it('disk.folder.uploadfile: в логе имя файла и «<N байт>», base64 нет', async () => {
+            const base64 = Buffer.alloc(30_000, 'doc').toString('base64');
+            const { core } = makeCore([
+                httpError(400, {
+                    error: 'DISK_FOLDER_22003',
+                    error_description: 'Папка не найдена',
+                }),
+            ]);
+
+            await expect(
+                runAsInteractive('route', () =>
+                    core.request('disk.folder.uploadfile', {
+                        id: 12,
+                        data: { NAME: 'КП.docx' },
+                        fileContent: ['КП.docx', base64],
+                    }),
+                ),
+            ).rejects.toBeDefined();
+
+            const lines = (core.logger.error as jest.Mock).mock.calls.map(
+                ([line]: [string]) => line,
+            );
+            const line = lines.find(text =>
+                text.includes('Error calling Bitrix [disk.folder.uploadfile]'),
+            );
+            expect(line).toBeDefined();
+            expect(line).toContain(`"fileContent":["КП.docx","<30000 байт>"]`);
+            expect(line).toContain('"id":12');
+            expect(line).not.toContain(base64.slice(0, 40));
+        });
     });
 
     it('явное число повторов сильнее профиля класса', async () => {

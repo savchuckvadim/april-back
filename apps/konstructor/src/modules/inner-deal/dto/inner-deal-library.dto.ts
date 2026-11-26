@@ -10,6 +10,7 @@ import {
     MaxLength,
     ValidateNested,
 } from 'class-validator';
+import { LibrarySummary } from '../lib/library-summary.util';
 import {
     LIBRARY_KINDS,
     LIBRARY_VISIBILITIES,
@@ -201,6 +202,53 @@ export class InnerDealLibraryPatchDto {
     isArchived?: boolean;
 }
 
+/**
+ * Краткий состав заготовки для карточки в списке: что внутри слепка, когда у
+ * легаси-избранного нет ни названия, ни имени сделки.
+ */
+export class InnerDealLibrarySummaryDto implements LibrarySummary {
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        example: 'Гарант-Юрист',
+        description: 'Название комплекта главной строки общего набора',
+    })
+    complect: string | null;
+
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        example: 'Интернет 1 ОД',
+        description:
+            'Поставка главной строки; если в слепке сохранён только неизвестный код, отдаётся код',
+    })
+    supply: string | null;
+
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        example: 'Лицензионный полгода',
+        description:
+            'Договор главной строки; если в слепке сохранён только неизвестный код, отдаётся код',
+    })
+    contract: string | null;
+
+    @ApiProperty({
+        type: Number,
+        nullable: true,
+        example: 8008,
+        description: 'Итог общего набора, ₽',
+    })
+    sum: number | null;
+
+    @ApiProperty({
+        type: Number,
+        example: 3,
+        description: 'Сколько строк в общем наборе',
+    })
+    rowsCount: number;
+}
+
 /** Строка библиотеки без тяжёлого слепка — для списков. */
 export class InnerDealLibraryItemDto {
     @ApiProperty({ type: Number })
@@ -236,6 +284,15 @@ export class InnerDealLibraryItemDto {
             'Отдел продаж автора (id Bitrix) для visibility=department',
     })
     departmentId: string | null;
+
+    @ApiProperty({
+        type: InnerDealLibrarySummaryDto,
+        required: false,
+        nullable: true,
+        description:
+            'Краткий состав слепка для карточки списка. Пусто (null), когда слепок не читается или в общем наборе нет строк',
+    })
+    summary?: InnerDealLibrarySummaryDto | null;
 
     @ApiProperty({
         type: Boolean,

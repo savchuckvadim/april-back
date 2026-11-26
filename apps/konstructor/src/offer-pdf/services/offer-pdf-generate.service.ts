@@ -5,8 +5,11 @@ import dayjs from 'dayjs';
 import { basename } from 'path';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { StorageService, StorageType } from '@lib/core/storage/storage.service';
+import { SALES_DOCUMENT_KIND } from '@lib/queue/constants/sales-document-event-job';
+import type { SalesDocumentKind } from '@lib/queue/constants/sales-document-event-job';
 import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 import { ComplectVariantOfferStageService } from '@app/konstructor/modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
+import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
 import { IPreparedDocument } from '@app/konstructor/offer-word/interface/document.interface';
 import { getOfferDocumentProductName } from '@app/konstructor/offer-word/lib/get-offer-document-product-name.util';
 import {
@@ -110,6 +113,11 @@ interface SavedPdf {
 }
 
 interface DealAttachment {
+    /**
+     * Файлы записаны в сделку: загрузка на Диск и комментарий в таймлайн
+     * прошли без исключения (при сбое Диска в таймлайне серверные ссылки).
+     */
+    attached: boolean;
     deal: OfferPdfDealResult;
     /** Ссылка в Битриксе для каждого файла КП по порядку; null — файл не загрузился */
     bitrixLinks: Array<string | null>;
@@ -162,6 +170,7 @@ export class OfferPdfGenerateService {
         private readonly pdfMerge: PdfMergeService,
         private readonly variantStage: ComplectVariantOfferStageService,
         private readonly invoiceDocuments: InvoiceDocumentsBuildService,
+        private readonly salesDocumentFlow: SalesDocumentFlowService,
     ) {}
 
     /**
@@ -196,10 +205,16 @@ export class OfferPdfGenerateService {
         }
         // счёт — дополнение к КП: что бы с ним ни случилось, КП уже сохранено
         const invoices = await this.buildInvoices(prepared, warnings);
-        const { deal, bitrixLinks, invoiceBitrixLinks } =
+        const { attached, deal, bitrixLinks, invoiceBitrixLinks } =
             dto.saveToDeal === false
                 ? this.notAttached(saved, invoices)
                 : await this.attachToDeal(dto, saved, invoices);
+
+        // документ в сделке: сообщаем о нём потоку продаж (без `salesFlow` и
+        // без записи в сделку, например при saveToDeal: false, ничего не уходит)
+        if (attached) {
+            await this.publishSalesFlow(dto, plan, invoices.length > 0);
+        }
 
         // файлы готовы: варианты КП получают стадию «КП» (предпросмотр её не ставит)
         await this.markVariantsOffer(dto);
@@ -226,6 +241,31 @@ export class OfferPdfGenerateService {
             ),
             warnings,
         };
+    }
+
+    /**
+     * КП и счёт в поток продаж: только по `salesFlow` из запроса и только для
+     * документов, записанных в сделку. Печатаемые документы берутся из плана
+     * печати, по которому собраны файлы.
+     */
+    private async publishSalesFlow(
+        dto: OfferPdfGenerateDto,
+        plan: OfferPdfPrintPlan,
+        withInvoice: boolean,
+    ): Promise<void> {
+        if (dto.salesFlow !== true) return;
+        const kinds: SalesDocumentKind[] = [SALES_DOCUMENT_KIND.offer];
+        if (withInvoice) kinds.push(SALES_DOCUMENT_KIND.invoice);
+        await this.salesDocumentFlow.publish({
+            salesFlow: dto.salesFlow,
+            domain: dto.domain,
+            userId: dto.userId,
+            companyId: dto.companyId,
+            dealId: dto.dealId,
+            kinds,
+            presentation: dto.presentation,
+            sources: plan.units.map(unit => unit.input),
+        });
     }
 
     /**
@@ -459,6 +499,7 @@ export class OfferPdfGenerateService {
         invoices: IPreparedDocument[],
     ): DealAttachment {
         return {
+            attached: false,
             deal: { savedToDeal: false, bitrixLink: null, dealMessage: null },
             bitrixLinks: saved.map(() => null),
             invoiceBitrixLinks: invoices.map(() => null),
@@ -520,6 +561,7 @@ export class OfferPdfGenerateService {
             });
             const uploadedCount = allBitrixLinks.filter(Boolean).length;
             return {
+                attached: true,
                 deal: {
                     savedToDeal: uploadedCount === documents.length,
                     bitrixLink: allBitrixLinks[0],
@@ -538,6 +580,7 @@ export class OfferPdfGenerateService {
                 `КП PDF: не удалось прикрепить к сделке ${dto.dealId} (${dto.domain}) — ${reason}`,
             );
             return {
+                attached: false,
                 deal: {
                     savedToDeal: false,
                     bitrixLink: null,

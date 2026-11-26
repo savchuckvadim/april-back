@@ -16,6 +16,7 @@ import { ContractBitrixPushService } from './services/contract-bitrix-push.servi
 import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
 import { ContractTemplateSourceService } from './services/contract-template-source.service';
 import { BitrixDocumentSaveFlowService } from '../../offer-word/services/bitrix/bitrix-document-save-flow.service';
+import { SalesDocumentFlowModule } from '../../modules/sales-document-flow/sales-document-flow.module';
 
 /**
  * `DocumentTemplateModule` — подбор шаблона договора из БД (портальный или
@@ -34,6 +35,8 @@ import { BitrixDocumentSaveFlowService } from '../../offer-word/services/bitrix/
         ProviderModule,
         DocumentGenerateModule,
         DocumentTemplateModule,
+        // событие «договор сформирован» в поток продаж event-sales
+        SalesDocumentFlowModule,
     ],
     controllers: [ContractGenerateController],
     providers: [

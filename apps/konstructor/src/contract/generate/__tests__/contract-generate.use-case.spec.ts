@@ -27,7 +27,12 @@ const result: ContractGenerateResult = {
     savedToDisk: false,
 };
 
-const makeUseCase = (saveDocuments: jest.Mock) => {
+const makeUseCase = (
+    saveDocuments: jest.Mock,
+    salesDocumentFlow: { publish: jest.Mock } = {
+        publish: jest.fn().mockResolvedValue(false),
+    },
+) => {
     const setInBitrix = jest.fn().mockResolvedValue(undefined);
     const useCase = new ContractGenerateUseCase(
         {
@@ -38,6 +43,7 @@ const makeUseCase = (saveDocuments: jest.Mock) => {
         } as never,
         { setInBitrix } as never,
         { saveDocuments } as never,
+        salesDocumentFlow as never,
     );
     return { useCase, setInBitrix };
 };
@@ -104,5 +110,109 @@ describe('ContractGenerateUseCase: договор на Диск Битрикса
             bitrixLink: null,
             savedToDisk: false,
         });
+    });
+});
+
+describe('ContractGenerateUseCase: событие в поток продаж', () => {
+    const contractDto = (over: Record<string, unknown> = {}) =>
+        ({
+            ...dto,
+            supply: { name: 'Интернет 5 ОД' },
+            total: {
+                name: 'Итого',
+                price: { sum: 36000, current: 3000, quantity: 12 },
+            },
+            rows: [
+                {
+                    name: 'Гарант-Бухгалтер',
+                    type: 'general',
+                    supply: { name: 'Интернет 5 ОД' },
+                    price: { sum: 36000, current: 3000, quantity: 12 },
+                },
+            ],
+            ...over,
+        }) as unknown as ContractGenerateDto;
+
+    const saved = {
+        portalFolderId: 7,
+        documents: [
+            { link: DISK_LINK, name: result.documentName, type: 'contract' },
+        ],
+        files: [],
+    };
+
+    it('salesFlow: true — после записи в таймлайн ставится событие с видом contract', async () => {
+        const publish = jest.fn().mockResolvedValue(true);
+        const saveDocuments = jest.fn().mockResolvedValue(saved);
+        const { useCase, setInBitrix } = makeUseCase(saveDocuments, {
+            publish,
+        });
+        const request = contractDto({ salesFlow: true });
+
+        await useCase.getContract(request);
+
+        expect(publish).toHaveBeenCalledTimes(1);
+        expect(publish).toHaveBeenCalledWith(
+            expect.objectContaining({
+                salesFlow: true,
+                domain: 'april-garant.bitrix24.ru',
+                userId: 1,
+                companyId: '32442',
+                dealId: '35018',
+                kinds: ['contract'],
+            }),
+        );
+        // событие уходит после комментария в таймлайн
+        expect(setInBitrix.mock.invocationCallOrder[0]).toBeLessThan(
+            publish.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('данные события: итог набора, строки и поставка договора', async () => {
+        const publish = jest.fn().mockResolvedValue(true);
+        const { useCase } = makeUseCase(jest.fn().mockResolvedValue(saved), {
+            publish,
+        });
+
+        await useCase.getContract(contractDto({ salesFlow: true }));
+
+        const [{ sources }] = publish.mock.calls[0] as [
+            { sources: Array<Record<string, unknown>> },
+        ];
+        expect(sources).toHaveLength(1);
+        expect(sources[0]).toMatchObject({
+            supply: { name: 'Интернет 5 ОД' },
+            total: { price: { sum: 36000 } },
+        });
+        expect(sources[0].rows).toHaveLength(1);
+    });
+
+    it('без salesFlow событие не ставится: publish не вызывается с признаком true', async () => {
+        const publish = jest.fn().mockResolvedValue(false);
+        const { useCase } = makeUseCase(jest.fn().mockResolvedValue(saved), {
+            publish,
+        });
+
+        await useCase.getContract(contractDto());
+
+        // сервис сам отсекает запрос без признака
+        expect(publish).toHaveBeenCalledWith(
+            expect.objectContaining({ salesFlow: undefined }),
+        );
+    });
+
+    it('сбой Диска договор не отменяет и событие всё равно ставится', async () => {
+        const publish = jest.fn().mockResolvedValue(true);
+        const { useCase } = makeUseCase(
+            jest.fn().mockRejectedValue(new Error('Диск недоступен')),
+            { publish },
+        );
+
+        const response = await useCase.getContract(
+            contractDto({ salesFlow: true }),
+        );
+
+        expect(response.savedToDisk).toBe(false);
+        expect(publish).toHaveBeenCalledTimes(1);
     });
 });

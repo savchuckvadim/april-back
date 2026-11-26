@@ -50,6 +50,53 @@ export const isBitrixConnectionReset = (error: unknown): boolean => {
     );
 };
 
+/**
+ * Код ошибки Диска «Не удалось сохранить файл» (`disk.folder.uploadfile`,
+ * HTTP 400). Временный отказ Диска: gsirk 26.11.2026 генерация КП упала на
+ * одной загрузке; повтор через восемь минут прошёл без изменений.
+ */
+export const BITRIX_DISK_SAVE_FAILED = 'DISK_FOLDER_22002';
+
+/** Что Битрикс ответил на вызов: статус HTTP и `{ error, error_description }`. */
+export interface BitrixErrorBody {
+    /** Статус HTTP; ответа не было (таймаут, обрыв, нет сети) — null. */
+    status: number | null;
+    /** Код ошибки Битрикса (`error`). */
+    code: string | null;
+    /** Описание ошибки Битрикса (`error_description`). */
+    description: string | null;
+}
+
+const textOrNull = (value: unknown): string | null =>
+    typeof value === 'string' && value.trim() ? value.trim() : null;
+
+/**
+ * Статус, код и описание ошибки Битрикса. Ядро бросает ошибку axios, и код с
+ * описанием лежат в ТЕЛЕ ответа; тела нет или оно не JSON (страница 502 от
+ * прокси) — код и описание null.
+ */
+export const readBitrixErrorBody = (error: unknown): BitrixErrorBody => {
+    const response = (
+        error as { response?: { status?: unknown; data?: unknown } } | null
+    )?.response;
+    const body = response?.data;
+    const fields =
+        body && typeof body === 'object'
+            ? (body as { error?: unknown; error_description?: unknown })
+            : null;
+    return {
+        status: typeof response?.status === 'number' ? response.status : null,
+        code: textOrNull(fields?.error),
+        description: textOrNull(fields?.error_description),
+    };
+};
+
+/** Диск Битрикса не смог сохранить файл (HTTP 400 с кодом DISK_FOLDER_22002). */
+export const isBitrixDiskSaveFailed = (error: unknown): boolean => {
+    const { status, code } = readBitrixErrorBody(error);
+    return status === 400 && code === BITRIX_DISK_SAVE_FAILED;
+};
+
 /** Битрикс ответил «превышен лимит запросов» — строкой или JSON-ом. */
 export const isBitrixQueryLimitExceeded = (error: unknown): boolean => {
     const body = (error as AxiosError | null)?.response?.data;

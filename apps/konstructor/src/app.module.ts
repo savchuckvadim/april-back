@@ -27,7 +27,7 @@ import { SupplyReportTemplateModule } from './modules/supply-report-template';
 // (ai/rules/app-api-surface.md), поэтому подключаются здесь явно.
 import { ProviderPublicModule } from '@lib/portal-lib/konstructor/provider';
 import { TemplateBasePublicModule } from '@lib/portal-lib/konstructor/template-base';
-// Счётчики номеров документов (document-counter/next|peek|current и admin):
+// Счётчики номеров документов (document-counter/next|peek|preview|current и admin):
 // тот же модуль, что в pbx-install. Легаси-фронт берёт здесь номер счёта
 // (next/:rqId/invoice), который старая сборка back.april-app.ru отдавала сама.
 // Из зависимостей модулю нужен только Prisma — он @Global.

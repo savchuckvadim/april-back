@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios';
 import {
     isBitrixConnectionReset,
+    isBitrixDiskSaveFailed,
     isBitrixQueryLimitExceeded,
     isBitrixTimeout,
 } from './bitrix-response.util';
@@ -24,6 +25,12 @@ export const BITRIX_RETRY_KIND = {
     connectionReset: 'connection-reset',
     queryLimit: 'query-limit',
     transient: 'transient',
+    /**
+     * Диск не смог сохранить файл: HTTP 400 с кодом DISK_FOLDER_22002.
+     * Единственный 400, который повторяем, — остальные 400 это ответ на
+     * сам запрос, и повтор вернул бы то же самое.
+     */
+    diskSave: 'disk-save',
 } as const;
 
 export type BitrixRetryKind =
@@ -36,6 +43,7 @@ export function bitrixRetryKind(error: unknown): BitrixRetryKind | null {
         return BITRIX_RETRY_KIND.connectionReset;
     }
     if (isBitrixQueryLimitExceeded(error)) return BITRIX_RETRY_KIND.queryLimit;
+    if (isBitrixDiskSaveFailed(error)) return BITRIX_RETRY_KIND.diskSave;
     const status = (error as AxiosError | null)?.response?.status;
     if (status && TRANSIENT_BITRIX_STATUSES.has(status)) {
         return BITRIX_RETRY_KIND.transient;

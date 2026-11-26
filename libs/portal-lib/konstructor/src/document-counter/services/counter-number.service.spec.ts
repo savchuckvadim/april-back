@@ -108,6 +108,98 @@ describe('CounterNumberService', () => {
         });
     });
 
+    describe('previewNextNumber', () => {
+        it('возвращает номер следующего next и не пишет в базу', async () => {
+            repo.findPivot.mockResolvedValue(
+                buildPivot({ prefix: 'INV', count: 5 }),
+            );
+
+            const result = await service.previewNextNumber(
+                1,
+                CounterType.OFFER,
+            );
+
+            expect(repo.findPivot).toHaveBeenCalledWith(1, CounterType.OFFER);
+            expect(repo.incrementAndGet).not.toHaveBeenCalled();
+            expect(repo.setCurrent).not.toHaveBeenCalled();
+            expect(result).toBe('INV-6');
+        });
+
+        it('шаг берётся из size связи', async () => {
+            repo.findPivot.mockResolvedValue(
+                buildPivot({ prefix: 'INV', count: 10, size: 5 }),
+            );
+
+            const result = await service.previewNextNumber(
+                1,
+                CounterType.OFFER,
+            );
+
+            expect(result).toBe('INV-15');
+        });
+
+        it('два просмотра подряд дают одинаковый номер', async () => {
+            repo.findPivot.mockResolvedValue(
+                buildPivot({ prefix: 'INV', count: 5 }),
+            );
+
+            const first = await service.previewNextNumber(1, CounterType.OFFER);
+            const second = await service.previewNextNumber(
+                1,
+                CounterType.OFFER,
+            );
+
+            expect(first).toBe(second);
+            expect(repo.incrementAndGet).not.toHaveBeenCalled();
+        });
+
+        it('возвращает fallback, если pivot не найден', async () => {
+            repo.findPivot.mockResolvedValue(null);
+
+            const result = await service.previewNextNumber(
+                7,
+                CounterType.INVOICE,
+            );
+
+            expect(repo.incrementAndGet).not.toHaveBeenCalled();
+            expect(result.startsWith('7')).toBe(true);
+        });
+
+        describe('формат с префиксом, датой и постфиксом', () => {
+            beforeAll(() => {
+                jest.useFakeTimers();
+                // Локальный полдень: день, месяц и год не зависят от пояса.
+                jest.setSystemTime(new Date(2026, 3, 9, 12, 0, 0));
+            });
+
+            afterAll(() => {
+                jest.useRealTimers();
+            });
+
+            it('совпадает с форматом next: число на шаг больше текущего', async () => {
+                const pivot = buildPivot({
+                    prefix: 'A',
+                    postfix: 'Z',
+                    day: true,
+                    month: true,
+                    year: true,
+                    count: 3,
+                });
+                repo.findPivot.mockResolvedValue(pivot);
+                repo.incrementAndGet.mockResolvedValue(4);
+
+                const preview = await service.previewNextNumber(
+                    1,
+                    CounterType.OFFER,
+                );
+                const next = await service.getNextNumber(1, CounterType.OFFER);
+
+                expect(preview).toBe('A-4-09-04-2026-Z');
+                expect(next).toBe(preview);
+            });
+        });
+    });
+
     describe('setCurrent', () => {
         it('устанавливает значение через репозиторий и возвращает форматированный номер', async () => {
             repo.findPivot.mockResolvedValue(buildPivot({ prefix: 'INV' }));

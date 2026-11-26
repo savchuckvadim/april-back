@@ -24,6 +24,7 @@ import {
     ProductRowSupplyDto,
 } from '@app/konstructor/document-generate';
 import { SupplyDto } from '@app/konstructor/dto';
+import { SalesFlowProperty } from '@app/konstructor/modules/sales-document-flow/dto/sales-flow-fields';
 
 export class ClientTypeDto {
     @ApiProperty({ description: 'Client type', type: String })
@@ -274,4 +275,7 @@ export class InitSupplyDto {
     @ValidateNested({ each: true })
     @Type(() => DocumentVariantDto)
     variants?: DocumentVariantDto[];
+
+    @SalesFlowProperty()
+    salesFlow?: boolean;
 }

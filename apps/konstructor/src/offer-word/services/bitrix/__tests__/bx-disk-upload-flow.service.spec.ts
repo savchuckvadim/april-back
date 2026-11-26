@@ -4,6 +4,7 @@ jest.mock('@lib/shared/lib', () => ({
 
 import type { BitrixService } from '@lib/bitrix';
 import type { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { offerFailureNotesOf } from '../../../lib/offer-generation-failure.util';
 import { BxDiskUploadFlowService } from '../bx-disk-upload-flow.service';
 
 const portalModel = { getSalesTaskGroupId: () => 12 } as unknown as PortalModel;
@@ -177,6 +178,53 @@ describe('BxDiskUploadFlowService', () => {
                 id: 300,
                 data: { NAME: 'Договор.docx' },
                 fileContent: FILE,
+            });
+        });
+
+        // gsirk 26.11.2026: в журнале не было ни имени, ни размера файла
+        it('сбой загрузки: ошибка летит прежней, с именем и размером файла (без содержимого)', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            const failure = new Error('Request failed with status code 400');
+            disk.folder.uploadfile.mockRejectedValueOnce(failure);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+            );
+
+            await expect(
+                flow.uploadFile(300, 'КП.pdf', Buffer.from('pdf-bytes')),
+            ).rejects.toBe(failure);
+
+            expect(offerFailureNotesOf(failure).file).toEqual({
+                name: 'КП.pdf',
+                sizeBytes: 9,
+            });
+        });
+
+        it('сбой загрузки base64-строки: размер считается по декодированному файлу', async () => {
+            const { bitrix, disk } = fakeBitrix(true);
+            const failure = new Error('boom');
+            disk.folder.uploadfile.mockRejectedValueOnce(failure);
+            const flow = new BxDiskUploadFlowService(
+                bitrix,
+                portalModel,
+                32442,
+                35018,
+            );
+
+            await expect(
+                flow.uploadFile(
+                    300,
+                    FILE[0],
+                    Buffer.alloc(1000).toString('base64'),
+                ),
+            ).rejects.toBe(failure);
+
+            expect(offerFailureNotesOf(failure).file).toEqual({
+                name: 'Договор.docx',
+                sizeBytes: 1000,
             });
         });
 
