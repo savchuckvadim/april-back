@@ -219,7 +219,7 @@ describe('ContractGenerateService', () => {
         expect(result.data.client_rq).toBe('МБОУ СОШ №1\nИНН: 2611111111');
     });
 
-    it('пустые номер и даты — короткие места под ручку, а не длинная линия', async () => {
+    it('пустые номер и даты — короткие места под ручку', async () => {
         const empty = dto();
         empty.contractNumber = '  ';
         const result = await service.generateContract(empty);

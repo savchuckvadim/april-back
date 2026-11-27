@@ -238,7 +238,7 @@ export class ContractGenerateService {
             dto.clientType,
         );
 
-        // пустые номер и даты — короткие места под ручку, не длинная линия
+        // пустые номер и даты — короткие места под ручку
         const contractStart =
             (dto.contractStart && this.formatDocumentDate(dto.contractStart)) ||
             BLANK_DATE;
