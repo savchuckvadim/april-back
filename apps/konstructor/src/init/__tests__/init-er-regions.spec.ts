@@ -68,10 +68,13 @@ describe('init: регионы', () => {
     const region = (code: string, abs: number) => ({ code, abs });
 
     const initRegions = (all: unknown[], portal: unknown[]) =>
-        new InitRegionService({
-            findAll: async () => all,
-            findByPortalId: async () => portal,
-        } as never).get(1);
+        new InitRegionService(
+            {
+                findAll: async () => all,
+                findByPortalId: async () => portal,
+            } as never,
+            { coefficient: async () => 1.22 } as never,
+        ).get(1);
 
     it('весь справочник; привязанные — с признаком и ставкой портала', async () => {
         const regions = await initRegions(
@@ -79,13 +82,21 @@ describe('init: регионы', () => {
             [region('rstv', 250)],
         );
         expect(regions).toEqual([
-            { code: 'msk', abs: 100, inPortal: false },
-            { code: 'rstv', abs: 250, inPortal: true },
+            { code: 'msk', abs: 100, tax: 1.22, tax_abs: 122, inPortal: false },
+            {
+                code: 'rstv',
+                abs: 250,
+                tax: 1.22,
+                tax_abs: 305,
+                inPortal: true,
+            },
         ]);
     });
 
     it('портал без привязок: весь справочник без признака', async () => {
         const regions = await initRegions([region('msk', 100)], []);
-        expect(regions).toEqual([{ code: 'msk', abs: 100, inPortal: false }]);
+        expect(regions).toEqual([
+            { code: 'msk', abs: 100, tax: 1.22, tax_abs: 122, inPortal: false },
+        ]);
     });
 });

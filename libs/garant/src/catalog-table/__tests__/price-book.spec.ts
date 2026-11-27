@@ -99,6 +99,11 @@ const REGIONS = [
     },
 ];
 
+/** Коэффициент НДС рабса из настроек вендора: по умолчанию 1.22 */
+const rabsVatOf = (coefficient = 1.22) => ({
+    coefficient: () => Promise.resolve(coefficient),
+});
+
 interface PriceRow {
     region_type: string;
     value: number;
@@ -107,7 +112,7 @@ interface PriceRow {
     garant_package_code: string | null;
 }
 
-const makeServices = (prices: PriceRow[] = []) => {
+const makeServices = (prices: PriceRow[] = [], vat = 1.22) => {
     const priceService = {
         findMany: jest.fn().mockResolvedValue(prices),
         findByUnique: jest
@@ -197,6 +202,7 @@ const makeServices = (prices: PriceRow[] = []) => {
             packageService as never,
             supplyService as never,
             regionService as never,
+            rabsVatOf(vat) as never,
         ),
         priceService,
         complectService,
@@ -524,7 +530,7 @@ describe('PriceBookImportService', () => {
         );
     });
 
-    it('лист regions обновляет рабс и считает рабс с НДС', async () => {
+    it('лист regions обновляет рабс и считает рабс с НДС по коэффициенту из настроек', async () => {
         const { importService, regionService } = makeServices();
         const reports = await importService.import(
             await buildBook({
@@ -540,8 +546,45 @@ describe('PriceBookImportService', () => {
 
         expect(sheet?.updated).toBe(1);
         expect(regionService.update).toHaveBeenCalledWith(
-            expect.objectContaining({ abs: 5000, tax_abs: 6000 }),
+            expect.objectContaining({ abs: 5000, tax: 1.22, tax_abs: 6100 }),
         );
+    });
+
+    it('лист regions: смена коэффициента меняет записанные tax и tax_abs', async () => {
+        const { importService, regionService } = makeServices([], 1.2);
+        await importService.import(
+            await buildBook({
+                regions: [
+                    [0, 'Алтайский край', 5000, 'ud', 'Законодательство'],
+                ],
+            }),
+            false,
+        );
+
+        expect(regionService.update).toHaveBeenCalledWith(
+            expect.objectContaining({ abs: 5000, tax: 1.2, tax_abs: 6000 }),
+        );
+    });
+
+    it('лист regions: рабс не менялся — записи нет, даже если сохранённый налог остался от прежнего коэффициента', async () => {
+        const { importService, regionService } = makeServices();
+        regionService.findAll.mockResolvedValue([
+            { ...REGIONS[0], abs: 5000, tax: 1.2, tax_abs: 6000 },
+        ]);
+        const reports = await importService.import(
+            await buildBook({
+                regions: [
+                    [0, 'Алтайский край', 5000, 'ud', 'Законодательство'],
+                ],
+            }),
+            false,
+        );
+        const sheet = reports.find(
+            report => report.section === PRICE_BOOK_SHEETS.regions,
+        );
+
+        expect(sheet?.unchanged).toBe(1);
+        expect(regionService.update).not.toHaveBeenCalled();
     });
 
     it('лист lt пишет цены пакета по Москве и регионам', async () => {
@@ -769,6 +812,7 @@ describe('книга цен на чистой базе', () => {
                 packageService as never,
                 supplyService as never,
                 regionService as never,
+                rabsVatOf() as never,
             ),
             priceService,
             supplyService,

@@ -6,6 +6,10 @@
  */
 
 import {
+    KONSTRUKTOR_SETTING_KEYS,
+    KONSTRUKTOR_SETTINGS,
+} from './vendor-settings.konstructor';
+import {
     LLM_FALLBACK_SETTINGS,
     LLM_FALLBACK_SETTING_KEYS,
     LLM_GATEWAY_SETTINGS,
@@ -28,6 +32,7 @@ export const VENDOR_SETTING_GROUPS = [
     'support',
     'telegram-bots',
     'widgets',
+    'konstructor',
 ] as const;
 export type VendorSettingGroup = (typeof VENDOR_SETTING_GROUPS)[number];
 
@@ -71,6 +76,7 @@ export const VENDOR_SETTING_KEYS = [
     ...TRANSCRIPTION_SPEND_SETTING_KEYS,
     ...TELEGRAM_BOT_SETTING_KEYS,
     ...WIDGET_URL_SETTING_KEYS,
+    ...KONSTRUKTOR_SETTING_KEYS,
     'REPORT_SALES_PUBLIC_URL',
     'SUPPORT_CHAT_URL',
 ] as const;
@@ -137,6 +143,11 @@ export const VENDOR_SETTING_GROUP_INFO: Readonly<
         title: 'Виджеты приложения April: адреса фронтов',
         description:
             'Куда открывается каждый виджет (вкладка в карточке, пункт меню). В Битриксе привязан постоянный адрес нашего сервера, а он уже перенаправляет на фронт отсюда — смена адреса действует на всех порталах в течение минуты, переустанавливать виджеты не нужно. Пусто — адрес по умолчанию.',
+    },
+    konstructor: {
+        title: 'Конструктор КП: цены',
+        description:
+            'Настройки расчёта цен в конструкторе коммерческих предложений, общие для всех порталов. Значения действуют в течение минуты, без перезапуска. Пустое поле — действует значение по умолчанию (оно показано у поля).',
     },
 };
 
@@ -218,6 +229,7 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
         validate: validateUrl,
     },
     ...TELEGRAM_BOT_SETTINGS,
+    ...KONSTRUKTOR_SETTINGS,
     widgetUrl(
         'MARKETPLACE_WIDGET_URL_EVENT_SALES',
         'Звонки (отдел продаж)',

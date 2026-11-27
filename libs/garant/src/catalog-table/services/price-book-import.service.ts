@@ -5,6 +5,8 @@ import { ComplectService } from '../../complect/services/complect.service';
 import { PackageService } from '../../package/services/package.service';
 import { SupplyService } from '../../supply/services/api/supply.service';
 import { RegionService } from '../../region/region.service';
+import { RabsVatService } from '../../region/rabs-vat.service';
+import { roundToCents } from '../../region/lib/rabs-vat.util';
 import { ComplectEntity } from '../../complect/complect.entity';
 import { RegionEntity } from '../../region/region.entity';
 import { SupplyEntity } from '../../supply/supply.entity';
@@ -51,11 +53,6 @@ import {
 } from '../lib/price-book.schema';
 import { suppliesForOd } from '../lib/prof-price-expand';
 
-/** НДС-множитель: рабс с НДС считает бэк */
-const DEFAULT_TAX = 1.2;
-
-const round2 = (value: number): number => Math.round(value * 100) / 100;
-
 /**
  * Загрузка книги цен в формате рабочего файла владельца.
  * Одно действие обновляет всё: рабсы регионов, веса и АБС универсальной
@@ -74,6 +71,7 @@ export class PriceBookImportService {
         private readonly packageService: PackageService,
         private readonly supplyService: SupplyService,
         private readonly regionService: RegionService,
+        private readonly rabsVat: RabsVatService,
     ) {}
 
     async import(
@@ -177,6 +175,13 @@ export class PriceBookImportService {
         const byCode = new Map<string, RegionEntity>(
             existing.map(region => [region.code, region]),
         );
+        // Рабс с НДС считает бэк: коэффициент общий, из настроек вендора.
+        // В таблице он хранится с двумя знаками. Сверяется только рабс: книга
+        // правит его, а tax и tax_abs выдача считает на лету. Поэтому выгрузка
+        // и загрузка без правок ничего не пишут, и запись региона обновляет
+        // tax и tax_abs вместе с новым рабсом.
+        const vat = await this.rabsVat.coefficient();
+        const storedTax = roundToCents(vat);
 
         for (const row of sheet.rows) {
             const code = row.string(REGION_COLUMNS.code);
@@ -202,10 +207,9 @@ export class PriceBookImportService {
                 });
                 continue;
             }
-            const nextAbs = round2(rabs);
-            const tax = current.tax > 0 ? current.tax : DEFAULT_TAX;
-            const nextTaxAbs = round2(nextAbs * tax);
-            if (current.abs === nextAbs && current.tax_abs === nextTaxAbs) {
+            const nextAbs = roundToCents(rabs);
+            const nextTaxAbs = roundToCents(nextAbs * vat);
+            if (current.abs === nextAbs) {
                 report.unchanged += 1;
                 continue;
             }
@@ -213,7 +217,7 @@ export class PriceBookImportService {
                 const updated = await this.regionService.update({
                     id: current.id,
                     abs: nextAbs,
-                    tax,
+                    tax: storedTax,
                     tax_abs: nextTaxAbs,
                 });
                 if (!updated) {

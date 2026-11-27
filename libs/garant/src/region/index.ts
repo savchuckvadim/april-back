@@ -5,4 +5,6 @@ export * from './dto/create-region.dto';
 export * from './lib/region-entity.util';
 export * from './region.module';
 export * from './lib/portal-price.util';
+export * from './lib/rabs-vat.util';
+export * from './rabs-vat.service';
 export * from './region.admin.module';
