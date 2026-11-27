@@ -29,7 +29,7 @@ export class UpdatePortalRegionDtoAdmin {
     @ApiProperty({
         description:
             'Ручной рабс портала (decimal 8,2; строка или число). ' +
-            'Пусто или null — ручного рабса нет. own_tax и own_tax_abs считаются на бэке.',
+            'Пусто или null — ручного рабса нет. own_tax (коэффициент НДС рабса из настроек вендора) и own_tax_abs считаются на бэке.',
         example: '1000.00',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],

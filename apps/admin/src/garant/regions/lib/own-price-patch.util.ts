@@ -1,7 +1,4 @@
-import { PortalRegionOwnPatch } from '@lib/garant';
-
-/** НДС-множитель ручного own_tax; own_tax_abs считается от него */
-export const OWN_TAX = '1.20';
+import { PortalRegionOwnPatch, roundToCents } from '@lib/garant';
 
 /** Что просят поставить региону портала: ручной рабс или регион-источник */
 export interface OwnPriceInput {
@@ -27,11 +24,17 @@ const RESET_PATCH: PortalRegionOwnPatch = {
  * Ручной рабс и регион-источник взаимоисключающие: задание одного
  * сбрасывает другое. Оба null — возврат к общему рабсу региона.
  * Источник должен существовать и не совпадать с самим регионом.
+ *
+ * Для ручного рабса пишутся и производные own_tax (коэффициент НДС рабса
+ * из настроек вендора, параметр vat) и own_tax_abs (рабс × vat). Выдача
+ * цен их не читает и считает НДС на лету, а записанные значения держат
+ * таблицу портала согласованной для всего, что читает её напрямую.
  */
 export const buildOwnPricePatch = (
     regionId: number,
     input: OwnPriceInput,
     knownRegionIds: Set<number>,
+    vat: number,
 ): OwnPricePatchResult => {
     const hasAbs = input.ownAbs !== null;
     const hasSource = input.ownAbsRegionId !== null;
@@ -67,8 +70,8 @@ export const buildOwnPricePatch = (
             ok: true,
             patch: {
                 own_abs: abs.toFixed(2),
-                own_tax: OWN_TAX,
-                own_tax_abs: (abs * Number(OWN_TAX)).toFixed(2),
+                own_tax: vat.toFixed(2),
+                own_tax_abs: roundToCents(abs * vat).toFixed(2),
                 own_abs_region_id: null,
             },
         };
