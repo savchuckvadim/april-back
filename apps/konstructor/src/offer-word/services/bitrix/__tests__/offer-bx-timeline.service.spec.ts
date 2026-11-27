@@ -161,7 +161,7 @@ describe('OfferBxTimelineService.sendDocumentToBitrix', () => {
             },
         ]);
 
-        // в команде пачки %25D0…: Битрикс раскодирует его в %D0…, а не в кириллицу
+        // в команде пачки %25D0…: Битрикс раскодирует его один раз в %D0…, адрес остаётся закодированным
         expect(batchComment).toContain('%25D0%259A');
         expect(hrefOf(batchComment)).not.toMatch(CYRILLIC);
         expect(hrefOf(bitrixSees(batchComment))).toContain('%D0%9A');

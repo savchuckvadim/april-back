@@ -138,7 +138,7 @@ export const getInvoiceDiskName = (
     position: number,
 ): string => {
     // номер из одних запрещённых знаков после очистки пуст: тогда имя
-    // говорит о комплекте, а не оставляет голое «Счёт»
+    // строится по комплекту и доступу
     const number = sanitizeDiskName(invoiceNumber);
     if (number) {
         return sanitizeDiskName(`Счёт ${number}`);
