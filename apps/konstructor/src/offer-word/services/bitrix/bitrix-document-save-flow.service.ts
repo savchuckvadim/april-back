@@ -8,12 +8,12 @@ import {
     type BxDiskUploadOptions,
 } from './bx-disk-upload-flow.service';
 import { readFile } from 'fs/promises';
-import { basename } from 'path';
 import {
     DocumentLinkType,
     IPreparedDocument,
     IResultDocumentLink,
 } from '../../interface/document.interface';
+import { resolveDiskFileName } from '../../lib/document-disk-name.util';
 
 export interface IDocumentSaveFlowData<
     T extends DocumentLinkType = 'offer' | 'invoice',
@@ -24,7 +24,11 @@ export interface IDocumentSaveFlowData<
     dealId?: string;
     documents: IPreparedDocument<T>[];
     onlyBitrixSave?: boolean;
-    /** Подпапка в папке сделки и имена без перезаписи (договоры) */
+    /**
+     * Куда и как класть файлы. По умолчанию имена уникальны (Битрикс допишет
+     * номер к занятому), чтобы второе КП с тем же названием не роняло
+     * генерацию; договоры добавляют подпапку.
+     */
     disk?: BxDiskUploadOptions;
 }
 
@@ -82,7 +86,7 @@ export class BitrixDocumentSaveFlowService {
             PortalModel,
             data.companyId,
             data.dealId,
-            data.disk,
+            { uniqueNames: true, ...data.disk },
         );
 
         const filesForUpload = await this.prepareFilesForUpload(data.documents);
@@ -95,6 +99,7 @@ export class BitrixDocumentSaveFlowService {
                     link: uploadedFiles[index]?.DETAIL_URL || doc.link,
                     name: doc.name,
                     type: doc.type,
+                    ...(doc.diskName ? { diskName: doc.diskName } : {}),
                 }),
             );
 
@@ -185,18 +190,26 @@ export class BitrixDocumentSaveFlowService {
                 link: doc.link,
                 name: doc.name,
                 type: doc.type,
+                ...(doc.diskName ? { diskName: doc.diskName } : {}),
             })),
             files: [],
         };
     }
 
+    /**
+     * Имя на Диске: читаемое `diskName` документа (КП, счёт) или, если его
+     * нет, имя файла на сервере (у договора оно уже читаемое).
+     */
     private async prepareFilesForUpload(
         documents: IPreparedDocument<DocumentLinkType>[],
     ): Promise<[string, string][]> {
         const files: [string, string][] = [];
         for (const doc of documents) {
             const buffer = await readFile(doc.absolutePath);
-            files.push([basename(doc.absolutePath), buffer.toString('base64')]);
+            files.push([
+                resolveDiskFileName(doc.absolutePath, doc.diskName),
+                buffer.toString('base64'),
+            ]);
         }
         return files;
     }

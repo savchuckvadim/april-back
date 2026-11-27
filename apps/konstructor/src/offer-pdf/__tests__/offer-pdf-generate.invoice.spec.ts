@@ -389,10 +389,11 @@ describe('генерация PDF-КП: счёт', () => {
         expect(ctx.saveDocuments).toHaveBeenCalledTimes(1);
         const [{ documents }] = ctx.saveDocuments.mock.calls[0];
         expect(
-            documents.map(({ name, type, absolutePath }) => ({
+            documents.map(({ name, type, absolutePath, diskName }) => ({
                 name,
                 type,
                 absolutePath,
+                diskName,
             })),
         ).toEqual([
             {
@@ -401,11 +402,14 @@ describe('генерация PDF-КП: счёт', () => {
                 absolutePath: expect.stringMatching(
                     /^\/abs\/offer-[0-9a-f-]{36}\.pdf$/,
                 ) as string,
+                diskName: expect.stringMatching(/^КП_/) as string,
             },
             {
                 name: INVOICE_NAME,
                 type: 'invoice',
                 absolutePath: '/abs/invoice-1.pdf',
+                // номер счёта в запросе — «15»
+                diskName: 'Счёт_15',
             },
         ]);
         expect(ctx.sendDocumentToBitrix).toHaveBeenCalledTimes(1);

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IPreparedDocument } from '../../interface/document.interface';
 import { getInvoiceDocumentProductName } from '../../lib/get-invoice-document-product-name';
+import { getInvoiceDiskName } from '../../lib/document-disk-name.util';
 import { InvoiceBuildRequest } from '../../types/invoice-build-request.type';
 import { OfferWordPdfExportService } from '../pdf-export/offer-word-pdf-export.service';
 import { InvoiceWordCoreGenerateService } from './invoice-word-core-generate.service';
@@ -90,6 +91,15 @@ export class InvoiceDocumentsBuildService {
                     results.length,
                 ),
                 type: 'invoice',
+                // на Диске счёт называется по номеру, нет номера — по комплекту;
+                // номер читается осторожно: имя файла не должно ронять сборку счёта
+                diskName: getInvoiceDiskName(
+                    dto,
+                    saved.setKind,
+                    saved.setIndex,
+                    saved.renderData?.InvoiceNumber,
+                    results.length,
+                ),
                 absolutePath,
             });
         }

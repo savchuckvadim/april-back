@@ -11,6 +11,7 @@ import { PdfMergeService } from '../../services/pdf-export/pdf-merge.service';
 import { IPreparedDocument } from '../../interface/document.interface';
 import { OfferWordCoreGenerateResult } from '../../types/offer-word-core-generate.types';
 import { getOfferDocumentProductName } from '../../lib/get-offer-document-product-name.util';
+import { getOfferDiskName } from '../../lib/document-disk-name.util';
 import {
     describeInvoiceNotBuilt,
     getErrorReason,
@@ -237,6 +238,7 @@ export class OfferWordMultiBuildService {
                         link: merged.link,
                         name: getOfferDocumentProductName(variantDtos[0]),
                         type: 'offer',
+                        diskName: getOfferDiskName(variantDtos[0]),
                         absolutePath: merged.absolutePath,
                     },
                 ],
@@ -430,6 +432,7 @@ export class OfferWordMultiBuildService {
             link: serverLink,
             name: displayName,
             type: 'offer',
+            diskName: getOfferDiskName(dto),
             absolutePath,
         };
     }

@@ -780,6 +780,138 @@ describe('OfferWordMultiBuildService', () => {
         });
     });
 
+    describe('имена файлов на Диске: читаемые, а файлы на сервере прежние', () => {
+        const invoiceFlags = {
+            needGeneralInvoice: true,
+            needManyInvoices: false,
+            isByPresentationInvoices: false,
+            invoiceDate: '',
+        };
+        const setsOf = (name: string, supplyName: string) =>
+            Object.assign(new ProductRowFullSetsDto(), {
+                general: [garantSet(garantRow(name, supplyName))],
+                alternative: [],
+            });
+        const variantWith = (
+            title: string,
+            contractType: CONTRACT_LTYPE,
+            name: string,
+            supplyName: string,
+        ): DocumentVariantDto => ({
+            ...variant(title, contractType),
+            sets: setsOf(name, supplyName),
+        });
+        const invoiceWithNumber = (invoiceNumber: string) =>
+            ({
+                renderData: {},
+                template: {},
+                savedResults: [
+                    {
+                        docxLink: 'https://docx/invoice-1',
+                        docxPath: '/tmp/invoice-1.docx',
+                        resultFileName: 'invoice-1.docx',
+                        setKind: 'general',
+                        setIndex: 0,
+                        renderData: { InvoiceNumber: invoiceNumber },
+                    },
+                ],
+            }) as unknown as InvoiceCoreResult;
+
+        it('КП — «КП_<комплект>_<доступ>»; файл для Диска DOCX/PDF берёт расширение у себя', async () => {
+            const result = await service.build(
+                request({ sets: setsOf('Гарант-Юрист', 'Интернет 5 ОД') }),
+            );
+
+            expect(result.offer.diskName).toBe('КП_Гарант-Юрист_Интернет_5_ОД');
+            expect(result.offer.name).toBe('КП Гарант-Юрист - Интернет 5 ОД');
+            // файл на сервере остаётся с техническим именем
+            expect(result.offer.absolutePath).toBe('/tmp/offer-1.pdf');
+        });
+
+        it('независимые варианты отдельными документами — у каждого своё имя', async () => {
+            const result = await service.build(
+                request({
+                    variants: [
+                        variantWith(
+                            'Юрист',
+                            CONTRACT_LTYPE.ABON,
+                            'Гарант-Юрист',
+                            'Интернет 3 ОД',
+                        ),
+                        variantWith(
+                            'Бухгалтер',
+                            CONTRACT_LTYPE.LIC,
+                            'Гарант-Бухгалтер',
+                            'Проксима 1 ОД',
+                        ),
+                    ],
+                    composition: composition(ComplectModeEnum.MULTI_CONTRACT, {
+                        separateDocuments: true,
+                    }),
+                }),
+            );
+
+            expect(result.offers.map(item => item.diskName)).toEqual([
+                'КП_Гарант-Юрист_Интернет_3_ОД',
+                'КП_Гарант-Бухгалтер_Проксима_1_ОД',
+            ]);
+        });
+
+        it('склейка PDF называется по первому варианту', async () => {
+            const result = await service.build(
+                request({
+                    variants: [
+                        variantWith(
+                            'Юрист',
+                            CONTRACT_LTYPE.ABON,
+                            'Гарант-Юрист',
+                            'Интернет 3 ОД',
+                        ),
+                        variantWith(
+                            'Бухгалтер',
+                            CONTRACT_LTYPE.LIC,
+                            'Гарант-Бухгалтер',
+                            'Проксима 1 ОД',
+                        ),
+                    ],
+                    composition: composition(ComplectModeEnum.MULTI_CONTRACT),
+                }),
+            );
+
+            expect(result.offer.absolutePath).toBe('/tmp/merged.pdf');
+            expect(result.offer.diskName).toBe('КП_Гарант-Юрист_Интернет_3_ОД');
+        });
+
+        it('счёт с номером — «Счёт_<номер>»', async () => {
+            renderInvoice.mockResolvedValueOnce(invoiceWithNumber('311-5527'));
+
+            const result = await service.build(
+                request({
+                    sets: setsOf('Гарант-Юрист', 'Интернет 5 ОД'),
+                    invoice: invoiceFlags,
+                }),
+            );
+
+            expect(result.invoices[0].diskName).toBe('Счёт_311-5527');
+            expect(result.invoices[0].absolutePath).toBe('/tmp/invoice-1.pdf');
+        });
+
+        it('счёт без номера — по комплекту и доступу своего набора', async () => {
+            renderInvoice.mockResolvedValueOnce(invoiceWithNumber(''));
+
+            const result = await service.build(
+                request({
+                    sets: setsOf('Гарант-Юрист', 'Интернет 5 ОД'),
+                    invoice: invoiceFlags,
+                }),
+            );
+
+            expect(result.invoices[0].diskName).toBe(
+                'Счёт_Гарант-Юрист_Интернет_5_ОД',
+            );
+        });
+    });
+
     describe('счёт не построен', () => {
         const withGeneralInvoice = {
             needGeneralInvoice: true,

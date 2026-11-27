@@ -8,6 +8,13 @@ export interface IResultDocumentLink<
     link: string;
     name: string;
     type: T;
+    /**
+     * Имя на Диске Битрикса без расширения и без пробелов, например
+     * «КП_Гарант-Юрист_Интернет_1_ОД». Из него же таймлайн собирает читаемый
+     * текст ссылки. Нет поля — имя файла остаётся прежним, а текстом ссылки
+     * служит `name`.
+     */
+    diskName?: string;
 }
 
 export interface IPreparedDocument<
