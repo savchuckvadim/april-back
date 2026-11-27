@@ -130,6 +130,9 @@ export function createProviderEntityWithRqFromPrisma(
     const providerEntity = createProviderEntityFromPrisma(provider);
     entity.id = providerEntity.id;
     entity.name = providerEntity.name;
+    // Запись собрана по набору реквизитов: его id и есть rqId. Поле agents.rqId
+    // в легаси-данных часто пусто, связь идёт через rqs.agentId.
+    entity.rqId = rq.id.toString();
     entity.domain = providerEntity.domain;
     entity.withTax = providerEntity.withTax;
     entity.rq = createRqEntity(rq, provider.withTax);
