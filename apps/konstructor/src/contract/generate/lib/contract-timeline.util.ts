@@ -4,10 +4,15 @@ import {
     toTimelineCommentDirect,
 } from '@lib/bitrix/consts/timeline.consts';
 
+/** Расширение файла договора */
+const DOCX = /\.docx$/i;
+
 /**
- * Имя файла договора: «Договор <название>-<номер>-<счётчик>.docx». Пробелы в
- * названии схлопываются: из сборки названия приходили тройные пробелы
- * («Юрист   СТАР»), а с ними и имя файла на Диске.
+ * Имя файла договора на сервере и на Диске:
+ * «Договор_<название>-<номер>-<счётчик>.docx». Имя техническое, без пробелов:
+ * оно попадает в адрес ссылки, а читаемый текст ссылки собирает
+ * {@link contractLinkText}. Пробелы в названии (из сборки приходили и
+ * тройные: «Юрист   СТАР») заменяются одним подчёркиванием.
  */
 export const contractFileName = (
     name: string,
@@ -15,26 +20,30 @@ export const contractFileName = (
     count: number,
 ): string => {
     const title = String(name ?? '')
-        .replace(/\s+/g, ' ')
-        .trim();
+        .trim()
+        .replace(/\s+/g, '_');
     return number
-        ? `Договор ${title}-${number}-${count}.docx`
-        : `Договор ${title}-${count}.docx`;
+        ? `Договор_${title}-${number}-${count}.docx`
+        : `Договор_${title}-${count}.docx`;
 };
+
+/** Читаемый текст ссылки по имени файла: «Договор Юрист СТАР-11-2» */
+export const contractLinkText = (fileName: string): string =>
+    fileName.replace(DOCX, '').replace(/_+/g, ' ').trim();
 
 /**
  * Комментарий таймлайна со ссылкой на договор для прямого вызова
  * `crm.timeline.comment.add`.
  *
- * Ссылка — `DETAIL_URL` файла на Диске, Битрикс отдаёт его с пробелами и
- * кириллицей как есть. Сырой адрес в `href` обрывался на первом пробеле, и
- * ссылка вела на «…/Договоры/Договор» (27.11.2026). Адрес кодируется
- * {@link toSafeHref}, как ссылка на папку поставки.
+ * Адрес ссылки — `DETAIL_URL` файла на Диске. Имя файла без пробелов, а
+ * кириллицу кодирует {@link toSafeHref}, как ссылку на папку поставки:
+ * адрес с пробелами («…/Договоры/Договор Юрист   СТАР-11.docx») вёл не на
+ * файл (27.11.2026). Читаемое название — только текст ссылки.
  */
 export const contractTimelineComment = (
     link: string,
     documentName: string,
 ): string =>
     toTimelineCommentDirect([
-        `📝 ${timelineLink(toSafeHref(link), documentName)}`,
+        `📝 ${timelineLink(toSafeHref(link), contractLinkText(documentName))}`,
     ]);
