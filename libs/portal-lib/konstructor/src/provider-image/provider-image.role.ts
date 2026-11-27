@@ -7,6 +7,7 @@ export const PROVIDER_IMAGE_ROLES = [
     'signature_director',
     'signature_accountant',
     'logo',
+    'qr',
 ] as const;
 
 export type ProviderImageRole = (typeof PROVIDER_IMAGE_ROLES)[number];
@@ -19,6 +20,7 @@ export const PROVIDER_IMAGE_ROLE_LABELS: Readonly<
     signature_director: 'Подпись руководителя',
     signature_accountant: 'Подпись главного бухгалтера',
     logo: 'Логотип',
+    qr: 'QR для оплаты',
 };
 
 export const isProviderImageRole = (

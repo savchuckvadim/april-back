@@ -24,6 +24,12 @@ export interface OfferPdfSettings {
     withCover: boolean;
     /** Промо-страница после титульника — у стилей, где она есть */
     withPromo: boolean;
+    /**
+     * Скидка в таблице цен: колонка «Скидка» и цена до скидки. Выключено:
+     * колонки нет, в «Цене» цена со скидкой, как у КП без скидок. На счёт не
+     * влияет: в счёте скидка видна всегда, когда она есть у строк.
+     */
+    showDiscount: boolean;
 }
 
 /** Вход с фронта: любое поле можно не передавать — подставится умолчание. */
@@ -41,6 +47,7 @@ export const OFFER_PDF_DEFAULT_SETTINGS: Readonly<OfferPdfSettings> = {
     salePhrase: null,
     withCover: true,
     withPromo: true,
+    showDiscount: true,
 };
 
 export const resolveOfferPdfSettings = (
@@ -61,5 +68,7 @@ export const resolveOfferPdfSettings = (
         salePhrase: salePhrase.length > 0 ? salePhrase : null,
         withCover: input?.withCover ?? OFFER_PDF_DEFAULT_SETTINGS.withCover,
         withPromo: input?.withPromo ?? OFFER_PDF_DEFAULT_SETTINGS.withPromo,
+        showDiscount:
+            input?.showDiscount ?? OFFER_PDF_DEFAULT_SETTINGS.showDiscount,
     };
 };

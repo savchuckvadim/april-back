@@ -31,7 +31,7 @@ export class ProviderImageResponseDto {
 
     @ApiProperty({
         description:
-            'Роль картинки: stamp — печать, signature_director — подпись руководителя, signature_accountant — подпись главного бухгалтера, logo — логотип. У реквизитов по одной картинке каждой роли.',
+            'Роль картинки: stamp — печать, signature_director — подпись руководителя, signature_accountant — подпись главного бухгалтера, logo — логотип, qr — QR для оплаты (печатается в счёте PDF). У реквизитов по одной картинке каждой роли.',
         enum: PROVIDER_IMAGE_ROLES,
         enumName: 'ProviderImageRole',
         example: 'stamp',

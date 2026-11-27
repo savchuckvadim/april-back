@@ -23,9 +23,9 @@ import {
     IDocumentSaveFlowResult,
 } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
-import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
 import { PdfMergeService } from '@app/konstructor/offer-word/services/pdf-export/pdf-merge.service';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
+import { InvoicePdfBuildService } from '../invoice/services/invoice-pdf-build.service';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfDocumentModelService } from '../services/offer-pdf-document-model.service';
@@ -180,7 +180,7 @@ const setup = async ({
             },
             // эти запросы без счёта: сервис счетов не вызывается
             {
-                provide: InvoiceDocumentsBuildService,
+                provide: InvoicePdfBuildService,
                 useValue: { build: jest.fn() },
             },
             // поток продаж: запросы без salesFlow, событие не ставится

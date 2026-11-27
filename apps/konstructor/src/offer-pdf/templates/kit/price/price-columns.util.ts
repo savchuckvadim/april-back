@@ -1,4 +1,5 @@
 import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
+import type { OfferPdfSettings } from '../../../model/offer-pdf-settings';
 import { parseAmount } from '../lib/text.util';
 
 export interface PriceColumn {
@@ -12,6 +13,16 @@ export const NAME_COLUMN_INDEX = 1;
 /** В строках есть скидка — нужна колонка «Скидка» */
 export const hasDiscount = (rows: IProductRenderItemData[]): boolean =>
     rows.some(row => parseAmount(row.ProductDiscountPercent) > 0);
+
+/**
+ * Скидка видна в таблице цен КП: она есть в строках и менеджер её не скрыл
+ * (`settings.showDiscount`). Скрытая скидка: колонки «Скидка» нет, в «Цене»
+ * цена со скидкой, как у КП без скидок.
+ */
+export const showsDiscount = (
+    rows: IProductRenderItemData[],
+    settings: Pick<OfferPdfSettings, 'showDiscount'>,
+): boolean => settings.showDiscount && hasDiscount(rows);
 
 export const priceColumns = (withDiscount: boolean): PriceColumn[] => [
     { title: '№', width: '6%' },

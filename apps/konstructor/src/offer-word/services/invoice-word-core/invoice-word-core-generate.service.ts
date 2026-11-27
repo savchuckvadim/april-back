@@ -22,7 +22,10 @@ import {
 } from './invoice-template-source.service';
 import { InvoiceSetKind } from '../../types/invoice-set.types';
 import { InvoiceBuildRequest } from '../../types/invoice-build-request.type';
-import { formatInvoiceNumber } from '../../lib/invoice-number.util';
+import {
+    InvoiceSingleRenderItem,
+    splitInvoiceRenderData,
+} from '../../lib/invoice-single-items.util';
 
 /**
  * Год берётся на каждый вызов: константа на уровне модуля застыла бы на годе
@@ -51,13 +54,6 @@ export interface InvoiceWordRenderedFile {
 export interface InvoiceWordCoreGenerateResult extends InvoiceWordRenderedFile {
     setKind: InvoiceSetKind;
     /** Индекс в `sets.general` или `sets.alternative` — по `setKind`. */
-    setIndex: number;
-}
-
-/** Данные одного счёта для рендера и набор, из которого он собран. */
-interface InvoiceSingleRenderItem {
-    data: IInvoiceSingleItemRenderData;
-    setKind: InvoiceSetKind;
     setIndex: number;
 }
 
@@ -260,19 +256,7 @@ export class InvoiceWordCoreGenerateService {
         renderData: IInvoiceRenderData,
         numberOffset = 0,
     ): InvoiceSingleRenderItem[] {
-        return renderData.prices.map((price, index) => ({
-            data: {
-                ...renderData,
-                ...price.rows,
-                ...price.total,
-                InvoiceNumber: formatInvoiceNumber(
-                    renderData.InvoiceNumber,
-                    numberOffset + index,
-                ),
-            },
-            setKind: price.setKind,
-            setIndex: price.setIndex,
-        }));
+        return splitInvoiceRenderData(renderData, numberOffset);
     }
     protected getResultPath(
         domain: string,

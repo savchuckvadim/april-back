@@ -21,15 +21,16 @@ import { resolveDocumentVariants } from '@app/konstructor/offer-word/multi/lib/v
 import { withVariant } from '@app/konstructor/offer-word/multi/lib/variants/with-variant';
 import { BitrixDocumentSaveFlowService } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
-import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
 import { PdfMergeService } from '@app/konstructor/offer-word/services/pdf-export/pdf-merge.service';
 import { InvoiceBuildRequest } from '@app/konstructor/offer-word/types/invoice-build-request.type';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
+import { InvoicePdfBuildService } from '../invoice/services/invoice-pdf-build.service';
 import {
     OfferPdfPrintPlan,
     OfferPdfPrintUnit,
     planOfferPdfPrint,
 } from '../lib/offer-pdf-print-plan';
+import { resolveOfferPdfSettings } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfDocumentModelService } from './offer-pdf-document-model.service';
 import {
@@ -77,7 +78,7 @@ export interface OfferPdfGenerateResult extends OfferPdfDealResult {
     /** Все файлы: один, либо по файлу на вариант при separateDocuments и сбое склейки */
     links?: OfferPdfGeneratedFile[];
     /**
-     * Счета в PDF (при сбое перевода — в DOCX), по одному на набор. Пусто, когда
+     * Счета в PDF, по одному на набор. Пусто, когда
      * счёт не запрашивали или не удалось собрать: причина — в warnings.
      */
     invoiceLinks: OfferPdfGeneratedFile[];
@@ -144,13 +145,15 @@ const MERGE_FAILED_WARNING =
  * сервисами, что и Word-поток. Сбой Битрикса документ не отменяет:
  * ссылка на сервер отдаётся всегда, причина — в dealMessage.
  *
- * Счёт (generate, если в запросе есть invoice с нужным флагом) собирает
- * тот же сервис и тот же шаблон счёта, что у Word-КП: шаблон подбирается
- * по порталу, поставщику, типу клиента и виду поставки, DOCX переводится
- * в PDF (сбой перевода оставляет DOCX). Счета идут по открытому варианту
- * запроса, как у Word-КП без разбивки по договорам. Они уходят в сделку тем
- * же обращением, что КП, с типом invoice, и в тот же комментарий таймлайна.
- * Сбой счёта КП никогда не отменяет: причина попадает в warnings.
+ * Счёт (generate, если в запросе есть invoice с нужным флагом) рисуется
+ * сразу в PDF тем же движком, что КП (InvoicePdfBuildService), без Word-шаблона
+ * и LibreOffice. Данные счёта (реквизиты, получатель, строки, итоги, номер)
+ * те же, что идут в Word-счёт. Печать и подписи идут по settings.withStamps,
+ * QR для оплаты печатается, когда он загружен у реквизитов поставщика. Счета
+ * идут по открытому варианту запроса, как у Word-КП без разбивки по договорам.
+ * Они уходят в сделку тем же обращением, что КП, с типом invoice, и в тот же
+ * комментарий таймлайна. Сбой счёта КП никогда не отменяет: причина попадает
+ * в warnings.
  *
  * Варианты комплекта печатаются так же, как у Word-КП: режим определяет
  * resolveDocumentVariants, что и сколько печатать — planOfferPdfPrint.
@@ -173,7 +176,7 @@ export class OfferPdfGenerateService {
         private readonly supplyEnricher: SupplyPayloadEnricherService,
         private readonly pdfMerge: PdfMergeService,
         private readonly variantStage: ComplectVariantOfferStageService,
-        private readonly invoiceDocuments: InvoiceDocumentsBuildService,
+        private readonly invoicePdf: InvoicePdfBuildService,
         private readonly salesDocumentFlow: SalesDocumentFlowService,
     ) {}
 
@@ -273,9 +276,9 @@ export class OfferPdfGenerateService {
     }
 
     /**
-     * Счета КП: тот же сервис и шаблон счёта, что у Word-КП, перевод в PDF.
-     * Счёта нет в запросе, флаги выключены — пусто. Любой сбой не бросается:
-     * причина уходит в warnings, КП остаётся.
+     * Счета КП: рисуются сразу в PDF, без Word-шаблона. Счёта нет в запросе,
+     * флаги выключены — пусто. Любой сбой не бросается: причина уходит в
+     * warnings, КП остаётся.
      */
     private async buildInvoices(
         prepared: OfferPdfGenerateDto,
@@ -287,9 +290,14 @@ export class OfferPdfGenerateService {
         }
 
         try {
-            const result = await this.invoiceDocuments.build(
+            const result = await this.invoicePdf.build(
                 this.invoiceRequestOf(prepared, invoice),
-                { year: dayjs().format('YYYY'), isPdf: true },
+                {
+                    year: dayjs().format('YYYY'),
+                    // печать и подписи счёта идут по той же настройке, что у КП
+                    withStamps: resolveOfferPdfSettings(prepared.settings)
+                        .withStamps,
+                },
             );
             if (result.notBuiltReason) {
                 this.addWarning(
@@ -309,10 +317,9 @@ export class OfferPdfGenerateService {
     }
 
     /**
-     * Запрос на счёт по открытому (первому) варианту. Домен, поставщик, тип
-     * клиента и поставка идут в подбор шаблона счёта так же, как у Word-КП:
-     * у разных поставщиков и типов клиента (юрлицо, физлицо, ИП, бюджет)
-     * разные формы счёта.
+     * Запрос на счёт по открытому (первому) варианту: домен, поставщик,
+     * получатель, договор и наборы строк берутся оттуда же, откуда их берёт
+     * Word-счёт.
      */
     private invoiceRequestOf(
         prepared: OfferPdfGenerateDto,
@@ -327,7 +334,6 @@ export class OfferPdfGenerateService {
             userId: open.userId,
             providerId: open.providerId,
             clientType: open.clientType,
-            invoiceTemplateId: open.invoiceTemplateId,
             supply: open.supply,
             recipient: open.recipient,
             contractType: open.contractType,

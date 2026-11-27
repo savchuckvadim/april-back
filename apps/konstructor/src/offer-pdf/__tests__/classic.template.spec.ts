@@ -179,6 +179,47 @@ describe('классический PDF-шаблон КП', () => {
         expect(withoutDiscount).not.toContain('Скидка');
     });
 
+    describe('настройка showDiscount', () => {
+        it('по умолчанию скидка показывается: колонка, процент и цена до скидки', () => {
+            const text = renderTexts();
+            expect(text).toContain('Скидка');
+            expect(text).toContain('15 %');
+            expect(text).toContain('12 500,00');
+        });
+
+        it('выключена: колонки «Скидка» нет, в «Цене» цена со скидкой', () => {
+            const text = renderTexts({ showDiscount: false });
+            expect(text).not.toContain('Скидка');
+            expect(text).not.toContain('15 %');
+            // цена до скидки (по прайсу) не печатается, цена со скидкой — да
+            expect(text).not.toContain('12 500,00');
+            expect(text).toContain('10 625,00');
+            // сумма строки и итог остаются
+            expect(text).toContain('127 500,00');
+            expect(text).toContain('145 500,00');
+        });
+
+        it('итоги КП скидку не печатают ни при какой настройке', () => {
+            // TotalDiscountSum образца
+            expect(renderTexts()).not.toContain('22 500,00');
+            expect(renderTexts({ showDiscount: false })).not.toContain(
+                '22 500,00',
+            );
+        });
+
+        it('строки без скидки: настройка ничего не меняет', () => {
+            const rows = createOfferRenderDataFixture().ProductRows.map(
+                row => ({ ...row, ProductDiscountPercent: '0' }),
+            );
+            const overrides = {
+                data: createOfferRenderDataFixture({ ProductRows: rows }),
+            };
+            expect(renderTexts({ showDiscount: false }, overrides)).toBe(
+                renderTexts({ showDiscount: true }, overrides),
+            );
+        });
+    });
+
     it('фраза об акции и пустое наполнение', () => {
         const text = renderTexts(
             { salePhrase: 'Скидка 20 % до конца месяца' },

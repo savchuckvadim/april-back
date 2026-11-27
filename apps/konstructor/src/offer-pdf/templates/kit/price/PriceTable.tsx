@@ -3,7 +3,7 @@ import { Text, View } from '@react-pdf/renderer';
 import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
-import { hasDiscount, priceColumns } from './price-columns.util';
+import { priceColumns, showsDiscount } from './price-columns.util';
 import { hasSetTitle } from './price-set-title.util';
 import { SMALL_TABLE_ROWS, TOTALS_PRESENCE } from './price.layout';
 import { priceStyles } from './price.styles';
@@ -22,7 +22,7 @@ export const PriceTable: FC<PriceTableProps> = ({ model, theme }) => {
     const { data, settings } = model;
     const styles = priceStyles(theme);
     const rows = data.ProductRows ?? [];
-    const withDiscount = hasDiscount(rows);
+    const withDiscount = showsDiscount(rows, settings);
     const columns = priceColumns(withDiscount);
     const total = data.TotalRow?.[0];
     const [first, ...rest] = rows;
