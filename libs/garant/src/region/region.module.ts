@@ -5,6 +5,7 @@ import { RegionRepository } from './region.repository';
 import { StorageModule } from 'src/core/storage/storage.module';
 import { PortalRegionService } from './portal-region/portal-region.service';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
+import { RabsVatService } from './rabs-vat.service';
 
 /**
  * Сервисный модуль регионов гаранта: провайдеры и экспорт сервисов, без
@@ -19,11 +20,15 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
         RegionService,
 
         PortalRegionService,
+        // Коэффициент НДС рабса из настроек вендора (VendorSettingsModule
+        // глобальный; без него читается env): общий для выдачи каталога,
+        // админских DTO регионов и загрузки книги цен.
+        RabsVatService,
         {
             provide: RegionRepository,
             useClass: RegionPrismaRepository,
         },
     ],
-    exports: [RegionService, PortalRegionService],
+    exports: [RegionService, PortalRegionService, RabsVatService],
 })
 export class RegionModule {}

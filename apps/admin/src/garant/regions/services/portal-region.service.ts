@@ -1,4 +1,4 @@
-import { RegionService } from '@lib/garant';
+import { RabsVatService, RegionService, roundToCents } from '@lib/garant';
 import {
     BadRequestException,
     Injectable,
@@ -20,15 +20,17 @@ export class PortalRegionService {
     constructor(
         private readonly regionService: RegionService,
         private readonly portalService: PortalStoreService,
+        private readonly rabsVat: RabsVatService,
     ) {}
 
     /** Весь справочник регионов с признаком привязки и своей ценой портала */
     async getPortalRegions(
         portalId: number,
     ): Promise<GetPortalRegionResponseDto[]> {
-        const [allRegions, links] = await Promise.all([
+        const [allRegions, links, vat] = await Promise.all([
             this.regionService.findAll(),
             this.regionService.findPortalRegionLinks(Number(portalId)),
+            this.rabsVat.coefficient(),
         ]);
         if (!allRegions) {
             throw new NotFoundException(
@@ -41,6 +43,7 @@ export class PortalRegionService {
                 new GetPortalRegionResponseDto(
                     region,
                     byRegion.get(Number(region.id)) ?? null,
+                    vat,
                 ),
         );
     }
@@ -56,6 +59,11 @@ export class PortalRegionService {
         return this.viewOne(dto.portalId, dto.regionId);
     }
 
+    /**
+     * Данные формы региона портала. Ручной рабс показывается вместе с НДС,
+     * посчитанным на лету от коэффициента из настроек вендора: записанные
+     * в базе own_tax / own_tax_abs могли остаться от прежнего коэффициента.
+     */
     async getPortalRegionUpdateInitialData(
         portalId: number,
         regionId: number,
@@ -72,15 +80,16 @@ export class PortalRegionService {
         if (!region) {
             throw new NotFoundException('Region not found');
         }
+        // Ноль в own-полях значит «не задано»: форма показывает пустое поле
+        const ownAbs = region.own_abs > 0 ? region.own_abs : null;
+        const vat = await this.rabsVat.coefficient();
         return {
             domain: portal.domain || '',
             regionCode: region.regionCode || '',
-            // Ноль в own-полях значит «не задано»: форма показывает пустое поле
-            own_abs: region.own_abs ? region.own_abs.toString() : null,
-            own_tax: region.own_tax ? region.own_tax.toString() : null,
-            own_tax_abs: region.own_tax_abs
-                ? region.own_tax_abs.toString()
-                : null,
+            own_abs: ownAbs === null ? null : ownAbs.toString(),
+            own_tax: ownAbs === null ? null : vat.toString(),
+            own_tax_abs:
+                ownAbs === null ? null : roundToCents(ownAbs * vat).toString(),
             own_abs_region_id: region.own_abs_region_id,
         };
     }
@@ -91,6 +100,7 @@ export class PortalRegionService {
         regionId: number,
         dto: UpdatePortalRegionDtoAdmin,
     ): Promise<GetPortalRegionResponseDto | null> {
+        const vat = await this.rabsVat.coefficient();
         const built = buildOwnPricePatch(
             Number(regionId),
             {
@@ -98,6 +108,7 @@ export class PortalRegionService {
                 ownAbsRegionId: dto.own_abs_region_id ?? null,
             },
             await this.knownRegionIds(),
+            vat,
         );
         if (!built.ok) {
             throw new BadRequestException(built.reason);
@@ -108,7 +119,7 @@ export class PortalRegionService {
             built.patch,
         );
         if (!updated) return null;
-        return this.viewOne(Number(portalId), Number(regionId));
+        return this.viewOne(Number(portalId), Number(regionId), vat);
     }
 
     async deletePortalRegion(portalId: number, regionId: number) {
@@ -122,7 +133,8 @@ export class PortalRegionService {
      * Массовое применение чекбоксов регионов портала: enabled=true создаёт
      * связь (идемпотентно), enabled=false удаляет. Своя цена правится,
      * только если передан ownAbs или ownAbsRegionId: число — ручной рабс
-     * (own_tax 1.20, own_tax_abs считается), id — регион-источник,
+     * (own_tax — коэффициент НДС рабса из настроек вендора, own_tax_abs
+     * считается от него), id — регион-источник,
      * null — сброс к общему рабсу. Невключённый регион при выключении —
      * тихий пропуск, ошибки строк попадают в skipped и не ломают остальные.
      */
@@ -135,9 +147,10 @@ export class PortalRegionService {
             updatedOwn: 0,
             skipped: [],
         };
-        const [links, knownIds] = await Promise.all([
+        const [links, knownIds, vat] = await Promise.all([
             this.regionService.findPortalRegionLinks(dto.portalId),
             this.knownRegionIds(),
+            this.rabsVat.coefficient(),
         ]);
         const enabledIds = new Set(links.map(link => link.regionId));
 
@@ -182,6 +195,7 @@ export class PortalRegionService {
                     ownAbsRegionId: item.ownAbsRegionId ?? null,
                 },
                 knownIds,
+                vat,
             );
             if (!built.ok) {
                 result.skipped.push({
@@ -221,13 +235,15 @@ export class PortalRegionService {
     private async viewOne(
         portalId: number,
         regionId: number,
+        knownVat?: number,
     ): Promise<GetPortalRegionResponseDto | null> {
-        const [region, links] = await Promise.all([
+        const [region, links, vat] = await Promise.all([
             this.regionService.findById(String(regionId)),
             this.regionService.findPortalRegionLinks(portalId),
+            knownVat ?? this.rabsVat.coefficient(),
         ]);
         if (!region) return null;
         const link = links.find(row => row.regionId === regionId) ?? null;
-        return new GetPortalRegionResponseDto(region, link);
+        return new GetPortalRegionResponseDto(region, link, vat);
     }
 }

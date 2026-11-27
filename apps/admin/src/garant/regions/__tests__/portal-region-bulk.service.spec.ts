@@ -2,7 +2,12 @@ import { PortalRegionService } from '../services/portal-region.service';
 
 const KNOWN_REGION_IDS = [12, 13, 47, 99];
 
-const makeService = (enabledRegionIds: number[]) => {
+/** Коэффициент НДС рабса: мок настроек вендора */
+const makeRabsVat = (coefficient = 1.22) => ({
+    coefficient: jest.fn().mockResolvedValue(coefficient),
+});
+
+const makeService = (enabledRegionIds: number[], vat = 1.22) => {
     const regionService = {
         findPortalRegionLinks: jest
             .fn()
@@ -22,6 +27,7 @@ const makeService = (enabledRegionIds: number[]) => {
     const service = new PortalRegionService(
         regionService as never,
         portalService as never,
+        makeRabsVat(vat) as never,
     );
     return { service, regionService };
 };
@@ -44,6 +50,21 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         expect(result.enabled).toBe(1);
         expect(result.updatedOwn).toBe(1);
         expect(regionService.createPortalRegion).toHaveBeenCalledWith(3, 12);
+        expect(lastPatch(regionService)).toEqual({
+            own_abs: '5000.00',
+            own_tax: '1.22',
+            own_tax_abs: '6100.00',
+            own_abs_region_id: null,
+        });
+    });
+
+    it('смена коэффициента НДС рабса меняет own_tax и own_tax_abs в записи', async () => {
+        const { service, regionService } = makeService([], 1.2);
+        await service.bulkSetPortalRegions({
+            portalId: 3,
+            items: [{ regionId: 12, enabled: true, ownAbs: '5000.00' }],
+        });
+
         expect(lastPatch(regionService)).toEqual({
             own_abs: '5000.00',
             own_tax: '1.20',
@@ -157,7 +178,7 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
 });
 
 describe('PortalRegionService.getPortalRegionUpdateInitialData', () => {
-    const makeInitialService = (row: Record<string, unknown>) => {
+    const makeInitialService = (row: Record<string, unknown>, vat = 1.22) => {
         const regionService = {
             getPortalRegionUpdateInitialData: jest.fn().mockResolvedValue(row),
         };
@@ -167,6 +188,7 @@ describe('PortalRegionService.getPortalRegionUpdateInitialData', () => {
         return new PortalRegionService(
             regionService as never,
             portalService as never,
+            makeRabsVat(vat) as never,
         );
     };
 
@@ -191,10 +213,11 @@ describe('PortalRegionService.getPortalRegionUpdateInitialData', () => {
         });
     });
 
-    it('заданный ручной рабс приходит строкой', async () => {
+    it('заданный ручной рабс приходит строкой, НДС считается по коэффициенту и не берётся из базы', async () => {
         const service = makeInitialService({
             regionCode: 'alt',
             own_abs: 5000,
+            // записано при прежнем коэффициенте 1.2, форма показывает по текущему
             own_tax: 1.2,
             own_tax_abs: 6000,
             own_abs_region_id: null,
@@ -203,6 +226,26 @@ describe('PortalRegionService.getPortalRegionUpdateInitialData', () => {
         const data = await service.getPortalRegionUpdateInitialData(3, 12);
 
         expect(data?.own_abs).toBe('5000');
+        expect(data?.own_tax).toBe('1.22');
+        expect(data?.own_tax_abs).toBe('6100');
         expect(data?.own_abs_region_id).toBeNull();
+    });
+
+    it('смена коэффициента меняет показанные own_tax и own_tax_abs', async () => {
+        const service = makeInitialService(
+            {
+                regionCode: 'alt',
+                own_abs: 4177.2,
+                own_tax: 1.22,
+                own_tax_abs: 5096.18,
+                own_abs_region_id: null,
+            },
+            1.3,
+        );
+
+        const data = await service.getPortalRegionUpdateInitialData(3, 12);
+
+        expect(data?.own_tax).toBe('1.3');
+        expect(data?.own_tax_abs).toBe('5430.36');
     });
 });

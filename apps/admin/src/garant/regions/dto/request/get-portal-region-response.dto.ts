@@ -5,15 +5,23 @@ import {
     PortalRegionLink,
     RegionEntity,
     resolvePortalPrice,
+    withRabsVat,
 } from '@lib/garant';
 
 /**
- * Регион глазами портала. abs/tax/tax_abs — общий рабс справочника,
- * own_* — свои настройки связи, effective_* — цена, по которой портал
- * реально считает (источник → ручной → общий).
+ * Регион глазами портала. abs/tax/tax_abs — общий рабс справочника как он
+ * хранится, own_* — свои настройки связи, effective_* — цена, по которой
+ * портал реально считает (источник → ручной → общий). НДС в effective_*
+ * считается на лету от коэффициента `vat` (настройка вендора «Коэффициент НДС
+ * рабса»): effective_tax равен ему, effective_tax_abs равен действующему
+ * рабсу, умноженному на него.
  */
 export class GetPortalRegionResponseDto extends GetRegionResponseDto {
-    constructor(region: RegionEntity, link: PortalRegionLink | null) {
+    constructor(
+        region: RegionEntity,
+        link: PortalRegionLink | null,
+        vat: number,
+    ) {
         super(region);
         this.isChecked = link !== null;
         this.own_abs = link?.ownAbs && link.ownAbs > 0 ? link.ownAbs : null;
@@ -22,7 +30,7 @@ export class GetPortalRegionResponseDto extends GetRegionResponseDto {
             : null;
         this.own_abs_region_code = link?.ownAbsRegion?.code ?? null;
         this.own_abs_region_title = link?.ownAbsRegion?.title ?? null;
-        const effective = resolvePortalPrice(region, link);
+        const effective = withRabsVat(resolvePortalPrice(region, link), vat);
         this.effective_abs = effective.abs;
         this.effective_tax = effective.tax;
         this.effective_tax_abs = effective.tax_abs;
@@ -81,15 +89,17 @@ export class GetPortalRegionResponseDto extends GetRegionResponseDto {
     effective_abs: number;
 
     @ApiProperty({
-        description: 'Действующий налоговый множитель портала по региону.',
-        example: 1.2,
+        description:
+            'Налоговый множитель портала по региону: коэффициент НДС рабса из настроек вендора.',
+        example: 1.22,
         type: Number,
     })
     effective_tax: number;
 
     @ApiProperty({
-        description: 'Действующий рабс с налогом портала по региону.',
-        example: 5012.64,
+        description:
+            'Действующий рабс с налогом портала по региону: действующий рабс × коэффициент НДС рабса.',
+        example: 5096.18,
         type: Number,
     })
     effective_tax_abs: number;

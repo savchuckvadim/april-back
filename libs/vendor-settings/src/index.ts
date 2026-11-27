@@ -3,6 +3,7 @@ export * from './vendor-settings.registry';
 export * from './vendor-settings.telegram';
 export * from './vendor-settings.llm';
 export * from './vendor-settings.transcription';
+export * from './vendor-settings.konstructor';
 export {
     type IntegerSettingRule,
     integerSettingValue,

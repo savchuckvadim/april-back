@@ -14,6 +14,7 @@ env. Секреты хранятся зашифрованными и наруж�
 | Исходящий прокси за рубеж | `EGRESS_PROXY_URL`, `EGRESS_PROXY_TOKEN` (секрет), `EGRESS_PROXY_HOSTS` |
 | Ключи AI-сервисов приложения | `GROQ_API_KEY`, `CLOUDRU_API_KEY` (секреты) |
 | Модуль поддержки | `ANTHROPIC_API_KEY` (секрет; подключение модуля — следующий шаг) |
+| Конструктор КП: цены | `KONSTRUKTOR_RABS_VAT_COEFFICIENT` — множитель НДС рабса региона, по умолчанию 1.22; читает `RabsVatService` из `@lib/garant` |
 
 Реализация читателя (БД + env + кэш в минуту + шифрование) и админ-роуты —
 в `libs/portal-lib/store/vendor-settings` (`VendorSettingsModule` глобальный,

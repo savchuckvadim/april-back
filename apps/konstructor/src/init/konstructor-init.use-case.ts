@@ -43,6 +43,7 @@ import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 import { InitServicesService } from './services/init-services.service';
 import { MeasureService } from '@lib/portal-lib/konstructor/measure/measure.service';
 import { PortalMeasureService } from '@lib/portal-lib/konstructor/portal-measure/portal-measure.service';
+import { regionWeight } from './lib/region-weight.util';
 
 export interface IKonstruktorInit {
     complects: IComplects | null;
@@ -333,11 +334,13 @@ export class KonstructorInitUseCase {
         return {
             id: region.id,
             code: region.code,
-            // каждый регион в составе комплекта весит 0.5 (колонки в БД нет)
-            weight: 0.5,
+            // вес региона выводится из кода (колонки в БД нет), см. regionWeight
+            weight: regionWeight(region.code),
             number: region.number,
             title: region.title,
             infoblock: region.infoblock,
+            // abs без НДС; tax и tax_abs InitRegionService уже посчитал на лету
+            // от коэффициента НДС рабса из настроек вендора
             abs: region.abs,
             tax: region.tax,
             tax_abs: region.tax_abs,
