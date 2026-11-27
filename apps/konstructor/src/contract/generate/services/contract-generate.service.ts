@@ -3,6 +3,7 @@ import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { StorageService, StorageType } from '@lib/core/storage';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { ConfigService } from '@nestjs/config';
+import { contractFileName } from '../lib/contract-timeline.util';
 
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
@@ -197,11 +198,7 @@ export class ContractGenerateService {
         resultPath: string,
     ) {
         const { documentCount } = await this.getDocumentCount(resultPath);
-        if (number) {
-            return `Договор ${name}-${number}-${documentCount}.docx`;
-        } else {
-            return `Договор ${name}-${documentCount}.docx`;
-        }
+        return contractFileName(name, number, documentCount);
     }
 
     private formatDocumentDate(date: string): string {
@@ -352,7 +349,8 @@ export class ContractGenerateService {
             productNumber: mainProduct
                 ? String(mainProduct.productNumber)
                 : '1',
-            productName: mainProduct?.productName ?? contractData.contractProductName,
+            productName:
+                mainProduct?.productName ?? contractData.contractProductName,
             productQuantity: mainProduct
                 ? String(mainProduct.productQuantity)
                 : BLANK,

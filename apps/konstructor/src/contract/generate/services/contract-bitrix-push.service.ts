@@ -1,51 +1,56 @@
 import { PBXService } from '@lib/pbx/pbx.service';
 import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { BitrixEntityType } from '@lib/bitrix';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { contractTimelineComment } from '../lib/contract-timeline.util';
 
 @Injectable()
 export class ContractBitrixPushService {
+    private readonly logger = new Logger(ContractBitrixPushService.name);
+
     constructor(private readonly pbx: PBXService) {}
 
+    /**
+     * Комментарий со ссылкой на договор в таймлайн компании и сделки. Прямыми
+     * вызовами, как ссылка на папку поставки: закодированный адрес Диска
+     * доезжает до комментария без второго раскодирования batch-командой.
+     * Сбой одного комментария договор не отменяет: он уже сформирован и лежит
+     * на Диске.
+     */
     public async setInBitrix(
         dto: ContractGenerateDto,
         link: string,
         documentName: string,
     ) {
-        const companyId = dto.companyId;
-        const userId = dto.userId;
-        const dealId = dto.dealId;
-
         const { bitrix } = await this.pbx.init(dto.domain);
-        const commentMessage = this.getCommentMessage(link, documentName);
+        const comment = contractTimelineComment(link, documentName);
+        const targets: Array<[BitrixEntityType, number | string]> = [
+            [BitrixEntityType.COMPANY, dto.companyId],
+            ...(dto.dealId
+                ? [
+                      [BitrixEntityType.DEAL, dto.dealId] as [
+                          BitrixEntityType,
+                          number | string,
+                      ],
+                  ]
+                : []),
+        ];
 
-        bitrix.batch.timeline.addTimelineComment(
-            `add_timeline_company_${companyId}`,
-            {
-                ENTITY_ID: companyId,
-                ENTITY_TYPE: BitrixEntityType.COMPANY,
-                COMMENT: commentMessage,
-                AUTHOR_ID: userId.toString(),
-            },
-        );
-
-        if (dealId) {
-            bitrix.batch.timeline.addTimelineComment(
-                `add_timeline_deal_${dealId}`,
-                {
-                    ENTITY_ID: dealId,
-                    ENTITY_TYPE: BitrixEntityType.DEAL,
-                    COMMENT: commentMessage,
-                    AUTHOR_ID: userId.toString(),
-                },
-            );
+        for (const [entityType, entityId] of targets) {
+            try {
+                await bitrix.timeline.addTimelineComment({
+                    ENTITY_ID: entityId,
+                    ENTITY_TYPE: entityType,
+                    COMMENT: comment,
+                    AUTHOR_ID: dto.userId.toString(),
+                });
+            } catch (error) {
+                const reason =
+                    error instanceof Error ? error.message : String(error);
+                this.logger.warn(
+                    `Комментарий о договоре не добавлен (${dto.domain}, ${entityType} ${entityId}): ${reason}`,
+                );
+            }
         }
-
-        await bitrix.api.callBatchWithConcurrency(1);
-    }
-
-    private getCommentMessage(link: string, documentName: string) {
-        const message = `📝 <a href="${link}" target="_blank">${documentName}</a>`;
-        return message;
     }
 }

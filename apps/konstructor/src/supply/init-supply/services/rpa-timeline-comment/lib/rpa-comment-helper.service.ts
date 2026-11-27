@@ -1,3 +1,5 @@
+import { toSafeHref } from '@lib/bitrix/consts/timeline.consts';
+
 export enum RpaIconEnum {
     ARM = 'arm',
     PROVIDER = 'provider',
@@ -18,18 +20,8 @@ export const RPA_NESTED_BULLET = '    ◦ ';
 
 const HEADER_PREFIX = `[b][color=${RPA_HEADER_COLOR}]`;
 
-/**
- * Адрес для ссылки: пробелы и не-ASCII закодированы, уже закодированное не
- * кодируется второй раз. Битрикс отдаёт `DETAIL_URL` папки Диска как есть —
- * «…/182917/Перезаключение 2071».
- */
-export const toSafeHref = (url: string): string => {
-    try {
-        return encodeURI(decodeURI(url));
-    } catch {
-        return url.replace(/\s/g, '%20');
-    }
-};
+/** Кодирование адреса Диска для ссылки — общее для всех комментариев таймлайна. */
+export { toSafeHref };
 
 /** Текст внутри BB-разметки: квадратные скобки из данных не должны стать тегом. */
 export const toBbText = (text: string): string =>
