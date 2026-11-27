@@ -30,9 +30,9 @@ import {
     IDocumentSaveFlowResult,
 } from '@app/konstructor/offer-word/services/bitrix/bitrix-document-save-flow.service';
 import { OfferBxTimelineService } from '@app/konstructor/offer-word/services/bitrix/offer-bx-timeline.service';
-import { InvoiceDocumentsBuildService } from '@app/konstructor/offer-word/services/invoice-word-core/invoice-documents-build.service';
 import { PdfMergeService } from '@app/konstructor/offer-word/services/pdf-export/pdf-merge.service';
 import { OfferPdfGenerateDto } from '../dto/offer-pdf-generate.dto';
+import { InvoicePdfBuildService } from '../invoice/services/invoice-pdf-build.service';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { OfferPdfDocumentModelService } from '../services/offer-pdf-document-model.service';
 import { OfferPdfGenerateService } from '../services/offer-pdf-generate.service';
@@ -122,7 +122,9 @@ const setup = async (options: SetupOptions = {}) => {
                     saveFile: jest.fn((_buffer: Buffer, fileName: string) =>
                         Promise.resolve(`/abs/${fileName}`),
                     ),
-                    readFile: jest.fn(() => Promise.resolve(Buffer.from('pdf'))),
+                    readFile: jest.fn(() =>
+                        Promise.resolve(Buffer.from('pdf')),
+                    ),
                 },
             },
             {
@@ -165,7 +167,9 @@ const setup = async (options: SetupOptions = {}) => {
             {
                 provide: PdfMergeService,
                 useValue: {
-                    mergeBuffers: jest.fn(() => Promise.resolve(Buffer.from('m'))),
+                    mergeBuffers: jest.fn(() =>
+                        Promise.resolve(Buffer.from('m')),
+                    ),
                 },
             },
             {
@@ -173,7 +177,7 @@ const setup = async (options: SetupOptions = {}) => {
                 useValue: { markOffer: jest.fn(() => Promise.resolve()) },
             },
             {
-                provide: InvoiceDocumentsBuildService,
+                provide: InvoicePdfBuildService,
                 useValue: { build: buildInvoices },
             },
         ],
@@ -276,7 +280,9 @@ describe('PDF-КП: событие в поток продаж', () => {
                 .mockRejectedValue(new Error('нет доступа к Диску')),
         });
 
-        const result = await service.generate(pdfRequestOf({ salesFlow: true }));
+        const result = await service.generate(
+            pdfRequestOf({ salesFlow: true }),
+        );
 
         expect(result.savedToDeal).toBe(false);
         expect(dispatch).not.toHaveBeenCalled();
@@ -309,7 +315,9 @@ describe('PDF-КП: событие в поток продаж', () => {
             dispatch: failingDispatch('Redis недоступен'),
         });
 
-        const result = await service.generate(pdfRequestOf({ salesFlow: true }));
+        const result = await service.generate(
+            pdfRequestOf({ salesFlow: true }),
+        );
 
         expect(result.link).toMatch(/\/api\/files\/offer-.*\.pdf$/);
         expect(result.savedToDeal).toBe(true);

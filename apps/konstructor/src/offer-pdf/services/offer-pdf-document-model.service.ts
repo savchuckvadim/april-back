@@ -16,6 +16,7 @@ import {
     OfferPdfImages,
     OfferPdfSigner,
 } from '../model/offer-pdf-document.model';
+import { readErrorText } from '../lib/read-error-text.util';
 import { OfferPdfPrintInput } from '../model/offer-pdf-print-input';
 import { resolveOfferPdfSettings } from '../model/offer-pdf-settings';
 import { OFFER_PDF_DEFAULT_TEMPLATE_CODE } from '../model/offer-pdf-template-code';
@@ -55,17 +56,6 @@ const imageSlot = (role: ProviderImageRole): keyof OfferPdfImages | null => {
         default:
             return null;
     }
-};
-
-/** Ошибка чтения одной строкой: переносы в тексте ошибки Prisma лог не ломают. */
-const readErrorText = (error: unknown): string => {
-    const code =
-        typeof error === 'object' && error !== null && 'code' in error
-            ? error.code
-            : null;
-    if (code === 'P2021') return 'нет таблицы provider_images';
-    const message = error instanceof Error ? error.message : String(error);
-    return message.replace(/\s+/g, ' ').trim().slice(0, 300);
 };
 
 export interface OfferPdfModelOptions {

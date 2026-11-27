@@ -12,6 +12,9 @@ import { ComplectVariantOfferStageService } from '../modules/complect-variant-li
 import { SalesDocumentFlowModule } from '../modules/sales-document-flow/sales-document-flow.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferPdfController } from './controllers/offer-pdf.controller';
+import { InvoicePdfBuildService } from './invoice/services/invoice-pdf-build.service';
+import { InvoicePdfModelService } from './invoice/services/invoice-pdf-model.service';
+import { InvoicePdfRenderService } from './invoice/services/invoice-pdf-render.service';
 import { OfferPdfAssetStore } from './lib/offer-pdf-asset-store';
 import { OfferPdfAssetsCheckService } from './services/offer-pdf-assets-check.service';
 import { OfferPdfDocumentModelService } from './services/offer-pdf-document-model.service';
@@ -22,7 +25,8 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
 /**
  * КП в PDF из JSX-шаблонов. Данные документа берёт у OfferWordModule
  * (OfferRenderDataService) — один расчёт цен и наполнения на оба формата;
- * оттуда же склейка PDF вариантов (PdfMergeService).
+ * оттуда же склейка PDF вариантов (PdfMergeService) и данные счёта
+ * (InvoiceRenderDataService): счёт PDF-КП рисуется сразу в PDF, без Word.
  */
 @Module({
     imports: [
@@ -52,6 +56,10 @@ import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.
         OfferPdfRenderService,
         OfferPdfGenerateService,
         OfferPdfStylePreviewService,
+        // счёт в PDF без Word-шаблона и LibreOffice
+        InvoicePdfModelService,
+        InvoicePdfRenderService,
+        InvoicePdfBuildService,
         ComplectVariantOfferStageService,
     ],
 })

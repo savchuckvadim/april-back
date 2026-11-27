@@ -117,9 +117,9 @@ import { SalesDocumentFlowModule } from '../modules/sales-document-flow/sales-do
         OfferBxTimelineService,
         // Склейка PDF вариантов нужна и PDF-КП (offer-pdf)
         PdfMergeService,
-        // Счёт PDF-КП собирает тот же сервис и тот же шаблон счёта, что у Word-КП
-        // (подбор шаблона, рендер DOCX, перевод в PDF)
-        InvoiceDocumentsBuildService,
+        // Данные счёта (реквизиты, строки, итоги, номер) нужны и PDF-счёту
+        // (offer-pdf): суммы считаются один раз на оба формата
+        InvoiceRenderDataService,
         // Зависимости процессоров из OfferWordWorkerModule
         OfferWordByTemplateGenerateUseCase,
         OfferWordMultiGenerateUseCase,
