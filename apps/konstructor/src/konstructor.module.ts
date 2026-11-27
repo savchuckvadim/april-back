@@ -10,6 +10,7 @@ import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module
 import { SupplyInitTaskAccountantModule } from './supply/init-task-accountant/supply-init-task-accountant.module';
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { DealSendModule } from './modules/deal-send/deal-send.module';
+import { KonstructorInnModule } from './modules/inn/inn.module';
 import { DirectServiceDealModule } from './supply/direct-service-deal/direct-service-deal.module';
 import { BitrixHelperModule } from './modules/bitrix-helper/bitrix-helper.module';
 import { ComplectDescriptionModule } from './modules/complect-description/complect-description.module';
@@ -26,6 +27,7 @@ import { ComplectDescriptionModule } from './modules/complect-description/comple
         SupplyInitTaskAccountantModule,
         InnerDealModule,
         DealSendModule,
+        KonstructorInnModule,
         DirectServiceDealModule,
         BitrixHelperModule,
         ComplectDescriptionModule,
