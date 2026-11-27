@@ -122,6 +122,17 @@ export class OfferPdfSettingsDto implements OfferPdfSettingsInput {
     @IsOptional()
     @IsBoolean()
     withPromo?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Показывать скидку в таблице цен КП: колонку «Скидка» и цену до скидки. false: колонки нет, в «Цене» цена со скидкой, в итогах и в остальном КП скидки тоже нет. Без поля скидка показывается, как раньше. На счёт настройка не влияет: в счёте скидка видна всегда, когда она есть у строк.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    showDiscount?: boolean;
 }
 
 /**

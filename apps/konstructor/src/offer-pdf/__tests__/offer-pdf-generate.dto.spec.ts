@@ -215,3 +215,23 @@ describe('OfferPdfGenerateDto: счёт', () => {
         }
     });
 });
+
+describe('OfferPdfGenerateDto: настройка showDiscount', () => {
+    it('без поля допустимо: скидку решит умолчание (показывать)', async () => {
+        const { dto, paths } = await check({ settings: {} });
+
+        expect(paths.filter(path => path.startsWith('settings'))).toEqual([]);
+        expect(dto.settings?.showDiscount).toBeUndefined();
+    });
+
+    it('showDiscount не срезается whitelist и принимает булево', async () => {
+        const hidden = await check({ settings: { showDiscount: false } });
+        expect(
+            hidden.paths.filter(path => path.startsWith('settings')),
+        ).toEqual([]);
+        expect(hidden.dto.settings?.showDiscount).toBe(false);
+
+        const shown = await check({ settings: { showDiscount: true } });
+        expect(shown.dto.settings?.showDiscount).toBe(true);
+    });
+});

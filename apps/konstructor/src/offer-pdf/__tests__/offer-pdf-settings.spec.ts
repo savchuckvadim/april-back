@@ -50,6 +50,21 @@ describe('настройки PDF-КП', () => {
         );
     });
 
+    it('скидка в таблице цен по умолчанию показывается (старые запросы как раньше), скрывается явно', () => {
+        expect(OFFER_PDF_DEFAULT_SETTINGS.showDiscount).toBe(true);
+        expect(resolveOfferPdfSettings().showDiscount).toBe(true);
+        expect(resolveOfferPdfSettings({}).showDiscount).toBe(true);
+        expect(
+            resolveOfferPdfSettings({ showDiscount: null }).showDiscount,
+        ).toBe(true);
+        expect(
+            resolveOfferPdfSettings({ showDiscount: false }).showDiscount,
+        ).toBe(false);
+        expect(
+            resolveOfferPdfSettings({ showDiscount: true }).showDiscount,
+        ).toBe(true);
+    });
+
     it('фраза об акции обрезается, пустая → null', () => {
         expect(
             resolveOfferPdfSettings({ salePhrase: '  акция  ' }).salePhrase,
