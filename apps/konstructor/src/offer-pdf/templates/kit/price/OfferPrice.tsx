@@ -1,114 +1,61 @@
-import type { FC, ReactElement } from 'react';
-import { Text, View } from '@react-pdf/renderer';
-import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
+import type { FC } from 'react';
+import { View } from '@react-pdf/renderer';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { baseStyles } from '../base.styles';
 import { onSurface } from '../document/surface.styles';
 import { SurfaceGate } from '../document/SurfaceGate';
 import { HEADING_PRESENCE } from '../document/section.layout';
+import {
+    priceKeepsHeadingWithTable,
+    priceStartPresence,
+} from '../document/sheet-fit.util';
 import { SplitGate } from '../infoblocks/SplitGate';
 import type { OfferPdfTheme } from '../theme/offer-pdf-theme';
-import { hasDiscount, priceColumns } from './price-columns.util';
-import { hasSetTitle } from './price-set-title.util';
-import { SMALL_TABLE_ROWS, TOTALS_PRESENCE } from './price.layout';
-import { priceStyles } from './price.styles';
-import { PriceHeadRow } from './PriceHeadRow';
-import { PriceProductRow } from './PriceProductRow';
-import { PriceSetTitleRow } from './PriceSetTitleRow';
-import { PriceTotals } from './PriceTotals';
+import { PriceHeading } from './PriceHeading';
+import { PriceTable } from './PriceTable';
 
 export interface OfferPriceProps {
     model: OfferPdfDocumentModel;
     theme: OfferPdfTheme;
 }
 
-/** Таблица цен по строкам КП, итог и фраза об акции. */
+/**
+ * Раздел «Стоимость»: заголовок, подпись, таблица цен, итог и фраза об
+ * акции. Заголовок не остаётся на листе без таблицы. Короткая таблица идёт с
+ * заголовком одним неделимым блоком. Длинная рвётся по строкам, а метка
+ * перед карточкой держит место под заголовок, подпись, шапку и первую
+ * строку. Метка стоит снаружи карточки: первый элемент внутри неё react-pdf
+ * на следующий лист не переносит.
+ */
 export const OfferPrice: FC<OfferPriceProps> = ({ model, theme }) => {
-    const { data, settings } = model;
-    const styles = priceStyles(theme);
     const base = baseStyles(theme);
-    const rows = data.ProductRows ?? [];
-    const withDiscount = hasDiscount(rows);
-    const columns = priceColumns(withDiscount);
-    const total = data.TotalRow?.[0];
+    const { data } = model;
     const caption =
         data.GeneralProductByContractName || data.GeneralProductName;
-    const [first, ...rest] = rows;
-    const isLast = (index: number): boolean => index === rows.length - 1;
-    const productRowAt = (
-        row: IProductRenderItemData,
-        index: number,
-    ): ReactElement => (
-        <PriceProductRow
-            key={index}
-            row={row}
-            index={index}
-            columns={columns}
-            withDiscount={withDiscount}
-            last={isLast(index)}
-            theme={theme}
-        />
-    );
-    const setTitleAt = (row: IProductRenderItemData): ReactElement => (
-        <PriceSetTitleRow title={row.ProductSetTitle} theme={theme} />
-    );
+    const keepWhole = priceKeepsHeadingWithTable(model, theme);
+    const heading = <PriceHeading caption={caption} theme={theme} />;
+    const table = <PriceTable model={model} theme={theme} />;
 
     return (
         <>
             <SurfaceGate theme={theme} />
+            {keepWhole ? null : (
+                <SplitGate presence={priceStartPresence(model, theme)} />
+            )}
             <View style={onSurface(theme, base.section)}>
-                {/* заголовок не остаётся последним на листе и не рвётся: minPresenceAhead на самом тексте react-pdf соблюдает не всегда, а разорванный заголовок оставлял внизу пустой узел */}
-                <SplitGate presence={HEADING_PRESENCE} />
-                <Text
-                    style={base.h2}
-                    wrap={false}
-                    minPresenceAhead={HEADING_PRESENCE}
-                >
-                    Стоимость
-                </Text>
-                {caption ? <Text style={base.caption}>{caption}</Text> : null}
-
-                {/* Короткая таблица не рвётся между страницами: уходит на новую вместе с итогом */}
-                <View
-                    style={styles.table}
-                    wrap={rows.length > SMALL_TABLE_ROWS}
-                >
-                    {/* Шапка таблицы — вместе с первой строкой (и заголовком её набора): одна внизу страницы она не остаётся */}
-                    <View
-                        wrap={false}
-                        minPresenceAhead={
-                            isLast(0) ? TOTALS_PRESENCE : undefined
-                        }
-                    >
-                        <PriceHeadRow columns={columns} theme={theme} />
-                        {first && hasSetTitle(first) ? setTitleAt(first) : null}
-                        {first ? productRowAt(first, 0) : null}
+                {keepWhole ? (
+                    <View wrap={false}>
+                        {heading}
+                        {table}
                     </View>
-                    {rest.map((row, offset) => {
-                        const index = offset + 1;
-                        // заголовок набора для сравнения и первая строка набора — один небольшой неделимый блок: заголовок не остаётся последним на листе (break и крупные неделимые блоки разбивку зацикливают)
-                        return hasSetTitle(row) ? (
-                            <View
-                                key={index}
-                                wrap={false}
-                                minPresenceAhead={
-                                    isLast(index) ? TOTALS_PRESENCE : undefined
-                                }
-                            >
-                                {setTitleAt(row)}
-                                {productRowAt(row, index)}
-                            </View>
-                        ) : (
-                            productRowAt(row, index)
-                        );
-                    })}
-                    {total ? <PriceTotals total={total} theme={theme} /> : null}
-                    {settings.salePhrase ? (
-                        <Text style={styles.salePhrase}>
-                            {settings.salePhrase}
-                        </Text>
-                    ) : null}
-                </View>
+                ) : (
+                    <>
+                        {/* заголовок не рвётся и не остаётся последним на листе: метка даёт ему соседа слева, без него minPresenceAhead первого элемента не работает */}
+                        <SplitGate presence={HEADING_PRESENCE} />
+                        {heading}
+                        {table}
+                    </>
+                )}
             </View>
         </>
     );

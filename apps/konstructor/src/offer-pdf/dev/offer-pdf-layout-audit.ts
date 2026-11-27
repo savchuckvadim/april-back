@@ -5,6 +5,7 @@
  *
  *   npm run offer-pdf:audit -- --out tmp/offer-pdf-audit
  *   npm run offer-pdf:audit -- --only facet,prism   # только эти стили
+ *   npm run offer-pdf:audit -- --scenario 38-,39-  # только сценарии с таким началом имени
  *   npm run offer-pdf:audit -- --dump      # срез дерева первого сценария
  *
  * На каждой странице: шапка и подвал (fixed) не залезают на текст, текст
@@ -60,6 +61,13 @@ const readOnly = (): Set<string> | null => {
     return value ? new Set(value.split(',')) : null;
 };
 
+/** `--scenario 38-,39-` — только сценарии, чьё имя начинается так */
+const readScenarioPrefixes = (): string[] | null => {
+    const index = process.argv.indexOf('--scenario');
+    const value = index >= 0 ? process.argv[index + 1] : undefined;
+    return value ? value.split(',') : null;
+};
+
 interface AuditRun {
     template: OfferPdfTemplate;
     scenario: AuditScenario;
@@ -73,11 +81,18 @@ interface AuditRun {
  */
 const auditRuns = (): AuditRun[] => {
     const only = readOnly();
-    const [base] = AUDIT_SCENARIOS;
+    const prefixes = readScenarioPrefixes();
+    const scenarios = prefixes
+        ? AUDIT_SCENARIOS.filter(scenario =>
+              prefixes.some(prefix => scenario.name.startsWith(prefix)),
+          )
+        : AUDIT_SCENARIOS;
+    // остальные гаммы стиля — на сценарии по умолчанию, при выборке сценариев их нет
+    const [base] = prefixes ? [] : AUDIT_SCENARIOS;
     return OFFER_PDF_TEMPLATES.filter(
         template => !only || only.has(template.code),
     ).flatMap(template => [
-        ...AUDIT_SCENARIOS.map(scenario => ({
+        ...scenarios.map(scenario => ({
             template,
             scenario,
             palette: null,

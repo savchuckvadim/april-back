@@ -73,6 +73,38 @@ const setRow = (name: string) => ({
     ProductName: name,
 });
 
+/**
+ * Короткая таблица цен с заголовками наборов, как в КП 27.11.2026: одна
+ * общая строка и два набора по строке. Таблица до трёх строк не рвётся.
+ */
+const oneGeneralTwoSetsByOne = productRowsWithSets(
+    base.ProductRows.slice(0, 1),
+    [
+        [setRow('ГАРАНТ-Профессионал. Бухгалтерия, 3 одновременных доступа')],
+        [setRow('Правовой консалтинг и Академия ГАРАНТ')],
+    ],
+);
+
+/** Подпись под «Стоимостью» в две строки, как у договора сопровождения */
+const LONG_PRICE_CAPTION =
+    'Услуги по сопровождению экземпляров Систем ГАРАНТ: информационное обслуживание, обновление и консультации на весь срок договора';
+
+/**
+ * Короткая таблица цен после наполнения с `regions` региональными блоками:
+ * от их числа зависит, где на листе начнётся раздел «Стоимость». Заголовок
+ * с подписью уходят на следующий лист вместе с таблицей (orphan-price-heading).
+ */
+const smallPriceAfterRegions = (
+    regions: number,
+    rows: Partial<IOfferWordRenderData>,
+): Partial<OfferPdfDocumentModel> => ({
+    data: createOfferRenderDataFixture({
+        infoblocksByGroups: withRegions(regions),
+        GeneralProductByContractName: LONG_PRICE_CAPTION,
+        ...rows,
+    }),
+});
+
 /** Общий набор из двух строк и два набора для сравнения по две строки */
 const twoSetsByTwoRows = productRowsWithSets(base.ProductRows, [
     [
@@ -763,6 +795,33 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             }),
         },
     },
+    // короткая таблица цен с наборами после наполнения разной длины: «Стоимость»
+    // с подписью не остаются внизу листа без таблицы (КП 27.11.2026)
+    ...[2, 5, 8, 11].map(
+        (regions): AuditScenario => ({
+            name: `38-small-price-sets-after-regions-${regions}`,
+            settings: {},
+            model: smallPriceAfterRegions(regions, {
+                ProductRows: oneGeneralTwoSetsByOne,
+                TotalRow: undefined,
+            }),
+        }),
+    ),
+    // то же с итогом и фразой об акции: неделимый блок выше
+    ...[3, 7, 10].map(
+        (regions): AuditScenario => ({
+            name: `39-small-price-totals-after-regions-${regions}`,
+            settings: {
+                salePhrase: 'Специальное предложение действует до конца месяца',
+            },
+            model: smallPriceAfterRegions(regions, {
+                ProductRows: [
+                    ...base.ProductRows,
+                    setRow('Правовой консалтинг и Академия ГАРАНТ'),
+                ],
+            }),
+        }),
+    ),
     // печать, подпись руководителя и логотип поставщика (картинки из
     // provider_images): блок подписи под длинным письмом становится выше
     // (96 pt вместо 36), логотип стоит в шапке «Классики» и «Призмы»
