@@ -19,6 +19,7 @@ export type LayoutIssueKind =
     | 'out-of-page'
     | 'fixed-out-of-page'
     | 'orphan-heading'
+    | 'orphan-price-heading'
     | 'orphan-set-title'
     | 'orphan-complect-title'
     | 'orphan-totals'
@@ -140,6 +141,16 @@ const COMPLECT_TITLE_PATTERN = /^Комплект \d+\. /;
 
 const isComplectTitle = (node: LayoutNode): boolean =>
     node.type === 'TEXT' && COMPLECT_TITLE_PATTERN.test(textOf(node));
+
+/**
+ * Заголовок раздела цен и подпись колонки в шапке его таблицы. Сравниваются
+ * без учёта регистра: стиль может печатать их прописными.
+ */
+const PRICE_HEADING = 'стоимость';
+const PRICE_TABLE_HEAD = 'наименование';
+
+const textIs = (node: LayoutNode, expected: string): boolean =>
+    textOf(node).toLowerCase() === expected;
 
 const clip = (text: string): string => text.slice(0, 60);
 
@@ -299,6 +310,25 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 kind: 'orphan-heading',
                 text: clip(textOf(lastContent.node)),
                 detail: 'заголовок последний на странице',
+            });
+        }
+        // «Стоимость» без своей таблицы: заголовок и подпись под ним остались на
+        // листе, а таблица ушла на следующий (КП 27.11.2026). Последней на
+        // листе стоит подпись, поэтому orphan-heading этого не видит.
+        const priceHeadingAt = content.findIndex(
+            item => isHeading(item.node) && textIs(item.node, PRICE_HEADING),
+        );
+        if (
+            priceHeadingAt >= 0 &&
+            !content
+                .slice(priceHeadingAt + 1)
+                .some(item => textIs(item.node, PRICE_TABLE_HEAD))
+        ) {
+            issues.push({
+                page: number,
+                kind: 'orphan-price-heading',
+                text: clip(textOf(content[priceHeadingAt].node)),
+                detail: 'заголовок цен без таблицы: шапка таблицы на другом листе',
             });
         }
         // заголовок набора для сравнения без своей первой строки или, на плашке

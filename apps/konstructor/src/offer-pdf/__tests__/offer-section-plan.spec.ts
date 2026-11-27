@@ -1,6 +1,9 @@
 import { OFFER_PDF_DEFAULT_SETTINGS } from '../model/offer-pdf-settings';
 import { offerSheetFlows } from '../templates/kit/document/document.util';
+import { HEADING_PRESENCE } from '../templates/kit/document/section.layout';
 import {
+    priceKeepsHeadingWithTable,
+    priceStartPresence,
     priceStartsOwnSheet,
     sheetCapacity,
 } from '../templates/kit/document/sheet-fit.util';
@@ -334,5 +337,64 @@ describe('оценка высоты раздела «Стоимость»', () =
                 salePhrase: 'При оплате до конца месяца — скидка 5 %',
             }),
         ).toBeGreaterThan(withTotals);
+    });
+});
+
+describe('заголовок «Стоимость» не остаётся на листе без таблицы', () => {
+    const base = createOfferRenderDataFixture();
+    const modelOf = (rows: number, name?: string) =>
+        createOfferPdfModelFixture({
+            data: createOfferRenderDataFixture({
+                ProductRows: Array.from({ length: rows }, () => ({
+                    ...base.ProductRows[0],
+                    ...(name ? { ProductName: name } : {}),
+                })),
+            }),
+        });
+
+    it('таблица до трёх строк идёт с заголовком одним блоком в любой теме', () => {
+        for (const theme of [CLASSIC_THEME, PEARL_THEME]) {
+            for (const rows of [1, 2, 3]) {
+                expect(priceKeepsHeadingWithTable(modelOf(rows), theme)).toBe(
+                    true,
+                );
+            }
+        }
+    });
+
+    it('длинная таблица рвётся по строкам и общей обёртки не получает', () => {
+        for (const rows of [4, 14]) {
+            expect(
+                priceKeepsHeadingWithTable(modelOf(rows), CLASSIC_THEME),
+            ).toBe(false);
+        }
+    });
+
+    it('раздел выше листа по оценке остаётся без общей обёртки: неделимый блок выше листа ушёл бы под подвал', () => {
+        const huge = 'Комплект с очень длинным названием '.repeat(25);
+        expect(
+            priceKeepsHeadingWithTable(modelOf(3, huge), CLASSIC_THEME),
+        ).toBe(false);
+    });
+
+    it('перед длинной таблицей держим место под заголовок, подпись, шапку и первую строку', () => {
+        const model = modelOf(14);
+        const presence = priceStartPresence(model, CLASSIC_THEME);
+        expect(presence).toBe(
+            estimatePriceBlockHeight(CLASSIC_THEME, {
+                rows: [model.data.ProductRows[0]],
+                withCaption: true,
+                withTotals: false,
+                salePhrase: null,
+            }),
+        );
+        expect(presence).toBeGreaterThan(HEADING_PRESENCE);
+    });
+
+    it('место перед таблицей не больше вместимости листа', () => {
+        const huge = 'Комплект с очень длинным названием '.repeat(60);
+        expect(priceStartPresence(modelOf(14, huge), CLASSIC_THEME)).toBe(
+            sheetCapacity(CLASSIC_THEME),
+        );
     });
 });

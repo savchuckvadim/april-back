@@ -27,6 +27,10 @@ export const sheetCapacity = (theme: OfferPdfTheme): number =>
     (A4.height - theme.page.paddingTop - theme.page.paddingBottom) *
     SHEET_SHARE;
 
+/** Есть ли подпись под заголовком «Стоимость» */
+const hasPriceCaption = ({ data }: OfferPdfDocumentModel): boolean =>
+    Boolean(data.GeneralProductByContractName || data.GeneralProductName);
+
 /** Высота раздела «Стоимость» этого КП по оценке до раскладки */
 const estimatePrice = (
     model: OfferPdfDocumentModel,
@@ -35,12 +39,50 @@ const estimatePrice = (
     const { data, settings } = model;
     return estimatePriceBlockHeight(theme, {
         rows: data.ProductRows ?? [],
-        withCaption: Boolean(
-            data.GeneralProductByContractName || data.GeneralProductName,
-        ),
+        withCaption: hasPriceCaption(model),
         withTotals: Boolean(data.TotalRow?.[0]),
         salePhrase: settings.salePhrase,
     });
+};
+
+/**
+ * Заголовок «Стоимость», подпись и короткая таблица (до SMALL_TABLE_ROWS
+ * строк) — один неделимый блок. Не помещаются внизу листа — уходят на
+ * следующий вместе, заголовок не остаётся над пустым местом (КП 27.11.2026:
+ * заголовок с подписью остались внизу листа, таблица из трёх строк ушла на
+ * следующий). Помещается ли блок, react-pdf решает по настоящей высоте.
+ * Оценка здесь только предохранитель: неделимый блок выше листа react-pdf
+ * кладёт под подвал, поэтому раздел, который по оценке (с запасом) выше
+ * вместимости листа, общей обёртки не получает.
+ */
+export const priceKeepsHeadingWithTable = (
+    model: OfferPdfDocumentModel,
+    theme: OfferPdfTheme,
+): boolean =>
+    (model.data.ProductRows ?? []).length <= SMALL_TABLE_ROWS &&
+    estimatePrice(model, theme) <= sheetCapacity(theme);
+
+/**
+ * Сколько места держать перед разделом «Стоимость», когда таблица длинная и
+ * рвётся по строкам: заголовок, подпись, шапка таблицы и первая строка (с
+ * заголовком её набора) встают на один лист. Не помещаются внизу листа —
+ * раздел начинается со следующего. Оценка с запасом, не больше вместимости
+ * листа.
+ */
+export const priceStartPresence = (
+    model: OfferPdfDocumentModel,
+    theme: OfferPdfTheme,
+): number => {
+    const [first] = model.data.ProductRows ?? [];
+    return Math.min(
+        estimatePriceBlockHeight(theme, {
+            rows: first ? [first] : [],
+            withCaption: hasPriceCaption(model),
+            withTotals: false,
+            salePhrase: null,
+        }),
+        sheetCapacity(theme),
+    );
 };
 
 /**
