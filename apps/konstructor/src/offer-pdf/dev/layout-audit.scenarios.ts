@@ -833,6 +833,32 @@ export const AUDIT_SCENARIOS: AuditScenario[] = [
             letter: { appeal: 'Уважаемый Иван Петрович!', text: letterText(6) },
         },
     },
+    // КП без сопроводительного письма (withLetter: false): письма и подписи
+    // нет, хотя печать и подпись поставщика включены и картинки есть. «Сначала
+    // цена» с большим наполнением: цена идёт своим листом, наполнение со
+    // следующего; у «Модерна» страница письма не печатается вовсе
+    {
+        name: '40-no-letter-price-first-many-rows',
+        settings: { withLetter: false, isPriceFirst: true },
+        images: createAuditProviderImages,
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: manyRows,
+                infoblocksByGroups: withRegions(12),
+            }),
+        },
+    },
+    // то же при обычном порядке: 14 цен после наполнения открывают свой лист
+    {
+        name: '41-no-letter-many-prices-after-infoblocks',
+        settings: { withLetter: false },
+        model: {
+            data: createOfferRenderDataFixture({
+                ProductRows: fourteenRows,
+                infoblocksByGroups: withRegions(12),
+            }),
+        },
+    },
     // латиница в заголовке и у получателя после документов без неё: при
     // испорченном кэше глифов буквы выпадали (glyph-loss). Сценарий идёт
     // последним — кэш к нему уже наполнен предыдущими документами процесса.

@@ -31,8 +31,9 @@ export interface OfferPdfDocumentProps {
 /**
  * КП любого стиля: титульник и промо-страница (если они есть у стиля и
  * включены), затем потоки листов с шапкой, подложкой и подвалом: письмо с
- * подписью, цена, наполнение. Стиль задаёт тему и своё оформление листа
- * (chrome); что стоит на одном листе, решает offerSheetFlows.
+ * подписью (если письмо включено), цена, наполнение. Стиль задаёт тему и
+ * своё оформление листа (chrome); что стоит на одном листе, решает
+ * offerSheetFlows.
  */
 export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     model,
@@ -48,7 +49,8 @@ export const OfferPdfDocument: FC<OfferPdfDocumentProps> = ({
     const pages = offerDocumentPages(settings, chrome);
     // вариант комплекта печатается своим документом: название — в шапке первого листа
     const variantTitle = variantTitleOf(model);
-    const letterOnSheets = !pages.letterInPromo;
+    // письмо выключено или стоит на промо-странице — потока письма нет
+    const { letterOnSheets } = pages;
     const hasInfoblocks = hasInfoblocksToPrint(data);
     // поток из одного наполнения, которого нет, — пустой лист не печатаем
     const isPrintable = (flow: OfferSheetFlow): boolean =>

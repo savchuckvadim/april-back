@@ -39,6 +39,17 @@ describe('настройки PDF-КП', () => {
         );
     });
 
+    it('письмо по умолчанию включено (старые запросы без поля), выключается явно', () => {
+        expect(resolveOfferPdfSettings().withLetter).toBe(true);
+        expect(resolveOfferPdfSettings({}).withLetter).toBe(true);
+        expect(resolveOfferPdfSettings({ withLetter: null }).withLetter).toBe(
+            true,
+        );
+        expect(resolveOfferPdfSettings({ withLetter: false }).withLetter).toBe(
+            false,
+        );
+    });
+
     it('фраза об акции обрезается, пустая → null', () => {
         expect(
             resolveOfferPdfSettings({ salePhrase: '  акция  ' }).salePhrase,

@@ -96,10 +96,16 @@ describe('общие части стилей', () => {
             withCover: false,
             withPromo: false,
             letterInPromo: false,
+            letterOnSheets: true,
         });
         expect(
             offerDocumentPages(settings, { Cover: Part, Promo: Part }),
-        ).toEqual({ withCover: true, withPromo: true, letterInPromo: false });
+        ).toEqual({
+            withCover: true,
+            withPromo: true,
+            letterInPromo: false,
+            letterOnSheets: true,
+        });
         expect(
             offerDocumentPages(
                 { ...settings, withCover: false, withPromo: false },
@@ -109,6 +115,7 @@ describe('общие части стилей', () => {
             withCover: false,
             withPromo: false,
             letterInPromo: false,
+            letterOnSheets: true,
         });
         // письмо уходит на промо-страницу, только когда она печатается
         expect(
@@ -121,6 +128,38 @@ describe('общие части стилей', () => {
             offerDocumentPages(settings, { promoReplacesLetter: true })
                 .letterInPromo,
         ).toBe(false);
+    });
+
+    it('письмо выключено: письма на листах нет, промо-страница из одного письма не печатается', () => {
+        const Part = (): null => null;
+        const noLetter = { ...OFFER_PDF_DEFAULT_SETTINGS, withLetter: false };
+        expect(offerDocumentPages(noLetter, { Cover: Part })).toEqual({
+            withCover: true,
+            withPromo: false,
+            letterInPromo: false,
+            letterOnSheets: false,
+        });
+        // обычная промо-страница (о системе) письма не несёт и печатается
+        expect(
+            offerDocumentPages(noLetter, { Cover: Part, Promo: Part }),
+        ).toEqual({
+            withCover: true,
+            withPromo: true,
+            letterInPromo: false,
+            letterOnSheets: false,
+        });
+        // страница, что целиком состоит из письма («Модерн»), без письма пуста
+        expect(
+            offerDocumentPages(noLetter, {
+                Promo: Part,
+                promoReplacesLetter: true,
+            }),
+        ).toEqual({
+            withCover: false,
+            withPromo: false,
+            letterInPromo: false,
+            letterOnSheets: false,
+        });
     });
 
     it('содержимое титульника — из данных КП, пустое — null', () => {

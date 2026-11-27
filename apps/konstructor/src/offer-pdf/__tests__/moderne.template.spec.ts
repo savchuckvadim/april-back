@@ -61,6 +61,17 @@ describe('«Модерн» PDF-шаблон КП', () => {
         expect(texts.filter(item => item === APPEAL)).toHaveLength(1);
     });
 
+    it('письмо выключено — страницы письма нет вовсе, подписи и обращения тоже', () => {
+        const texts = renderTexts({ withLetter: false });
+        const text = texts.join('\n');
+        expect(text).not.toContain(MODERNE_PROMO_TITLE);
+        expect(text).not.toContain('Вот уже 35 лет…');
+        expect(texts.filter(item => item === APPEAL)).toHaveLength(0);
+        expect(text).not.toContain('А. В. Кузнецов');
+        expect(text).toContain('Информационное наполнение');
+        expect(text).toContain('Стоимость');
+    });
+
     it('без описаний — названия наполнения идут списком в две колонки', () => {
         const text = renderTexts({
             descriptionMode: DocumentFieldDescriptionMode.NO,

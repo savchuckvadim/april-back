@@ -270,6 +270,7 @@ const productRow = (
 export const createOfferRenderDataFixture = (
     overrides: Partial<IOfferWordRenderData> = {},
 ): IOfferWordRenderData => ({
+    WithLetter: true,
     infoblocksByGroups: groups,
     simpleInfoblocks: groups.flatMap(group => group.infoblocks),
     simpleInfoblocksByColumns: [{ columnOne: [], columnTwo: [] }],

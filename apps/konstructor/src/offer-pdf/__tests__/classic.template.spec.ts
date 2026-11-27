@@ -104,6 +104,41 @@ describe('классический PDF-шаблон КП', () => {
         expect(text).not.toContain('А. В. Кузнецов');
     });
 
+    it('письмо выключено: письма и подписи нет, наполнение, цена и менеджер на месте', () => {
+        const text = renderTexts({ withLetter: false });
+        expect(text).not.toContain('Здравствуйте, Иван Петрович!');
+        expect(text).not.toContain('Благодарим за интерес');
+        // подпись и печать стоят под письмом: настройка withStamps включена, но без письма их нет
+        expect(OFFER_PDF_DEFAULT_SETTINGS.withStamps).toBe(true);
+        expect(text).not.toContain('А. В. Кузнецов');
+        expect(text).toContain('Информационное наполнение');
+        expect(text).toContain('Стоимость');
+        expect(text).toContain('Мария Сидорова');
+    });
+
+    it('письмо выключено и «сначала цена»: цена, затем наполнение, без письма и подписи', () => {
+        const text = renderTexts({ withLetter: false, isPriceFirst: true });
+        expect(text).not.toContain('Здравствуйте, Иван Петрович!');
+        expect(text).not.toContain('А. В. Кузнецов');
+        expect(text.indexOf('Стоимость')).toBeLessThan(
+            text.indexOf('Информационное наполнение'),
+        );
+    });
+
+    it('письмо выключено: текст письма из запроса в документ не попадает', () => {
+        const text = renderTexts(
+            { withLetter: false },
+            {
+                letter: {
+                    appeal: 'Уважаемый Иван Петрович!',
+                    text: 'Свой текст письма с <color>акцентом</color>.',
+                },
+            },
+        );
+        expect(text).not.toContain('Уважаемый Иван Петрович!');
+        expect(text).not.toContain('акцентом');
+    });
+
     it('письмо и обращение из запроса заменяют текст по умолчанию', () => {
         const text = renderTexts(
             {},
