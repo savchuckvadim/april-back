@@ -8,6 +8,7 @@ import {
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { COMPLECT_VARIANT_SMART_TYPE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { InitSupplyDto } from '../dto/init-supply.dto';
+import { variantLtRows } from './variant-lt-rows';
 
 /** Код поля заявки RPA со ссылками на элементы вариантов (множественное crm). */
 export const RPA_COMPLECT_VARIANTS_FIELD = 'complect_variants';
@@ -42,7 +43,6 @@ const SPECIFICATION_CODE_BY_GROUP: Partial<
     [INFOBLOCK_GROUP_TYPE.ER]: ContractSpecificationCodeEnum.IERS,
     [INFOBLOCK_GROUP_TYPE.PER]: ContractSpecificationCodeEnum.IERS_PACKETS,
     [INFOBLOCK_GROUP_TYPE.FREE]: ContractSpecificationCodeEnum.IFREE,
-    [INFOBLOCK_GROUP_TYPE.LT]: ContractSpecificationCodeEnum.LT_PACKET,
     [INFOBLOCK_GROUP_TYPE.CONSULTING]: ContractSpecificationCodeEnum.SERVICES,
 };
 
@@ -54,6 +54,9 @@ const SPECIFICATION_CODE_BY_GROUP: Partial<
  * а страница в таймлайне читает инфоблоки именно из неё. Поэтому поля про
  * инфоблоки и имя комплекта пересобираются из `complect` варианта, а всё
  * остальное (ОД, дистрибутив, комментарии) остаётся от заявки.
+ *
+ * Legal Tech собирается отдельно (см. variantLtRows): группа LT в `complect`
+ * не делит сервисы на бесплатные и платные и не знает названий пакетов.
  */
 export const specificationFromComplect = (
     variant: DocumentVariantDto,
@@ -75,8 +78,11 @@ export const specificationFromComplect = (
         ...values.keys(),
         ContractSpecificationCodeEnum.COMPLECT_NAME,
     ]);
+    const lt = variantLtRows(variant, base);
     const kept = (base?.items ?? []).filter(
-        item => !overridden.has(String(item.code)),
+        item =>
+            !overridden.has(String(item.code)) &&
+            !lt.replaces(String(item.code)),
     );
     // Синтезированные пункты несут только код и значение — ровно то, что
     // читают блоки таймлайна; остальные поля формы здесь не нужны.
@@ -89,6 +95,7 @@ export const specificationFromComplect = (
             code,
             value: names.join('\n'),
         })),
+        ...lt.rows,
     ].map(
         item => ({ ...item, name: item.code }) as ContractSpecificationItemDto,
     );

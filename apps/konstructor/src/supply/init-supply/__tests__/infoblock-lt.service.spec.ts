@@ -40,6 +40,46 @@ describe('InfoblockLtService: Legal Tech в комментарии заявки'
         );
     });
 
+    it('бесплатный и платный LT выглядят одинаково: жирное название пакета и состав под ним', () => {
+        const comment = service.getLtComment(
+            dtoWith([
+                { code: 'specification_lt_free', value: 'LT Малый' },
+                {
+                    code: 'specification_lt_free_services',
+                    value: 'Интернет-семинары\nКонструктор',
+                },
+                { code: 'specification_lt_packet', value: 'LT Средний' },
+                {
+                    code: 'specification_lt_services',
+                    value: 'ЧекДок\nТендер',
+                },
+            ]),
+        );
+
+        expect(comment).toContain(
+            `• [b]LT Малый[/b]\n${RPA_NESTED_BULLET}Интернет-семинары\n${RPA_NESTED_BULLET}Конструктор`,
+        );
+        expect(comment).toContain(
+            `• [b]LT Средний[/b]\n${RPA_NESTED_BULLET}ЧекДок\n${RPA_NESTED_BULLET}Тендер`,
+        );
+    });
+
+    it('платный LT приходит одним составом, без названия: заголовок пакета остаётся', () => {
+        const comment = service.getLtComment(
+            dtoWith([
+                { code: 'specification_lt_packet', value: '' },
+                {
+                    code: 'specification_lt_services',
+                    value: 'Интернет-семинары\nКонструктор',
+                },
+            ]),
+        );
+
+        expect(comment).toContain(
+            `• [b]Legal Tech[/b]\n${RPA_NESTED_BULLET}Интернет-семинары\n${RPA_NESTED_BULLET}Конструктор`,
+        );
+    });
+
     it('без Legal Tech — пусто; пустой легаси-пакет не печатается', () => {
         expect(
             service.getLtComment(
