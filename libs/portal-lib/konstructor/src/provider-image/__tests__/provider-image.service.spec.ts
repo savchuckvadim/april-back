@@ -101,6 +101,28 @@ describe('картинки поставщика: сервис', () => {
             ]);
             expect(await service.list(OTHER_RQ)).toHaveLength(1);
         });
+
+        it('роль qr: QR для оплаты принимается, хранится и читается как любая другая картинка', async () => {
+            const image = await service.put(
+                RQ,
+                'qr',
+                upload(await makePng(300, 300), 'qr.png'),
+            );
+
+            expect(image).toMatchObject({
+                rqId: RQ,
+                role: 'qr',
+                format: 'png',
+                width: 300,
+                height: 300,
+            });
+            expect(image.path).toBe(
+                `konstructor/provider-images/${RQ}/${image.id}.png`,
+            );
+            expect((await service.get(RQ, 'qr')).id).toBe(image.id);
+            const [content] = await service.loadContents(RQ, ['qr', 'stamp']);
+            expect(content).toMatchObject({ role: 'qr', format: 'png' });
+        });
     });
 
     describe('перекодирование при загрузке', () => {

@@ -46,7 +46,7 @@ const ROLE_PARAM = {
     enum: PROVIDER_IMAGE_ROLES,
     enumName: 'ProviderImageRole',
     description:
-        'Роль картинки: stamp — печать, signature_director — подпись руководителя, signature_accountant — подпись главного бухгалтера, logo — логотип.',
+        'Роль картинки: stamp — печать, signature_director — подпись руководителя, signature_accountant — подпись главного бухгалтера, logo — логотип, qr — QR для оплаты (печатается в счёте PDF).',
     example: 'stamp',
 } as const;
 

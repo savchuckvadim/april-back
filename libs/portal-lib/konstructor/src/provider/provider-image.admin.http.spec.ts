@@ -137,6 +137,17 @@ describe('админ-ручки картинок поставщика', () => {
         expect(list[0].width).toBe(30);
     });
 
+    it('роль qr: QR для оплаты загружается, виден в списке и отдаётся файлом', async () => {
+        const uploaded = (await put('qr', await makePng(200, 200)).expect(200))
+            .body as ProviderImageResponseDto;
+        expect(uploaded).toMatchObject({ role: 'qr', format: 'png' });
+
+        const list = (await request(app.getHttpServer()).get(BASE).expect(200))
+            .body as ProviderImageResponseDto[];
+        expect(list.map(image => image.role)).toEqual(['qr']);
+        await request(app.getHttpServer()).get(`${BASE}/qr/file`).expect(200);
+    });
+
     it('неизвестная роль — 400 с текстом по-русски на всех ручках с ролью', async () => {
         const png = await makePng();
         const res = await put('seal', png).expect(400);
@@ -249,6 +260,7 @@ describe('админ-ручки картинок поставщика', () => {
                 'signature_director',
                 'signature_accountant',
                 'logo',
+                'qr',
             ],
         });
         expect(document.components?.schemas).toHaveProperty(
