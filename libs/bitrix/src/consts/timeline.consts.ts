@@ -46,9 +46,24 @@ export const timelineBold = (text: string): string =>
     `<b>${timelineText(text)}</b>`;
 
 /**
+ * Адрес для ссылки: пробелы и не-ASCII закодированы, уже закодированное не
+ * кодируется второй раз. Битрикс отдаёт `DETAIL_URL` файлов и папок Диска как
+ * есть — «…/182917/Перезаключение 2071», «…/Договоры/Договор Юрист-11.docx».
+ * Такой адрес перед {@link timelineLink} кодируется этой функцией, иначе
+ * пробелы из него пропадут, и ссылка поведёт на несуществующий путь.
+ */
+export const toSafeHref = (url: string): string => {
+    try {
+        return encodeURI(decodeURI(url));
+    } catch {
+        return url.replace(/\s/g, '%20');
+    }
+};
+
+/**
  * Кликабельная ссылка комментария. `url` собирается кодом (домен + id),
  * поэтому санируется только подпись; кавычки в url не пропускаем, чтобы
- * атрибут нельзя было закрыть.
+ * атрибут нельзя было закрыть. Адрес Диска — через {@link toSafeHref}.
  */
 export const timelineLink = (url: string, text: string): string =>
     `<a href="${String(url).replace(/["<>\s]/g, '')}" target="_blank">${timelineText(text)}</a>`;

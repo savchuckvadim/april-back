@@ -278,6 +278,8 @@ describe('генерация PDF-КП: запрос без вариантов', 
                     link: serverLink,
                     name: 'КП Бухгалтерия - Интернет 3 ОД',
                     type: 'offer',
+                    // на Диске файл читаемый, а на сервере остаётся offer-<uuid>.pdf
+                    diskName: 'КП_Бухгалтерия_Интернет_3_ОД',
                 },
             ],
             onlyBitrixSave: false,
@@ -516,6 +518,7 @@ describe('генерация PDF-КП: независимые варианты',
         expect(documents).toHaveLength(1);
         // имя склейки — по первому варианту, как у Word-КП
         expect(documents[0].name).toBe('КП Юрист - Интернет 3 ОД');
+        expect(documents[0].diskName).toBe('КП_Юрист_Интернет_3_ОД');
         expect(ctx.sendDocumentToBitrix).toHaveBeenCalledTimes(1);
         expect(result.links).toHaveLength(1);
         expect(result.warnings).toEqual([]);
@@ -536,6 +539,16 @@ describe('генерация PDF-КП: независимые варианты',
             'КП Юрист - Интернет 3 ОД',
             'КП Бухгалтер - Интернет 3 ОД',
         ]);
+        // на Диске у каждого варианта своё имя; файлы на сервере — offer-<uuid>.pdf
+        expect(documents.map(document => document.diskName)).toEqual([
+            'КП_Юрист_Интернет_3_ОД',
+            'КП_Бухгалтер_Интернет_3_ОД',
+        ]);
+        expect(
+            documents.every(document =>
+                /\/offer-[0-9a-f-]{36}\.pdf$/.test(document.absolutePath),
+            ),
+        ).toBe(true);
         const [timeline] = ctx.sendDocumentToBitrix.mock.calls[0];
         expect(timeline.documents).toHaveLength(2);
 

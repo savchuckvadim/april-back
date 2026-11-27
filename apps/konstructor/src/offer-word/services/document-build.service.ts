@@ -9,6 +9,10 @@ import { OfferWordCoreGenerateResult } from '../types/offer-word-core-generate.t
 import { getOfferDocumentProductName } from '../lib/get-offer-document-product-name.util';
 import { getInvoiceDocumentProductName } from '../lib/get-invoice-document-product-name';
 import {
+    getInvoiceDiskName,
+    getOfferDiskName,
+} from '../lib/document-disk-name.util';
+import {
     describeInvoiceNotBuilt,
     getErrorReason,
 } from '../lib/invoice-not-built.util';
@@ -103,6 +107,7 @@ export class DocumentBuildService {
             link: serverLink,
             name: displayName,
             type: 'offer',
+            diskName: getOfferDiskName(dto),
             absolutePath,
         };
     }
@@ -157,6 +162,15 @@ export class DocumentBuildService {
                 link: serverLink,
                 name: displayName,
                 type: 'invoice',
+                // на Диске счёт называется по номеру, нет номера — по комплекту;
+                // номер читается осторожно: имя файла не должно ронять сборку счёта
+                diskName: getInvoiceDiskName(
+                    dto,
+                    saved.setKind,
+                    saved.setIndex,
+                    saved.renderData?.InvoiceNumber,
+                    results.length,
+                ),
                 absolutePath,
             });
         }

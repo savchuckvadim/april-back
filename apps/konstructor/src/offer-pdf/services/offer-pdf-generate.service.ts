@@ -11,6 +11,7 @@ import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate
 import { ComplectVariantOfferStageService } from '@app/konstructor/modules/complect-variant-lifecycle/services/complect-variant-offer-stage.service';
 import { SalesDocumentFlowService } from '@app/konstructor/modules/sales-document-flow/services/sales-document-flow.service';
 import { IPreparedDocument } from '@app/konstructor/offer-word/interface/document.interface';
+import { getOfferDiskName } from '@app/konstructor/offer-word/lib/document-disk-name.util';
 import { getOfferDocumentProductName } from '@app/konstructor/offer-word/lib/get-offer-document-product-name.util';
 import {
     describeInvoiceNotBuilt,
@@ -98,10 +99,12 @@ interface PrintedDocument {
     rendered: OfferPdfRenderResult;
 }
 
-/** Файл к записи: итоговый PDF и имя документа для Битрикса. */
+/** Файл к записи: итоговый PDF, имя документа для Битрикса и имя на Диске. */
 interface PdfFile {
     buffer: Buffer;
     name: string;
+    /** Имя на Диске без расширения: «КП_Гарант-Юрист_Интернет_1_ОД» */
+    diskName: string;
 }
 
 interface SavedPdf {
@@ -109,6 +112,7 @@ interface SavedPdf {
     fileName: string;
     link: string;
     name: string;
+    diskName: string;
     size: number;
 }
 
@@ -431,7 +435,13 @@ export class OfferPdfGenerateService {
             const buffer = await this.pdfMerge.mergeBuffers(
                 documents.map(document => document.rendered.buffer),
             );
-            return [{ buffer, name: separate[0].name }];
+            return [
+                {
+                    buffer,
+                    name: separate[0].name,
+                    diskName: separate[0].diskName,
+                },
+            ];
         } catch (error) {
             this.logger.warn(
                 `КП PDF (${dto.domain}): склейка вариантов не удалась, отдаём по одному — ${error instanceof Error ? error.message : String(error)}`,
@@ -445,6 +455,7 @@ export class OfferPdfGenerateService {
         return {
             buffer: rendered.buffer,
             name: getOfferDocumentProductName(unit.input),
+            diskName: getOfferDiskName(unit.input),
         };
     }
 
@@ -489,6 +500,7 @@ export class OfferPdfGenerateService {
             fileName,
             link: `${baseUrl}${rootLink}`,
             name: file.name,
+            diskName: file.diskName,
             size: file.buffer.length,
         };
     }
@@ -526,6 +538,7 @@ export class OfferPdfGenerateService {
                     link: file.link,
                     name: file.name,
                     type: 'offer',
+                    diskName: file.diskName,
                 }),
             ),
             ...invoices.map(
@@ -534,6 +547,7 @@ export class OfferPdfGenerateService {
                     link: invoice.link,
                     name: invoice.name,
                     type: 'invoice',
+                    ...(invoice.diskName ? { diskName: invoice.diskName } : {}),
                 }),
             ),
         ];

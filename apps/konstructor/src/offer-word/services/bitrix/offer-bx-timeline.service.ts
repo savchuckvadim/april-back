@@ -1,8 +1,14 @@
 import { BxTimelinePusherService } from '@app/konstructor/bx-timeliene-pusher/bx-timeline-pusher.service';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
+import {
+    timelineLink,
+    toSafeHref,
+    toTimelineComment,
+} from '@lib/bitrix/consts/timeline.consts';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { Injectable } from '@nestjs/common';
 import { IResultDocumentLink } from '../../interface/document.interface';
+import { diskNameToLinkText } from '../../lib/document-disk-name.util';
 
 export interface ITimeLineSendData {
     domain: string;
@@ -58,24 +64,30 @@ export class OfferBxTimelineService {
         });
     }
 
+    /**
+     * Комментарий уходит пачкой (batch), поэтому собирается через
+     * {@link toTimelineComment}: он склеивает строки переносом и один раз
+     * экранирует `%`, `+`, `&`, `#`. Закодированный адрес Диска
+     * (`%D0%9A…`) доезжает до карточки таким же, а `&` и `+` из названия
+     * комплекта не обрывают команду и не превращаются в пробел.
+     */
     private getCommentMessage(documents: IResultDocumentLink[]) {
-        return documents
-            .map(document =>
-                this.getDocumentMessage(
-                    document.link,
-                    document.name,
-                    document.type,
-                ),
-            )
-            .join('%0A'); // разрыв строки в Bitrix batch
+        return toTimelineComment(
+            documents.map(document => this.getDocumentMessage(document)),
+        );
     }
 
-    private getDocumentMessage(
-        link: string,
-        documentName: string,
-        type: 'offer' | 'invoice',
-    ) {
-        const icon = type === 'offer' ? '📝' : '🧾';
-        return `${icon} <a href="${link}" target="_blank">${documentName}</a>`;
+    /**
+     * Адрес ссылки — `DETAIL_URL` файла на Диске, кодируется
+     * {@link toSafeHref}: Битрикс отдаёт его с кириллицей, а пробелы в нём
+     * оборвали бы ссылку. Читаемое название — только текст внутри `<a>`:
+     * из имени на Диске, а без него из подписи документа.
+     */
+    private getDocumentMessage(document: IResultDocumentLink) {
+        const icon = document.type === 'offer' ? '📝' : '🧾';
+        const text =
+            (document.diskName && diskNameToLinkText(document.diskName)) ||
+            document.name;
+        return `${icon} ${timelineLink(toSafeHref(document.link), text)}`;
     }
 }
