@@ -1,5 +1,9 @@
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import {
+    BLANK_DATE,
+    BLANK_NUMBER,
+} from '@app/konstructor/document-generate/bx-client-rq/bx-client-rq.service';
 import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { ContractGenerateService } from '../services/contract-generate.service';
 
@@ -144,7 +148,7 @@ describe('ContractGenerateService', () => {
         expect(result.data.total_prepayment_quantity_string).toBe('12 месяцев');
         expect(result.data.client_assigned_fio).toMatch(/^_+$/);
         expect(result.data.garant_client_email).toMatch(/^_+$/);
-        expect(result.data.contract_start).toMatch(/^_+$/);
+        expect(result.data.contract_start).toBe(BLANK_DATE);
         // шаблон печатает товар вне цикла: без строк — прочерки, а не undefined
         expect(result.data.productQuantity).toMatch(/^_+$/);
         expect(JSON.stringify(result.data)).not.toContain('undefined');
@@ -213,6 +217,42 @@ describe('ContractGenerateService', () => {
         // реквизиты столбиком: массив docxtemplater склеил бы через запятую
         expect(result.data.we_rq).toBe('ООО «Гарант»\nИНН: 2600000000');
         expect(result.data.client_rq).toBe('МБОУ СОШ №1\nИНН: 2611111111');
+    });
+
+    it('пустые номер и даты — короткие места под ручку, а не длинная линия', async () => {
+        const empty = dto();
+        empty.contractNumber = '  ';
+        const result = await service.generateContract(empty);
+
+        expect(result.data.contract_number).toBe(BLANK_NUMBER);
+        for (const key of [
+            'contract_date',
+            'contract_start',
+            'contract_end',
+            'contract_pay_date',
+        ] as const) {
+            expect(result.data[key]).toBe(BLANK_DATE);
+        }
+        // номер — 10–12 знаков, дата в виде «___» ______ 20__ г.
+        expect(BLANK_NUMBER).toMatch(/^_{10,12}$/);
+        expect(BLANK_DATE).toBe('«___» __________ 20__ г.');
+        expect(BLANK_DATE.length).toBeLessThan(30);
+    });
+
+    it('заполненные номер и даты печатаются как есть', async () => {
+        const filled = dto();
+        filled.contractNumber = ' 77/11 ';
+        filled.contractStart = '2026-12-01';
+        filled.contractEnd = '2027-11-30';
+        filled.contractCreateDate = '2026-11-27';
+        filled.firstPayDate = '2026-12-05';
+        const result = await service.generateContract(filled);
+
+        expect(result.data.contract_number).toBe('77/11');
+        expect(result.data.contract_start).toBe('1 декабря 2026 г.');
+        expect(result.data.contract_end).toBe('30 ноября 2027 г.');
+        expect(result.data.contract_date).toBe('27 ноября 2026 г.');
+        expect(result.data.contract_pay_date).toBe('5 декабря 2026 г.');
     });
 
     it('без поставщика документ не собирается', async () => {
