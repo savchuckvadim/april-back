@@ -21,4 +21,5 @@ export type OfferRenderInput = Pick<
     | 'recipient'
     | 'manager'
     | 'sets'
+    | 'withLetter'
 >;

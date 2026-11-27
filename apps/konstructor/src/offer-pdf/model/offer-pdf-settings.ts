@@ -10,6 +10,12 @@ import {
 export interface OfferPdfSettings {
     descriptionMode: DocumentFieldDescriptionMode;
     viewMode: DocumentFieldViewMode;
+    /**
+     * Сопроводительное письмо. Выключено: КП идёт без письма, а печать и
+     * подпись поставщика, что стоят под ним, не печатаются (решение владельца
+     * 27.11.2026). Запросы без поля печатают письмо, как раньше.
+     */
+    withLetter: boolean;
     withStamps: boolean;
     withManager: boolean;
     isPriceFirst: boolean;
@@ -28,6 +34,7 @@ export type OfferPdfSettingsInput = {
 export const OFFER_PDF_DEFAULT_SETTINGS: Readonly<OfferPdfSettings> = {
     descriptionMode: DocumentFieldDescriptionMode.SMALL,
     viewMode: DocumentFieldViewMode.LIST,
+    withLetter: true,
     withStamps: true,
     withManager: true,
     isPriceFirst: false,
@@ -45,6 +52,7 @@ export const resolveOfferPdfSettings = (
             input?.descriptionMode ??
             OFFER_PDF_DEFAULT_SETTINGS.descriptionMode,
         viewMode: input?.viewMode ?? OFFER_PDF_DEFAULT_SETTINGS.viewMode,
+        withLetter: input?.withLetter ?? OFFER_PDF_DEFAULT_SETTINGS.withLetter,
         withStamps: input?.withStamps ?? OFFER_PDF_DEFAULT_SETTINGS.withStamps,
         withManager:
             input?.withManager ?? OFFER_PDF_DEFAULT_SETTINGS.withManager,

@@ -264,4 +264,15 @@ export class OfferWordByTemplateGenerateDto {
     @IsOptional()
     @IsBoolean()
     onlyBitrixSave?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'КП с сопроводительным письмом. Без поля и при true письмо печатается, как раньше. false отдаёт Word-шаблону метку WithLetter = false: письмо и подпись с печатью исчезают у шаблонов, где они обёрнуты условным блоком {#WithLetter}…{/WithLetter}. Текст письма и картинки подписи лежат в самом файле шаблона, поэтому шаблон без такого блока печатает их при любом значении. У PDF-КП флаг лежит в settings.withLetter.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    withLetter?: boolean;
 }

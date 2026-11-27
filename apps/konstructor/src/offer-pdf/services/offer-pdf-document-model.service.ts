@@ -94,19 +94,27 @@ export class OfferPdfDocumentModelService {
         dto: OfferPdfPrintInput,
         options: OfferPdfModelOptions = {},
     ): Promise<OfferPdfDocumentModel> {
-        const letterText = cleanText(dto.letter?.text);
+        const settings = resolveOfferPdfSettings(dto.settings);
+        // письма нет — текст запроса и письмо портала не нужны, портал не читаем
+        const letterText = settings.withLetter
+            ? cleanText(dto.letter?.text)
+            : null;
+        const needPortalLetter = settings.withLetter && !letterText;
         const [data, provider, portalLetter] = await Promise.all([
             this.renderDataService.getOfferRenderData(dto),
             this.providerService.findById(Number(dto.providerId)),
-            letterText ? Promise.resolve(null) : this.portalLetter(dto.domain),
+            needPortalLetter
+                ? this.portalLetter(dto.domain)
+                : Promise.resolve(null),
         ]);
 
-        const settings = resolveOfferPdfSettings(dto.settings);
         // логотип читается всегда, печать и подпись руководителя — при «с
-        // печатями и подписями»
+        // печатями и подписями» и только с письмом: подпись стоит под ним
         const images = await this.providerImageSet(
             provider,
-            settings.withStamps ? PDF_IMAGE_ROLES : PDF_LOGO_ROLES,
+            settings.withStamps && settings.withLetter
+                ? PDF_IMAGE_ROLES
+                : PDF_LOGO_ROLES,
         );
 
         return {

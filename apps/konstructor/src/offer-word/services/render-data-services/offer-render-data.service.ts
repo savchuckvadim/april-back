@@ -31,7 +31,19 @@ import {
 } from './offer-render-general-product.service';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
 
-export type IOfferWordRenderData = IInfoblocksRenderData &
+/**
+ * Печатать ли сопроводительное письмо. Метка для условного блока Word-шаблона:
+ * `{#WithLetter}…{/WithLetter}` вокруг письма и подписи с печатью. Всегда есть
+ * в данных (по умолчанию true), иначе блок в шаблоне пропал бы у запроса без
+ * поля. Текст письма и подпись лежат в самом файле шаблона, поэтому шаблон без
+ * такого блока печатает письмо при любом значении.
+ */
+export interface IOfferLetterRenderData {
+    WithLetter: boolean;
+}
+
+export type IOfferWordRenderData = IOfferLetterRenderData &
+    IInfoblocksRenderData &
     IComplectSectionsRenderData &
     IAlternativeComplectsRenderData &
     IProductRenderData &
@@ -92,7 +104,12 @@ export class OfferRenderDataService {
                 withTax,
             );
         }
+        // запрос без поля печатает письмо, как раньше
+        const letter: IOfferLetterRenderData = {
+            WithLetter: dto.withLetter !== false,
+        };
         const renderData = this.createRenderData(
+            letter,
             providerRq,
             infoblocks,
             productPrices,
@@ -106,6 +123,7 @@ export class OfferRenderDataService {
     }
 
     private createRenderData(
+        letter: IOfferLetterRenderData,
         providerRq: IProviderRqRenderData,
         infoblocks: IInfoblocksRenderData &
             IComplectSectionsRenderData &
@@ -117,6 +135,7 @@ export class OfferRenderDataService {
         totalPrice: ITotalRowRenderData | null,
     ): IOfferWordRenderData {
         return {
+            ...letter,
             ...providerRq,
             ...infoblocks,
             ...productPrices,

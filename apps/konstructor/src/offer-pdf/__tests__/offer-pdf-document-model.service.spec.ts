@@ -149,6 +149,21 @@ describe('сборка модели PDF-КП', () => {
         );
     });
 
+    it('письмо выключено (withLetter: false): письма в модели нет, письмо портала не читается', async () => {
+        const { service, letters } = createService(
+            null,
+            Promise.resolve({ text: 'Вот уже 35 лет…' }),
+        );
+        const model = await service.build({
+            ...dto,
+            settings: { withLetter: false },
+            letter: { appeal: 'Уважаемый!', text: 'Своё письмо' },
+        });
+        expect(model.settings.withLetter).toBe(false);
+        expect(model.letter.text).toBeNull();
+        expect(letters.findPortalDefault).not.toHaveBeenCalled();
+    });
+
     it('сбой чтения письма портала не роняет КП — текст шаблона по умолчанию', async () => {
         const { service } = createService(
             null,
@@ -229,6 +244,23 @@ describe('сборка модели PDF-КП: картинки поставщи�
             'signature_director',
             'logo',
         ]);
+    });
+
+    it('письмо выключено: печать и подпись под ним не читаются даже при withStamps, логотип остаётся', async () => {
+        const { service, providerImages } = createService(
+            { id: 41, director: 'Кузнецов А. В.' },
+            Promise.resolve(null),
+            Promise.resolve(allImages()),
+        );
+        const model = await service.build({
+            ...dto,
+            settings: { withLetter: false, withStamps: true },
+        });
+
+        expect(model.images).toEqual({
+            logo: { data: logoBytes, format: 'png' },
+        });
+        expect(providerImages.loadContents).toHaveBeenCalledWith(41, ['logo']);
     });
 
     it('подпись бухгалтера, даже вернувшись из хранилища, в модель не попадает', async () => {

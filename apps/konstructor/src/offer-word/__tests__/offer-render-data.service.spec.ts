@@ -153,3 +153,37 @@ describe('OfferRenderDataService: наполнение наборов для с�
         expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
     });
 });
+
+describe('OfferRenderDataService: флаг сопроводительного письма в данных шаблона', () => {
+    it('запрос без поля withLetter: WithLetter = true, письмо печатается, как раньше', async () => {
+        const { service } = createService(infoblocksOf({}));
+
+        const data = await service.getOfferRenderData(createRequest());
+
+        expect(data.WithLetter).toBe(true);
+    });
+
+    it('withLetter: true — WithLetter = true', async () => {
+        const { service } = createService(infoblocksOf({}));
+
+        const data = await service.getOfferRenderData({
+            ...createRequest(),
+            withLetter: true,
+        });
+
+        expect(data.WithLetter).toBe(true);
+    });
+
+    it('withLetter: false — WithLetter = false: условный блок письма в шаблоне скрывается', async () => {
+        const { service } = createService(infoblocksOf({}));
+
+        const data = await service.getOfferRenderData({
+            ...createRequest(),
+            withLetter: false,
+        });
+
+        expect(data.WithLetter).toBe(false);
+        // остальные данные на месте
+        expect(data.infoblocksByGroups).toBe(sample.infoblocksByGroups);
+    });
+});

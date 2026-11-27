@@ -49,7 +49,19 @@ export class OfferPdfSettingsDto implements OfferPdfSettingsInput {
     viewMode?: DocumentFieldViewMode;
 
     @ApiPropertyOptional({
-        description: 'Блок подписи руководителя и печати в конце документа.',
+        description:
+            'Сопроводительное письмо. false: КП без письма, печать и подпись поставщика, что стоят под ним, тоже не печатаются (withStamps на них не влияет). Без поля КП печатается с письмом, как раньше. У стиля, где письмо стоит на промо-странице (moderne), страница тоже не печатается.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    withLetter?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Блок подписи руководителя и печати под письмом. Без письма (withLetter: false) не печатается.',
         type: Boolean,
         default: true,
         example: true,
@@ -112,7 +124,10 @@ export class OfferPdfSettingsDto implements OfferPdfSettingsInput {
     withPromo?: boolean;
 }
 
-/** Сопроводительное письмо; пустые поля шаблон заполняет сам. */
+/**
+ * Сопроводительное письмо; пустые поля шаблон заполняет сам. Выключается
+ * настройкой `settings.withLetter`: тогда письмо в документ не попадает.
+ */
 export class OfferPdfLetterDto {
     @ApiPropertyOptional({
         description: 'Обращение над текстом письма.',
@@ -154,6 +169,8 @@ export class OfferPdfGenerateDto extends OmitType(
         'isWord',
         'withoutQueue',
         'onlyBitrixSave',
+        // у PDF-КП флаг письма лежит в settings.withLetter
+        'withLetter',
     ] as const,
 ) {
     @ApiPropertyOptional({

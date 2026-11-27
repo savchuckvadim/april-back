@@ -1,5 +1,8 @@
 import { OFFER_PDF_DEFAULT_SETTINGS } from '../model/offer-pdf-settings';
-import { offerSheetFlows } from '../templates/kit/document/document.util';
+import {
+    offerSectionOrder,
+    offerSheetFlows,
+} from '../templates/kit/document/document.util';
 import { HEADING_PRESENCE } from '../templates/kit/document/section.layout';
 import {
     priceKeepsHeadingWithTable,
@@ -80,6 +83,45 @@ describe('потоки листов с разделами КП', () => {
         ).toEqual([
             { withLetter: false, keys: ['price'] },
             { withLetter: false, keys: ['infoblocks'] },
+        ]);
+    });
+});
+
+describe('КП без сопроводительного письма', () => {
+    const noLetter = settings({ withLetter: false });
+    const noLetterPriceFirst = settings({
+        withLetter: false,
+        isPriceFirst: true,
+    });
+
+    it('подписи среди разделов нет, даже когда она включена', () => {
+        expect(noLetter.withStamps).toBe(true);
+        expect(offerSectionOrder(noLetter)).toEqual(['infoblocks', 'price']);
+        expect(offerSectionOrder(noLetterPriceFirst)).toEqual([
+            'price',
+            'infoblocks',
+        ]);
+    });
+
+    it('потока письма нет: наполнение с ценой идут с первого листа', () => {
+        expect(offerSheetFlows(noLetter, onPromo)).toEqual([
+            { withLetter: false, keys: ['infoblocks', 'price'] },
+        ]);
+    });
+
+    it('«сначала цена»: цена своим потоком, наполнение со следующего листа', () => {
+        expect(offerSheetFlows(noLetterPriceFirst, onPromo)).toEqual([
+            { withLetter: false, keys: ['price'] },
+            { withLetter: false, keys: ['infoblocks'] },
+        ]);
+    });
+
+    it('большая таблица цен после наполнения по-прежнему открывает свой лист', () => {
+        expect(
+            offerSheetFlows(noLetter, { ...onPromo, priceStartsSheet: true }),
+        ).toEqual([
+            { withLetter: false, keys: ['infoblocks'] },
+            { withLetter: false, keys: ['price'] },
         ]);
     });
 });
