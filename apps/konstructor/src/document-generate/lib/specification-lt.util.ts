@@ -32,12 +32,24 @@ export const ltPaidServicesCode = (index: number): string =>
 export const isLtSpecificationCode = (code: string): boolean =>
     code.startsWith('specification_lt_');
 
+/** Строка платного пакета Legal Tech: название или состав (бесплатные коды сюда не входят). */
+export const isLtPaidSpecificationCode = (code: string): boolean =>
+    code.startsWith(ContractSpecificationCodeEnum.LT_PACKET) ||
+    code.startsWith(ContractSpecificationCodeEnum.LT_SERVICES);
+
+/**
+ * Название платного пакета, когда пришёл только его состав: без строки с
+ * названием платный Legal Tech печатался бы одним составом, без заголовка.
+ */
+export const LT_PAID_FALLBACK_NAME = 'Legal Tech';
+
 const textOf = (value: unknown): string =>
     typeof value === 'string' ? value.trim() : '';
 
 /**
- * Платные пакеты из строк спецификации по порядку номеров. Пакет без
- * названия (пустая легаси-строка, когда платных нет) пропускается.
+ * Платные пакеты из строк спецификации по порядку номеров. Пустая пара
+ * строк (легаси кладёт её, когда платных нет) пропускается; пакет с составом
+ * и без названия печатается под названием по умолчанию.
  */
 export const readLtPaidPackets = (
     items: SpecificationRow[],
@@ -46,15 +58,52 @@ export const readLtPaidPackets = (
     for (let index = 0; ; index += 1) {
         const packet = items.find(item => item.code === ltPaidPacketCode(index));
         if (!packet) break;
-        const name = textOf(packet.value);
-        if (!name) continue;
         const services = textOf(
             items.find(item => item.code === ltPaidServicesCode(index))?.value,
         )
             .split('\n')
             .map(service => service.trim())
             .filter(Boolean);
+        const name =
+            textOf(packet.value) ||
+            (services.length ? LT_PAID_FALLBACK_NAME : '');
+        if (!name) continue;
         result.push({ name, services });
     }
     return result;
 };
+
+/** Строка спецификации, которую читают блоки таймлайна: код и значение. */
+export interface LtSpecificationRow {
+    code: string;
+    value: string;
+}
+
+/**
+ * Строки спецификации Legal Tech: бесплатный пакет (если он есть) со
+ * составом и каждый платный пакет парой «название + состав». Коды те же, что
+ * у спецификации договора, поэтому читатели (readLtPaidPackets, блок Legal
+ * Tech в таймлайне) разбирают их одинаково.
+ */
+export const buildLtSpecificationRows = (lt: {
+    freePacket: string;
+    freeServices: string[];
+    paidPackets: LtPaidPacketRow[];
+}): LtSpecificationRow[] => [
+    ...(lt.freePacket
+        ? [
+              {
+                  code: ContractSpecificationCodeEnum.LT_FREE,
+                  value: lt.freePacket,
+              },
+              {
+                  code: ContractSpecificationCodeEnum.LT_FREE_SERVICES,
+                  value: lt.freeServices.join('\n'),
+              },
+          ]
+        : []),
+    ...lt.paidPackets.flatMap((packet, index) => [
+        { code: ltPaidPacketCode(index), value: packet.name },
+        { code: ltPaidServicesCode(index), value: packet.services.join('\n') },
+    ]),
+];

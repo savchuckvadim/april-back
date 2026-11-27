@@ -19,6 +19,8 @@ import { getWithTax } from '../../../document-generate/lib/get-with-tax.util';
 import {
     blank,
     BLANK,
+    BLANK_DATE,
+    BLANK_NUMBER,
 } from '../../../document-generate/bx-client-rq/bx-client-rq.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
@@ -236,18 +238,18 @@ export class ContractGenerateService {
             dto.clientType,
         );
 
+        // пустые номер и даты — короткие места под ручку
         const contractStart =
             (dto.contractStart && this.formatDocumentDate(dto.contractStart)) ||
-            '________________________________';
+            BLANK_DATE;
         const contractEnd =
             (dto.contractEnd && this.formatDocumentDate(dto.contractEnd)) ||
-            '________________________________';
-        const contractNumber =
-            dto.contractNumber || '________________________________';
+            BLANK_DATE;
+        const contractNumber = dto.contractNumber?.trim() || BLANK_NUMBER;
         const contractCreateDate =
             (dto.contractCreateDate &&
                 this.formatDocumentDate(dto.contractCreateDate)) ||
-            '________________________________';
+            BLANK_DATE;
 
         const headerText = this.headerService.getContractHeaderText(
             dto.contractType,
@@ -341,7 +343,7 @@ export class ContractGenerateService {
             contract_pay_date:
                 (dto.firstPayDate &&
                     this.formatDocumentDate(dto.firstPayDate)) ||
-                '________________________________',
+                BLANK_DATE,
             // ответственный за справочник и email интернет-версии — поля сделки
             client_assigned_fio: blank(dto.garantClientAssignedName, BLANK),
             garant_client_email: blank(dto.garantClientEmail, BLANK),

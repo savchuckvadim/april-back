@@ -15,6 +15,7 @@ import { OfferComplectsModeEnum } from '../complect/offer-complects-mode.type';
 import { ProductRowDto } from '../product-row/product-row.dto';
 import { ProductRowSetDto } from '../product-row-set/product-row-set.dto';
 import { ContractSpecificationDto } from '../specification/specification.dto';
+import { ContractSpecificationLtDto } from '../../../contract/specification-form/dto/contract-specification-form.dto';
 import { ContractDto } from '../../../dto/contract.dto';
 import { SupplyDto } from '../../../dto/supply.dto';
 import { CONTRACT_LTYPE } from '../../type/contract.type';
@@ -141,4 +142,14 @@ export class DocumentVariantDto {
     @ValidateNested()
     @Type(() => ContractSpecificationDto)
     contractSpecificationState?: ContractSpecificationDto;
+
+    @ApiPropertyOptional({
+        type: ContractSpecificationLtDto,
+        description:
+            'Legal Tech варианта: бесплатная часть комплекта и платные пакеты (`paidPackets`: название пакета-товара и его состав). Заявка RPA печатает по нему «Бесплатный» и «Платный LegalTech» участника. Тот же объект, что фронт шлёт в `lt` формы договора. Без поля платные пакеты берутся из LT-строк `sets.general` (название — по товару-пакету), бесплатная часть остаётся из спецификации заявки',
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ContractSpecificationLtDto)
+    lt?: ContractSpecificationLtDto;
 }
